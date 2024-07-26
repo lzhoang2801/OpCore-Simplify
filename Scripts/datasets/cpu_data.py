@@ -1,0 +1,43 @@
+AMDCPUGenerations = [
+    "Summit Ridge",
+    "Raven Ridge",
+    "Pinnacle Ridge",
+    "Dalí",
+    "Picasso",
+    "Matisse",
+    "Renoir",
+    "Lucienne",
+    "Vermeer",
+    "Cezanne",
+    "Barcelo",
+    "Rembrandt",
+    "Raphael",
+    "Mendocino",
+    "Phoenix",
+    "Dragon Range",
+    "Hawk Point",
+    "Granite Ridge",
+    "Whitehaven",
+    "Colfax",
+    "Castle Peak",
+    "Chagall",
+    "Storm Peak"
+]
+
+IntelCPUGenerations = [
+    "Sandy Bridge", 
+    "Ivy Bridge",
+    "Haswell", 
+    "Broadwell", 
+    "Skylake",
+    "Cascade Lake",
+    "Kaby Lake", 
+    "Amber Lake", 
+    "Whiskey Lake",
+    "Coffee Lake", 
+    "Comet Lake", 
+    "Ice Lake",
+    "Rocket Lake",
+    "Alder Lake",
+    "Raptor Lake"
+]
