@@ -692,7 +692,7 @@ class KextMaestro:
             if "NVMe" in controller_name or "NVM Express" in controller_props.get("Device Description"):
                 kexts.append("NVMeFix")
             else:
-                if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs:
+                if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs and not "AHCI" in controller_name:
                     kexts.append("CtlnaAHCIPort")
 
         for pci_id in usb_controllers:
