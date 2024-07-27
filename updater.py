@@ -42,8 +42,7 @@ class Updater:
             for file in files:
                 source = os.path.join(root, file)
                 destination = source.replace(target_dir, os.path.dirname(os.path.realpath(__file__)))
-                if "OCK_Files" not in destination and "updater" not in destination:
-                    shutil.move(source, destination)
+                shutil.move(source, destination)
         shutil.rmtree(self.temporary_dir)
 
     def run_update(self):
