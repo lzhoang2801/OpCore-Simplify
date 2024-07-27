@@ -357,6 +357,7 @@ class builder:
             if not tool_path in tool_loaded:
                 files_to_remove.append(os.path.join(tools_directory, tool_path))
 
+        error = None
         for path in files_to_remove:
             try:
                 if os.path.isdir(path):
@@ -364,8 +365,13 @@ class builder:
                 else:
                     os.remove(path)
             except Exception as e:
-                print(f"Failed to remove file: {e}")
+                error = True
+                print(f"\nFailed to remove file: {e}", end="")
                 continue
+
+        if error:
+            print("")
+            self.utils.request_input()
 
     def build_efi(self, hardware, macos_version):
         efi_directory = os.path.join(os.getcwd(), "Results")
