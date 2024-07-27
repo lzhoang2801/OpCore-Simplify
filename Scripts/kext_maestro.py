@@ -16,7 +16,7 @@ class KextMaestro:
             "idVendor", 
             "HDAConfigDefault"
         ]
-        self.ock_files_dir = os.path.join(os.getcwd(), "OCK_Files")
+        self.ock_files_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "OCK_Files")
         self.kext_loading_sequence = [
             {
                 "MainKext": "Lilu",

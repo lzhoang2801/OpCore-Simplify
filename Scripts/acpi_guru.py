@@ -2776,7 +2776,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
         return
 
     def select_dsdt(self):
-        results_path = os.path.join(os.getcwd(), "Results")
+        results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "Results")
         apcidump_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "acpidump.exe")
         while True:
             self.utils.head("Select ACPI Tables")

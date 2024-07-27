@@ -13,9 +13,7 @@ class builder:
         self.config = config_prodigy.ConfigProdigy()
         self.kext = kext_maestro.KextMaestro()
         self.utils = utils.Utils()
-        self.ock_files_dir = os.path.join(os.getcwd(), "OCK_Files")
-        self.oc_binary_data_dir = os.path.join(os.getcwd(), "OcBinaryData")
-        self.result_dir = os.path.join(os.getcwd(), "Results")
+        self.oc_binary_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "OcBinaryData")
         self.intel_igpu_properties = {
             "Ice Lake": {
                 "Laptop": {
@@ -374,14 +372,14 @@ class builder:
             self.utils.request_input()
 
     def build_efi(self, hardware, macos_version):
-        efi_directory = os.path.join(os.getcwd(), "Results")
+        efi_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "Results")
         
         self.utils.mkdirs(efi_directory)
         
-        if not os.path.exists(self.ock_files_dir):
-            raise Exception(f"Directory '{self.ock_files_dir}' does not exist.")
+        if not os.path.exists(self.kext.ock_files_dir):
+            raise Exception(f"Directory '{self.kext.ock_files_dir}' does not exist.")
         
-        source_efi_dir = os.path.join(self.ock_files_dir, "OpenCore")
+        source_efi_dir = os.path.join(self.kext.ock_files_dir, "OpenCore")
         shutil.copytree(source_efi_dir, efi_directory, dirs_exist_ok=True)
         shutil.copytree(self.oc_binary_data_dir, os.path.join(efi_directory, "EFI", "OC"), dirs_exist_ok=True)
 

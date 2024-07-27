@@ -27,7 +27,7 @@ class OCPE:
             "18": "macOS Mojave 10.14",
             "17": "macOS High Sierra 10.13"
         }
-        self.result_dir = os.path.join(os.getcwd(), "Results")
+        self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
 
     def check_for_update(self):
         self.u.head("Check for update")

@@ -15,7 +15,7 @@ class gatheringFiles:
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
         self.amd_vanilla_patches_url = f"https://raw.githubusercontent.com/AMD-OSX/AMD_Vanilla/beta/patches.plist"
         self.temporary_dir = tempfile.mkdtemp()
-        self.ock_files_dir = os.path.join(os.getcwd(), "OCK_Files")
+        self.ock_files_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "OCK_Files")
         self.download_history_file = os.path.join(self.ock_files_dir, "history.json")
         self.builds = [
             "AirportBrcmFixup",
