@@ -148,7 +148,7 @@ class ConfigProdigy:
                 if not self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset, start=6) is None:
                     patch["Enabled"] = True
             if "_mtrr_update_action" in patch["Comment"]:
-                if chipset_data.AMDChipsets[0].lower() in motherboard_chipset:
+                if chipset_data.AMDChipsets[0].lower() in motherboard_chipset.lower():
                     patch["Enabled"] = False
                 elif "AMD" in gpu_manufacturer:
                     if "Algrey" in patch["Comment"]:
@@ -213,7 +213,7 @@ class ConfigProdigy:
         if macos_version > 23:
             boot_args.append("-lilubetaall")
 
-        if self.utils.contains_any(unsupported_devices, "Discrete GPU"):
+        if "Discrete GPU" in ",".join(unsupported_devices):
             boot_args.append("-wegnoegpu")
 
         return " ".join(boot_args)
