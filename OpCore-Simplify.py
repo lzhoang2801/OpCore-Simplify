@@ -13,7 +13,7 @@ class OCPE:
         self.c = compatibility_checker.CompatibilityChecker()
         self.b = efi_builder.builder()
         self.u = utils.Utils()
-        self.current_version = "0.0.1"
+        self.current_version = "0.0.2"
         self.hardware = None
         self.compatibility = None
         self.macos_version = None
