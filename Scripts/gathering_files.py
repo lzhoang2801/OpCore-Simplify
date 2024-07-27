@@ -262,7 +262,9 @@ class gatheringFiles:
             "last_updated": "2024-07-25T12:00:00"
         }
 
-        last_updated = datetime.fromisoformat(download_history["last_updated"] or "2024-07-25T12:00:00")
+        if not download_history.get("versions"):
+            download_history["versions"] = []
+        last_updated = datetime.fromisoformat(download_history.get("last_updated", "2024-07-25T12:00:00"))
 
         current_time = datetime.now()
         if current_time - last_updated < timedelta(minutes=10):
