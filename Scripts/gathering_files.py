@@ -262,7 +262,7 @@ class gatheringFiles:
             "last_updated": "2024-07-25T12:00:00"
         }
 
-        last_updated = datetime.fromisoformat(download_history["last_updated"])
+        last_updated = datetime.fromisoformat(download_history["last_updated"] or "2024-07-25T12:00:00")
 
         current_time = datetime.now()
         if current_time - last_updated < timedelta(minutes=10):
@@ -291,6 +291,8 @@ class gatheringFiles:
                     })
                 else:
                     download_history["versions"][product_index]["id"] = product_data.get("id")
+                
+                self.utils.write_file(self.download_history_file, download_history)
 
         current_time = datetime.now().isoformat()
         download_history["last_updated"] = current_time
