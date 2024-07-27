@@ -2784,13 +2784,13 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
             if sys.platform == "win32":
                 print("To manually dump ACPI tables, open Command Prompt and enter the following\ncommands in sequence:")
                 print("")
-                print("  cd \"{}\"".format(results_path.replace("/", "\\")))
-                print("  mkdir \"ACPI Table\"")
-                print("  cd \"ACPI Table\"")
-                print("  \"{}\" -b".format(apcidump_path.replace("/", "\\")))
-                print("  rename *.dat *.aml")
+                print("  > cd \"{}\"".format(results_path.replace("/", "\\")))
+                print("  > mkdir ACPITables")
+                print("  > cd ACPITables")
+                print("  > \"{}\" -b".format(apcidump_path.replace("/", "\\")))
+                print("  > rename *.dat *.aml")
                 print("")
-                print("The ACPI tables will now be available in\n  \"{}\\ACPI Tables\"".format(results_path.replace("/", "\\")))
+                print("The ACPI tables will now be available in\n  \"{}\\ACPITables\"".format(results_path.replace("/", "\\")))
                 print("")
             if sys.platform.startswith("linux") or sys.platform == "win32":
                 print("P. Dump ACPI Tables")
@@ -2799,7 +2799,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
             menu = self.utils.request_input("Please drag and drop ACPI Tables folder here: ")
             if menu.lower() == "p" and (sys.platform.startswith("linux") or sys.platform == "win32"):
                 return self.read_dsdt(
-                    self.acpi.dump_tables(os.path.join(results_path, "ACPI Tables"))
+                    self.acpi.dump_tables(os.path.join(results_path, "ACPITables"))
                 )
             elif menu.lower() == "q":
                 self.utils.exit_program()
