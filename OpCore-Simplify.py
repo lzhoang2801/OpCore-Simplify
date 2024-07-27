@@ -219,7 +219,7 @@ class OCPE:
         self.select_macos_version()
         self.b.build_efi(self.hardware, self.macos_version)
         self.show_result()
-        reminder_message = "\n\nIMPORTANT REMINDER: Please make sure you add the USBMap.kext to /EFI/OC/Kext before using this\nOpenCore EFI.\n\n"
+        reminder_message = "\n\nIMPORTANT REMINDER: Please make sure you add the USBMap.kext to /EFI/OC/Kexts before using this\nOpenCore EFI.\n\n"
         self.u.exit_program(o.u.message(reminder_message, "reminder"))
 
 if __name__ == '__main__':
