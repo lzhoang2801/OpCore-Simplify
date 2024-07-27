@@ -13,7 +13,8 @@ class OCPE:
         self.c = compatibility_checker.CompatibilityChecker()
         self.b = efi_builder.builder()
         self.u = utils.Utils()
-        self.current_version = "0.0.2"
+        self.version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "version.json")
+        self.current_version = self.u.read_file(self.version_path).get("version")
         self.hardware = None
         self.compatibility = None
         self.macos_version = None
