@@ -3,7 +3,9 @@ from Scripts import compatibility_checker
 from Scripts import efi_builder
 from Scripts import gathering_files
 from Scripts import utils
+import updater
 import os
+import sys
 
 class OCPE:
     def __init__(self):
@@ -13,8 +15,6 @@ class OCPE:
         self.c = compatibility_checker.CompatibilityChecker()
         self.b = efi_builder.builder()
         self.u = utils.Utils()
-        self.version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "version.json")
-        self.current_version = self.u.read_file(self.version_path).get("version")
         self.hardware = None
         self.compatibility = None
         self.macos_version = None
@@ -29,22 +29,6 @@ class OCPE:
             "17": "macOS High Sierra 10.13"
         }
         self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
-
-    def check_for_update(self):
-        self.u.head("Check for update")
-        print("")
-        print(f"Current script version: {self.current_version}")
-        latest_version = self.u.check_latest_version()
-        print(f"Latest script version: {latest_version}")
-        print("")
-        if latest_version and latest_version > self.current_version:
-            print(self.u.message("An update is available at \"https://github.com/lzhoang2801/OpCore-Simplify\"", "reminder"))
-            print(self.u.message("Please download the latest version to ensure the best experience.", "reminder"))
-            print("")
-            self.u.request_input()
-        else:
-            return
-        self.u.exit_program()
 
     def gathering_files(self):
         self.u.head("Gathering Files")
@@ -90,7 +74,7 @@ class OCPE:
             self.select_aida64_report()
 
         self.u.head("Review the hardware information")
-        contents = ["\n"]
+        contents = []
         for index, device_type in enumerate(self.hardware, start=1):
             contents.append("{}. {}{}".format(index, device_type, "" if device_type == "Intel MEI" else ":"))
 
@@ -107,8 +91,8 @@ class OCPE:
                     else:
                         contents.append("{}* {}{}".format(" "*4, device_name, f": {device_props}" if isinstance(device_props, str) else ""))
         content = "\n".join(contents) + "\n"
-        print(content, end="")
         self.u.adjust_window_size(content)
+        print(content)
         self.u.request_input()
         return
         
@@ -212,7 +196,6 @@ class OCPE:
         return
 
     def main(self):
-        self.check_for_update()
         self.gathering_files()
         self.select_aida64_report()
         self.hardware_report()
@@ -226,8 +209,10 @@ class OCPE:
 if __name__ == '__main__':
     o = OCPE()
     try:
-        o.main()
-    except SystemExit:
-        raise
-    except BaseException as e:
+        update_flag = updater.Updater().run_update()
+        if update_flag:
+            os.execv(sys.executable, ['python3'] + sys.argv)
+        else:
+            o.main()
+    except Exception as e:
         o.u.exit_program(o.u.message("\nAn error occurred: {}\n".format(e)))

@@ -1,4 +1,3 @@
-from Scripts import resource_fetcher
 import os
 import json
 import plistlib
@@ -11,11 +10,6 @@ import pathlib
 class Utils:
     def __init__(self, script_name = "OpCore Simplify"):
         self.script_name = script_name
-        self.fetcher = resource_fetcher.ResourceFetcher({
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        })
-        self.repo_url = "https://raw.githubusercontent.com/lzhoang2801/OpCore-Simplify/main/version.json"
     
     def write_file(self, file_path, data):
         file_extension = os.path.splitext(file_path)[1]
@@ -129,17 +123,6 @@ class Utils:
 
     def contains_any(self, data, search_item, start=0, end=None):
         return next((item for item in data[start:end] if item.lower() in search_item.lower()), None)
-
-    def check_latest_version(self):
-        response = self.fetcher.fetch_and_parse_content(self.repo_url, "json")
-
-        latest_version = response.get('version')
-
-        if not latest_version:
-            print("Version information is missing in the JSON file.")
-            return None
-
-        return latest_version
 
     def normalize_path(self, path):
         # Remove all surrounding quotes if present
