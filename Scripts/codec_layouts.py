@@ -43,14 +43,14 @@ class CodecLayouts:
             
             if not vendor_id:
                 # Skip if vendor ID is not found
-                print(f"Unknown vendor for codec: {codec_folder_name}")
+                print("Unknown vendor for codec: {}".format(codec_folder_name))
                 continue
             
             # Extract vendor name from vendor information
             vendor_name = self.vendors[vendor_id][-1]
             
             # Build the raw URL for the Info.plist file
-            raw_url = f"https://raw.githubusercontent.com/acidanthera/AppleALC/master/Resources/{codec_folder_name}/Info.plist"
+            raw_url = "https://raw.githubusercontent.com/acidanthera/AppleALC/master/Resources/{}/Info.plist".format(codec_folder_name)
             
             # Retrieve content from the Info.plist file and parse as plist
             info = self.fetcher.fetch_and_parse_content(raw_url, "json")
@@ -59,7 +59,7 @@ class CodecLayouts:
             codec_id_hex = self.utils.int_to_hex(info["CodecID"]).zfill(4)
             formatted_codec_name = "{} {}".format(vendor_name, info["CodecName"])
             layout_ids = sorted([int(layouts["Id"]) for layouts in info["Files"]["Layouts"]])
-            pci_id = f"{vendor_id}-{codec_id_hex}".upper()
+            pci_id = "{}-{}".format(vendor_id, codec_id_hex).upper()
 
             sound_codec_info[pci_id] = layout_ids
         
@@ -83,7 +83,7 @@ class CodecLayouts:
         hda_config_defaults = plist_data.get("IOKitPersonalities", {}).get("as.vit9696.AppleALC", {}).get("HDAConfigDefault", [])
         for layout in hda_config_defaults:
             codec_id_hex = self.utils.int_to_hex(layout.get("CodecID", 0)).zfill(8)
-            formatted_codec_id = f"{codec_id_hex[:4]}-{codec_id_hex[-4:]}"
+            formatted_codec_id = "{}-{}".format(codec_id_hex[:4], codec_id_hex[-4:])
             layout_id = layout.get("LayoutID")
             if layout_id is not None:
                 if formatted_codec_id not in codec_layouts:

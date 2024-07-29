@@ -13,7 +13,7 @@ class Github:
         # Set the headers for GitHub API requests
         self.headers = {
             "Accept": "application/vnd.github+json",
-            "#Authorization": f"token {self.github_token}",
+            "#Authorization": "token {}".format(self.github_token),
             "X-GitHub-Api-Version": "2022-11-28",
         }
         self.fetcher = resource_fetcher.ResourceFetcher(self.headers)
@@ -28,7 +28,7 @@ class Github:
     def get_list_branches(self, owner, repo):
         self.check_ratelimit()
 
-        url = f"https://api.github.com/repos/{owner}/{repo}/branches"
+        url = "https://api.github.com/repos/{}/{}/branches".format(owner, repo)
 
         response = self.fetcher.fetch_and_parse_content(url, "json")
 
@@ -42,7 +42,7 @@ class Github:
 
         self.check_ratelimit()
 
-        url = f"https://api.github.com/repos/{owner}/{repo}/actions/artifacts?per_page=1"
+        url = "https://api.github.com/repos/{}/{}/actions/artifacts?per_page=1".format(owner, repo)
 
         response = self.fetcher.fetch_and_parse_content(url, "json")
 
@@ -61,7 +61,7 @@ class Github:
 
         self.check_ratelimit()
 
-        url = f"https://api.github.com/repos/{owner}/{repo}/releases?per_page=1"
+        url = "https://api.github.com/repos/{}/{}/releases?per_page=1".format(owner, repo)
 
         response = self.fetcher.fetch_and_parse_content(url, "json")
 

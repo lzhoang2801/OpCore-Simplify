@@ -345,8 +345,8 @@ class ACPIGuru:
         return None
 
     def write_ssdt(self, ssdt_name, ssdt_content, compile=True):
-        dsl_path = os.path.join(self.acpi_directory, f"{ssdt_name}.dsl")
-        aml_path = os.path.join(self.acpi_directory, f"{ssdt_name}.aml")
+        dsl_path = os.path.join(self.acpi_directory, ssdt_name + ".dsl")
+        aml_path = os.path.join(self.acpi_directory, ssdt_name + ".aml")
 
         with open(dsl_path,"w") as f:
             f.write(ssdt_content)
@@ -425,12 +425,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "IMEI", 0x00000000)
                 imei_device = self.acpi.get_device_paths_with_hid("0x00160000", self.dsdt)
 
                 if not imei_device:
-                    if self.write_ssdt(ssdt_name, ssdt_content):
-                        self.result["Add"].append({
-                            "Comment": comment,
-                            "Enabled": True,
-                            "Path": f"{ssdt_name}.aml"
-                        })
+                    self.result["Add"].append({
+                        "Comment": comment,
+                        "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                        "Path": ssdt_name + ".aml"
+                    })
 
     def add_memory_controller_device(self, cpu_manufacturer, cpu_codename, smbios):
         if "Intel" not in cpu_manufacturer or "MacPro" in smbios and self.is_intel_hedt_cpu(cpu_codename):
@@ -471,12 +470,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
         pci_bus_device = ".".join(self.lpc_bus_device.split(".")[:2])
         ssdt_content = ssdt_content.replace("[[PCIName]]", pci_bus_device)
 
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def add_system_management_bus_device(self, cpu_manufacturer, cpu_codename):
         if "Intel" not in cpu_manufacturer:
@@ -488,10 +486,10 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
             smbus_device_name = "SBUS"
             
         pci_bus_device = ".".join(self.lpc_bus_device.split(".")[:2])
-        smbus_device_path = f"{pci_bus_device}.{smbus_device_name}"
+        smbus_device_path = "{}.{}".format(pci_bus_device, smbus_device_name)
 
         comment = "Add a System Management Bus device to fix AppleSMBus issues"
-        ssdt_name = f"SSDT-{smbus_device_name}"
+        ssdt_name = "SSDT-{}".format(smbus_device_name)
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[SMBUSName]]", 0)
 {
@@ -518,12 +516,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[SMBUSName]]", 0)
     }
 }""".replace("[[SMBUSName]]", smbus_device_name).replace("[[SMBUSDevice]]", smbus_device_path)
 
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def add_usb_power_properties(self, smbios):
         comment = "Creates an USBX device to inject USB power properties"
@@ -597,12 +594,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "USBX", 0x00001000)
                 "".join("\n                    \"{}\",\n                    {}{}".format(key, usb_power_properties[key], "," if index < len(usb_power_properties) else "")
                 for index, key in enumerate(usb_power_properties, start=1))
             )
-            if self.write_ssdt(ssdt_name, ssdt_content):
-                self.result["Add"].append({
-                    "Comment": comment,
-                    "Enabled": True,
-                    "Path": f"{ssdt_name}.aml"
-                })
+            self.result["Add"].append({
+                "Comment": comment,
+                "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                "Path": ssdt_name + ".aml"
+            })
 
     def ambient_light_sensor(self, motherboard_name, platform, integrated_gpu):
         if "Laptop" not in platform or not integrated_gpu or "SURFACE" in motherboard_name:
@@ -663,7 +659,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "ALS0", 0x00000000)
             if sta.get("patches"):
                 self.result["Patch"].extend(sta.get("patches", []))
             
-            ssdt_name = f"SSDT-{als_device_name}"
+            ssdt_name = "SSDT-{}".format(als_device_name)
             ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
 {
@@ -690,12 +686,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
     .replace("[[XSTA]]", "{}.XSTA{}".format(als_device," ()" if sta.get("sta_type","MethodObj") == "MethodObj" else "") if sta else "0x0F")
 
         comment = "{} Ambient Light Sensor device for storing the current brightness/auto-brightness level".format("Fake" if not als_device else "Enable")
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def disable_rhub_devices(self):
         comment = "Disable RHUB/HUBN/URTH devices and rename PXSX, XHC1, EHC1, and EHC2 devices"
@@ -812,12 +807,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
     """.replace("[[device]]", task["device"])
         ssdt_content += "\n}"
 
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def disable_unsupported_device(self, unsupported_devices):
         for device in unsupported_devices:
@@ -902,7 +896,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[DeviceType]]", 0)
                 self.result["Add"].append({
                     "Comment": comment,
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
-                    "Path": f"{ssdt_name}.aml"
+                    "Path": ssdt_name + ".aml"
                 })
   
     def enable_backlight_controls(self, platform, cpu_codename, integrated_gpu):
@@ -1098,12 +1092,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
         # Perform the replacements
         ssdt_content = ssdt_content.replace("[[uid_value]]", str(uid_value)).replace("[[igpu_path]]",igpu)        
         
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def enable_cpu_power_management(self, cpu_codename):
         if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=2):
@@ -1118,7 +1111,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
             cpu_name = None
 
         if cpu_name:
-            ssdt = """
+            ssdt_content = """
 // Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/SSDT-PLUG.dsl
 
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlug", 0x00003000)
@@ -1165,7 +1158,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlug", 0x00003000)
                     pass
             if not proc_list:
                 return
-            ssdt = """
+            ssdt_content = """
 // Resource:  https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-PLUG-ALT.dsl
 
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
@@ -1179,7 +1172,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
                 proc,uid = proc_uid
                 adr = hex(i)[2:].upper()
                 name = "CP00"[:-len(adr)]+adr
-                ssdt += """
+                ssdt_content += """
         Processor ([[name]], [[uid]], 0x00000510, 0x06)
         {
             // [[proc]]
@@ -1197,7 +1190,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
                 }
             }""".replace("[[name]]",name).replace("[[uid]]",uid).replace("[[proc]]",proc)
                 if i == 0: # Got the first, add plugin-type as well
-                    ssdt += """
+                    ssdt_content += """
             Method (_DSM, 4, NotSerialized)
             {
                 If (LNot (Arg2)) {
@@ -1211,18 +1204,17 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
                 })
             }"""
                 # Close up the SSDT
-                ssdt += """
+                ssdt_content += """
         }"""
-            ssdt += """
+            ssdt_content += """
     }
 }"""
 
-        if self.write_ssdt(ssdt_name, ssdt):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def enable_gpio_device(self, platform, cpu_manufacturer, touchpad_communication):
         if "Laptop" not in platform or "Intel" not in cpu_manufacturer or not "I2C" in touchpad_communication:
@@ -1267,12 +1259,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPI0", 0x00000000)
     .replace("[[STAType]]", sta.get("sta_type","MethodObj")) \
     .replace("[[XSTA]]", "{}.XSTA{}".format(gpio_device," ()" if sta.get("sta_type","MethodObj") == "MethodObj" else "") if sta else "0x0F")
 
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
     
     def enable_nvram_support(self, motherboard_chipset):
         if not self.utils.contains_any(["H310", "H370", "B360", "B365", "Z390"], motherboard_chipset) or not self.lpc_bus_device:
@@ -1338,12 +1329,11 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "PMCR", 0x00001000)
     }
 }""".replace("[[LPCPath]]", self.lpc_bus_device)
 
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def fake_embedded_controller(self, platform):
         comment = "Add a fake EC to ensure macOS compatibility"
@@ -1456,24 +1446,24 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "PMCR", 0x00001000)
         #oc = {"Comment":comment,"Enabled":True,"Path":"SSDT-EC.aml"}
         #self.make_plist(oc, "SSDT-EC.aml", patches, replace=True)
         #print("Creating SSDT-EC...")
-        ssdt = """
+        ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "CORP ", "SsdtEC", 0x00001000)
 {
     External ([[LPCName]], DeviceObj)
 """.replace("[[LPCName]]",self.lpc_bus_device)
         for x in ec_to_patch:
-            ssdt += "    External ({}, DeviceObj)\n".format(x)
+            ssdt_content += "    External ({}, DeviceObj)\n".format(x)
             if x in ec_sta:
-                ssdt += "    External ({}.XSTA, {})\n".format(x,ec_sta[x].get("sta_type","MethodObj"))
+                ssdt_content += "    External ({}.XSTA, {})\n".format(x,ec_sta[x].get("sta_type","MethodObj"))
         # Walk the ECs to enable
         for x in ec_to_enable:
-            ssdt += "    External ({}, DeviceObj)\n".format(x)
+            ssdt_content += "    External ({}, DeviceObj)\n".format(x)
             if x in ec_enable_sta:
                 # Add the _STA and XSTA refs as the patch may not be enabled
-                ssdt += "    External ({0}._STA, {1})\n    External ({0}.XSTA, {1})\n".format(x,ec_enable_sta[x].get("sta_type","MethodObj"))
+                ssdt_content += "    External ({0}._STA, {1})\n    External ({0}.XSTA, {1})\n".format(x,ec_enable_sta[x].get("sta_type","MethodObj"))
         # Walk them again and add the _STAs
         for x in ec_to_patch:
-            ssdt += """
+            ssdt_content += """
     Scope ([[ECName]])
     {
         Method (_STA, 0, NotSerialized)  // _STA: Status
@@ -1492,7 +1482,7 @@ DefinitionBlock ("", "SSDT", 2, "CORP ", "SsdtEC", 0x00001000)
     .replace("[[XSTA]]","{}.XSTA{}".format(x," ()" if ec_sta[x].get("sta_type","MethodObj")=="MethodObj" else "") if x in ec_sta else "0x0F")
         # Walk them yet again - and force enable as needed
         for x in ec_to_enable:
-            ssdt += """
+            ssdt_content += """
     If (LAnd (CondRefOf ([[ECName]].XSTA), LNot (CondRefOf ([[ECName]]._STA))))
     {
         Scope ([[ECName]])
@@ -1514,7 +1504,7 @@ DefinitionBlock ("", "SSDT", 2, "CORP ", "SsdtEC", 0x00001000)
     .replace("[[XSTA]]","{}.XSTA{}".format(x," ()" if ec_enable_sta[x].get("sta_type","MethodObj")=="MethodObj" else "") if x in ec_enable_sta else "Zero")
         # Create the faked EC
         if not laptop or not named_ec:
-            ssdt += """
+            ssdt_content += """
     Scope ([[LPCName]])
     {
         Device (EC)
@@ -1534,15 +1524,15 @@ DefinitionBlock ("", "SSDT", 2, "CORP ", "SsdtEC", 0x00001000)
         }
     }""".replace("[[LPCName]]", self.lpc_bus_device)
         # Close the SSDT scope
-        ssdt += """
+        ssdt_content += """
 }"""
         
-        if self.write_ssdt(ssdt_name, ssdt):
+        if self.write_ssdt(ssdt_name, ssdt_content):
             self.result.get("Patch").extend(patches)
             self.result["Add"].append({
                 "Comment": comment,
                 "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
+                "Path": ssdt_name + ".aml"
             })
 
     def fix_hp_005_post_error(self, motherboard_name):
@@ -1623,12 +1613,11 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
     }
 }""".replace("[[MACAddress]]", mac_address_byte)
 
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def is_intel_hedt_cpu(self, cpu_codename):
         return "-E" in cpu_codename and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=4) is None or \
@@ -2017,12 +2006,11 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
     }
 }"""
 
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def fix_system_clock_awac(self, motherboard_chipset):
         if not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=85):
@@ -2132,7 +2120,7 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
         # 3. Fake RTC if needed
 
         ssdt_name = "SSDT-RTCAWAC"
-        ssdt = """//
+        ssdt_content = """//
 // Original sources from Acidanthera:
 //  - https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/SSDT-AWAC.dsl
 //  - https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/SSDT-RTC0.dsl
@@ -2142,7 +2130,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
 {
 """
         if any(x.get("has_var") for x in (awac_dict,rtc_dict)):
-            ssdt += """    External (STAS, IntObj)
+            ssdt_content += """    External (STAS, IntObj)
     Scope (\\)
     {
         Method (_INI, 0, NotSerialized)  // _INI: Initialize
@@ -2160,7 +2148,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
             # have an _STA (which would be renamed)
             macos,original = ("Zero","0x0F") if x.get("dev_hid") == "ACPI000E" else ("0x0F","Zero")
             if x.get("sta"):
-                ssdt += """    External ([[DevPath]], DeviceObj)
+                ssdt_content += """    External ([[DevPath]], DeviceObj)
     External ([[DevPath]].XSTA, [[sta_type]])
     Scope ([[DevPath]])
     {
@@ -2182,7 +2170,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
 """.replace("[[DevPath]]",x["device"][0]).replace("[[Original]]",original).replace("[[macOS]]",macos).replace("[[sta_type]]",x["sta_type"]).replace("[[called]]"," ()" if x["sta_type"]=="MethodObj" else "")
             elif x.get("dev_hid") == "ACPI000E":
                 # AWAC device with no STAS, and no _STA - let's just add one
-                ssdt += """    External ([[DevPath]], DeviceObj)
+                ssdt_content += """    External ([[DevPath]], DeviceObj)
     Scope ([[DevPath]])
     {
         Method (_STA, 0, NotSerialized)  // _STA: Status
@@ -2200,7 +2188,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
 """.replace("[[DevPath]]",x["device"][0])
         # Check if we need to setup an RTC range correction
         if rtc_range_needed and rtc_crs_type.lower() == "buffobj" and crs_lines and rtc_dict.get("valid"):
-            ssdt += """    External ([[DevPath]], DeviceObj)
+            ssdt_content += """    External ([[DevPath]], DeviceObj)
     External ([[DevPath]].XCRS, [[type]])
     Scope ([[DevPath]])
     {
@@ -2227,7 +2215,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
     .replace("[[NewCRS]]","\n".join([(" "*8)+x for x in crs_lines]))
         # Check if we do not have an RTC device at all
         if not rtc_dict.get("valid") and lpc_name:
-            ssdt += """    External ([[LPCName]], DeviceObj)    // (from opcode)
+            ssdt_content += """    External ([[LPCName]], DeviceObj)    // (from opcode)
     Scope ([[LPCName]])
     {
         Device (RTC0)
@@ -2258,14 +2246,14 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
         }
     }
 """.replace("[[LPCName]]",lpc_name)
-        ssdt += "}"
+        ssdt_content += "}"
         
-        if self.write_ssdt(ssdt_name, ssdt):
+        if self.write_ssdt(ssdt_name, ssdt_content):
             self.result.get("Patch").extend(rtc_dict["patches"])
             self.result["Add"].append({
                 "Comment": comment,
                 "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
+                "Path": ssdt_name + ".aml"
             })
 
     def fix_system_clock_hedt(self, motherboard_chipset, macos_version):
@@ -2389,12 +2377,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
 }"""
         
         ssdt_content = ssdt_content.replace("[[LPCPath]]", self.lpc_bus_device).replace("[[RTCName]]", rtc_device_name)
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def instant_wake_fix(self):        
         comment = "Fix sleep state values in _PRW methods to prevent immediate wake in macOS"
@@ -2431,9 +2418,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
         if binascii.unhexlify(gprw_method[2:]) in self.dsdt.get("raw"):
             ssdt_content += """\n    External(XPRW, MethodObj)"""
         if uswe_object:
-            ssdt_content += f"\n    External (USWE, FieldUnitObj)"
+            ssdt_content += "\n    External (USWE, FieldUnitObj)"
         if wole_object:
-            ssdt_content += f"\n    External (WOLE, FieldUnitObj)"
+            ssdt_content += "\n    External (WOLE, FieldUnitObj)"
         if uswe_object or wole_object:
             ssdt_content += """\n
     Scope (\\)
@@ -2441,9 +2428,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
         If (_OSI ("Darwin"))
         {"""
             if uswe_object:
-                ssdt_content += f"\n            USWE = Zero"
+                ssdt_content += "\n            USWE = Zero"
             if wole_object:
-                ssdt_content += f"\n            WOLE = Zero"
+                ssdt_content += "\n            WOLE = Zero"
             ssdt_content += """        }
     }"""
         if binascii.unhexlify(gprw_method) in self.dsdt.get("raw"):
@@ -2499,12 +2486,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
         Return (XPRW (Arg0, Arg1))
     }"""
         ssdt_content += "\n}"
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def fix_uncore_bridge(self, motherboard_chipset, macos_version):
         if macos_version < 20 or not self.utils.contains_any(["X79", "C602", "Patsburg", "C612", "X99", "Wellsburg"], motherboard_chipset):
@@ -2553,12 +2539,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UNC", 0x00000000)
     }
 }"""
 
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def operating_system_patch(self, platform):
         if not "Laptop" in platform:
@@ -2590,7 +2575,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "XOSI", 0x00001000)
             Return (_OSI (Arg0))
         }
     }
-}""".replace("[[OSIStrings]]", "\n,".join([f"            \"{osi_string}\"" for target_os, osi_string in self.osi_strings.items() if osi_string in self.dsdt.get("table")]))
+}""".replace("[[OSIStrings]]", "\n,".join(["            \"{}\"".format(osi_string) for target_os, osi_string in self.osi_strings.items() if osi_string in self.dsdt.get("table")]))
 
         osid = self.acpi.get_method_paths("OSID")
         if osid:
@@ -2614,12 +2599,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "XOSI", 0x00001000)
             "Replace": "584F5349"
         })
         
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def surface_laptop_special_patch(self, motherboard_name, platform):
         if "Surface".upper() not in motherboard_name or "Laptop" not in platform:
@@ -2744,12 +2728,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
     }
 }""" 
 
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": f"{ssdt_name}.aml"
-            })
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": ssdt_name + ".aml"
+        })
 
     def battery_status_check(self, platform):
         if "Laptop" not in platform:
@@ -2782,7 +2765,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
             self.utils.head("Select ACPI Tables")
             print("")
             if sys.platform == "win32":
-                print("To manually dump ACPI tables, open Command Prompt and enter the following\ncommands in sequence:")
+                print("To manually dump ACPI tables, open Command Prompt and enter the following commands in sequence:")
                 print("")
                 print("  > cd \"{}\"".format(results_path.replace("/", "\\")))
                 print("  > mkdir ACPITables")
@@ -2850,7 +2833,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DTGP", 0x00001000)
         self.result["Add"].append({
             "Comment": comment,
             "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": f"{ssdt_name}.aml"
+            "Path": ssdt_name + ".aml"
         })
 
     def spoof_discrete_gpu(self, discrete_gpu):
@@ -2904,7 +2887,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
         self.result["Add"].append({
             "Comment": comment,
             "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
-            "Path": f"{ssdt_name}.aml"
+            "Path": ssdt_name + ".aml"
         })
 
     def initialize_patches(self, motherboard_name, motherboard_chipset, platform, cpu_manufacturer, cpu_codename, integrated_gpu, discrete_gpu, ethernet_pci, touchpad_communication, smbios, intel_mei, unsupported_devices, macos_version, acpi_directory):

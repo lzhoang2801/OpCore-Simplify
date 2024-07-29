@@ -16,7 +16,7 @@ class AIDA64:
                     return file.read()
             except UnicodeDecodeError:
                 continue
-        raise UnicodeDecodeError(f"Unable to decode file {file_path} with given encodings")
+        raise UnicodeDecodeError("Unable to decode file {} with given encodings".format(file_path))
 
     def hardware_id(self, hardware_id):
         if "VEN" in hardware_id:
@@ -212,7 +212,7 @@ class AIDA64:
             if bus_type.endswith("AUDIO") or bus_type.endswith("USB"):
                 if device_props.get("Device ID", "Unknown") not in audio_device_ids:
                     occurrences = self.count_keys(audio_devices_info, device_name)
-                    unique_device_name = f"{device_name}_#{occurrences}" if occurrences > 0 else device_name
+                    unique_device_name = "{}_#{}".format(device_name, occurrences) if occurrences > 0 else device_name
                     audio_devices_info[unique_device_name] = {
                         "Bus Type": bus_type,
                         "{} ID".format("USB" if bus_type.endswith("USB") else "Codec"): device_props.get("Device ID", "Unknown")
@@ -301,7 +301,7 @@ class AIDA64:
             device_props = device_data.get("Device Properties", {})
             manufacturer = device_props.get("Manufacturer", None)
             product = device_props.get("Product", None)
-            device_description = f"{manufacturer} {product}" if manufacturer and product else product if product else None
+            device_description = "{} {}".format(manufacturer, product) if manufacturer and product else product if product else None
 
             if not device_description:
                 device_id = device_props.get("Device ID", None)
@@ -314,7 +314,7 @@ class AIDA64:
                         device_description = self.utils.search_dict_iter(windows_devices, hardware_id).get("Driver Description", device_name)
 
             occurrences = self.count_keys(usb_info["USB Devices"], device_description)
-            device_description = f"{device_description}_#{occurrences}" if occurrences > 0 else device_description
+            device_description = "{}_#{}".format(device_description, occurrences) if occurrences > 0 else device_description
 
             if "Hub" not in device_description and "Billboard" not in device_description and not "0000-0000" in device_props.get("Device ID"):
                 usb_info["USB Devices"][device_description] = {
@@ -361,7 +361,7 @@ class AIDA64:
             device_props = device_data.get("Device Properties", device_data)
             device_class = device_props.get("Device Class", "Unknown")
 
-            if self.utils.contains_any(["SD Host Controller", "Card Reader", "SDHC", "SDXC", "SDUC", " SD ", "MMC"], f"{device_name} {device_class}"):
+            if self.utils.contains_any(["SD Host Controller", "Card Reader", "SDHC", "SDXC", "SDUC", " SD ", "MMC"], device_name + " " + device_class):
                 hardware["SD Controller"] = {
                     "Device Description": device_name,
                     "Bus Type": "PCI" if device_props.get("Bus Type", "Unknown").startswith("PCI") else "USB",
@@ -453,11 +453,11 @@ class AIDA64:
                 device_name = full_key[category_idx + 3:]
 
             if not category_name:
-                parsed_dmi[f"{full_key}{occurrence_suffix}"] = item_value
+                parsed_dmi["{}{}".format(full_key, occurrence_suffix)] = item_value
             else:
                 if category_name not in parsed_dmi:
                     parsed_dmi[category_name] = {}
-                parsed_dmi[category_name][f"{device_name}{occurrence_suffix}"] = item_value
+                parsed_dmi[category_name]["{}{}".format(device_name, occurrence_suffix)] = item_value
 
         return parsed_dmi
      
@@ -483,7 +483,7 @@ class AIDA64:
 
             # Count occurrences of device name within category
             occurrences = self.count_keys(parsed_windows_devices[category_name], device_name)
-            device_name = f"{device_name}_#{occurrences}" if occurrences > 0 else device_name
+            device_name = "{}_#{}".format(device_name, occurrences) if occurrences > 0 else device_name
 
             # Add device to category dictionary
             parsed_windows_devices[category_name][device_name] = device_props
@@ -560,7 +560,7 @@ class AIDA64:
                     # Add the new key-value pair
                     current_dict = stack[-1][0]
                     occurrences = self.count_keys(current_dict, key)
-                    key = f"{key}_#{occurrences}" if occurrences > 0 else key
+                    key = "{}_#{}".format(key, occurrences) if occurrences > 0 else key
 
                     if value is None:
                         new_dict = {}

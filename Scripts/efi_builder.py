@@ -364,7 +364,7 @@ class builder:
                     os.remove(path)
             except Exception as e:
                 error = True
-                print(f"\nFailed to remove file: {e}", end="")
+                print("\nFailed to remove file: {}".format(e), end="")
                 continue
 
         if error:
@@ -377,7 +377,7 @@ class builder:
         self.utils.mkdirs(efi_directory)
         
         if not os.path.exists(self.kext.ock_files_dir):
-            raise Exception(f"Directory '{self.kext.ock_files_dir}' does not exist.")
+            raise Exception("Directory '{}' does not exist.".format(self.kext.ock_files_dir))
         
         source_efi_dir = os.path.join(self.kext.ock_files_dir, "OpenCore")
         shutil.copytree(source_efi_dir, efi_directory, dirs_exist_ok=True)
@@ -498,7 +498,7 @@ class builder:
         config_data = self.utils.read_file(config_file)
         
         if not config_data:
-            raise Exception(f"Error: The file {config_file} does not exist.")
+            raise Exception("Error: The file {} does not exist.".format(config_file))
         
         self.config.genarate(hardware_shorc, efi_option, config_data)
         self.utils.write_file(config_file, config_data)

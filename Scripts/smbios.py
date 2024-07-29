@@ -28,7 +28,7 @@ class SMBIOS:
                     self.utils.write_file(self.g.download_history_file, download_history)
 
             if quit:
-                raise Exception(f"{macserial_name} not found. Please reopen the program to download it")
+                raise Exception("{} not found. Please reopen the program to download it".format(macserial_name))
         else:
             return macserial_path
 

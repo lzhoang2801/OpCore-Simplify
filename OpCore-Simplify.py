@@ -89,7 +89,7 @@ class OCPE:
                         for device_name_child, device_props_child in device_props.items():
                             contents.append("{}- {}".format(" "*8, device_name_child))
                     else:
-                        contents.append("{}* {}{}".format(" "*4, device_name, f": {device_props}" if isinstance(device_props, str) else ""))
+                        contents.append("{}* {}{}".format(" "*4, device_name, ": {}".format(device_props) if isinstance(device_props, str) else ""))
         content = "\n".join(contents) + "\n"
         self.u.adjust_window_size(content)
         print(content)
@@ -168,7 +168,7 @@ class OCPE:
                 elif path.startswith("itlwm"):
                     path += " ({})".format(self.u.message("use the HeliPort app to connect to WiFi", "reminder"))
                 full_path = os.path.join(dir_path, path)
-                content += f"{prefix + pointer + path}\n"
+                content += prefix + pointer + path + "\n"
                 if os.path.isdir(full_path) and not ".kext" in os.path.splitext(path)[1]:
                     extension = '│   ' if pointer == '├── ' else '    '
                     if "Resources" in path:
@@ -180,7 +180,7 @@ class OCPE:
 
         efi_dir = os.path.join(self.result_dir, "EFI")
         content = "\nYour OpenCore EFI for {} has been built at:".format(self.hardware.get("Motherboard").get("Motherboard Name"))
-        content += f"\n\t{self.result_dir}\n"
+        content += "\n\t{}\n".format(self.result_dir)
         content += "\nEFI\n{}\n".format(generate_tree_content(efi_dir))
         self.u.adjust_window_size(content)
 

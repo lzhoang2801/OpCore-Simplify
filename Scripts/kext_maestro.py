@@ -563,23 +563,23 @@ class KextMaestro:
                 for pci_id in pci_list:
                     vendor_id = pci_id[-4:]
                     device_id = pci_id[2:6]
-                    pci_ids.append(f"{vendor_id}-{device_id}".upper())
+                    pci_ids.append("{}-{}".format(vendor_id, device_id).upper())
             elif match_key == "IONameMatch":
                 # Process IONameMatch keys
                 for pci_id in properties[match_key]:
                     vendor_id = pci_id[3:7]
                     device_id = pci_id[-4:]
-                    pci_ids.append(f"{vendor_id}-{device_id}".upper())
+                    pci_ids.append("{}-{}".format(vendor_id, device_id).upper())
             elif match_key == "idProduct":
                 # Process idProduct and idVendor
                 vendor_id = self.utils.int_to_hex(properties["idVendor"]).zfill(4)
                 device_id = self.utils.int_to_hex(properties["idProduct"]).zfill(4)
-                pci_ids.append(f"{vendor_id}-{device_id}".upper())
+                pci_ids.append("{}-{}".format(vendor_id, device_id).upper())
             elif match_key == "HDAConfigDefault":
                 # Handle AppleALC configurations
                 for codec_layout in properties[match_key]:
                     codec_id = self.utils.int_to_hex(codec_layout.get("CodecID")).zfill(8)
-                    pci_ids.append(f"{codec_id[:4]}-{codec_id[-4:]}")
+                    pci_ids.append("{}-{}".format(codec_id[:4], codec_id[-4:]))
                 pci_ids = sorted(list(set(pci_ids)))
 
         return pci_ids
@@ -708,7 +708,7 @@ class KextMaestro:
     def install_kexts_to_efi(self, kexts, macos_version, kexts_directory):
         for kext_name in kexts:
             if "AirportItlwm" in kext_name:
-                kext_name = f"{kext_name}{macos_version}"
+                kext_name = "{}{}".format(kext_name, macos_version)
             elif "BlueToolFixup" in kext_name or "BrcmPatchRAM" in kext_name:
                 kext_name = "BrcmPatchRAM"
 

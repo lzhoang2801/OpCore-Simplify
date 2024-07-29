@@ -17,7 +17,7 @@ class ResourceFetcher:
                 cafile = certifi.where()
             ssl_context = ssl.create_default_context(cafile=cafile)
         except Exception as e:
-            print(f"SSL Context Creation Error: {e}")
+            print("SSL Context Creation Error: {}".format(e))
             ssl_context = ssl._create_unverified_context()
         return ssl_context
 
@@ -43,7 +43,7 @@ class ResourceFetcher:
             
             bytes_downloaded = 0
             
-            print(f"Download from {resource_url}")
+            print("Download from {}".format(resource_url))
             
             with open(destination_path, 'wb') as file_writer:
                 while True:
@@ -53,4 +53,4 @@ class ResourceFetcher:
                     file_writer.write(chunk)
                     bytes_downloaded += len(chunk)
                     if total_size != -1:
-                        print(f"Downloaded {bytes_downloaded / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB", end='\r')
+                        print("Downloaded {:.2f} MB of {:.2f} MB".format(bytes_downloaded / (1024 * 1024), total_size / (1024 * 1024)), end='\r')

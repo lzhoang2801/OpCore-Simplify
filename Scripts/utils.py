@@ -63,7 +63,7 @@ class Utils:
         found_paths = []
 
         if not os.path.exists(directory):
-            print(f"Error: The directory {directory} does not exist.")
+            print("Error: The directory {} does not exist.".format(directory))
             return found_paths
         
         for root, dirs, files in os.walk(directory):
@@ -197,12 +197,12 @@ class Utils:
         if text == None:
             text = self.script_name
         separator = "#" * width
-        title = f" {text} "
+        title = " {} ".format(text)
         if len(title) > width - 2:
             title = title[:width-4] + "..."
         title = title.center(width - 2)  # Center the title within the width minus 2 for the '#' characters
         
-        print(f"{separator}\n#{title}#\n{separator}")
+        print("{}\n#{}#\n{}".format(separator, title, separator))
     
     def adjust_window_size(self, content=""):
         lines = content.splitlines()
@@ -227,7 +227,7 @@ class Utils:
         else:
             color_code = RESET
 
-        return f"{color_code}{text}{RESET}"
+        return "{}{}{}".format(color_code, text, RESET)
 
     def exit_program(self, custom_content=""):
         self.head()

@@ -13,7 +13,7 @@ class gatheringFiles:
         self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher(self.github.headers)
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
-        self.amd_vanilla_patches_url = f"https://raw.githubusercontent.com/AMD-OSX/AMD_Vanilla/beta/patches.plist"
+        self.amd_vanilla_patches_url = "https://raw.githubusercontent.com/AMD-OSX/AMD_Vanilla/beta/patches.plist"
         self.temporary_dir = tempfile.mkdtemp()
         self.ock_files_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "OCK_Files")
         self.download_history_file = os.path.join(self.ock_files_dir, "history.json")
@@ -220,7 +220,7 @@ class gatheringFiles:
     
     def move_bootloader_kexts_to_product_directory(self, product_name):
         if not os.path.exists(self.temporary_dir):
-            raise FileNotFoundError(f"The directory {self.temporary_dir} does not exist.")
+            raise FileNotFoundError("The directory {} does not exist.".format(self.temporary_dir))
         
         if not "OpenCore" in product_name:
             kext_paths = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), ".kext")
@@ -306,7 +306,7 @@ class gatheringFiles:
         self.utils.head("Gathering Files")
         print("")
         print("Please wait for download AMD Vanilla Patches")
-        print(f"from {self.amd_vanilla_patches_url}")
+        print("from " + self.amd_vanilla_patches_url)
         print("")
         
         try:

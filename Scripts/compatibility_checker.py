@@ -14,7 +14,7 @@ class CompatibilityChecker:
     def check_cpu_compatibility(self, processor_name, instruction_set):
         if "x86-64" not in instruction_set or "SSE4" not in instruction_set:
             self.max_supported_macos_version = self.min_supported_macos_version = -1
-            self.unsupported_devices.append(f"CPU: {processor_name}")
+            self.unsupported_devices.append("CPU: {}".format(processor_name))
             return
         
         if "SSE4.2" not in instruction_set:
@@ -101,7 +101,7 @@ class CompatibilityChecker:
                         is_supported_discrete_gpu = is_supported_gpu = False
 
             if not is_supported_gpu:
-                self.unsupported_devices.append(f"{device_type}: {gpu_name}")
+                self.unsupported_devices.append("{}: {}".format(device_type, gpu_name))
             else:
                 supported_gpus[gpu_name] = gpu_props
 
@@ -124,7 +124,7 @@ class CompatibilityChecker:
             else:
                 if "Audio Endpoints" in audio_props:
                     audio_endpoint = ",".join(audio_props.get("Audio Endpoints"))
-                self.unsupported_devices.append("Audio: {}{}".format(audio_device, "" if not audio_endpoint else f" ({audio_endpoint})"))
+                self.unsupported_devices.append("Audio: {}{}".format(audio_device, "" if not audio_endpoint else " ({})".format(audio_endpoint)))
         
         return supported_audio
 
@@ -132,7 +132,7 @@ class CompatibilityChecker:
         biometric = hardware.get("Biometric", {})
         if biometric:
             for biometric_device, biometric_props in biometric.items():
-                self.unsupported_devices.append(f"Biometric: {biometric_device}")
+                self.unsupported_devices.append("Biometric: {}".format(biometric_device))
             
             del hardware["Biometric"]
 
@@ -150,7 +150,7 @@ class CompatibilityChecker:
                     self.min_supported_macos_version = 19
 
             if not is_device_supported:
-                self.unsupported_devices.append(f"{connection_name}: {device_name}")
+                self.unsupported_devices.append("{}: {}".format(connection_name, device_name))
             else:
                 supported_network[device_name] = device_props
 
