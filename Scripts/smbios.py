@@ -50,9 +50,9 @@ class SMBIOS:
         first_serial = result.stdout.decode().splitlines()[0]
 
         return {
-            "MLB": "A" + "0"*15 + "Z" if " | " in first_serial else first_serial.split(" | ")[-1],
+            "MLB": "A" + "0"*15 + "Z" if not " | " in first_serial else first_serial.split(" | ")[-1],
             "ROM": random_mac_address,
             "SystemProductName": product_name,
-            "SystemSerialNumber": "A" + "0"*10 + "9" if " | " in first_serial else first_serial.split(" | ")[0],
+            "SystemSerialNumber": "A" + "0"*10 + "9" if not " | " in first_serial else first_serial.split(" | ")[0],
             "SystemUUID": str(uuid.uuid4()).upper(),
         }
