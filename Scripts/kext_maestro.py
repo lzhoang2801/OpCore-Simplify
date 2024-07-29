@@ -594,7 +594,7 @@ class KextMaestro:
         if macos_version > 22 or custom_cpu_name or "MacPro7,1" in smbios:
             kexts.append("RestrictEvents")
 
-        if codec_id in pci_data.CodecIDs:
+        if codec_id in pci_data.CodecIDs and not ("AMD" in cpu_manufacturer and macos_version > 23):
             kexts.append("AppleALC")
         
         if "AMD" in cpu_manufacturer and macos_version > 21 or int(cpu_configuration) > 1 and macos_version > 18:
