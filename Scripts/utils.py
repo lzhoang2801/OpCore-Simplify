@@ -156,8 +156,8 @@ class Utils:
             # Remove redundant slashes
             path = re.sub(r'/+', '/', path)
         else:
-            # Replace backslashes with forward slashes
-            path = path.replace('\\', '/')
+            # Remove backslashes
+            path = path.replace('\\', '')
         
         # Normalize the path
         path = os.path.normpath(path)
