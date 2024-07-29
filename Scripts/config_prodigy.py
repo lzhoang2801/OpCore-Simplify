@@ -244,14 +244,7 @@ class ConfigProdigy:
         del config["#WARNING - 3"]
         del config["#WARNING - 4"]
         config["ACPI"]["Add"] = efi_option.get("ACPI").get("Add")
-        if not self.is_intel_hedt_cpu(hardware.get("CPU Codename")) and not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), end=2) is None:
-            for item in config["ACPI"]["Delete"]:
-                item.update({
-                    "All": True, 
-                    "Enabled": True
-                })
-        else:
-            config["ACPI"]["Delete"] = []
+        config["ACPI"]["Delete"] = efi_option.get("ACPI").get("Delete")
         config["ACPI"]["Patch"] = efi_option.get("ACPI").get("Patch")
 
         config["Booter"]["MmioWhitelist"] = self.mmio_whitelist(hardware.get("CPU Codename"))

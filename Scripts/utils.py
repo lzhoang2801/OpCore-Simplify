@@ -110,23 +110,21 @@ class Utils:
             return string
     
     def int_to_hex(self, number):
-        try:
-            return format(number, '02X')
-        except:
-            return number
+        return format(number, '02X')
 
     def hex_to_int(self, hex_string):
         return int(hex_string, 16)
     
-    def to_little_endian_hex(self, hex_str):
-        hex_str = hex_str.lower().lstrip("0x")
-                
-        hex_str = hex_str.zfill(8)
+    def to_little_endian_hex(self, hex_string):
+        hex_string = hex_string.lower().lstrip("0x").zfill(8)
 
-        little_endian_hex = ''.join(reversed([hex_str[i:i+2] for i in range(0, len(hex_str), 2)]))
+        little_endian_hex = ''.join(reversed([hex_string[i:i+2] for i in range(0, len(hex_string), 2)]))
         
         return little_endian_hex.upper()
-
+    
+    def string_to_hex(self, string):
+        return ''.join(format(ord(char), '02X') for char in string)
+    
     def extract_zip_file(self, zip_path, extraction_directory=None):
         if extraction_directory is None:
             extraction_directory = os.path.splitext(zip_path)[0]

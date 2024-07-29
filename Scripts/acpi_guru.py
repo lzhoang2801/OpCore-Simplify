@@ -76,6 +76,7 @@ class ACPIGuru:
         self.illegal_names = ("XHC1", "EHC1", "EHC2", "PXSX")
         self.result = {
             "Add": [],
+            "Delete": [],
             "Patch": []
         }
 
@@ -2890,6 +2891,53 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
             "Path": ssdt_name + ".aml"
         })
 
+    def dropping_the_table(self, signature=None, oemtableid=None):
+        table_data = self.acpi.get_table_with_signature(signature) or self.acpi.get_table_with_id(oemtableid)
+
+        if not table_data:
+            return
+        
+        print(list(table_data.items())[-4:])
+        
+        self.result["Delete"].append({
+            "All": True,
+            "Comment": "Delete {}".format(signature or oemtableid),
+            "Enabled": True,
+            "OemTableId": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("id"))),
+            "TableLength": 0,
+            "TableSignature": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("signature")))
+        })
+
+    def fix_apic_processor_id(self, cpu_codename):
+        self.apic = self.acpi.get_table_with_signature("APIC")
+        processors = [line for line in self.dsdt.get("lines") if line.strip().startswith("Processor")]
+
+        if not self.is_intel_hedt_cpu(cpu_codename) or not self.apic or not processors:
+            return
+
+        processor_index = -1
+        for index, line in enumerate(self.apic.get("lines")):
+            if "Subtable Type" in line and "[Processor Local APIC]" in line:
+                processor_index += 1
+                apic_processor_id = self.apic["lines"][index + 2][-2:]
+                try:
+                    dsdt_processor_id = processors[processor_index].split("0x")[1].split(",")[0]
+                except:
+                    return
+                if processor_index == 0 and apic_processor_id == dsdt_processor_id:
+                    break
+                self.apic["lines"][index + 2] = self.apic["lines"][index + 2][:-2] + dsdt_processor_id
+
+        if processor_index != -1:
+            if self.write_ssdt("APIC", "\n".join(self.apic.get("lines"))):
+                self.result["Add"].append({
+                    "Comment": "Avoid kernel panic by pointing the first CPU entry to an active CPU on HEDT systems",
+                    "Enabled": True,
+                    "Path": "APIC.aml"
+                })
+                self.dropping_the_table("APIC")
+            self.utils.request_input()
+
     def initialize_patches(self, motherboard_name, motherboard_chipset, platform, cpu_manufacturer, cpu_codename, integrated_gpu, discrete_gpu, ethernet_pci, touchpad_communication, smbios, intel_mei, unsupported_devices, macos_version, acpi_directory):
         self.acpi_directory = self.check_acpi_directory(acpi_directory)
 
@@ -2910,6 +2958,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
             self.enable_gpio_device(platform, cpu_manufacturer, touchpad_communication)
             self.enable_nvram_support(motherboard_chipset)
             self.fake_embedded_controller(platform)
+            self.fix_apic_processor_id(cpu_codename)
             self.fix_hp_005_post_error(motherboard_name)
             self.fix_irq_conflicts(platform, cpu_codename)
             self.fix_system_clock_awac(motherboard_chipset)
