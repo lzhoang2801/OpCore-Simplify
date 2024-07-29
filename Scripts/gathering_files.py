@@ -219,16 +219,14 @@ class gatheringFiles:
         return None
     
     def move_bootloader_kexts_to_product_directory(self, product_name):
-        product_directory = os.path.join(self.ock_files_dir, product_name)
-
         if not os.path.exists(self.temporary_dir):
             raise FileNotFoundError(f"The directory {self.temporary_dir} does not exist.")
         
         if not "OpenCore" in product_name:
-            kext_paths = self.utils.recursively_search(self.temporary_dir, ".kext")
+            kext_paths = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), ".kext")
             for kext_path in kext_paths:
-                source_kext_path = os.path.join(self.temporary_dir, kext_path)
-                destination_kext_path = os.path.join(product_directory, os.path.basename(kext_path))
+                source_kext_path = os.path.join(self.temporary_dir, product_name, kext_path)
+                destination_kext_path = os.path.join(self.ock_files_dir, product_name, os.path.basename(kext_path))
                 
                 if "Contents" in kext_path or "Debug".lower() in kext_path.lower():
                     continue
@@ -237,17 +235,16 @@ class gatheringFiles:
         else:
             source_bootloader_path = os.path.join(self.temporary_dir, product_name, "X64", "EFI")
             if os.path.exists(source_bootloader_path):
-                destination_efi_path = os.path.join(product_directory, os.path.basename(source_bootloader_path))
+                destination_efi_path = os.path.join(self.ock_files_dir, product_name, os.path.basename(source_bootloader_path))
                 shutil.move(source_bootloader_path, destination_efi_path)
                 source_config_path = os.path.join(os.path.dirname(os.path.dirname(source_bootloader_path)), "Docs", "Sample.plist")
                 destination_config_path = os.path.join(destination_efi_path, "OC", "config.plist")
                 shutil.move(source_config_path, destination_config_path)
-            macserial_paths = self.utils.recursively_search(self.temporary_dir, product_name, matching_file_name_pattern="macserial")
+            macserial_paths = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), target_name_pattern="macserial")
             if macserial_paths:
                 for macserial_path in macserial_paths:
-                    file_name = os.path.basename(macserial_path)
-                    source_macserial_path = os.path.join(self.temporary_dir, macserial_path)
-                    destination_macserial_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), file_name)
+                    source_macserial_path = os.path.join(self.temporary_dir, product_name, macserial_path)
+                    destination_macserial_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.path.basename(macserial_path))
                     shutil.move(source_macserial_path, destination_macserial_path)
                     if os.name != "nt":
                         subprocess.run(["chmod", "+x", destination_macserial_path])
@@ -285,6 +282,7 @@ class gatheringFiles:
 
             zip_path = os.path.join(self.temporary_dir, product_data.get("product_name")) + ".zip"
             self.fetcher.download_and_save_file(product_data.get("url"), zip_path)
+
             if self.move_bootloader_kexts_to_product_directory(product_data.get("product_name")):
                 if product_index is None:
                     download_history["versions"].append({

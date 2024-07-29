@@ -6,6 +6,7 @@ import re
 import binascii
 import subprocess
 import pathlib
+import zipfile
 
 class Utils:
     def __init__(self, script_name = "OpCore Simplify"):
@@ -58,32 +59,28 @@ class Utils:
 
         return {}
 
-    def recursively_search(self, directory, matching_file_extension=None, matching_file_name_pattern=None, parent_directory=""):
-        matching_paths = []
+    def find_matching_paths(self, directory, target_file_extension=None, target_name_pattern=None):
+        found_paths = []
 
         if not os.path.exists(directory):
             print(f"Error: The directory {directory} does not exist.")
-            return matching_paths
-
-        for child_directory in os.listdir(directory):
-            if "MACOSX" in child_directory or "dSYM" in child_directory:
+            return found_paths
+        
+        for root, dirs, files in os.walk(directory):
+            if "MACOSX" in root:
                 continue
 
-            file_name = os.path.splitext(os.path.basename(child_directory))[0]
-            file_extension = os.path.splitext(os.path.basename(child_directory))[1]
+            if target_file_extension and root.endswith(target_file_extension) or target_name_pattern and target_name_pattern in root:
+                if not os.path.exists(os.path.join(root, os.path.basename(root))):
+                    found_paths.append(root.replace(directory, "")[1:])
 
-            if (matching_file_extension is not None and matching_file_extension == file_extension) or (matching_file_name_pattern is not None and matching_file_name_pattern in file_name):
-                path = os.path.join(parent_directory, child_directory)
-                full_path = os.path.join(directory, child_directory)
+            for file in files:
+                file_name, file_extension = os.path.splitext(file)
 
-                if not os.path.isdir(full_path) or not os.path.exists(os.path.join(full_path, file_name + file_extension)):
-                    matching_paths.append(path)
+                if target_file_extension and file_extension.endswith(target_file_extension) or target_name_pattern and target_name_pattern in file_name:
+                    found_paths.append(os.path.join(root, file).replace(directory, "")[1:])
 
-            child_directory = os.path.join(directory, child_directory)
-            if os.path.isdir(child_directory):
-                matching_paths.extend(self.recursively_search(child_directory, matching_file_extension, matching_file_name_pattern, os.path.join(parent_directory, os.path.basename(child_directory))))
-
-        return matching_paths
+        return found_paths
 
     def sort_dict_by_key(self, input_dict, sort_key):
         return dict(sorted(input_dict.items(), key=lambda item: item[1].get(sort_key, "")))
