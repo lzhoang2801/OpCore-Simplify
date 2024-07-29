@@ -2896,9 +2896,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
 
         if not table_data:
             return
-        
-        print(list(table_data.items())[-4:])
-        
+                
         self.result["Delete"].append({
             "All": True,
             "Comment": "Delete {}".format(signature or oemtableid),
@@ -2936,7 +2934,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
                     "Path": "APIC.aml"
                 })
                 self.dropping_the_table("APIC")
-            self.utils.request_input()
 
     def initialize_patches(self, motherboard_name, motherboard_chipset, platform, cpu_manufacturer, cpu_codename, integrated_gpu, discrete_gpu, ethernet_pci, touchpad_communication, smbios, intel_mei, unsupported_devices, macos_version, acpi_directory):
         self.acpi_directory = self.check_acpi_directory(acpi_directory)
