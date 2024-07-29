@@ -250,10 +250,9 @@ class ConfigProdigy:
         config["Booter"]["MmioWhitelist"] = self.mmio_whitelist(hardware.get("CPU Codename"))
         config["Booter"]["Patch"] = []
         config["Booter"]["Quirks"]["DevirtualiseMmio"] = self.check_mats_support(hardware.get("CPU Manufacturer"), hardware.get("Motherboard Chipset"), hardware.get("CPU Codename"))
-        if "AMD" in hardware.get("CPU Manufacturer") and not "TRX40" in hardware.get("Motherboard Chipset") or \
-            not "Desktop" in hardware.get("Platform") and "Coffee Lake" in hardware.get("CPU Codename"):
+        if "AMD" in hardware.get("CPU Manufacturer") and not "TRX40" in hardware.get("Motherboard Chipset"):
             config["Booter"]["Quirks"]["DevirtualiseMmio"] = False
-        config["Booter"]["Quirks"]["EnableWriteUnprotector"] = False if "Coffee Lake" in hardware.get("CPU Codename") else False if "AMD" in hardware.get("CPU Manufacturer") else not config["Booter"]["Quirks"]["DevirtualiseMmio"]
+        config["Booter"]["Quirks"]["EnableWriteUnprotector"] = False if "AMD" in hardware.get("CPU Manufacturer") else not config["Booter"]["Quirks"]["DevirtualiseMmio"]
         config["Booter"]["Quirks"]["ProtectUefiServices"] = "Z390" in hardware.get("Motherboard Chipset") or \
             not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), start=10) is None
         config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"]
