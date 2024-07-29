@@ -50,7 +50,7 @@ Follow the steps, customize as needed, and enjoy your optimized system!
 
 6. **Preview OpenCore EFI Results**: 
    - Review the generated OpenCore EFI for your hardware.
-   - Make sure to read any green-highlighted lines (in parentheses).
+   - Make sure to read any cyan-highlighted lines (in parentheses).
 
 7. **USB Mapping**: Use USBToolBox with the 'Use Native Class' option enabled to map USBs and add the resulting kext to `OC/Kexts`.
 

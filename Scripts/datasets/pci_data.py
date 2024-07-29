@@ -1136,4 +1136,5 @@ UnsupportedNVMeSSDIDs = {
     "1C5C-1627": "SK hynix PC601",
     "1C5C-1327": "SK hynix BC501",
     "8086-390B": "Intel 760p",
+    "2646-2263": "Kingston A2000"
 }
