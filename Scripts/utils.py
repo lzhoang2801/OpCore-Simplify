@@ -127,6 +127,15 @@ class Utils:
         
         return little_endian_hex.upper()
 
+    def extract_zip_file(self, zip_path, extraction_directory=None):
+        if extraction_directory is None:
+            extraction_directory = os.path.splitext(zip_path)[0]
+        
+        os.makedirs(extraction_directory, exist_ok=True)
+        
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extraction_directory)
+
     def contains_any(self, data, search_item, start=0, end=None):
         return next((item for item in data[start:end] if item.lower() in search_item.lower()), None)
 

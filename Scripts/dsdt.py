@@ -320,7 +320,7 @@ class DSDT:
         zfile = os.path.basename(url)
         #print("Downloading {}".format(os.path.basename(url)))
         #self.dl.stream_to_file(url, os.path.join(ztemp,zfile), progress=False, headers=self.h)
-        self.fetcher.download_and_save_file(url, os.path.join(ztemp,zfile), False)
+        self.fetcher.download_and_save_file(url, os.path.join(ztemp,zfile))
         search_dir = ztemp
         if zfile.lower().endswith(".zip"):
             print(" - Extracting")

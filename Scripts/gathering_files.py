@@ -282,6 +282,7 @@ class gatheringFiles:
 
             zip_path = os.path.join(self.temporary_dir, product_data.get("product_name")) + ".zip"
             self.fetcher.download_and_save_file(product_data.get("url"), zip_path)
+            self.utils.extract_zip_file(zip_path)
 
             if self.move_bootloader_kexts_to_product_directory(product_data.get("product_name")):
                 if product_index is None:

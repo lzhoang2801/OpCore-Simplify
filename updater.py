@@ -34,7 +34,9 @@ class Updater:
 
     def download_update(self):
         self.utils.mkdirs(self.temporary_dir)
-        self.fetcher.download_and_save_file(self.download_repo_url, os.path.join(self.temporary_dir, os.path.basename(self.download_repo_url)))
+        file_path = os.path.join(self.temporary_dir, os.path.basename(self.download_repo_url))
+        self.fetcher.download_and_save_file(self.download_repo_url, file_path)
+        self.utils.extract_zip_file(file_path)
 
     def update_files(self):
         target_dir = os.path.join(self.temporary_dir, "main", "OpCore-Simplify-main")

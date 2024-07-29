@@ -2,7 +2,6 @@ import requests
 import ssl
 import os
 import certifi
-import zipfile
 import plistlib
 
 class ResourceFetcher:
@@ -55,15 +54,3 @@ class ResourceFetcher:
                     bytes_downloaded += len(chunk)
                     if total_size != -1:
                         print(f"Downloaded {bytes_downloaded / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB", end='\r')
-            
-            if extract and destination_path.lower().endswith('.zip'):
-                self.extract_zip_file(destination_path)
-
-    def extract_zip_file(self, zip_path, extraction_directory=None):
-        if extraction_directory is None:
-            extraction_directory = os.path.splitext(zip_path)[0]
-        
-        os.makedirs(extraction_directory, exist_ok=True)
-        
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extraction_directory)
