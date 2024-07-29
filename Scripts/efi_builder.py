@@ -422,7 +422,7 @@ class builder:
         efi_option = {}
         efi_option["macOS Version"] = macos_version
         efi_option["Custom CPU Name"] = not (" Core" in hardware_shorc.get("Processor Name") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_shorc.get("CPU Codename"), end=12))
-        efi_option["Synchronize the TSC"] = "Laptop" in hardware_shorc["Platform"] and "ASUS" in hardware_shorc["Motherboard Name"] or "AMD" in hardware_shorc["Integrated GPU"].get("Manufacturer", "")
+        efi_option["Synchronize the TSC"] = "Laptop" in hardware_shorc["Platform"] and "ASUS" in hardware_shorc["Motherboard Name"] or "AMD" in hardware_shorc["Integrated GPU"].get("Manufacturer", "") or self.config.is_intel_hedt_cpu(hardware_shorc["CPU Codename"])
         efi_option["iGPU Properties"] = self.igpu_properties(
             hardware_shorc["Platform"], 
             hardware_shorc.get("Processor Name"), 
