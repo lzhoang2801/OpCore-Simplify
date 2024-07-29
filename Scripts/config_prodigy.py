@@ -214,6 +214,9 @@ class ConfigProdigy:
         if "Discrete GPU" in ",".join(unsupported_devices):
             boot_args.append("-wegnoegpu")
 
+        if "Integrated GPU" in ",".join(unsupported_devices):
+            boot_args.append("-wegnoigpu")
+
         return " ".join(boot_args)
     
     def csr_active_config(self, macos_version):
