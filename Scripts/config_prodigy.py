@@ -180,7 +180,8 @@ class ConfigProdigy:
         if macos_version > 22:
             boot_args.append("revpatch=sbvmm{}".format(",cpuname" if custom_cpu_name else ""))
         else:
-            boot_args.append("revpatch=cpuname")
+            if custom_cpu_name:
+                boot_args.append("revpatch=cpuname")
 
         if not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) is None:
             boot_args.append("-ctrsmt")
@@ -188,7 +189,7 @@ class ConfigProdigy:
         if ethernet_pci in ["8086-15F2", "8086-15F3", "8086-15F8"]:
             if macos_version == 20:
                 boot_args.append("dk.e1000=0")
-            if macos_version == 21:
+            elif macos_version == 21:
                 boot_args.append("e1000=0")
 
         if "Intel" in cpu_manufacturer:
