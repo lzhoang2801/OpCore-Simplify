@@ -3,6 +3,7 @@
 
 from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
+from Scripts.datasets import pci_data
 from Scripts import smbios
 from Scripts import dsdt
 from Scripts import utils
@@ -898,12 +899,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[DeviceType]]", 0)
 }""".replace("[[DeviceType]]", "DWiFi" if "WiFi" in device else "DSDC")
 
             if ssdt_name:
-                if self.write_ssdt(ssdt_name, ssdt_content, compile="Discrete GPU" in device):
-                    self.result["Add"].append({
-                        "Comment": comment,
-                        "Enabled": True,
-                        "Path": f"{ssdt_name}.aml"
-                    })
+                self.result["Add"].append({
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
+                    "Path": f"{ssdt_name}.aml"
+                })
   
     def enable_backlight_controls(self, platform, cpu_codename, integrated_gpu):
         if "Laptop" not in platform or not integrated_gpu:
@@ -2808,7 +2808,106 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
                 continue
             return self.read_dsdt(path)
         
-    def initialize_patches(self, motherboard_name, motherboard_chipset, platform, cpu_manufacturer, cpu_codename, integrated_gpu, ethernet_pci, touchpad_communication, smbios, intel_mei, unsupported_devices, macos_version, acpi_directory):
+    def add_dtgp_method(self):
+        comment = "Enables macOS to read and merge device properties from ACPI and determine if a specific device should temporarily receive power"
+        ssdt_name = "SSDT-DTGP"
+        ssdt_content = """
+// Resource: https://github.com/5T33Z0/OC-Little-Translated/blob/main/01_Adding_missing_Devices_and_enabling_Features/Method_DTGP/SSDT-DTGP.dsl
+
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "DTGP", 0x00001000)
+{
+    Method (DTGP, 5, NotSerialized)
+    {
+        If ((Arg0 == ToUUID ("a0b5b7c6-1318-441c-b0c9-fe695eaf949b") /* Unknown UUID */))
+        {
+            If ((Arg1 == One))
+            {
+                If ((Arg2 == Zero))
+                {
+                    Arg4 = Buffer (One)
+                        {
+                             0x03                                             // .
+                        }
+                    Return (One)
+                }
+
+                If ((Arg2 == One))
+                {
+                    Return (One)
+                }
+            }
+        }
+
+        Arg4 = Buffer (One)
+            {
+                 0x00                                             // .
+            }
+        Return (Zero)
+    }
+}
+"""
+
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+            "Path": f"{ssdt_name}.aml"
+        })
+
+    def spoof_discrete_gpu(self, discrete_gpu):
+        device_id = discrete_gpu.get("Device ID")
+
+        if not device_id in pci_data.SpoofGPUIDs:
+            return
+        
+        self.add_dtgp_method()
+        new_device_id_le = self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(device_id).split("-")[-1])
+        device_id_byte = ", ".join([f'0x{new_device_id_le[i:i+2]}' for i in range(0, len(new_device_id_le), 2)])
+        comment = "Spoof GPU ID to enable graphics acceleration in macOS"
+        ssdt_name = "SSDT-GPU-SPOOF"
+        ssdt_content = """
+// Resource: https://github.com/dortania/Getting-Started-With-ACPI/blob/master/extra-files/decompiled/SSDT-GPU-SPOOF.dsl
+
+// Replace all "_SB.PCI0.PEG0.PEGP" with the ACPI path of your discrete GPU
+
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
+{
+    External (_SB.PCI0.PEG0.PEGP, DeviceObj)
+    External (DTGP, MethodObj)
+
+    Scope (_SB.PCI0.PEG0.PEGP)
+    {
+        if (_OSI ("Darwin"))
+        {
+            Method (_DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
+            {
+                Local0 = Package (0x04)
+                {
+                    "device-id",
+                    Buffer (0x04)
+                    {
+                        [[DeviceID]]
+                    },
+
+                    "model",
+                    Buffer ()
+                    {
+                        "[[model]]"
+                    }
+                }
+                DTGP (Arg0, Arg1, Arg2, Arg3, RefOf (Local0))
+                Return (Local0)
+            }
+        }
+    }
+}""".replace("[[DeviceID]]", device_id_byte).replace("[[model]]", discrete_gpu.get("GPU Name"))
+
+        self.result["Add"].append({
+            "Comment": comment,
+            "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
+            "Path": f"{ssdt_name}.aml"
+        })
+
+    def initialize_patches(self, motherboard_name, motherboard_chipset, platform, cpu_manufacturer, cpu_codename, integrated_gpu, discrete_gpu, ethernet_pci, touchpad_communication, smbios, intel_mei, unsupported_devices, macos_version, acpi_directory):
         self.acpi_directory = self.check_acpi_directory(acpi_directory)
 
         if self.select_dsdt():
@@ -2835,6 +2934,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
             self.fix_uncore_bridge(motherboard_chipset, macos_version)
             self.instant_wake_fix()
             self.operating_system_patch(platform)
+            self.spoof_discrete_gpu(discrete_gpu)
             self.surface_laptop_special_patch(motherboard_name, platform)
 
         self.result["Add"] = sorted(self.result["Add"], key=lambda x: x["Path"])

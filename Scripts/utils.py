@@ -120,6 +120,15 @@ class Utils:
 
     def hex_to_int(self, hex_string):
         return int(hex_string, 16)
+    
+    def to_little_endian_hex(self, hex_str):
+        hex_str = hex_str.lower().lstrip("0x")
+                
+        hex_str = hex_str.zfill(8)
+
+        little_endian_hex = ''.join(reversed([hex_str[i:i+2] for i in range(0, len(hex_str), 2)]))
+        
+        return little_endian_hex.upper()
 
     def contains_any(self, data, search_item, start=0, end=None):
         return next((item for item in data[start:end] if item.lower() in search_item.lower()), None)

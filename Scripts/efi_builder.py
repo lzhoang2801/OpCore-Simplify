@@ -393,12 +393,10 @@ class builder:
         hardware_shorc["CPU Cores"] = hardware["CPU"].get("CPU Cores")
         hardware_shorc["CPU Codename"] = hardware["CPU"].get("CPU Codename")
         hardware_shorc["Integrated GPU"] = list(hardware.get("GPU").items())[-1][1] if "Integrated GPU" in list(hardware.get("GPU").items())[-1][1]["Device Type"] else {}
-        hardware_shorc["Integrated GPU Manufacturer"] = hardware_shorc["Integrated GPU"]["Manufacturer"] if hardware_shorc["Integrated GPU"] else ""
         hardware_shorc["Integrated GPU Name"] = list(hardware.get("GPU").keys())[-1] if hardware_shorc["Integrated GPU"] else ""
-        hardware_shorc["Integrated GPU Codename"] = hardware_shorc["Integrated GPU"]["GPU Codename"] if hardware_shorc["Integrated GPU"] else ""
         hardware_shorc["Discrete GPU"] = list(hardware.get("GPU").items())[0][1] if "Discrete GPU" in list(hardware.get("GPU").items())[0][1]["Device Type"] else {}
-        hardware_shorc["Discrete GPU Manufacturer"] = hardware_shorc["Discrete GPU"]["Manufacturer"] if hardware_shorc["Discrete GPU"] else ""
-        hardware_shorc["Discrete GPU Codename"] = hardware_shorc["Discrete GPU"]["GPU Codename"] if hardware_shorc["Discrete GPU"] else ""
+        if hardware_shorc["Discrete GPU"]:
+            hardware_shorc["Discrete GPU"]["GPU Name"] = list(hardware.get("GPU").keys())[0]
         hardware_shorc["Ethernet (PCI)"] = []
         for network_name, network_props in hardware["Network"].items():
             connection_name = network_props["Connection Name"]
@@ -424,13 +422,13 @@ class builder:
         efi_option = {}
         efi_option["macOS Version"] = macos_version
         efi_option["Custom CPU Name"] = not (" Core" in hardware_shorc.get("Processor Name") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_shorc.get("CPU Codename"), end=12))
-        efi_option["Synchronize the TSC"] = "Laptop" in hardware_shorc["Platform"] and "ASUS" in hardware_shorc["Motherboard Name"] or "AMD" in hardware_shorc["Integrated GPU Manufacturer"]
+        efi_option["Synchronize the TSC"] = "Laptop" in hardware_shorc["Platform"] and "ASUS" in hardware_shorc["Motherboard Name"] or "AMD" in hardware_shorc["Integrated GPU"].get("Manufacturer", "")
         efi_option["iGPU Properties"] = self.igpu_properties(
             hardware_shorc["Platform"], 
             hardware_shorc.get("Processor Name"), 
-            hardware_shorc.get("Integrated GPU Codename"), 
+            hardware_shorc["Integrated GPU"].get("GPU Codename", ""), 
             hardware_shorc["Discrete GPU"], 
-            hardware_shorc["Integrated GPU Manufacturer"], 
+            hardware_shorc["Integrated GPU"].get("Manufacturer", ""), 
             hardware_shorc["Integrated GPU Name"], 
             efi_option.get("macOS Version"))
         efi_option["SMBIOS"] = self.system_product_info(
@@ -452,6 +450,7 @@ class builder:
             hardware_shorc["CPU Manufacturer"],
             hardware_shorc["CPU Codename"],
             hardware_shorc["Integrated GPU"],
+            hardware_shorc["Discrete GPU"],
             hardware_shorc["Ethernet (PCI)"],
             hardware_shorc["Touchpad Communication"],
             efi_option.get("SMBIOS"),
@@ -467,7 +466,7 @@ class builder:
             hardware_shorc["CPU Configuration"], 
             hardware_shorc["CPU Manufacturer"], 
             hardware_shorc["CPU Codename"], 
-            hardware_shorc["Discrete GPU Codename"], 
+            hardware_shorc["Discrete GPU"].get("GPU Codename", ""), 
             hardware_shorc["Integrated GPU"], 
             hardware_shorc.get("Wi-Fi (PCI)"), 
             hardware_shorc["Ethernet (PCI)"], 
@@ -491,7 +490,7 @@ class builder:
             hardware_shorc["Motherboard Name"], 
             hardware_shorc["Platform"],
             hardware_shorc["CPU Manufacturer"],
-            hardware_shorc["Discrete GPU Codename"],
+            hardware_shorc["Discrete GPU"].get("GPU Codename", ""),
             efi_option["macOS Version"]
         )
         

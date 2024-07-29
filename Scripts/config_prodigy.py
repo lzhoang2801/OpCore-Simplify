@@ -294,7 +294,7 @@ class ConfigProdigy:
             hardware.get("CPU Manufacturer"), 
             hardware.get("CPU Codename"), 
             hardware["CPU Cores"], 
-            hardware["Discrete GPU Manufacturer"] or hardware["Integrated GPU Manufacturer"], 
+            hardware["Discrete GPU"].get("Manufacturer", "") or hardware["Integrated GPU"].get("Manufacturer", ""), 
             efi_option.get("Synchronize the TSC"), 
             efi_option.get("macOS Version"), 
         )
@@ -333,7 +333,7 @@ class ConfigProdigy:
             hardware.get("Platform"), 
             hardware.get("CPU Manufacturer"), 
             hardware.get("CPU Codename"), 
-            hardware.get("Discrete GPU Codename"), 
+            hardware.get("Discrete GPU").get("GPU Codename", ""), 
             hardware.get("Integrated GPU Name"), 
             hardware.get("Ethernet (PCI)"), 
             hardware.get("Codec ID"),

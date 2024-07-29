@@ -1138,3 +1138,7 @@ UnsupportedNVMeSSDIDs = {
     "8086-390B": "Intel 760p",
     "2646-2263": "Kingston A2000"
 }
+
+SpoofGPUIDs = {
+    "1002-699F": "1002-67FF" # AMD RX 550 (Lexa core)
+}
