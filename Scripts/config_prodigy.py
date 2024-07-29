@@ -55,7 +55,7 @@ class ConfigProdigy:
 
     def check_mats_support(self, cpu_manufacturer, motherboard_chipset, cpu_codename):
         return "AMD" in cpu_manufacturer or \
-            (self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=7, end=9) is None and not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=85) is None) or \
+            not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=97) is None or \
             not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=49, end=60) is None
 
     def check_resizable_bar_support(self, motherboard_chipset, platform, cpu_codename, discrete_gpu):
