@@ -343,6 +343,7 @@ class ConfigProdigy:
         if efi_option.get("Custom CPU Name"):
             config["PlatformInfo"]["Generic"]["ProcessorType"] = 1537 if int(hardware["CPU Cores"]) < 8 else 3841
         config["PlatformInfo"]["Generic"]["ROM"] = self.utils.hex_to_bytes(config["PlatformInfo"]["Generic"]["ROM"])
+        config["PlatformInfo"]["UpdateSMBIOSMode"] = "Custom"
 
         config["UEFI"]["APFS"]["MinDate"] = config["UEFI"]["APFS"]["MinVersion"] = -1
         config["UEFI"]["Drivers"] = self.load_drivers()
