@@ -253,7 +253,7 @@ class builder:
         return igpu_properties   
 
     def system_product_info(self, platform, cpu_manufacturer, processor_name, cpu_codename, cpu_cores, discrete_gpu, igpu_props, macos_version):
-        product_name = "iMacPro1,1" if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=12) else "MacPro7,1"
+        product_name = "iMacPro1,1" if macos_version < 19 or self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=12) else "MacPro7,1"
 
         if "AMD" in cpu_manufacturer:
             product_name = "MacBookPro16,3" if "Laptop" in platform else "iMacPro1,1"
