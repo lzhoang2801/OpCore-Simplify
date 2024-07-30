@@ -87,7 +87,7 @@ class CompatibilityChecker:
                         self.min_supported_macos_version = max(17, self.min_supported_macos_version)
                     elif "Vega 10" in gpu_codename or "Polaris" in gpu_codename or "550" in gpu_name:
                         self.min_supported_macos_version = max(17, self.min_supported_macos_version)
-                    elif self.utils.contains_any(gpu_data.AMDCodename, gpu_codename):
+                    elif self.utils.contains_any(gpu_data.AMDCodenames, gpu_codename):
                         self.max_supported_macos_version = 21
                     else:
                         self.max_supported_macos_version = self.min_supported_macos_version = -1

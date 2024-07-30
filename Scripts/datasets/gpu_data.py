@@ -1,5 +1,5 @@
 # Resource: https://en.wikipedia.org/wiki/Graphics_Core_Next
-AMDCodename = [
+AMDCodenames = [
     "Hainan",
     "Oland",
     "Cape Verde",
