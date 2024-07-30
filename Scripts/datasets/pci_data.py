@@ -1139,6 +1139,20 @@ UnsupportedNVMeSSDIDs = {
     "2646-2263": "Kingston A2000"
 }
 
+# Resource: https://pci-ids.ucw.cz/
 SpoofGPUIDs = {
-    "1002-699F": "1002-67FF" # AMD RX 550 (Lexa core)
+    "1002-6611": "1002-6610", # AMD Radeon HD 8570 / R5 430 / R7 240/340 / Radeon 520
+    "1002-6613": "1002-6610", # AMD Radeon R7 240/340 / Radeon 520
+    "1002-6617": "1002-6610", # AMD Radeon R7 240
+    "1002-6649": "1002-665C", # AMD FirePro W5100
+    "1002-665C": "1002-6658", # AMD Radeon HD 7790/8770 / R7 360 / R9 260/360
+    "1002-679A": "1002-6798", # AMD Radeon HD 7950/8950 / R9 280
+    "1002-67B1": "1002-67B0", # AMD Radeon R9 290/390
+    "1002-6811": "1002-6810", # AMD Radeon R7 370 / R9 270/370
+    "1002-6819": "1002-6818", # AMD Radeon HD 7850 / R7 265 / R9 270 1024SP
+    "1002-682B": "1002-683D", # AMD Radeon HD 8830M / R7 250
+    "1002-683F": "1002-683D", # AMD Radeon HD 7750/8740 / R7 250E
+    "1002-6930": "1002-6938", # AMD Radeon R9 380
+    "1002-6939": "1002-6938", # AMD Radeon R9 285/380
+    "1002-699F": "1002-67FF", # AMD Radeon RX 550 (Lexa core)
 }

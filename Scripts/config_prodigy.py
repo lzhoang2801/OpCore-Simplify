@@ -1,5 +1,6 @@
 from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
+from Scripts.datasets import gpu_data
 from Scripts import codec_layouts
 from Scripts import gathering_files
 from Scripts import smbios
@@ -164,7 +165,7 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, motherboard_name, platform, cpu_manufacturer, cpu_codename, discrete_gpu_codename, integrated_gpu_name, ethernet_pci, codec_id, touchpad_communication, unsupported_devices, custom_cpu_name, macos_version):
+    def boot_args(self, motherboard_name, platform, cpu_manufacturer, cpu_codename, discrete_gpu_codename, discrete_gpu_id, integrated_gpu_name, ethernet_pci, codec_id, touchpad_communication, unsupported_devices, custom_cpu_name, macos_version):
         boot_args = [
             "-v",
             "debug=0x100",
@@ -216,6 +217,12 @@ class ConfigProdigy:
 
         if "Integrated GPU" in ",".join(unsupported_devices):
             boot_args.append("-wegnoigpu")
+
+        if discrete_gpu_id in ["1002-6610", "1002-682B", "1002-6837", "1002-683D", "1002-683F"]:
+            boot_args.append("radpg=15")
+
+        if discrete_gpu_id in ["1002-67B0", "1002-67B1", "1002-67B8", "1002-6810", "1002-6811"]:
+            boot_args.append("-raddvi")
 
         return " ".join(boot_args)
     
@@ -329,6 +336,7 @@ class ConfigProdigy:
             hardware.get("CPU Manufacturer"), 
             hardware.get("CPU Codename"), 
             hardware.get("Discrete GPU").get("GPU Codename", ""), 
+            hardware.get("Discrete GPU").get("Device ID", ""), 
             hardware.get("Integrated GPU Name"), 
             hardware.get("Ethernet (PCI)"), 
             hardware.get("Codec ID"),
