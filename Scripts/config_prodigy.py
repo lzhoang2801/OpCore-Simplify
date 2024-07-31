@@ -152,9 +152,9 @@ class ConfigProdigy:
                 if chipset_data.AMDChipsets[0].lower() in motherboard_chipset.lower():
                     patch["Enabled"] = False
                 elif "AMD" in gpu_manufacturer:
-                    if "Algrey" in patch["Comment"]:
+                    if "algrey" in patch["Comment"].lower():
                         patch["Enabled"] = False
-                    elif "Shaneee" in patch["Comment"]:
+                    elif "shaneee" in patch["Comment"].lower():
                         patch["Enabled"] = True
 
             if not min_supported_macos_version[:2] <= str(macos_version) <= max_supported_macos_version[:2] or not patch["Enabled"]:
