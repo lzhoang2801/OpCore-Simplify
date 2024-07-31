@@ -118,7 +118,7 @@ class ConfigProdigy:
             return self.cpuids.get("Haswell")
         elif "Broadwell" in cpu_codename and self.is_intel_hedt_cpu(cpu_codename):
             return self.cpuids.get("Broadwell")
-        elif "Ice Lake" not in cpu_codename and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10) is None:
+        elif "Ice Lake" not in cpu_codename and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10):
             if not "Comet Lake" in cpu_codename:
                 return self.cpuids.get("Comet Lake")
             if macos_version < 19:
@@ -135,7 +135,7 @@ class ConfigProdigy:
         elif tsc_sync:
             kernel_patch.extend(self.kernel_patches["AMD Vanilla Patches"][-6:-4])
         
-        if not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) is None:
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13):
             kernel_patch.extend(self.kernel_patches["Force enable Hyper Threading"])
 
         for index, patch in enumerate(kernel_patch):
@@ -146,7 +146,7 @@ class ConfigProdigy:
                 patch["Replace"] = patch["Replace"].hex()
                 patch["Replace"] = self.utils.hex_to_bytes(patch["Replace"][:2] + self.utils.int_to_hex(int(cpu_cores)) + patch["Replace"][4:])
             elif "IOPCIIsHotplugPort" in patch["Comment"]:
-                if not self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset, start=6) is None:
+                if self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset, start=6):
                     patch["Enabled"] = True
             if "_mtrr_update_action" in patch["Comment"]:
                 if chipset_data.AMDChipsets[0].lower() in motherboard_chipset.lower():
@@ -181,7 +181,7 @@ class ConfigProdigy:
         if macos_version > 22:
             boot_args.append("revpatch=sbvmm{}".format(",cpuname" if custom_cpu_name else ""))
 
-        if not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) is None:
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13):
             boot_args.append("-ctrsmt")
 
         if ethernet_pci in ["8086-15F2", "8086-15F3", "8086-15F8"]:
@@ -192,7 +192,7 @@ class ConfigProdigy:
 
         if "Intel" in cpu_manufacturer:
             if "Laptop" in platform:
-                if not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=6) is None:
+                if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=6):
                     boot_args.append("-igfxbl{}".format("t" if macos_version > 22 else "r"))
 
                 if "UHD" in integrated_gpu_name and macos_version > 18:
@@ -287,7 +287,7 @@ class ConfigProdigy:
         )
         if spoof_cpuid:
             config["Kernel"]["Emulate"]["Cpuid1Data"] = self.utils.hex_to_bytes("{}{}".format(spoof_cpuid, "0"*8*3))
-            config["Kernel"]["Emulate"]["Cpuid1Mask"] = self.utils.hex_to_bytes("FFFFFFFF{}".format("0"*8*3))
+            config["Kernel"]["Emulate"]["Cpuid1Mask"] = self.utils.hex_to_bytes("{}{}".format("F"*8, "0"*8*3))
         config["Kernel"]["Emulate"]["DummyPowerManagement"] = "AMD" in hardware.get("CPU Manufacturer") or \
             self.is_low_end_intel_cpu(hardware.get("Processor Name"))
         config["Kernel"]["Force"] = []
