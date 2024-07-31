@@ -108,6 +108,11 @@ class gatheringFiles:
                 "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/76516394fddb7ce4526ccbcc5b806795c30e9a89/payloads/Kexts/Acidanthera/AMFIPass-v1.4.1-RELEASE.zip"
             },
             {
+                "product_name": "AppleIGB", 
+                "id": 736194363, 
+                "url": "https://github.com/lzhoang2801/lzhoang2801.github.io/raw/main/public/extra-files/AppleIGB-v5.11.4.zip"
+            },
+            {
                 "product_name": "AppleIGC", 
                 "id": 138279923, 
                 "url": "https://github.com/SongXiaoXi/AppleIGC/releases/download/v1.5/AppleIGC.kext.zip"

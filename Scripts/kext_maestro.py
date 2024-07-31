@@ -642,6 +642,8 @@ class KextMaestro:
                     kexts.append("RealtekRTL8100")
                 elif 177 <= idx <= 180:
                     kexts.append("RealtekRTL8111")
+                elif 181 <= idx <= 218:
+                    kexts.append("AppleIGB")
 
         if bluetooth and macos_version > 20 and not wifi_pci in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
             kexts.append("BlueToolFixup")
