@@ -255,7 +255,7 @@ class builder:
     def system_product_info(self, platform, cpu_manufacturer, processor_name, cpu_codename, cpu_cores, discrete_gpu, igpu_props, macos_version):
         product_name = "iMacPro1,1" if macos_version < 19 or self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=12) else "MacPro7,1"
 
-        if "AMD" in cpu_manufacturer:
+        if "AMD" in cpu_manufacturer and not discrete_gpu:
             product_name = "MacBookPro16,3" if "Laptop" in platform else "iMacPro1,1"
 
         if igpu_props:
@@ -394,7 +394,7 @@ class builder:
         hardware_shorc["CPU Codename"] = hardware["CPU"].get("CPU Codename")
         hardware_shorc["Integrated GPU"] = list(hardware.get("GPU").items())[-1][1] if "Integrated GPU" in list(hardware.get("GPU").items())[-1][1]["Device Type"] else {}
         hardware_shorc["Integrated GPU Name"] = list(hardware.get("GPU").keys())[-1] if hardware_shorc["Integrated GPU"] else ""
-        hardware_shorc["Discrete GPU"] = list(hardware.get("GPU").items())[0][1] if "Discrete GPU" in list(hardware.get("GPU").items())[0][1]["Device Type"] else {}
+        hardware_shorc["Discrete GPU"] = list(hardware.get("GPU").items())[0][1].copy() if "Discrete GPU" in list(hardware.get("GPU").items())[0][1]["Device Type"] else {}
         if hardware_shorc["Discrete GPU"]:
             hardware_shorc["Discrete GPU"]["GPU Name"] = list(hardware.get("GPU").keys())[0]
         hardware_shorc["Ethernet (PCI)"] = []
