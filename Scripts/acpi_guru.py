@@ -815,10 +815,13 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         })
 
     def disable_unsupported_device(self, unsupported_devices):
-        for device in unsupported_devices:
-            comment = "Disable {}".format(device.split(": ")[-1])
+        for device_name, device_props in unsupported_devices.items():
+            if device_props.get("Bus Type").startswith("USB"):
+                continue
+
+            comment = "Disable {}".format(device_name.split(": ")[-1])
             ssdt_name = None
-            if "Storage" in device:
+            if "Storage" in device_name:
                 ssdt_name = "SSDT-Disable_NVMe"
                 ssdt_content = """
 // Replace all "_SB.PCI0.RP09.PXSX" with the ACPI path of your SSD NVMe
@@ -851,11 +854,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
     }
 }
 """
-            elif "WiFi" in device or "SD Controller" in device:
-                if "USB" in device:
-                    continue
-
-                ssdt_name = "SSDT-Disable_{}".format("WiFi" if "WiFi" in device else "SD_Card_Reader")
+            elif "WiFi" in device_name or "SD Controller" in device_name:
+                ssdt_name = "SSDT-Disable_{}".format("WiFi" if "WiFi" in device_name else "SD_Card_Reader")
                 ssdt_content = """
 // Replace all "_SB.PCI0.RP01" with the ACPI path of your [[DeviceType]]
 
@@ -891,7 +891,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[DeviceType]]", 0)
             \\_SB.PCI0.RP01.DDDD = One
         }
     }
-}""".replace("[[DeviceType]]", "DWiFi" if "WiFi" in device else "DSDC")
+}""".replace("[[DeviceType]]", "DWiFi" if "WiFi" in device_name else "DSDC")
 
             if ssdt_name:
                 self.result["Add"].append({

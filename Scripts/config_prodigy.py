@@ -341,7 +341,7 @@ class ConfigProdigy:
             hardware.get("Ethernet (PCI)"), 
             hardware.get("Codec ID"),
             hardware.get("Touchpad Communication"),
-            hardware.get("Unsupported Devices"),
+            ", ".join(list(hardware.get("Unsupported Devices").keys())),
             efi_option.get("Custom CPU Name"), 
             efi_option.get("macOS Version")
         )

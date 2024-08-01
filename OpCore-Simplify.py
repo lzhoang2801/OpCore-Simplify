@@ -116,8 +116,9 @@ class OCPE:
         print("{}Min Version: {}".format(" "*4, self.macos_version_data[str(min_verion)]))
         if self.compatibility.get("Unsupported Devices"):
             print("* Unsupported devices:")
-            for index, device in enumerate(self.compatibility.get("Unsupported Devices"), start=1):
-                print("{}{}. {}".format(" "*4, index, device))
+            for index, device_name in enumerate(self.compatibility.get("Unsupported Devices"), start=1):
+                device_props = self.compatibility.get("Unsupported Devices").get(device_name)
+                print("{}{}. {}{}".format(" "*4, index, device_name, "" if not device_props.get("Audio Endpoints") else " ({})".format(", ".join(device_props.get("Audio Endpoints")))))
         print("")
         self.u.request_input()
         return

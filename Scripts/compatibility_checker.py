@@ -104,7 +104,7 @@ class CompatibilityChecker:
                         is_supported_discrete_gpu = is_supported_gpu = False
 
             if not is_supported_gpu:
-                self.unsupported_devices.append("{}: {}".format(device_type, gpu_name))
+                self.unsupported_devices["{}: {}".format(device_type, gpu_name)] = gpu_props
             else:
                 supported_gpus[gpu_name] = gpu_props
 
@@ -112,7 +112,6 @@ class CompatibilityChecker:
 
     def check_audio_compatibility(self, audio_info):
         supported_audio = {}
-        audio_endpoint = None
         
         for audio_device, audio_props in audio_info.items():
             codec_id = audio_props.get("Codec ID")
@@ -125,9 +124,7 @@ class CompatibilityChecker:
                 else:
                     supported_audio[audio_device] = audio_props
             else:
-                if "Audio Endpoints" in audio_props:
-                    audio_endpoint = ",".join(audio_props.get("Audio Endpoints"))
-                self.unsupported_devices.append("Audio: {}{}".format(audio_device, "" if not audio_endpoint else " ({})".format(audio_endpoint)))
+                self.unsupported_devices["Audio: {}".format(audio_device)] = audio_props
         
         return supported_audio
 
@@ -135,7 +132,7 @@ class CompatibilityChecker:
         biometric = hardware.get("Biometric", {})
         if biometric:
             for biometric_device, biometric_props in biometric.items():
-                self.unsupported_devices.append("Biometric: {}".format(biometric_device))
+                self.unsupported_devices["Biometric: {}".format(biometric_device)] = biometric_props
             
             del hardware["Biometric"]
 
@@ -153,7 +150,7 @@ class CompatibilityChecker:
                     self.min_supported_macos_version = 19
 
             if not is_device_supported:
-                self.unsupported_devices.append("{}: {}".format(connection_name, device_name))
+                self.unsupported_devices["{}: {}".format(connection_name, device_name)] = device_props
             else:
                 supported_network[device_name] = device_props
 
@@ -166,7 +163,7 @@ class CompatibilityChecker:
             if "PCI" in controller_props.get("Bus Type"):
                 device_id = controller_props.get("Device ID")
                 if device_id in pci_data.IntelVMDIDs or device_id in pci_data.UnsupportedNVMeSSDIDs:
-                    self.unsupported_devices.append("Storage: {}".format(pci_data.UnsupportedNVMeSSDIDs[device_id]))
+                    self.unsupported_devices["Storage: {}".format(pci_data.UnsupportedNVMeSSDIDs[device_id])] = controller_props
                 else:
                     supported_storage[controller_name] = controller_props
         
@@ -177,13 +174,13 @@ class CompatibilityChecker:
 
         if sd_controller_props:
             if sd_controller_props.get("Device ID") not in pci_data.RealtekCardReaderIDs:
-                self.unsupported_devices.append("SD Controller: {}".format(sd_controller_props.get("Device Description")))
-                hardware["SD Controller"] = {}
+                self.unsupported_devices["SD Controller: {}".format(sd_controller_props.get("Device Description"))] = sd_controller_props
+                del hardware["SD Controller"]
 
     def check_compatibility(self, hardware):
         self.max_supported_macos_version = self.latest_macos_version
         self.min_supported_macos_version = 17
-        self.unsupported_devices = []
+        self.unsupported_devices = {}
 
         self.check_cpu_compatibility(
             hardware.get("CPU").get("Processor Name"),
