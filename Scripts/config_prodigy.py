@@ -206,10 +206,10 @@ class ConfigProdigy:
         if macos_version > 23:
             boot_args.append("-lilubetaall")
 
-        if "Discrete GPU" in ",".join(unsupported_devices):
+        if "Discrete GPU" in unsupported_devices:
             boot_args.append("-wegnoegpu")
 
-        if "Integrated GPU" in ",".join(unsupported_devices):
+        if "Integrated GPU" in unsupported_devices:
             boot_args.append("-wegnoigpu")
 
         if discrete_gpu_id in ["1002-6610", "1002-682B", "1002-6837", "1002-683D", "1002-683F"]:
