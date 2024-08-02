@@ -668,21 +668,22 @@ class KextMaestro:
                     if not device_props.get("Bus Type", "").startswith("ACPI"):
                         continue
 
+                    device_id = device_props.get("Device ID")
                     if "PS/2" in device_name:
                         kexts.extend(["VoodooInput", "VoodooPS2"])
+                        if device_id.startswith("SYN"):
+                            kexts.append("VoodooRMI")
                     if "I2C" in device_name:
                         kexts.extend(["VoodooInput", "VoodooI2C"])
-
-                    device_id = device_props.get("Device ID")
-                    if device_id in pci_data.InputIDs:
-                        idx = pci_data.InputIDs.index(device_id)
-                        
-                        if idx < 77:
-                            kexts.append("AlpsHID")
-                        elif 76 < idx < 80:
-                            kexts.append("VoodooSMBus")
-                        else:
-                            kexts.append("VoodooRMI")
+                        if device_id in pci_data.InputIDs:
+                            idx = pci_data.InputIDs.index(device_id)
+                            
+                            if idx < 77:
+                                kexts.append("AlpsHID")
+                            elif 76 < idx < 80:
+                                kexts.append("VoodooSMBus")
+                            else:
+                                kexts.append("VoodooRMI")
 
         if "Laptop" in platform and "SURFACE" not in motherboard_name and battery_status_patch_needed:
             kexts.append("ECEnabler")
@@ -705,7 +706,7 @@ class KextMaestro:
                 else:
                     kexts.append("XHCI-unsupported")
 
-        return list(set(kexts))
+        return sorted(list(set(kexts)))[::-1]
     
     def install_kexts_to_efi(self, kexts, macos_version, kexts_directory):
         for kext_name in kexts:
