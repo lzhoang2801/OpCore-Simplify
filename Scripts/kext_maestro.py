@@ -671,20 +671,22 @@ class KextMaestro:
                         continue
 
                     device_id = device_props.get("Device ID")
+                    idx = None
+                    if device_id in pci_data.InputIDs:
+                        idx = pci_data.InputIDs.index(device_id)
+
                     if "PS/2" in device_name:
                         kexts.extend(["VoodooInput", "VoodooPS2"])
                         if device_id.startswith("SYN"):
                             kexts.append("VoodooRMI")
+                        elif idx and 76 < idx < 80:
+                            kexts.append("VoodooSMBus")
                     if "I2C" in device_name:
                         kexts.extend(["VoodooInput", "VoodooI2C"])
-                        if device_id in pci_data.InputIDs:
-                            idx = pci_data.InputIDs.index(device_id)
-                            
+                        if idx:
                             if idx < 77:
                                 kexts.append("AlpsHID")
-                            elif 76 < idx < 80:
-                                kexts.append("VoodooSMBus")
-                            else:
+                            elif 79 < idx:
                                 kexts.append("VoodooRMI")
 
         if "Laptop" in platform and "SURFACE" not in motherboard_name and battery_status_patch_needed:
