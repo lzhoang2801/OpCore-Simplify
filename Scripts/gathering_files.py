@@ -319,7 +319,7 @@ class gatheringFiles:
 
             return response["Kernel"]["Patch"]
         except: 
-            print(self.utils.message("Unable to download AMD Vanilla Patches at this time.\nPlease try again later or apply them manually if you are using an AMD CPU system", "warning"))
+            print(self.utils.message("Unable to download AMD Vanilla Patches at this time.\nPlease try again later or apply them manually", "warning"))
             print("")
             self.utils.request_input()
-            return {}
+            return []

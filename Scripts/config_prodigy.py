@@ -13,27 +13,6 @@ class ConfigProdigy:
         self.smbios = smbios.SMBIOS()
         self.utils = utils.Utils()
         self.latest_macos_version = "24.99.99"
-        self.kernel_patches = {
-            "Force enable Hyper Threading": [
-                {
-                    "Arch": "Any",
-                    "Base": "_cpu_thread_alloc",
-                    "Comment": "Force enable Hyper Threading for macOS Mojave or later",
-                    "Count": 1,
-                    "Enabled": True,
-                    "Find": self.utils.hex_to_bytes("8B8894010000"),
-                    "Identifier": "kernel",
-                    "Limit": 0,
-                    "Mask": self.utils.hex_to_bytes(""),
-                    "MaxKernel": "",
-                    "MinKernel": "18.0.0",
-                    "Replace": self.utils.hex_to_bytes("B9FF00000090"),
-                    "ReplaceMask": self.utils.hex_to_bytes(""),
-                    "Skip": 0
-                }
-            ],
-            "AMD Vanilla Patches": self.g.get_amd_kernel_patches()
-        }
         self.cpuids = {
             "Ivy Bridge": "A9060300",
             "Haswell": "C3060300",
@@ -131,12 +110,27 @@ class ConfigProdigy:
         patches_to_remove = []
 
         if "AMD" in cpu_manufacturer:
-            kernel_patch.extend(self.kernel_patches["AMD Vanilla Patches"])
+            kernel_patch.extend(self.g.get_amd_kernel_patches())
         elif tsc_sync:
-            kernel_patch.extend(self.kernel_patches["AMD Vanilla Patches"][-6:-4])
+            kernel_patch.extend(self.g.get_amd_kernel_patches()[-6:-4])
         
         if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13):
-            kernel_patch.extend(self.kernel_patches["Force enable Hyper Threading"])
+            kernel_patch.extend({
+                "Arch": "Any",
+                "Base": "_cpu_thread_alloc",
+                "Comment": "Force enable Hyper Threading for macOS Mojave or later",
+                "Count": 1,
+                "Enabled": True,
+                "Find": self.utils.hex_to_bytes("8B8894010000"),
+                "Identifier": "kernel",
+                "Limit": 0,
+                "Mask": self.utils.hex_to_bytes(""),
+                "MaxKernel": "",
+                "MinKernel": "18.0.0",
+                "Replace": self.utils.hex_to_bytes("B9FF00000090"),
+                "ReplaceMask": self.utils.hex_to_bytes(""),
+                "Skip": 0
+            })
 
         for index, patch in enumerate(kernel_patch):
             max_supported_macos_version = patch.get("MaxKernel") or self.latest_macos_version
