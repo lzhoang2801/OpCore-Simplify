@@ -653,6 +653,8 @@ class KextMaestro:
                 
                 if idx < 99:
                     kexts.append("BrcmPatchRAM")
+                    if bluetooth and macos_version > 20:
+                        kexts.append("BlueToolFixup")
                 else:
                     kexts.append("IntelBluetoothFirmware")
 
