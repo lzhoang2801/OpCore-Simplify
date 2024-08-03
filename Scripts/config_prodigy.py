@@ -115,7 +115,7 @@ class ConfigProdigy:
             kernel_patch.extend(self.g.get_amd_kernel_patches()[-6:-4])
         
         if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13):
-            kernel_patch.extend({
+            kernel_patch.append({
                 "Arch": "Any",
                 "Base": "_cpu_thread_alloc",
                 "Comment": "Force enable Hyper Threading for macOS Mojave or later",
