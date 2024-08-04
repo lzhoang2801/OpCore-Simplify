@@ -411,7 +411,7 @@ class builder:
         hardware_shorc["Codec ID"] = next((device_props.get("Codec ID") for device_name, device_props in hardware.get("Audio").items()), None)
         hardware_shorc["SD Controller"] = hardware.get("SD Controller")
         hardware_shorc["Input"] = hardware.get("Input")
-        hardware_shorc["Storage Controllers"] = hardware.get("Storage").get("Storage Controllers")
+        hardware_shorc["Storage Controllers"] = hardware.get("Storage Controllers")
         hardware_shorc["USB Controllers"] = [controller_props.get("Device ID") for controller_name, controller_props in hardware.get("USB").get("USB Controllers").items()]
         hardware_shorc["Intel MEI"] = hardware.get("Intel MEI")
         hardware_shorc["Unsupported Devices"] = hardware.get("Compatibility").get("Unsupported Devices")

@@ -84,7 +84,7 @@ class OCPE:
                 pass
             else:
                 for device_name, device_props in self.hardware.get(device_type).items():
-                    if "Controllers" in device_name or "Devices" in device_name or "Drives" in device_name:
+                    if "Controllers" in device_name or "Devices" in device_name:
                         contents.append("{}* {}:".format(" "*4, device_name))
                         for device_name_child, device_props_child in device_props.items():
                             contents.append("{}- {}".format(" "*8, device_name_child))

@@ -198,7 +198,7 @@ class CompatibilityChecker:
                 hardware["Audio"] = self.check_audio_compatibility(hardware.get("Audio"))
                 self.check_biometric_compatibility(hardware)
                 hardware["Network"] = self.check_network_compatibility(hardware.get("Network"))
-                hardware["Storage"]["Storage Controllers"] = self.check_storage_compatibility(hardware.get("Storage").get("Storage Controllers"))
+                hardware["Storage Controllers"] = self.check_storage_compatibility(hardware.get("Storage Controllers"))
                 self.check_sd_controller_compatibility(hardware)
 
         hardware["Compatibility"] = {

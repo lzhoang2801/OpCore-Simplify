@@ -696,7 +696,7 @@ class KextMaestro:
             kexts.extend(["RealtekCardReader", "RealtekCardReaderFriend"])
         
         for controller_name, controller_props in storage_controllers.items():
-            if "NVMe" in controller_name + controller_props.get("Device Description") or "NVM Express" in controller_name + controller_props.get("Device Description"):
+            if "NVMe" in controller_name or "NVM Express" in controller_name:
                 kexts.append("NVMeFix")
             else:
                 if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs and not "AHCI" in controller_name:

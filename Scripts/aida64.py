@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 
 class AIDA64:
     def __init__(self):
-        self.aida64_download_url = "https://www.aida64.com/downloads"
         self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         self.encodings = ['utf-8', 'latin-1', 'ISO-8859-1']
         self.utils = utils.Utils()
@@ -18,6 +17,19 @@ class AIDA64:
                 continue
         raise UnicodeDecodeError("Unable to decode file {} with given encodings".format(file_path))
 
+    def get_unique_key(self, base_key, dictionary):
+        if base_key not in dictionary:
+            return base_key
+        
+        counter = 1
+        unique_key = f"{base_key}_#{counter}"
+        
+        while unique_key in dictionary:
+            counter += 1
+            unique_key = f"{base_key}_#{counter}"
+        
+        return unique_key
+    
     def hardware_id(self, hardware_id):
         if "VEN" in hardware_id:
             return {
@@ -119,11 +131,8 @@ class AIDA64:
             ]
         }
     
-    def storage(self, ata_controllers, storage_controllers, ata_devices):
-        storage_info = {
-            "Storage Controllers": {},
-            "Disk Drives": {}
-        }
+    def storage_controllers(self, ata_controllers, storage_controllers):
+        storage_controllers_info = {}
 
         storage_controllers.update(ata_controllers)
         for controller_name, controller_props in storage_controllers.items():
@@ -133,28 +142,12 @@ class AIDA64:
                 if " SD " in pci_device or "MMC" in pci_device:
                     continue
 
-                storage_info["Storage Controllers"][controller_name] = {
+                storage_controllers_info[self.get_unique_key(controller_props.get("PCI Device", controller_name), storage_controllers_info)] = {
                     "Bus Type": controller_props.get("Bus Type", "Unknown"),
-                    "Device ID": controller_props.get("Device ID", "Unknown"),
-                    "Device Description": controller_props.get("PCI Device", "Unknown")
+                    "Device ID": controller_props.get("Device ID", "Unknown")
                 }
 
-        device_categories = ["NVMe Device Properties", "SSD Physical Info", "ATA Device Properties", "Disk Device Physical Info", "Device Properties"]
-
-        for device_name, device_props in ata_devices.items():
-            disk_props = {}
-            relevant_categories = [key for key in list(device_props.keys()) if key in device_categories]
-            for category in relevant_categories:
-                category_props = device_props[category]
-
-                disk_props["Controller"] = category_props.get("Controller Type", "Unknown")
-                disk_props["Interface"] = category_props.get("Interface", "Unknown")
-                if category_props.get("Device Type", None):
-                    disk_props["Interface"] = category_props.get("Device Type")
-
-            storage_info["Disk Drives"][device_name] = disk_props
-
-        return storage_info
+        return storage_controllers_info
     
     def monitor(self, monitor):
         return {
@@ -211,9 +204,7 @@ class AIDA64:
             bus_type = device_props.get("Bus Type", "")
             if bus_type.endswith("AUDIO") or bus_type.endswith("USB"):
                 if device_props.get("Device ID", "Unknown") not in audio_device_ids:
-                    occurrences = self.count_keys(audio_devices_info, device_name)
-                    unique_device_name = "{}_#{}".format(device_name, occurrences) if occurrences > 0 else device_name
-                    audio_devices_info[unique_device_name] = {
+                    audio_devices_info[self.get_unique_key(device_name, audio_devices_info)] = {
                         "Bus Type": bus_type,
                         "{} ID".format("USB" if bus_type.endswith("USB") else "Codec"): device_props.get("Device ID", "Unknown")
                     }
@@ -313,8 +304,7 @@ class AIDA64:
                     if not device_description:
                         device_description = self.utils.search_dict_iter(windows_devices, hardware_id).get("Driver Description", device_name)
 
-            occurrences = self.count_keys(usb_info["USB Devices"], device_description)
-            device_description = "{}_#{}".format(device_description, occurrences) if occurrences > 0 else device_description
+            device_description = self.get_unique_key(device_description, usb_info["USB Devices"])
 
             if "Hub" not in device_description and "Billboard" not in device_description and not "0000-0000" in device_props.get("Device ID"):
                 usb_info["USB Devices"][device_description] = {
@@ -481,17 +471,10 @@ class AIDA64:
             # Extract device name from device properties
             device_name = device_props.get("Driver Description")
 
-            # Count occurrences of device name within category
-            occurrences = self.count_keys(parsed_windows_devices[category_name], device_name)
-            device_name = "{}_#{}".format(device_name, occurrences) if occurrences > 0 else device_name
-
             # Add device to category dictionary
-            parsed_windows_devices[category_name][device_name] = device_props
+            parsed_windows_devices[category_name][self.get_unique_key(device_name, parsed_windows_devices[category_name])] = device_props
 
         return parsed_windows_devices
-
-    def count_keys(self, dictionary, target_key):
-        return sum(1 for key in dictionary if target_key in key)
 
     def html_to_dict(self, html_content):
         soup = BeautifulSoup(html_content, "html.parser")
@@ -507,7 +490,6 @@ class AIDA64:
             "CPU",
             "GPU",
             "Vulkan",
-            "ATA",
             "Windows Devices",
             "PCI Devices",
             "USB Devices"
@@ -559,8 +541,7 @@ class AIDA64:
 
                     # Add the new key-value pair
                     current_dict = stack[-1][0]
-                    occurrences = self.count_keys(current_dict, key)
-                    key = "{}_#{}".format(key, occurrences) if occurrences > 0 else key
+                    key = self.get_unique_key(key, current_dict)
 
                     if value is None:
                         new_dict = {}
@@ -593,7 +574,7 @@ class AIDA64:
         hardware["CPU"] = self.cpu(report_dict.get("CPU", {}))
         hardware["GPU"] = self.gpu(report_dict.get("GPU", {}), report_dict.get("Vulkan", {}), windows_devices)
         hardware["Network"] = self.network(windows_devices, report_dict.get("PCI Devices", {}))
-        hardware["Storage"] = self.storage(windows_devices.get("IDE ATA/ATAPI controllers", {}), windows_devices.get("Storage controllers", {}), report_dict.get("ATA", {}))
+        hardware["Storage Controllers"] = self.storage_controllers(windows_devices.get("IDE ATA/ATAPI controllers", {}), windows_devices.get("Storage controllers", {}))
         hardware["Audio"] = self.audio(windows_devices)
         hardware["USB"] = self.usb(windows_devices.get("Universal Serial Bus controllers", {}), report_dict.get("USB Devices", {}), windows_devices)
         hardware["Input"] = self.input(windows_devices.get("Human Interface Devices", {}), windows_devices.get("Keyboards", {}), windows_devices.get("Mice and other pointing devices", {}), hardware["USB"].get("USB Devices", {}))
