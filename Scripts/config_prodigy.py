@@ -74,7 +74,7 @@ class ConfigProdigy:
             kernel_block.append({
                 "Arch": "x86_64",
                 "Comment": "Allow IOSkywalk Downgrade",
-                "Enable": True,
+                "Enabled": True,
                 "Identifier": "com.apple.iokit.IOSkywalkFamily",
                 "MaxKernel": "",
                 "MinKernel": "",
