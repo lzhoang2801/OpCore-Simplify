@@ -30,6 +30,7 @@ class CompatibilityChecker:
         for gpu_name, gpu_props in gpu_info.items():
             gpu_manufacturer = gpu_props.get("Manufacturer")
             gpu_codename = gpu_props.get("GPU Codename")
+            device_id = gpu_props.get("Device ID")
             device_type = gpu_props.get("Device Type")
             is_supported_gpu = True
 
@@ -81,11 +82,9 @@ class CompatibilityChecker:
                             else:
                                 self.max_supported_macos_version = self.min_supported_macos_version = -1
                                 is_supported_discrete_gpu = is_supported_gpu = False
-                    elif "Navi 10" in gpu_codename:
+                    elif "Navi 1" in gpu_codename:
                         self.min_supported_macos_version = max(19, self.min_supported_macos_version)
-                    elif "Vega 20" in gpu_codename:
-                        self.min_supported_macos_version = max(17, self.min_supported_macos_version)
-                    elif "Vega 10" in gpu_codename or "Polaris" in gpu_codename or "550" in gpu_name:
+                    elif "Vega" in gpu_codename or "Polaris" in gpu_codename or "Baffin" in gpu_codename or "Ellesmere" in gpu_codename or device_id.endswith("699F"):
                         self.min_supported_macos_version = max(17, self.min_supported_macos_version)
                     elif self.utils.contains_any(gpu_data.AMDCodenames, gpu_codename):
                         self.max_supported_macos_version = 21
@@ -95,9 +94,9 @@ class CompatibilityChecker:
                 elif "NVIDIA" in gpu_manufacturer:
                     is_supported_discrete_gpu = True
 
-                    if "GK" in gpu_codename:
+                    if "Kepler" in gpu_codename:
                         self.max_supported_macos_version = 20
-                    elif "GP" in gpu_codename or "GM" in gpu_codename or "GF" in gpu_codename or "GT" in gpu_codename or gpu_codename.startswith("C"):
+                    elif "Pascal" in gpu_codename or "Maxwell" in gpu_codename or "Fermi" in gpu_codename or "Tesla" in gpu_codename:
                         self.max_supported_macos_version = self.min_supported_macos_version = 17
                     else:
                         self.max_supported_macos_version = self.min_supported_macos_version = -1
