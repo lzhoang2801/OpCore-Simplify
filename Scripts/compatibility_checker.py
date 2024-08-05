@@ -162,7 +162,9 @@ class CompatibilityChecker:
         for controller_name, controller_props in storage_controller_info.items():
             if "PCI" in controller_props.get("Bus Type"):
                 device_id = controller_props.get("Device ID")
-                if device_id in pci_data.IntelVMDIDs or device_id in pci_data.UnsupportedNVMeSSDIDs:
+                if device_id in pci_data.IntelVMDIDs:
+                    raise Exception("Disable Intel RST VMD in the BIOS before exporting the AIDA64 report and try again with the new report")
+                elif device_id in pci_data.UnsupportedNVMeSSDIDs:
                     self.unsupported_devices["Storage: {}".format(pci_data.UnsupportedNVMeSSDIDs[device_id])] = controller_props
                 else:
                     supported_storage[controller_name] = controller_props

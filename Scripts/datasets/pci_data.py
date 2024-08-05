@@ -1155,6 +1155,7 @@ UnsupportedSATAControllerIDs = [
     
 # Resource: https://github.com/torvalds/linux/blob/master/drivers/pci/controller/vmd.c
 IntelVMDIDs = [
+    "8086-09AB",
     "8086-201D",
     "8086-28C0",
     "8086-467F",
