@@ -15,7 +15,10 @@ class GPUIdentifier:
         elif device_id.startswith(("09", "19")):
             gpu_codename = "Skylake"
         elif device_id.startswith("59"):
-            gpu_codename = "Kaby Lake"
+            if device_id.endswith("17"):
+                gpu_codename = "Kaby Lake-R"
+            else:
+                gpu_codename = "Kaby Lake"
         elif device_id.startswith("87"):
             gpu_codename = "Amber Lake"
         elif device_id.startswith(("3E", "5A")):
