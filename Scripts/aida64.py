@@ -1,4 +1,5 @@
 from Scripts.datasets import pci_data
+from Scripts import gpu_identifier
 from Scripts import utils
 from bs4 import BeautifulSoup
 
@@ -6,6 +7,7 @@ class AIDA64:
     def __init__(self):
         self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         self.encodings = ['utf-8', 'latin-1', 'ISO-8859-1']
+        self.gpu_identifier = gpu_identifier.GPUIdentifier()
         self.utils = utils.Utils()
     
     def try_open(self, file_path):
@@ -211,47 +213,26 @@ class AIDA64:
 
         return audio_devices_info
 
-    def gpu(self, gpu_data, vulkan_data, windows_devices):
-        gpu_info_dict = {}
+    def gpu(self, pci_devices, windows_devices):
+        gpu_info = {}
 
-        for adapter_name, adapter_props in windows_devices.get("Display adapters", windows_devices.get("Display adaptors", {})).items():
+        display_adapters = windows_devices.get("Display adapters", windows_devices.get("Display adaptors", {}))
+        gpu_by_class = None
+        if not display_adapters:
+            gpu_by_class = self.utils.search_dict_iter(pci_devices, "VGA Display Controller", equal=False)
+            if gpu_by_class:
+                gpu_in_windows_devices = self.utils.search_dict_iter(windows_devices, gpu_by_class.get("Device ID"))
+                display_adapters = self.utils.search_dict_iter(windows_devices, gpu_in_windows_devices)
+
+        for adapter_name, adapter_props in display_adapters.items():
             device_id = adapter_props.get("Device ID")
             if not device_id:
                 continue
-            manufacturer = "Intel" if device_id.startswith("8086") else "AMD" if device_id.startswith("1002") else "NVIDIA" if device_id.startswith("10DE") else "Unknown"
-            props_in_vulkan = self.utils.search_dict_iter(vulkan_data, device_id, equal=False)
-            gpu_props = self.utils.search_dict_iter(gpu_data, device_id, equal=False)
-            bus_type = gpu_props.get("Bus Type", "Unknown")
-            device_type = props_in_vulkan.get("Device Type", "Discrete GPU" if "PCI Express" in bus_type else "Integrated GPU" if "Integrated" in bus_type else "Unknown")
-            gpu_codename = gpu_props.get("GPU Code Name", props_in_vulkan.get("Device Code Name", "Unknown"))
+            if gpu_by_class and self.utils.contains_any(["Video Controller", "Video Adapter", "Graphics Controller"], adapter_name + adapter_props.get("PCI Device", "")) is None:
+                continue
+            gpu_info[adapter_name] = self.gpu_identifier.classify_gpu(device_id)
 
-            gpu_info_dict[gpu_props.get("Video Adapter", adapter_name)] = {
-                "Manufacturer": manufacturer,
-                "GPU Codename": gpu_codename,
-                "Device ID": device_id,
-                "Device Type": device_type,
-                "Memory Size": gpu_props.get("Memory Size", "Unknown")
-            }
-        
-        if not gpu_info_dict:
-            if gpu_data:
-                for gpu_name, gpu_props in gpu_data.items():
-                    gpu_props = gpu_props.get("Graphics Processor Properties", {})
-                    device_id = gpu_props.get("PCI Device", "Unknown").split(" / ")[0]
-                    manufacturer = "Intel" if device_id.startswith("8086") else "AMD" if device_id.startswith("1002") else "NVIDIA" if device_id.startswith("10DE") else "Unknown"
-                    bus_type = gpu_props.get("Bus Type", "Unknown")
-                    device_type = "Discrete GPU" if "PCI Express" in bus_type else "Integrated GPU" if "Integrated" in bus_type else "Unknown"
-                    gpu_codename = gpu_props.get("GPU Code Name", "Unknown")
-
-                    gpu_info_dict[gpu_props.get("Video Adapter", gpu_name.split(": ")[-1])] = {
-                        "Manufacturer": manufacturer,
-                        "GPU Codename": gpu_codename,
-                        "Device ID": device_id,
-                        "Device Type": device_type,
-                        "Memory Size": gpu_props.get("Memory Size", "Unknown")
-                    }
-
-        return self.utils.sort_dict_by_key(gpu_info_dict, "Device Type")
+        return self.utils.sort_dict_by_key(gpu_info, "Device Type")
 
     def input(self, human_interface_devices, keyboards, pointing_devices, usb_devices):
         input_devices_info = {}
@@ -488,8 +469,6 @@ class AIDA64:
             "Summary",
             "DMI",
             "CPU",
-            "GPU",
-            "Vulkan",
             "Windows Devices",
             "PCI Devices",
             "USB Devices"
@@ -558,7 +537,7 @@ class AIDA64:
                                 current_dict[list(current_dict.keys())[0]].append(key)
                                 current_dict[list(current_dict.keys())[1]].append(value)
 
-        if len(table_names) - len(root) > 1:
+        if len(table_names) != len(root):
             raise Exception("Your AIDA64 report is missing some information. Please revise it according to the provided guidelines")
         return root
 
@@ -572,7 +551,7 @@ class AIDA64:
         hardware = {}
         hardware["Motherboard"] = self.motherboard(report_dict.get("Summary", {}).get("Motherboard", {}), dmi)
         hardware["CPU"] = self.cpu(report_dict.get("CPU", {}))
-        hardware["GPU"] = self.gpu(report_dict.get("GPU", {}), report_dict.get("Vulkan", {}), windows_devices)
+        hardware["GPU"] = self.gpu(report_dict.get("PCI Devices", {}), windows_devices)
         hardware["Network"] = self.network(windows_devices, report_dict.get("PCI Devices", {}))
         hardware["Storage Controllers"] = self.storage_controllers(windows_devices.get("IDE ATA/ATAPI controllers", {}), windows_devices.get("Storage controllers", {}))
         hardware["Audio"] = self.audio(windows_devices)
