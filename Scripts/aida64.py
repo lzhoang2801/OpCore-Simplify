@@ -32,18 +32,20 @@ class AIDA64:
         
         return unique_key
     
-    def hardware_id(self, hardware_id):
+    def parse_hardware_id(self, hardware_id):
         if "VEN" in hardware_id:
             return {
                 "Bus Type": hardware_id.split("\\")[0],
-                "Device ID": "{}-{}".format(hardware_id.split("VEN_")[-1].split("&")[0], hardware_id.split("DEV_")[-1].split("&")[0])
+                "Device ID": "{}-{}".format(hardware_id.split("VEN_")[-1].split("&")[0], hardware_id.split("DEV_")[-1].split("&")[0]),
+                "Subsystem ID": hardware_id.split("SUBSYS_")[-1].split("&")[0],
+                "Revision": hardware_id.split("REV_")[-1].split("\\")[0]
             }
         
         if "VID" in hardware_id:
             return {
                 "Bus Type": hardware_id.split("\\")[0],
                 "Device ID": "{}-{}".format(hardware_id.split("VID_")[-1].split("&")[0], hardware_id.split("PID_")[-1].split("&")[0]),
-                "Revision": hardware_id.split("REV_")[-1].split("&")[0]
+                "Revision": hardware_id.split("REV_")[-1].split("\\")[0]
             }
         
         return {
@@ -292,7 +294,7 @@ class AIDA64:
                     "Device Description": device_description.split("_#")[0],
                     "Device Class": device_props.get("Device Class"),
                     "Device ID": device_props.get("Device ID"),
-                    "Revision ID": device_props.get("Revision")
+                    "Revision": device_props.get("Revision")
                 }
 
         return usb_devices_info
@@ -440,7 +442,7 @@ class AIDA64:
             
             # Update device properties with hardware ID if available
             if "Hardware ID" in device_props:
-                device_props.update(self.hardware_id(device_props.get("Hardware ID")))
+                device_props.update(self.parse_hardware_id(device_props.get("Hardware ID")))
 
             # Extract category name from the full key
             category_name = full_key.split(" / ")[0]
