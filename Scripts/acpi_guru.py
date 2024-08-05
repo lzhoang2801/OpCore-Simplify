@@ -816,7 +816,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
 
     def disable_unsupported_device(self, unsupported_devices):
         for device_name, device_props in unsupported_devices.items():
-            if device_props.get("Bus Type").startswith("USB"):
+            if not "Storage" in device_name:
                 continue
 
             comment = "Disable {}".format(device_name.split(": ")[-1])
