@@ -702,9 +702,10 @@ class KextMaestro:
                 if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs and not "AHCI" in controller_name:
                     kexts.append("CtlnaAHCIPort")
 
-        for pci_id in usb_controllers:
-            if pci_id in pci_data.UnsupportedUSBControllerIDs:
-                idx = pci_data.UnsupportedUSBControllerIDs.index(pci_id)
+        for controller_name, controller_props in usb_controllers.items():
+            device_id = controller_props.get("Device ID")
+            if device_id in pci_data.UnsupportedUSBControllerIDs:
+                idx = pci_data.UnsupportedUSBControllerIDs.index(device_id)
                 if idx == 0:
                     kexts.append("GenericUSBXHCI")
                 else:

@@ -274,19 +274,19 @@ class AIDA64:
                 }
 
         return input_devices_info
-    
-    def usb(self, usb_controllers, usb_devices, windows_devices):
-        usb_info = {
-            "USB Controllers": {
-                controller_name: {
-                    "Bus Type": controller_props.get("Bus Type", "Unknown"),
-                    "Device ID": controller_props.get("Device ID", "Unknown")
-                }
-                for controller_name, controller_props in usb_controllers.items()
-                if controller_props.get("Bus Type", "Unknown").startswith("PCI")
-            },
-            "USB Devices": {}
+      
+    def usb_controllers(self, usb_controllers):
+        return {
+            controller_name: {
+                "Bus Type": controller_props.get("Bus Type", "Unknown"),
+                "Device ID": controller_props.get("Device ID", "Unknown")
+            }
+            for controller_name, controller_props in usb_controllers.items()
+            if controller_props.get("Bus Type", "Unknown").startswith("PCI")
         }
+
+    def usb_devices(self, usb_devices, windows_devices):
+        usb_devices_info = {}
 
         for device_name, device_data in usb_devices.items():
             device_props = device_data.get("Device Properties", {})
@@ -296,25 +296,25 @@ class AIDA64:
 
             if not device_description:
                 device_id = device_props.get("Device ID", None)
-                revision = device_props.get("Revision", None)[:-1] if device_props.get("Revision") else None
-                hardware_id = f'USB\\VID_{device_id[:4]}&PID_{device_id[5:]}&REV_{revision}' if device_id and revision else None
+                revision_id = device_props.get("Revision", None)[:-1] if device_props.get("Revision") else None
+                hardware_id = 'USB\\VID_{}&PID_{}&REV_{}'.format(device_id[:4], device_id[5:], revision_id[:-1]) if device_id and revision_id else None
 
                 if hardware_id:
                     device_description = self.utils.search_dict_iter(windows_devices, hardware_id + "&MI_00").get("Driver Description", None)
                     if not device_description:
                         device_description = self.utils.search_dict_iter(windows_devices, hardware_id).get("Driver Description", device_name)
 
-            device_description = self.get_unique_key(device_description, usb_info["USB Devices"])
+            device_description = self.get_unique_key(device_description, usb_devices_info)
 
             if "Hub" not in device_description and "Billboard" not in device_description and not "0000-0000" in device_props.get("Device ID"):
-                usb_info["USB Devices"][device_description] = {
+                usb_devices_info[device_description] = {
                     "Device Description": device_description.split("_#")[0],
                     "Device Class": device_props.get("Device Class"),
                     "Device ID": device_props.get("Device ID"),
-                    "Revision": device_props.get("Revision")
+                    "Revision ID": device_props.get("Revision")
                 }
 
-        return usb_info
+        return usb_devices_info
 
     def network(self, windows_devices, pci_devices):
         network_info = {}
@@ -576,12 +576,13 @@ class AIDA64:
         hardware["Network"] = self.network(windows_devices, report_dict.get("PCI Devices", {}))
         hardware["Storage Controllers"] = self.storage_controllers(windows_devices.get("IDE ATA/ATAPI controllers", {}), windows_devices.get("Storage controllers", {}))
         hardware["Audio"] = self.audio(windows_devices)
-        hardware["USB"] = self.usb(windows_devices.get("Universal Serial Bus controllers", {}), report_dict.get("USB Devices", {}), windows_devices)
-        hardware["Input"] = self.input(windows_devices.get("Human Interface Devices", {}), windows_devices.get("Keyboards", {}), windows_devices.get("Mice and other pointing devices", {}), hardware["USB"].get("USB Devices", {}))
+        hardware["USB Controllers"] = self.usb_controllers(windows_devices.get("Universal Serial Bus controllers", {}))
+        usb_devices = self.usb_devices(report_dict.get("USB Devices", {}), windows_devices)
+        hardware["Input"] = self.input(windows_devices.get("Human Interface Devices", {}), windows_devices.get("Keyboards", {}), windows_devices.get("Mice and other pointing devices", {}), usb_devices)
         
-        hardware = self.biometric(windows_devices.get("Biometric devices", {}), hardware["USB"].get("USB Devices", {}), hardware)
-        hardware = self.bluetooth(windows_devices.get("Bluetooth", {}), hardware["USB"].get("USB Devices", {}), hardware)
-        hardware = self.sd_controller(report_dict.get("PCI Devices", {}), hardware["USB"].get("USB Devices", {}), hardware)
+        hardware = self.biometric(windows_devices.get("Biometric devices", {}), usb_devices, hardware)
+        hardware = self.bluetooth(windows_devices.get("Bluetooth", {}), usb_devices, hardware)
+        hardware = self.sd_controller(report_dict.get("PCI Devices", {}), usb_devices, hardware)
         hardware = self.intel_mei(hardware["CPU"].get("CPU Codename"), report_dict.get("PCI Devices", {}), hardware)
         
         return hardware
