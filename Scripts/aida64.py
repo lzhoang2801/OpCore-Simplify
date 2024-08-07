@@ -111,18 +111,6 @@ class AIDA64:
 
         return cpu_info
 
-    def memory(self, memory_arrays, memory_devices):
-        return {
-            "Memory Arrays": [
-                memory_array.get("Memory Array Properties", {})
-                for function, memory_array in memory_arrays.items()
-            ],
-            "Memory Devices": [
-                memory_device.get("Memory Device Properties", {})
-                for device_locator, memory_device in memory_devices.items()
-            ]
-        }
-    
     def storage_controllers(self, ata_controllers, storage_controllers):
         storage_controllers_info = {}
 
@@ -140,28 +128,6 @@ class AIDA64:
                 }
 
         return storage_controllers_info
-    
-    def monitor(self, monitor):
-        return {
-            monitor_data["Monitor Properties"].get("Monitor Name", monitor_name): {
-                "Monitor Type": monitor_data["Monitor Properties"].get("Monitor Type", "Unknown"),
-                "Maximum Resolution": monitor_data["Monitor Properties"].get("Maximum Resolution", list(monitor_data.get("Supported Video Modes", {}).keys())[-1].split("_")[0] if "Supported Video Modes" in monitor_data else "Unknown")
-            }
-            for monitor_name, monitor_data in monitor.items()
-            if "Monitor Properties" in monitor_data
-        }
-       
-    def acpi(self, acpi_tables):
-        return [
-            {
-                "ACPI Signature": acpi_table["ACPI Table Properties"].get("ACPI Signature", "Unknown"),
-                "Table Description": acpi_table["ACPI Table Properties"].get("Table Description", "Unknown"),
-                "Table Length": acpi_table["ACPI Table Properties"].get("Table Length", "Unknown"),
-                "OEM Table ID": acpi_table["ACPI Table Properties"].get("OEM Table ID", "Unknown")
-            }
-            for table_key, acpi_table in acpi_tables.items()
-            if "ACPI Table Properties" in acpi_table
-        ]
 
     def audio(self, windows_devices):
         audio_devices_info = {}
