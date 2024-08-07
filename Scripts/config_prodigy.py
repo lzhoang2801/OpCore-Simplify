@@ -33,14 +33,14 @@ class ConfigProdigy:
         
         return booter_mmiowhitelist
 
-    def check_mats_support(self, cpu_manufacturer, motherboard_chipset, cpu_codename):
+    def check_mats_support(self, cpu_manufacturer, motherboard_chipset):
         return "AMD" in cpu_manufacturer or \
             not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=97) is None or \
             not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=49, end=60) is None
 
-    def check_resizable_bar_support(self, motherboard_chipset, platform, cpu_codename, discrete_gpu):
-        return "Desktop" in platform and discrete_gpu and not (self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset) is None or \
-                                                               self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10) is None)
+    def check_resizable_bar_support(self, motherboard_chipset, cpu_codename, discrete_gpu):
+        return discrete_gpu and not (self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset) is None or \
+                                     self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10) is None)
 
     def is_low_end_intel_cpu(self, processor_name):
         return any(brand in processor_name for brand in ["Celeron", "Pentium"])
@@ -185,22 +185,20 @@ class ConfigProdigy:
                 boot_args.append("e1000=0")
 
         if "Intel" in cpu_manufacturer:
+            if "UHD" in integrated_gpu_name and macos_version > 18:
+                boot_args.append("igfxonln=1")
+
+            if "Ice Lake" in cpu_codename:
+                boot_args.extend(["-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"])
+
             if "Laptop" in platform:
                 if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=6):
                     boot_args.append("-igfxbl{}".format("t" if macos_version > 22 else "r"))
 
-                if "UHD" in integrated_gpu_name and macos_version > 18:
-                    boot_args.append("igfxonln=1")
+        if "Navi" in discrete_gpu_codename and not "Navi 2" in discrete_gpu_codename:
+            boot_args.append("agdpmod=pikera")
 
-                if "Ice Lake" in cpu_codename:
-                    boot_args += ["-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"]
-            else:
-                if "Navi" in discrete_gpu_codename and not "Navi 2" in discrete_gpu_codename:
-                    boot_args.append("agdpmod=pikera")
-                elif "UHD" in integrated_gpu_name and macos_version > 18:
-                        boot_args.append("igfxonln=1")
-
-        if "Laptop" in platform and not "SURFACE" in motherboard_name and "I2C" in touchpad_communication:
+        if not "SURFACE" in motherboard_name and "I2C" in touchpad_communication:
             boot_args.append("-vi2c-force-polling")
 
         if macos_version > 23:
@@ -253,7 +251,7 @@ class ConfigProdigy:
 
         config["Booter"]["MmioWhitelist"] = self.mmio_whitelist(hardware.get("CPU Codename"))
         config["Booter"]["Patch"] = []
-        config["Booter"]["Quirks"]["DevirtualiseMmio"] = self.check_mats_support(hardware.get("CPU Manufacturer"), hardware.get("Motherboard Chipset"), hardware.get("CPU Codename"))
+        config["Booter"]["Quirks"]["DevirtualiseMmio"] = self.check_mats_support(hardware.get("CPU Manufacturer"), hardware.get("Motherboard Chipset"))
         if "AMD" in hardware.get("CPU Manufacturer") and not "TRX40" in hardware.get("Motherboard Chipset"):
             config["Booter"]["Quirks"]["DevirtualiseMmio"] = False
         config["Booter"]["Quirks"]["EnableWriteUnprotector"] = False if "AMD" in hardware.get("CPU Manufacturer") else not config["Booter"]["Quirks"]["DevirtualiseMmio"]
@@ -262,7 +260,6 @@ class ConfigProdigy:
         config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"]
         config["Booter"]["Quirks"]["ResizeAppleGpuBars"] = 0 if self.check_resizable_bar_support(
             hardware.get("Motherboard Chipset"), 
-            hardware.get("Platform"), 
             hardware.get("CPU Codename"), 
             hardware.get("Discrete GPU")
         ) else -1
