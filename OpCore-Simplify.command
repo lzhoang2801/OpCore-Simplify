@@ -286,7 +286,6 @@ main() {
         return 1
     fi
     # Found it - start our script and pass all args
-    "$python" -m pip install -r "$dir/requirements.txt"
     "$python" "$dir/$target" "${args[@]}"
 }
 

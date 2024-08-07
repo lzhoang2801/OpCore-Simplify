@@ -1,19 +1,18 @@
 from Scripts.datasets import pci_data
 from Scripts import gpu_identifier
 from Scripts import utils
-from bs4 import BeautifulSoup
 
 class AIDA64:
     def __init__(self):
         self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        self.encodings = ['utf-8', 'latin-1', 'ISO-8859-1']
+        self.encodings = ["utf-8", "latin-1", "ISO-8859-1"]
         self.gpu_identifier = gpu_identifier.GPUIdentifier()
         self.utils = utils.Utils()
     
     def try_open(self, file_path):
         for encoding in self.encodings:
             try:
-                with open(file_path, 'r', encoding=encoding) as file:
+                with open(file_path, "r", encoding=encoding) as file:
                     return file.read()
             except UnicodeDecodeError:
                 continue
@@ -280,7 +279,7 @@ class AIDA64:
             if not device_description:
                 device_id = device_props.get("Device ID", None)
                 revision_id = device_props.get("Revision", None)[:-1] if device_props.get("Revision") else None
-                hardware_id = 'USB\\VID_{}&PID_{}&REV_{}'.format(device_id[:4], device_id[5:], revision_id[:-1]) if device_id and revision_id else None
+                hardware_id = "USB\\VID_{}&PID_{}&REV_{}".format(device_id[:4], device_id[5:], revision_id[:-1]) if device_id and revision_id else None
 
                 if hardware_id:
                     device_description = self.utils.search_dict_iter(windows_devices, hardware_id + "&MI_00").get("Driver Description", None)
@@ -412,16 +411,16 @@ class AIDA64:
         parsed_dmi = {}
 
         for full_key, item_value in dmi_data.items():
-            occurrence_suffix = ''
+            occurrence_suffix = ""
             category_name = None
 
-            if '_#' in full_key:
-                suffix_idx = full_key.index('_#')
+            if "_#" in full_key:
+                suffix_idx = full_key.index("_#")
                 occurrence_suffix = full_key[suffix_idx:]
                 full_key = full_key[:suffix_idx]
 
-            if ' / ' in full_key:
-                category_idx = full_key.index(' / ')
+            if " / " in full_key:
+                category_idx = full_key.index(" / ")
                 category_name = full_key[:category_idx]
                 device_name = full_key[category_idx + 3:]
 
@@ -440,34 +439,35 @@ class AIDA64:
         for full_key, item_value in windows_devices.items():
             device_props = item_value.get("Device Properties", {})
             
-            # Update device properties with hardware ID if available
             if "Hardware ID" in device_props:
                 device_props.update(self.parse_hardware_id(device_props.get("Hardware ID")))
 
-            # Extract category name from the full key
             category_name = full_key.split(" / ")[0]
 
-            # Initialize category dictionary if not already present
             if category_name not in parsed_windows_devices:
                 parsed_windows_devices[category_name] = {}
 
-            # Extract device name from device properties
             device_name = device_props.get("Driver Description")
 
-            # Add device to category dictionary
             parsed_windows_devices[category_name][self.get_unique_key(device_name, parsed_windows_devices[category_name])] = device_props
 
         return parsed_windows_devices
+    
+    def get_inner_text(self, html_string):
+        text = ""
+        inside_tag = False
+        for char in html_string:
+            if char == "<":
+                inside_tag = True
+            elif char == ">":
+                inside_tag = False
+            elif not inside_tag:
+                text += char
+        return text.strip()
 
-    def html_to_dict(self, html_content):
-        soup = BeautifulSoup(html_content, "html.parser")
-        tables = soup.find_all('table')
-
-        if not tables:
-            return {}
-
-        root = {}
-        table_names = [
+    def parse_html_to_json(self, html_content):
+        parsed_data = {}
+        table_titles = [
             "Summary",
             "DMI",
             "CPU",
@@ -475,77 +475,62 @@ class AIDA64:
             "PCI Devices",
             "USB Devices"
         ]
-        table = None
 
-        for table_content in tables:
-            # Find the table header to identify the table
-            pt_element = table_content.find("td", class_="pt")
-            if pt_element:
-                table = pt_element.text.strip()
-            elif table in table_names:
-                root[table] = {}
-                stack = [(root[table], -1)]  # Stack holds (current_dict, current_level)
+        start_index = html_content.index("</div>") + len("</div>")
+        
+        for title in table_titles:
+            title_marker = f">{title}<"
+            if title_marker not in html_content[start_index:]:
+                raise Exception("Your AIDA64 report is missing some information. Please revise it according to the provided guidelines")
+            
+            title_index = html_content[start_index:].index(title_marker)
+            table_start_index = start_index + title_index + html_content[start_index+title_index:].index("\n")
+            table_end_index = table_start_index + 1 + html_content[table_start_index:].index("</TABLE>") + len("</TABLE>")
+            table_html = html_content[table_start_index:table_end_index].strip()
 
-                lines = str(table_content).strip().splitlines()
+            parsed_data[title] = {}
+            stack = [(parsed_data[title], -1)]
 
-                for line in lines:
-                    if line.startswith('<tr>'):
-                        # Remove <tr> tag
-                        line = line.replace('<tr>', '')
-
-                        # Calculate the current level based on the number of <td> tags
-                        level = (len(line) - len(line.lstrip('<td>'))) // 3 - 1
-                        if level < 1:
-                            continue
-
-                        # Remove all <td> tags from the left
-                        while line.startswith("<td>"):
-                            line = line[line.find(">") + 1:]
-
-                        if not line.startswith('<td') and '<td' in line:
-                            idx = line.index('<td')
-                            line = '{}{}{}{}'.format('<td>', line[:idx], '</td>', line[idx:])
-                    else:
+            for line in table_html.splitlines():
+                if line.startswith("<TR>"):
+                    line = line.replace("<TR>", "")
+                    
+                    level = (len(line) - len(line.lstrip("<TD>"))) // 3 - 1
+                    if level < 1:
                         continue
 
-                    soup_line = BeautifulSoup(line, "html.parser")
-                    td_elements = soup_line.find_all('td')
-                    key = td_elements[0].text.strip()
-                    value = None if len(td_elements) < 2 else td_elements[-1].text.strip()
+                    while line.startswith("<TD>"):
+                        line = line[line.find(">") + 1:]
+                else:
+                    continue
 
-                    # Clean the key
-                    key = key.rstrip(":").strip("[]").strip()
+                line = line.replace("&nbsp;&nbsp;", "")
+                td_elements = line.split("<TD>")
+                key = self.get_inner_text(td_elements[0])
+                value = None if len(td_elements) < 2 else self.get_inner_text(td_elements[-1])
+                
+                key = key.rstrip(":").strip("[]").strip()
 
-                    # Pop from stack to find the correct parent dictionary
-                    while stack and stack[-1][1] >= level:
-                        stack.pop()
+                while stack and stack[-1][1] >= level:
+                    stack.pop()
+                
+                current_dict = stack[-1][0]
+                key = self.get_unique_key(key, current_dict)
 
-                    # Add the new key-value pair
-                    current_dict = stack[-1][0]
-                    key = self.get_unique_key(key, current_dict)
+                if value is None:
+                    new_dict = {}
+                    current_dict[key] = new_dict
+                    stack.append((new_dict, level))
+                else:
+                    current_dict[key] = value
 
-                    if value is None:
-                        new_dict = {}
-                        current_dict[key] = new_dict
-                        stack.append((new_dict, level))
-                    else:
-                        if '<td class="cc">' not in line:
-                            current_dict[key] = value
-                        else:
-                            if not current_dict.items():
-                                current_dict[key] = []
-                                current_dict[value] = []
-                            else:
-                                current_dict[list(current_dict.keys())[0]].append(key)
-                                current_dict[list(current_dict.keys())[1]].append(value)
+            start_index = table_end_index
 
-        if len(table_names) != len(root):
-            raise Exception("Your AIDA64 report is missing some information. Please revise it according to the provided guidelines")
-        return root
+        return parsed_data
 
     def dump(self, report_path):
         html_content = self.try_open(report_path)
-        report_dict = self.html_to_dict(html_content)
+        report_dict = self.parse_html_to_json(html_content)
 
         dmi = self.parse_dmi(report_dict.get("DMI", {}))
         windows_devices = self.parse_windows_devices(report_dict.get("Windows Devices", {}))

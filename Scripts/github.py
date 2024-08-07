@@ -1,19 +1,14 @@
 from Scripts import resource_fetcher
 from Scripts import utils
-from dotenv import load_dotenv
 import os
-
-load_dotenv()
 
 class Github:
     def __init__(self):
         self.utils = utils.Utils()
-        # Load the GitHub token from environment variables
-        self.github_token = os.getenv("GITHUB_TOKEN")
         # Set the headers for GitHub API requests
         self.headers = {
             "Accept": "application/vnd.github+json",
-            "#Authorization": "token {}".format(self.github_token),
+            "#Authorization": "token GITHUB_TOKEN",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         self.fetcher = resource_fetcher.ResourceFetcher(self.headers)

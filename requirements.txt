@@ -1,4 +1,0 @@
-bs4
-requests
-python-dotenv
-pytz

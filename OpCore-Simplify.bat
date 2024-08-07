@@ -303,7 +303,6 @@ REM Python found
 cls
 set "args=%*"
 set "args=!args:"=!"
-"!pypath!" -m pip install -r "!thisDir!\requirements.txt"
 if "!args!"=="" (
     "!pypath!" "!thisDir!!script_name!"
 ) else (
