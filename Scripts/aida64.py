@@ -44,7 +44,7 @@ class AIDA64:
             return {
                 "Bus Type": hardware_id.split("\\")[0],
                 "Device ID": "{}-{}".format(hardware_id.split("VID_")[-1].split("&")[0], hardware_id.split("PID_")[-1].split("&")[0]),
-                "Revision": hardware_id.split("REV_")[-1].split("\\")[0]
+                "Revision": hardware_id.split("REV_")[-1].split("&")[0].split("\\")[0]
             }
         
         return {
