@@ -78,18 +78,13 @@ class AIDA64:
         elif "NUC" in motherboard_info["Motherboard Name"]:
             motherboard_info["Platform"] = "NUC"
 
-        # Count and format CPU configuration
-        motherboard_info["CPU Configuration"] = str(len(dmi.get("Processors", {}))).zfill(2)
-
         return motherboard_info
     
     def cpu(self, cpu_table):
         cpu_info = {}
 
-        # Extract CPU Manufacturer
         cpu_info["CPU Manufacturer"] = cpu_table.get("CPU Manufacturer", {}).get("Company Name", "Unknown")
 
-        # Extract Processor Name
         cpu_props = cpu_table.get("CPU Properties", {})
         cpu_info["Processor Name"] = cpu_props.get("CPU Type", "Unknown").split(",")[0]
 
@@ -106,18 +101,12 @@ class AIDA64:
                 cpu_info["CPU Manufacturer"] = "AMD"
             cpu_info["Processor Name"] += cpu_info["CPU Manufacturer"] + processor_name.split(cpu_info["CPU Manufacturer"])[-1]
 
-        # Extract CPU Codename
         cpu_info["CPU Codename"] = cpu_props.get("CPU Alias", "Unknown")
 
-        # Extract CPU Cores count
-        core_indices = []
-        for key in list(cpu_table.get("CPU Utilization", {}).keys()):
-            core_index = key.split("#")[2].split(" ")[0]
-            if "CPU #1" in key and core_index not in core_indices:
-                core_indices.append(core_index)
-        cpu_info["CPU Cores"] = str(len(core_indices)).zfill(2)
+        cpu_info["CPU Cores"] = str(sum(1 for key in list(cpu_table.get("CPU Utilization", {}).keys()) if not "SMT Unit" in key or "SMT Unit #1" in key)).zfill(2)
 
-        # Extract Instruction Set
+        cpu_info["CPU Configuration"] = list(cpu_table.get("CPU Utilization", {}).keys())[-1].split(" / ")[0].split("#")[-1].zfill(2)
+
         cpu_info["Instruction Set"] = cpu_props.get("Instruction Set", "Unknown")
 
         return cpu_info

@@ -387,7 +387,7 @@ class builder:
         hardware_shorc["Motherboard Name"] = hardware["Motherboard"].get("Motherboard Name").upper()
         hardware_shorc["Motherboard Chipset"] = hardware["Motherboard"].get("Motherboard Chipset").upper()
         hardware_shorc["Platform"] = hardware["Motherboard"].get("Platform")
-        hardware_shorc["CPU Configuration"] = hardware["Motherboard"].get("CPU Configuration")
+        hardware_shorc["CPU Configuration"] = hardware["CPU"].get("CPU Configuration")
         hardware_shorc["CPU Manufacturer"] = hardware["CPU"].get("CPU Manufacturer")
         hardware_shorc["Processor Name"] = hardware["CPU"].get("Processor Name")
         hardware_shorc["CPU Cores"] = hardware["CPU"].get("CPU Cores")
