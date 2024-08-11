@@ -343,9 +343,9 @@ class builder:
 
         kexts_directory = os.path.join(efi_directory, "EFI", "OC", "Kexts")
         kext_list = self.utils.find_matching_paths(kexts_directory, ".kext")
-        kext_loaded = [kext.get("BundlePath") for kext in config.get("Kernel").get("Add")]
+        kext_loaded = [os.path.basename(kext.get("BundlePath")) for kext in config.get("Kernel").get("Add")]
         for kext_path in kext_list:
-            if not kext_path in kext_loaded:
+            if not os.path.basename(kext_path) in kext_loaded:
                 files_to_remove.append(os.path.join(kexts_directory, kext_path))
 
         tools_directory = os.path.join(efi_directory, "EFI", "OC", "Tools")
