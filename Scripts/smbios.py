@@ -10,9 +10,8 @@ class SMBIOS:
         self.g = gathering_files.gatheringFiles()
         self.utils = utils.Utils()
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
-        self.macserial = self.check_macserial()
 
-    def check_macserial(self, quit=False):
+    def check_macserial(self):
         macserial_name = "macserial.exe" if os.name == "nt" else "macserial"
         macserial_path = os.path.join(self.script_dir, macserial_name)
 
@@ -27,23 +26,21 @@ class SMBIOS:
                     download_history["last_updated"] = "2024-07-25T12:00:00"
                     self.utils.write_file(self.g.download_history_file, download_history)
 
-            if quit:
-                raise Exception("{} not found. Please reopen the program to download it".format(macserial_name))
-        else:
-            return macserial_path
+            raise Exception("{} not found. Please reopen the program to download it".format(macserial_name))
+        
+        return macserial_path
 
     def generate_random_mac(self):
         random_mac = ''.join([format(random.randint(0, 255), '02X') for _ in range(6)])
         return random_mac
 
     def generate(self, product_name):
-        if not self.macserial:
-            self.check_macserial(True)
+        macserial = self.check_macserial()
 
         random_mac_address = self.generate_random_mac()
 
         result = subprocess.run(
-            [self.macserial, "-g", "--model", product_name],
+            [macserial, "-g", "--model", product_name],
             capture_output=True,
             check=True,  # Raises CalledProcessError for non-zero return code
         )
