@@ -432,8 +432,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "IMEI", 0x00000000)
                         "Path": ssdt_name + ".aml"
                     })
 
-    def add_memory_controller_device(self, cpu_manufacturer, cpu_codename, smbios):
-        if "Intel" not in cpu_manufacturer or "MacPro" in smbios and self.is_intel_hedt_cpu(cpu_codename):
+    def add_memory_controller_device(self, cpu_manufacturer, smbios):
+        if "Intel" not in cpu_manufacturer or "MacPro" in smbios:
             return
         
         comment = "Add a Memory Controller Hub Controller device to fix AppleSMBus"
@@ -2904,7 +2904,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
             self.dsdt = self.acpi.get_dsdt_or_only()
             self.get_low_pin_count_bus_device()
             self.add_intel_management_engine(cpu_codename, intel_mei)
-            self.add_memory_controller_device(cpu_manufacturer, cpu_codename, smbios)
+            self.add_memory_controller_device(cpu_manufacturer, smbios)
             self.add_null_ethernet_device(ethernet_pci)
             self.add_system_management_bus_device(cpu_manufacturer, cpu_codename)
             self.add_usb_power_properties(smbios)
