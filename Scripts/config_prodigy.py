@@ -301,7 +301,6 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["PanicNoKextDump"] = config["Kernel"]["Quirks"]["PowerTimeoutKernelPanic"] = True
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware.get("CPU Manufacturer") or \
             not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), start=13) is None
-        config["Kernel"]["Quirks"]["SetApfsTrimTimeout"] = 0 if any(controller_props.get("Device ID").startswith("144D") for controller_name, controller_props in hardware.get("Storage Controllers").items()) else -1
 
         config["Misc"]["BlessOverride"] = []
         config["Misc"]["Boot"]["LauncherOption"] = "Full"
