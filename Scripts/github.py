@@ -1,6 +1,5 @@
 from Scripts import resource_fetcher
 from Scripts import utils
-import os
 
 class Github:
     def __init__(self):

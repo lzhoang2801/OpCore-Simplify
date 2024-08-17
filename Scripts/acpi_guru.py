@@ -14,7 +14,6 @@ import re
 import tempfile
 import shutil
 import sys
-import subprocess
 
 class ACPIGuru:
     def __init__(self):
