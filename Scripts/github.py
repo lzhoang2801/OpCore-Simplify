@@ -20,18 +20,6 @@ class Github:
         if response.get("rate").get("remaining") == 0:
             raise Exception("Please try again later, you have exhausted your GitHub REST API request quota")
         
-    def get_list_branches(self, owner, repo):
-        self.check_ratelimit()
-
-        url = "https://api.github.com/repos/{}/{}/branches".format(owner, repo)
-
-        response = self.fetcher.fetch_and_parse_content(url, "json")
-
-        if not response:
-            return []
-
-        return response
-        
     def get_latest_artifact(self, owner, repo):
         results = []
 
