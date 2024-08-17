@@ -66,13 +66,12 @@ class Github:
             download_url = asset.get("browser_download_url")
             asset_name = self.extract_asset_name(asset.get("name"))
 
-            if "apple" in download_url.lower() or ("app" not in download_url.lower() and "dsym" not in download_url.lower() and "adget" not in download_url):
-                if "lzhoang2601" in download_url or "tlwm" in download_url or ("tlwm" not in download_url and "DEBUG" not in download_url.upper()):
-                    result.append({
-                        "product_name": asset_name, 
-                        "id": asset_id, 
-                        "url": download_url
-                    })
+            if "tlwm" in download_url or ("tlwm" not in download_url and "DEBUG" not in download_url.upper()):
+                result.append({
+                    "product_name": asset_name, 
+                    "id": asset_id, 
+                    "url": download_url
+                })
 
         return result
     
