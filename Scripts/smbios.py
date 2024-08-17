@@ -1,4 +1,5 @@
 from Scripts import gathering_files
+from Scripts import run
 from Scripts import utils
 import os
 import subprocess
@@ -8,6 +9,7 @@ import random
 class SMBIOS:
     def __init__(self):
         self.g = gathering_files.gatheringFiles()
+        self.run = run.Run().run
         self.utils = utils.Utils()
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -39,17 +41,19 @@ class SMBIOS:
 
         random_mac_address = self.generate_random_mac()
 
-        result = subprocess.run(
-            [macserial, "-g", "--model", product_name],
-            capture_output=True,
-            check=True,  # Raises CalledProcessError for non-zero return code
-        )
-        first_serial = result.stdout.decode().splitlines()[0]
+        output = self.run({
+            "args":[macserial, "-g", "--model", product_name]
+        })
+        
+        if output[-1] != 0 or not " | " in output[0]:
+            serial = []
+        else:
+            serial = output[0].splitlines()[0].split(" | ")
 
         return {
-            "MLB": "A" + "0"*15 + "Z" if not " | " in first_serial else first_serial.split(" | ")[-1],
+            "MLB": "A" + "0"*15 + "Z" if not serial else serial[-1],
             "ROM": random_mac_address,
             "SystemProductName": product_name,
-            "SystemSerialNumber": "A" + "0"*10 + "9" if not " | " in first_serial else first_serial.split(" | ")[0],
+            "SystemSerialNumber": "A" + "0"*10 + "9" if not serial else serial[0],
             "SystemUUID": str(uuid.uuid4()).upper(),
         }
