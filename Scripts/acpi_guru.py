@@ -6,6 +6,7 @@ from Scripts.datasets import cpu_data
 from Scripts.datasets import pci_data
 from Scripts import smbios
 from Scripts import dsdt
+from Scripts import run
 from Scripts import utils
 import os
 import binascii
@@ -19,6 +20,7 @@ class ACPIGuru:
     def __init__(self):
         self.acpi = dsdt.DSDT()
         self.smbios = smbios.SMBIOS()
+        self.run = run.Run().run
         self.utils = utils.Utils()
         self.dsdt = None
         self.lpc_bus_device = None
@@ -355,12 +357,11 @@ class ACPIGuru:
         if not compile:
             return False
         
-        compile = subprocess.run(
-            [self.acpi.iasl, dsl_path],
-            capture_output=True,
-            check=True,  # Raises CalledProcessError for non-zero return code
-        )
-        if "Compilation successful" not in compile.stdout.decode().strip():
+        output = self.run({
+            "args":[self.acpi.iasl, dsl_path]
+        })
+        
+        if output[-1] != 0:
             return False
         else:
             os.remove(dsl_path)
