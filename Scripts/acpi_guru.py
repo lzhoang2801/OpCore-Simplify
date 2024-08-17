@@ -1230,7 +1230,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPI0", 0x00000000)
         })
     
     def enable_nvram_support(self, motherboard_chipset):
-        if not self.utils.contains_any(["H310", "H370", "B360", "B365", "Z390"], motherboard_chipset) or not self.lpc_bus_device:
+        if not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=85, end=97) or not self.lpc_bus_device:
             return
         
         comment = "Add a PMCR device to enable NVRAM support for 300-series mainboards"
