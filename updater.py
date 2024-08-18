@@ -1,4 +1,6 @@
 from Scripts import resource_fetcher
+from Scripts import github
+from Scripts import run
 from Scripts import utils
 import os
 import tempfile
@@ -6,31 +8,30 @@ import shutil
 
 class Updater:
     def __init__(self):
+        self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher({
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
         })
+        self.run = run.Run().run
         self.utils = utils.Utils()
-        self.verion_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "version.json")
+        self.sha_version = os.path.join(os.path.dirname(os.path.realpath(__file__)), "sha_version.json")
         self.download_repo_url = "https://github.com/lzhoang2801/OpCore-Simplify/archive/refs/heads/main.zip"
-        self.version_url = "https://raw.githubusercontent.com/lzhoang2801/OpCore-Simplify/main/version.json"
         self.temporary_dir = tempfile.mkdtemp()
 
-    def get_current_version(self):
-        version_data = self.utils.read_file(self.verion_file)
+    def get_current_sha_version(self):
+        sha_version_data = self.utils.read_file(self.sha_version)
 
-        if not version_data or not isinstance(version_data, dict):
-            print("Version information is missing in the version.json file.\n")
-            return "0.0.0"
+        if not sha_version_data or not isinstance(sha_version_data, dict):
+            print("SHA version information is missing in the commit_sha.json file.\n")
+            return "0506fb67111d5c5230bf59b826c318ea4251dfc4"
 
-        return version_data.get("version", "0.0.0")
+        return sha_version_data.get("sha_version", "0506fb67111d5c5230bf59b826c318ea4251dfc4")
 
-    def get_latest_version(self):
-        response = self.fetcher.fetch_and_parse_content(self.version_url, "json")
+    def get_latest_sha_version(self):
+        latest_commit = self.github.get_latest_commit("lzhoang2801", "OpCore-Simplify")
 
-        latest_version = response.get('version')
-
-        return latest_version or "0.0.0"
+        return latest_commit.get("sha") or "0506fb67111d5c5230bf59b826c318ea4251dfc4"
 
     def download_update(self):
         self.utils.mkdirs(self.temporary_dir)
@@ -45,20 +46,32 @@ class Updater:
                 source = os.path.join(root, file)
                 destination = source.replace(target_dir, os.path.dirname(os.path.realpath(__file__)))
                 shutil.move(source, destination)
+                if ".command" in os.path.splitext(file)[-1] and os.name != "nt":
+                    self.run({
+                        "args":["chmod", "+x", destination]
+                    })
         shutil.rmtree(self.temporary_dir)
+
+    def save_latest_sha_version(self, latest_sha):
+        sha_version_info = {
+            "sha_version": latest_sha
+        }
+
+        self.utils.write_file(self.sha_version, sha_version_info)
 
     def run_update(self):
         self.utils.head("Check for update")
         print("")
-        current_version = self.get_current_version()
-        latest_version = self.get_latest_version()
-        print("Current script version: {}".format(current_version))
-        print("Latest script version: {}".format(latest_version))
+        current_sha_version = self.get_current_sha_version()
+        latest_sha_version = self.get_latest_sha_version()
+        print("Current script SHA version: {}".format(current_sha_version))
+        print("Latest script SHA version: {}".format(latest_sha_version))
         print("")
-        if latest_version > current_version:
-            print("Updating from version {} to {}\n".format(current_version, latest_version))
+        if latest_sha_version != current_sha_version:
+            print("Updating from version {} to {}\n".format(current_sha_version, latest_sha_version))
             self.download_update()
             self.update_files()
+            self.save_latest_sha_version(latest_sha_version)
             print("\n\n{}\n".format(self.utils.message("The program needs to restart to complete the update process.", "reminder")))
             self.utils.request_input("Press Enter to restart...")
             return True
