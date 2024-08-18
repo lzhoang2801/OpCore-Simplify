@@ -334,6 +334,7 @@ class ConfigProdigy:
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = "en:252"
         if efi_option.get("Custom CPU Name"):
             config["NVRAM"]["Delete"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"].extend(["revcpu", "revcpuname"])
+        config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].append("csr-active-config")
 
         config["PlatformInfo"]["Generic"].update(self.smbios.generate(efi_option.get("SMBIOS")))
         if efi_option.get("Custom CPU Name"):
