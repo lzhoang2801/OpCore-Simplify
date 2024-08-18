@@ -456,6 +456,7 @@ class builder:
             hardware_shorc["CPU Configuration"], 
             hardware_shorc["CPU Manufacturer"], 
             hardware_shorc["CPU Codename"], 
+            hardware_shorc["CPU Cores"], 
             hardware_shorc["Discrete GPU"].get("GPU Codename", ""), 
             hardware_shorc["Integrated GPU"], 
             hardware_shorc.get("Network"), 

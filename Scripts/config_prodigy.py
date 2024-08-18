@@ -115,7 +115,7 @@ class ConfigProdigy:
         elif tsc_sync:
             kernel_patch.extend(self.g.get_amd_kernel_patches()[-6:-4])
         
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13):
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) and int(cpu_cores) > 6:
             kernel_patch.append({
                 "Arch": "Any",
                 "Base": "_cpu_thread_alloc",
@@ -160,7 +160,7 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, motherboard_name, platform, cpu_manufacturer, cpu_codename, discrete_gpu_codename, discrete_gpu_id, integrated_gpu_name, codec_id, touchpad_communication, unsupported_devices, custom_cpu_name, macos_version):
+    def boot_args(self, motherboard_name, platform, cpu_manufacturer, cpu_codename, cpu_cores, discrete_gpu_codename, discrete_gpu_id, integrated_gpu_name, codec_id, touchpad_communication, unsupported_devices, custom_cpu_name, macos_version):
         boot_args = [
             "-v",
             "debug=0x100",
@@ -176,7 +176,7 @@ class ConfigProdigy:
         if macos_version > 22:
             boot_args.append("revpatch=sbvmm{}".format(",cpuname" if custom_cpu_name else ""))
 
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13):
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) and int(cpu_cores) > 6:
             boot_args.append("-ctrsmt")
 
         if "Intel" in cpu_manufacturer:
@@ -320,6 +320,7 @@ class ConfigProdigy:
             hardware.get("Platform"), 
             hardware.get("CPU Manufacturer"), 
             hardware.get("CPU Codename"), 
+            hardware.get("CPU Cores"), 
             hardware.get("Discrete GPU").get("GPU Codename", ""), 
             hardware.get("Discrete GPU").get("Device ID", ""), 
             hardware.get("Integrated GPU Name"), 
