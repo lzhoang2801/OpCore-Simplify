@@ -73,7 +73,6 @@ class Updater:
             self.update_files()
             self.save_latest_sha_version(latest_sha_version)
             print("\n\n{}\n".format(self.utils.message("The program needs to restart to complete the update process.", "reminder")))
-            self.utils.request_input("Press Enter to restart...")
             return True
         else:
             print("You are already using the latest version")
