@@ -397,16 +397,7 @@ class builder:
         hardware_shorc["Discrete GPU"] = list(hardware.get("GPU").items())[0][1].copy() if "Discrete GPU" in list(hardware.get("GPU").items())[0][1]["Device Type"] else {}
         if hardware_shorc["Discrete GPU"]:
             hardware_shorc["Discrete GPU"]["GPU Name"] = list(hardware.get("GPU").keys())[0]
-        hardware_shorc["Ethernet (PCI)"] = []
-        for network_name, network_props in hardware["Network"].items():
-            connection_name = network_props["Connection Name"]
-            bus_type = network_props["Bus Type"]
-
-            if bus_type.startswith("PCI"):
-                if connection_name.startswith("WiFi"):
-                    hardware_shorc["Wi-Fi (PCI)"] = network_props.get("Device ID")
-                elif connection_name.startswith("Ethernet"):
-                    hardware_shorc["Ethernet (PCI)"].append(network_props.get("Device ID"))
+        hardware_shorc["Network"] = hardware.get("Network")
         hardware_shorc["Bluetooth"] = [device_props.get("Device ID") for device_name, device_props in hardware.get("Bluetooth", {}).items()]
         hardware_shorc["Codec ID"] = next((device_props.get("Codec ID") for device_name, device_props in hardware.get("Audio").items()), None)
         hardware_shorc["SD Controller"] = hardware.get("SD Controller")
@@ -450,7 +441,7 @@ class builder:
             hardware_shorc["CPU Codename"],
             hardware_shorc["Integrated GPU"],
             hardware_shorc["Discrete GPU"],
-            hardware_shorc["Ethernet (PCI)"],
+            hardware_shorc["Network"],
             hardware_shorc["Touchpad Communication"],
             efi_option.get("SMBIOS"),
             hardware_shorc.get("Intel MEI"),
@@ -467,8 +458,7 @@ class builder:
             hardware_shorc["CPU Codename"], 
             hardware_shorc["Discrete GPU"].get("GPU Codename", ""), 
             hardware_shorc["Integrated GPU"], 
-            hardware_shorc.get("Wi-Fi (PCI)"), 
-            hardware_shorc["Ethernet (PCI)"], 
+            hardware_shorc.get("Network"), 
             hardware_shorc.get("Bluetooth"), 
             hardware_shorc.get("Codec ID"), 
             hardware_shorc["Input"], 
@@ -478,7 +468,7 @@ class builder:
             efi_option.get("SMBIOS"),
             efi_option.get("Custom CPU Name"),
             efi_option.get("Synchronize the TSC"),
-            efi_option.get("ACPI").get("Battery Status Patch Needed"),
+            efi_option.get("ACPI"),
             efi_option.get("macOS Version")
         )
 

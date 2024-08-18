@@ -266,19 +266,15 @@ class AIDA64:
                 network_adapters = self.utils.search_dict_iter(windows_devices, network_adapter)
 
                 for adapter_name, adapter_props in network_adapters.items():
-                    device_description = adapter_name + adapter_props.get("PCI Device", "Unknown")
-                    connection_name = "WiFi" if "WiFi" in device_description or "Wi-Fi" in device_description or "Wireless" in device_description else \
-                        "Ethernet" if "Network" in device_description or "Ethernet" in device_description else None
                     bus_type = adapter_props.get("Bus Type", "Unknown")
-                    if (bus_type.startswith("PCI") or bus_type.startswith("USB")) and connection_name:
+                    if bus_type.startswith("PCI") or bus_type.startswith("USB"):
                         device_key = adapter_props.get("PCI Device") if not " - " in adapter_props.get("PCI Device", " - ") else adapter_name
                         network_info[device_key.split(" [")[0]] = {
-                            "Connection Name": connection_name,
                             "Bus Type": bus_type,
                             "Device ID": adapter_props.get("Device ID", "Unknown")
                         }
 
-        return self.utils.sort_dict_by_key(network_info, "Connection Name")
+        return network_info
     
     def sd_controller(self, pci_devices, usb_devices, hardware):
         combined_devices = pci_devices.copy()

@@ -584,7 +584,7 @@ class KextMaestro:
 
         return pci_ids
 
-    def gathering_kexts(self, motherboard_name, platform, cpu_configuration, cpu_manufacturer, cpu_codename, discrete_gpu_codename, integrated_gpu, wifi_pci, ethernet_pci, bluetooth, codec_id, input, sd_controller, storage_controllers, usb_controllers, smbios, custom_cpu_name, tsc_sync, battery_status_patch_needed, macos_version):
+    def gathering_kexts(self, motherboard_name, platform, cpu_configuration, cpu_manufacturer, cpu_codename, discrete_gpu_codename, integrated_gpu, network, bluetooth, codec_id, input, sd_controller, storage_controllers, usb_controllers, smbios, custom_cpu_name, tsc_sync, acpi, macos_version):
         kexts = [
             "Lilu", 
             "VirtualSMC", 
@@ -614,36 +614,36 @@ class KextMaestro:
         else:
             kexts.append("NootRX" if "Navi 2" in discrete_gpu_codename else "WhateverGreen")
 
-        if wifi_pci and wifi_pci in pci_data.NetworkIDs:
-            if wifi_pci.startswith("14E4"):
-                if wifi_pci in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
+        if "SSDT-RMNE" in ", ".join(acpi_table.get("Path") for acpi_table in acpi.get("Add")):
+            kexts.append("NullEthernet")
+
+        wifi_pci = None
+        for network_name, network_props in network.items():
+            device_id = network_props.get("Device ID")
+
+            if self.utils.contains_any(pci_data.NetworkIDs, device_id, end=21):
+                wifi_pci = device_id
+                if device_id in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
                     if macos_version > 22:
                         kexts.extend(["AirportBrcmFixup", "IOSkywalkFamily", "IO80211FamilyLegacy", "AMFIPass"])
-                elif wifi_pci in pci_data.NetworkIDs:
+                elif device_id in pci_data.NetworkIDs:
                     kexts.append("AirportBrcmFixup")
-            elif wifi_pci.startswith("8086"):
+            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=21, end=108):
                 kexts.append("AirportItlwm" if macos_version < 23 else "itlwm")
-
-        if not ethernet_pci or not (ethernet_pci[0] in pci_data.NetworkIDs or ethernet_pci[-1] in pci_data.NetworkIDs):
-            kexts.append("NullEthernet")
-        else:
-            for pci_id in ethernet_pci:
-                idx = pci_data.NetworkIDs.index(pci_id)
-
-                if 108 <= idx <= 114:
-                    kexts.append("AppleIGC")
-                elif 115 <= idx <= 121:
-                    kexts.append("AtherosE2200Ethernet")
-                elif 122 <= idx <= 172:
-                    kexts.append("IntelMausi")
-                elif 173 <= idx <= 175:
-                    kexts.append("LucyRTL8125Ethernet")
-                elif idx == 176:
-                    kexts.append("RealtekRTL8100")
-                elif 177 <= idx <= 180:
-                    kexts.append("RealtekRTL8111")
-                elif 181 <= idx <= 218:
-                    kexts.append("AppleIGB")
+            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=108, end=115):
+                kexts.append("AppleIGC")
+            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=115, end=122):
+                kexts.append("AtherosE2200Ethernet")
+            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=122, end=173):
+                kexts.append("IntelMausi")
+            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=173, end=176):
+                kexts.append("LucyRTL8125Ethernet")
+            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=176, end=177):
+                kexts.append("RealtekRTL8100")
+            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=177, end=181):
+                kexts.append("RealtekRTL8111")
+            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=181, end=219):
+                kexts.append("AppleIGB")
 
         if bluetooth and macos_version > 20 and not wifi_pci in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
             kexts.append("BlueToolFixup")
@@ -689,7 +689,7 @@ class KextMaestro:
                             elif 79 < idx:
                                 kexts.append("VoodooRMI")
 
-        if "Laptop" in platform and "SURFACE" not in motherboard_name and battery_status_patch_needed:
+        if "Laptop" in platform and "SURFACE" not in motherboard_name and acpi.get("Battery Status Patch Needed"):
             kexts.append("ECEnabler")
 
         if sd_controller and sd_controller.get("Device ID") in pci_data.RealtekCardReaderIDs:

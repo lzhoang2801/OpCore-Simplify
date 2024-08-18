@@ -1509,9 +1509,10 @@ DefinitionBlock ("", "SSDT", 2, "CORP ", "SsdtEC", 0x00001000)
                 "Replace": "4701700070000102"
             })
 
-    def add_null_ethernet_device(self, ethernet_pci):
-        if ethernet_pci:
-            return
+    def add_null_ethernet_device(self, network):
+        for network_name, network_props in network.items():
+            if self.utils.contains_any(pci_data.NetworkIDs, network_props.get("Device ID"), start=108, end=219):
+                return
         
         random_mac_address = self.smbios.generate_random_mac()
         mac_address_byte = ", ".join([f'0x{random_mac_address[i:i+2]}' for i in range(0, len(random_mac_address), 2)])
@@ -2897,7 +2898,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
                 })
                 self.dropping_the_table("APIC")
 
-    def initialize_patches(self, motherboard_name, motherboard_chipset, platform, cpu_manufacturer, cpu_codename, integrated_gpu, discrete_gpu, ethernet_pci, touchpad_communication, smbios, intel_mei, unsupported_devices, macos_version, acpi_directory):
+    def initialize_patches(self, motherboard_name, motherboard_chipset, platform, cpu_manufacturer, cpu_codename, integrated_gpu, discrete_gpu, network, touchpad_communication, smbios, intel_mei, unsupported_devices, macos_version, acpi_directory):
         self.acpi_directory = self.check_acpi_directory(acpi_directory)
 
         if self.select_dsdt():
@@ -2905,7 +2906,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
             self.get_low_pin_count_bus_device()
             self.add_intel_management_engine(cpu_codename, intel_mei)
             self.add_memory_controller_device(cpu_manufacturer, smbios)
-            self.add_null_ethernet_device(ethernet_pci)
+            self.add_null_ethernet_device(network)
             self.add_system_management_bus_device(cpu_manufacturer, cpu_codename)
             self.add_usb_power_properties(smbios)
             self.ambient_light_sensor(motherboard_name, platform, integrated_gpu)

@@ -139,7 +139,6 @@ class CompatibilityChecker:
         supported_network = {}
         
         for device_name, device_props in network_info.items():
-            connection_name = device_props.get("Connection Name")
             bus_type = device_props.get("Bus Type")
             device_id = device_props.get("Device ID")
             is_device_supported = device_id in pci_data.NetworkIDs
@@ -149,7 +148,7 @@ class CompatibilityChecker:
                     self.min_supported_macos_version = 19
 
             if not is_device_supported:
-                self.unsupported_devices["{}: {}".format(connection_name, device_name)] = device_props
+                self.unsupported_devices["Network: {}".format(device_name)] = device_props
             else:
                 supported_network[device_name] = device_props
 

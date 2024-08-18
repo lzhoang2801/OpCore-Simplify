@@ -159,7 +159,7 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, motherboard_name, platform, cpu_manufacturer, cpu_codename, discrete_gpu_codename, discrete_gpu_id, integrated_gpu_name, ethernet_pci, codec_id, touchpad_communication, unsupported_devices, custom_cpu_name, macos_version):
+    def boot_args(self, motherboard_name, platform, cpu_manufacturer, cpu_codename, discrete_gpu_codename, discrete_gpu_id, integrated_gpu_name, codec_id, touchpad_communication, unsupported_devices, custom_cpu_name, macos_version):
         boot_args = [
             "-v",
             "debug=0x100",
@@ -177,12 +177,6 @@ class ConfigProdigy:
 
         if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13):
             boot_args.append("-ctrsmt")
-
-        if ethernet_pci in ["8086-15F2", "8086-15F3", "8086-15F8"]:
-            if macos_version == 20:
-                boot_args.append("dk.e1000=0")
-            elif macos_version == 21:
-                boot_args.append("e1000=0")
 
         if "Intel" in cpu_manufacturer:
             if "UHD" in integrated_gpu_name and macos_version > 18:
@@ -328,7 +322,6 @@ class ConfigProdigy:
             hardware.get("Discrete GPU").get("GPU Codename", ""), 
             hardware.get("Discrete GPU").get("Device ID", ""), 
             hardware.get("Integrated GPU Name"), 
-            hardware.get("Ethernet (PCI)"), 
             hardware.get("Codec ID"),
             hardware.get("Touchpad Communication"),
             ", ".join(list(hardware.get("Unsupported Devices").keys())),
