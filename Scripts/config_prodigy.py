@@ -66,19 +66,21 @@ class ConfigProdigy:
 
         return deviceproperties_add
 
-    def block_kext_bundle(self, wifi_pci, macos_version):
+    def block_kext_bundle(self, network, macos_version):
         kernel_block = []
 
-        if wifi_pci and macos_version > 22 and wifi_pci in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
-            kernel_block.append({
-                "Arch": "x86_64",
-                "Comment": "Allow IOSkywalk Downgrade",
-                "Enabled": True,
-                "Identifier": "com.apple.iokit.IOSkywalkFamily",
-                "MaxKernel": "",
-                "MinKernel": "",
-                "Strategy": "Exclude"
-            })
+        if macos_version > 22:
+            for network_name, network_props in network.items():
+                if network_props.get("Device ID") in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
+                    kernel_block.append({
+                        "Arch": "x86_64",
+                        "Comment": "Allow IOSkywalk Downgrade",
+                        "Enabled": True,
+                        "Identifier": "com.apple.iokit.IOSkywalkFamily",
+                        "MaxKernel": "",
+                        "MinKernel": "",
+                        "Strategy": "Exclude"
+                    })
         
         return kernel_block
 
@@ -263,7 +265,7 @@ class ConfigProdigy:
         config["DeviceProperties"]["Add"] = self.deviceproperties(hardware.get("CPU Codename"), hardware.get("Intel MEI"), efi_option.get("iGPU Properties"))
 
         config["Kernel"]["Add"] = efi_option.get("Kernel_Add")
-        config["Kernel"]["Block"] = self.block_kext_bundle(hardware.get("Wi-Fi (PCI)"), efi_option.get("macOS Version"))
+        config["Kernel"]["Block"] = self.block_kext_bundle(hardware.get("Network"), efi_option.get("macOS Version"))
         spoof_cpuid = self.spoof_cpuid(
             hardware.get("Processor Name"), 
             hardware.get("CPU Codename"), 
