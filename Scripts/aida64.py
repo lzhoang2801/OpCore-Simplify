@@ -427,7 +427,10 @@ class AIDA64:
             "USB Devices"
         ]
 
-        start_index = html_content.index("</div>") + len("</div>")
+        try:
+            start_index = html_content.index("</div>") + len("</div>")
+        except:
+            raise Exception("Your AIDA64 report is missing some information. Please revise it according to the provided guidelines")
         
         for title in table_titles:
             title_marker = f">{title}<"
