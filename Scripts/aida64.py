@@ -71,7 +71,7 @@ class AIDA64:
 
         # Extract platform type from chassis information
         motherboard_info["Platform"] = dmi.get("Chassis", {}).get("Chassis Properties", {}).get("Chassis Type", "Unknown")
-        if any(word in motherboard_info["Platform"].lower() for word in ["convertible", "notebook", "laptop", "docking station"]):
+        if any(word in motherboard_info["Platform"].lower() for word in ["convertible", "notebook", "laptop", "docking station", "portable"]):
             motherboard_info["Platform"] = "Laptop"
         elif any(word in motherboard_info["Platform"].lower() for word in ["desktop", "mini pc"]):
             motherboard_info["Platform"] = "Desktop"
