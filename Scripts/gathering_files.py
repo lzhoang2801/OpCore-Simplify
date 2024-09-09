@@ -104,8 +104,8 @@ class gatheringFiles:
             },
             {
                 "product_name": "AMFIPass", 
-                "id": 826491527, 
-                "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/76516394fddb7ce4526ccbcc5b806795c30e9a89/payloads/Kexts/Acidanthera/AMFIPass-v1.4.1-RELEASE.zip"
+                "id": 926491527, 
+                "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Acidanthera/AMFIPass-v1.4.1-RELEASE.zip"
             },
             {
                 "product_name": "AppleIGB", 
@@ -154,8 +154,8 @@ class gatheringFiles:
             },
             {
                 "product_name": "IOSkywalkFamily", 
-                "id": 926384761, 
-                "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IOSkywalkFamily-v1.1.0.zip"
+                "id": 926584761, 
+                "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IOSkywalkFamily-v1.2.0.zip"
             },
             {
                 "product_name": "LucyRTL8125Ethernet", 
