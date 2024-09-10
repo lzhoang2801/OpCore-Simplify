@@ -177,12 +177,17 @@ class builder:
         return any(cpu_branding in processor_name for cpu_branding in ["Celeron", "Pentium"])
   
     def check_igpu_compatibility(self, cpu_codename, macos_version):
-        return not (("Sandy Bridge" in cpu_codename and macos_version > 17) or ("Ivy Bridge" in cpu_codename and macos_version > 20) or (("Haswell" in cpu_codename or "Broadwell" in cpu_codename) and macos_version > 21) or (("Skylake" in cpu_codename or "Kaby Lake" in cpu_codename) and macos_version > 22) or (("Amber Lake" in cpu_codename or "Whiskey Lake" in cpu_codename) and macos_version == 17) or ("Ice Lake" in cpu_codename and 19 > macos_version))
+        return not (("Sandy Bridge" in cpu_codename and macos_version > (17, 0, 0)) or \
+                    ("Ivy Bridge" in cpu_codename and macos_version > (20, 0, 0)) or \
+                    (("Haswell" in cpu_codename or "Broadwell" in cpu_codename) and macos_version > (21, 0, 0)) or \
+                    (("Skylake" in cpu_codename or "Kaby Lake" in cpu_codename) and macos_version > (22, 0, 0)) or \
+                    (("Amber Lake" in cpu_codename or "Whiskey Lake" in cpu_codename) and macos_version == (17, 0, 0)) or \
+                    ("Ice Lake" in cpu_codename and (19, 0, 0) > macos_version))
 
     def igpu_properties(self, platform, processor_name, gpu_codename, discrete_gpu, integrated_gpu_manufacturer, integrated_gpu_name, macos_version):
-        if "Skylake".lower() in gpu_codename.lower() and macos_version > 21:
+        if "Skylake".lower() in gpu_codename.lower() and macos_version > (21, 0, 0):
             gpu_codename = "Kaby Lake"
-        if "Kaby Lake-R".upper() in gpu_codename.upper() and macos_version > 22:
+        if "Kaby Lake-R".upper() in gpu_codename.upper() and macos_version > (22, 0, 0):
             gpu_codename = "Coffee Lake"
 
         gpu_codename = self.utils.contains_any(cpu_data.IntelCPUGenerations, gpu_codename)
@@ -253,18 +258,18 @@ class builder:
         return igpu_properties   
 
     def system_product_info(self, platform, cpu_manufacturer, processor_name, cpu_codename, cpu_cores, discrete_gpu, igpu_props, macos_version):
-        product_name = "iMacPro1,1" if macos_version < 19 or self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=12) else "MacPro7,1"
+        product_name = "iMacPro1,1" if macos_version < (19, 0, 0) or self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=12) else "MacPro7,1"
 
         if "AMD" in cpu_manufacturer and not discrete_gpu:
             product_name = "MacBookPro16,3" if "Laptop" in platform else "iMacPro1,1"
 
         if igpu_props:
-            if "Kaby Lake-R".lower() in cpu_codename.lower() and macos_version > 22:
+            if "Kaby Lake-R".lower() in cpu_codename.lower() and macos_version > (22, 0, 0):
                 cpu_codename = "Coffee Lake"
 
             if "Sandy Bridge" in cpu_codename:
                 if "Desktop" in platform:
-                    if macos_version < 18:
+                    if macos_version < (18, 0, 0):
                         product_name = "iMac12,2"
                     else:
                         product_name = "MacPro6,1"
@@ -273,14 +278,14 @@ class builder:
                 else:
                     product_name = "MacBookPro8,1" if int(cpu_cores) < 4 else "MacBookPro8,2"
             elif "Ivy Bridge" in cpu_codename:
-                if macos_version == 20:
+                if macos_version == (20, 0, 0):
                     if "Desktop" in platform:
                         product_name = "iMac14,4" if not discrete_gpu else "iMac15,1"
                     elif "NUC" in platform:
                         product_name = "Macmini7,1"
                     else:
                         product_name = "MacBookPro11,1" if int(cpu_cores) < 4 else "MacBookPro11,5"
-                elif macos_version < 20:
+                elif macos_version < (20, 0, 0):
                     if "Desktop" in platform:
                         product_name = "iMac13,1" if not discrete_gpu else "iMac13,2"
                     elif "NUC" in platform:
@@ -292,12 +297,12 @@ class builder:
             elif "Haswell" in cpu_codename:
                 if "Desktop" in platform:
                     product_name = "iMac14,4" if not discrete_gpu else "iMac15,1"
-                    if macos_version == 21:
+                    if macos_version == (21, 0, 0):
                         product_name = "iMac16,2" if not discrete_gpu else "iMac17,1"
                 elif "NUC" in platform:
                     product_name = "Macmini7,1"
                 else:
-                    product_name = "MacBookPro11,1" if macos_version < 21 and int(cpu_cores) < 4 else "MacBookPro11,5"
+                    product_name = "MacBookPro11,1" if macos_version < (21, 0, 0) and int(cpu_cores) < 4 else "MacBookPro11,5"
             elif "Broadwell" in cpu_codename:
                 if "Desktop" in platform:
                     product_name = "iMac16,2" if not discrete_gpu else "iMac17,1"
@@ -312,7 +317,7 @@ class builder:
             elif self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=8, end=11):
                 product_name = "Macmini8,1"
                 if "Desktop" in platform:
-                    product_name = "iMac18,3" if macos_version == 17 else "iMac19,1"
+                    product_name = "iMac18,3" if macos_version == (17, 0, 0) else "iMac19,1"
                     if "Comet Lake" in cpu_codename:
                         product_name = "iMac20,1" if int(cpu_cores) < 10 else "iMac20,2"
                 elif "Laptop" in platform:

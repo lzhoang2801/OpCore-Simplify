@@ -1,6 +1,6 @@
 from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
-from Scripts.datasets import gpu_data
+from Scripts.datasets import os_data
 from Scripts import codec_layouts
 from Scripts import gathering_files
 from Scripts import smbios
@@ -12,7 +12,6 @@ class ConfigProdigy:
         self.g = gathering_files.gatheringFiles()
         self.smbios = smbios.SMBIOS()
         self.utils = utils.Utils()
-        self.latest_macos_version = "24.99.99"
         self.cpuids = {
             "Ivy Bridge": "A9060300",
             "Haswell": "C3060300",
@@ -69,7 +68,7 @@ class ConfigProdigy:
     def block_kext_bundle(self, network, macos_version):
         kernel_block = []
 
-        if macos_version > 22:
+        if macos_version > (22, 0, 0):
             for network_name, network_props in network.items():
                 if network_props.get("Device ID") in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
                     kernel_block.append({
@@ -101,7 +100,7 @@ class ConfigProdigy:
         elif "Ice Lake" not in cpu_codename and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10):
             if not "Comet Lake" in cpu_codename:
                 return self.cpuids.get("Comet Lake")
-            if macos_version < 19:
+            if macos_version < (19, 0, 0):
                 return self.cpuids.get("Coffee Lake")
             
         return None
@@ -134,8 +133,8 @@ class ConfigProdigy:
             })
 
         for index, patch in enumerate(kernel_patch):
-            max_supported_macos_version = patch.get("MaxKernel") or self.latest_macos_version
-            min_supported_macos_version = patch.get("MinKernel") or "17.0.0"
+            max_kernel = self.utils.parse_darwin_version(patch.get("MaxKernel") or os_data.get_latest_darwin_version())
+            min_kernel = self.utils.parse_darwin_version(patch.get("MinKernel") or os_data.get_lowest_darwin_version())
 
             if "cpuid_cores_per_package" in patch["Comment"]:
                 patch["Replace"] = patch["Replace"].hex()
@@ -152,7 +151,7 @@ class ConfigProdigy:
                     elif "shaneee" in patch["Comment"].lower():
                         patch["Enabled"] = True
 
-            if not min_supported_macos_version[:2] <= str(macos_version) <= max_supported_macos_version[:2] or not patch["Enabled"]:
+            if not min_kernel <= macos_version <= max_kernel or not patch["Enabled"]:
                 patches_to_remove.append(index)
         
         for index in patches_to_remove[::-1]:
@@ -167,20 +166,20 @@ class ConfigProdigy:
             "keepsyms=1"
         ]
 
-        if codec_id in codec_layouts.data and not ("AMD" in cpu_manufacturer and macos_version > 23):
+        if codec_id in codec_layouts.data and not ("AMD" in cpu_manufacturer and macos_version > (23, 0, 0)):
             boot_args.append("alcid={}".format(random.choice(codec_layouts.data.get(codec_id))))
 
         if "AMD" in cpu_manufacturer or self.is_intel_hedt_cpu(cpu_codename):
             boot_args.append("npci=0x2000")
 
-        if macos_version > 22:
+        if macos_version > (22, 0, 0):
             boot_args.append("revpatch=sbvmm{}".format(",cpuname" if custom_cpu_name else ""))
 
         if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) and int(cpu_cores) > 6:
             boot_args.append("-ctrsmt")
 
         if "Intel" in cpu_manufacturer:
-            if "UHD" in integrated_gpu_name and macos_version > 18:
+            if "UHD" in integrated_gpu_name and macos_version > (18, 0, 0):
                 boot_args.append("igfxonln=1")
 
             if "Ice Lake" in cpu_codename:
@@ -188,7 +187,7 @@ class ConfigProdigy:
 
             if "Laptop" in platform:
                 if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=6):
-                    boot_args.append("-igfxbl{}".format("t" if macos_version > 22 else "r"))
+                    boot_args.append("-igfxbl{}".format("t" if macos_version > (22, 0, 0) else "r"))
 
         if "Navi" in discrete_gpu_codename and not "Navi 2" in discrete_gpu_codename:
             boot_args.append("agdpmod=pikera")
@@ -196,7 +195,7 @@ class ConfigProdigy:
         if not "SURFACE" in motherboard_name and "I2C" in touchpad_communication:
             boot_args.append("-vi2c-force-polling")
 
-        if macos_version > 23:
+        if macos_version > (23, 0, 0):
             boot_args.append("-lilubetaall")
 
         if "Discrete GPU" in unsupported_devices:
@@ -214,9 +213,9 @@ class ConfigProdigy:
         return " ".join(boot_args)
     
     def csr_active_config(self, macos_version):
-        if macos_version > 19:
+        if macos_version > (19, 0, 0):
             return "03080000"
-        elif macos_version > 17:
+        elif macos_version > (17, 0, 0):
             return "FF070000"
         else:
             return "FF030000"
@@ -307,7 +306,7 @@ class ConfigProdigy:
         config["Misc"]["Entries"] = []
         config["Misc"]["Security"]["AllowSetDefault"] = True
         config["Misc"]["Security"]["ScanPolicy"] = 0
-        config["Misc"]["Security"]["SecureBootModel"] = "Default" if 19 < efi_option.get("macOS Version") < 23 else "Disabled"
+        config["Misc"]["Security"]["SecureBootModel"] = "Default" if (19, 0, 0) < efi_option.get("macOS Version") < (23, 0, 0) else "Disabled"
         config["Misc"]["Security"]["Vault"] = "Optional"
         config["Misc"]["Tools"] = []
 

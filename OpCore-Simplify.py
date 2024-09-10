@@ -1,3 +1,4 @@
+from Scripts.datasets import os_data
 from Scripts import aida64
 from Scripts import compatibility_checker
 from Scripts import efi_builder
@@ -6,6 +7,7 @@ from Scripts import utils
 import updater
 import os
 import sys
+import re
 
 class OCPE:
     def __init__(self):
@@ -17,17 +19,6 @@ class OCPE:
         self.u = utils.Utils()
         self.hardware = None
         self.compatibility = None
-        self.macos_version = None
-        self.macos_version_data = {
-            "24": "macOS Sequoia 15 (Beta)",
-            "23": "macOS Sonoma 14 (14.4+)",
-            "22": "macOS Ventura 13",
-            "21": "macOS Monterey 12",
-            "20": "macOS Big Sur 11",
-            "19": "macOS Catalina 10.15",
-            "18": "macOS Mojave 10.14",
-            "17": "macOS High Sierra 10.13"
-        }
         self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
 
     def gathering_files(self):
@@ -98,17 +89,15 @@ class OCPE:
         self.hardware = self.c.check_compatibility(self.hardware)
         self.compatibility = self.hardware.get("Compatibility")
         supported_macOS_version = self.compatibility.get("macOS Version")
-        min_verion = supported_macOS_version.get("Min Version")
-        max_verion = supported_macOS_version.get("Max Version")
 
         self.u.head("Compatibility Checker")
         print("")
-        if max_verion == -1:
+        if not supported_macOS_version:
             self.u.request_input("Your hardware is not compatible with macOS!")
             self.u.exit_program()
         print("* Supported macOS Version:")
-        print("{}Max Version: {}".format(" "*4, self.macos_version_data[str(max_verion)]))
-        print("{}Min Version: {}".format(" "*4, self.macos_version_data[str(min_verion)]))
+        print("{}Max Version: {}".format(" "*4, os_data.get_macos_name_by_darwin(supported_macOS_version.get("Max Version"))))
+        print("{}Min Version: {}".format(" "*4, os_data.get_macos_name_by_darwin(supported_macOS_version.get("Min Version"))))
         if self.compatibility.get("Unsupported Devices"):
             print("* Unsupported devices:")
             for index, device_name in enumerate(self.compatibility.get("Unsupported Devices"), start=1):
@@ -123,25 +112,35 @@ class OCPE:
             self.compatibility_check()
 
         supported_macOS_version = self.compatibility.get("macOS Version")
-        min_verion = supported_macOS_version.get("Min Version")
-        max_verion = supported_macOS_version.get("Max Version")
+        min_version = supported_macOS_version.get("Min Version")
+        max_version = supported_macOS_version.get("Max Version")
+
+        version_pattern = re.compile(r'^(\d+)(?:\.(\d+)(?:\.(\d+))?)?$')
 
         while True:
             self.u.head("Select macOS Version")
             print("")
-            for index, macos_version in enumerate(range(max_verion, min_verion - 1, -1), start=1):
-                print("{}. {}".format(index, self.macos_version_data[str(macos_version)]))
+            for index, macos_version_name in enumerate(os_data.get_macos_names(min_version, max_version), start=min_version[0]):
+                print("{}. {}".format(index, macos_version_name))
+            print("")
+            print("Please enter the macOS version you want to select:")
+            print("- To select a major version, enter the number (e.g., 19).")
+            print("- To specify a full version, enter it in 'major.minor.patch' format (e.g., 22.4.6).")
+            print("- The version must be in the range from {} to {}.".format(".".join(str(item) for item in min_version), ".".join(str(item) for item in max_version)))
             print("")
             print("Q. Quit")
             print("")
-            option = self.u.request_input("Please select the macOS version you wish to install: ")
+            option = self.u.request_input("Select macOS version: ")
             if option.lower() == "q":
                 self.u.exit_program()
-            if "1" <= option <= str(max_verion - min_verion + 1):
-                self.macos_version = max_verion - int(option) + 1
-                return
-            else:
-                continue
+
+            match = version_pattern.match(option)
+            if match:
+                target_version = (int(match.group(1)), int(match.group(2)) if match.group(2) else 99, int(match.group(3)) if match.group(3) else 99)
+                
+                if min_version <= target_version <= max_version:
+                    self.macos_version = target_version
+                    return
         
     def show_result(self):
         def generate_tree_content(dir_path, prefix=''):
@@ -204,11 +203,11 @@ class OCPE:
 
 if __name__ == '__main__':
     o = OCPE()
-    try:
-        update_flag = updater.Updater().run_update()
-        if update_flag:
-            os.execv(sys.executable, ['python3'] + sys.argv)
-        else:
-            o.main()
-    except Exception as e:
-        o.u.exit_program(o.u.message("\nAn error occurred: {}\n".format(e)))
+    #try:
+    update_flag = updater.Updater().run_update()
+    if update_flag:
+        os.execv(sys.executable, ['python3'] + sys.argv)
+    else:
+        o.main()
+    #except Exception as e:
+    #    o.u.exit_program(o.u.message("\nAn error occurred: {}\n".format(e)))
