@@ -579,7 +579,7 @@ class KextMaestro:
 
         return pci_ids
 
-    def gathering_kexts(self, motherboard_name, platform, cpu_configuration, cpu_manufacturer, cpu_codename, cpu_cores, discrete_gpu_codename, integrated_gpu, network, bluetooth, codec_id, input, sd_controller, storage_controllers, usb_controllers, smbios, custom_cpu_name, tsc_sync, acpi, macos_version):
+    def gathering_kexts(self, motherboard_name, platform, cpu_configuration, cpu_manufacturer, cpu_codename, cpu_cores, simd_features, discrete_gpu_codename, integrated_gpu, network, bluetooth, codec_id, input, sd_controller, storage_controllers, usb_controllers, smbios, custom_cpu_name, tsc_sync, acpi, macos_version):
         kexts = [
             "Lilu", 
             "VirtualSMC", 
@@ -595,7 +595,7 @@ class KextMaestro:
         if "AMD" in cpu_manufacturer and macos_version > (21, 0, 0) or int(cpu_configuration) > 1 and macos_version > (18, 0, 0):
             kexts.append("AppleMCEReporterDisabler")
 
-        if macos_version > (21, 0, 0) and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=2):
+        if macos_version > (21, 0, 0) and not "AVX2" in simd_features:
             kexts.append("CryptexFixup")
 
         if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) and int(cpu_cores) > 6:
