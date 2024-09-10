@@ -54,7 +54,7 @@ class CompatibilityChecker:
                         elif not is_supported_discrete_gpu and "Comet Lake" in gpu_codename and self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=110, end=122):
                             self.max_supported_macos_version = self.min_supported_macos_version = (-1, -1, -1)
                         elif "Ice Lake" in gpu_codename:
-                            self.min_supported_macos_version = max((19, 0, 0), self.min_supported_macos_version)
+                            self.min_supported_macos_version = max((19, 4, 0), self.min_supported_macos_version)
                             self.max_supported_macos_version = os_data.get_latest_darwin_version()
                         else:
                             self.max_supported_macos_version = os_data.get_latest_darwin_version()
@@ -75,16 +75,18 @@ class CompatibilityChecker:
                         if not "AVX2" in instruction_set:
                             self.max_supported_macos_version = min((21, 99, 99), self.max_supported_macos_version)
                         else:
-                            if "Navi 23" in gpu_codename or "Navi 22" in gpu_codename:
-                                self.min_supported_macos_version = max((21, 0, 0), self.min_supported_macos_version)
+                            if gpu_codename in ("Navi 23", "Navi 22"):
+                                self.min_supported_macos_version = max((21, 2, 0), self.min_supported_macos_version)
                             elif "Navi 21" in gpu_codename:
-                                self.min_supported_macos_version = max((20, 0, 0), self.min_supported_macos_version)
+                                self.min_supported_macos_version = max((20, 5, 0), self.min_supported_macos_version)
                             else:
                                 self.max_supported_macos_version = self.min_supported_macos_version = (-1, -1, -1)
                                 is_supported_discrete_gpu = is_supported_gpu = False
                     elif "Navi 1" in gpu_codename:
                         self.min_supported_macos_version = max((19, 0, 0), self.min_supported_macos_version)
-                    elif "Vega" in gpu_codename or "Polaris" in gpu_codename or "Baffin" in gpu_codename or "Ellesmere" in gpu_codename or device_id.endswith("699F"):
+                    elif "Vega 20" in gpu_codename:
+                        self.min_supported_macos_version = max((18, 6, 0), self.min_supported_macos_version)
+                    elif "Vega 10" in gpu_codename or "Polaris" in gpu_codename or "Baffin" in gpu_codename or "Ellesmere" in gpu_codename or device_id.endswith("699F"):
                         self.min_supported_macos_version = max((17, 0, 0), self.min_supported_macos_version)
                     elif self.utils.contains_any(gpu_data.AMDCodenames, gpu_codename):
                         self.max_supported_macos_version = (21, 99, 99)

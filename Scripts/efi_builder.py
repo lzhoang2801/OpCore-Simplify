@@ -182,7 +182,7 @@ class builder:
                     (("Haswell" in cpu_codename or "Broadwell" in cpu_codename) and macos_version > (21, 0, 0)) or \
                     (("Skylake" in cpu_codename or "Kaby Lake" in cpu_codename) and macos_version > (22, 0, 0)) or \
                     (("Amber Lake" in cpu_codename or "Whiskey Lake" in cpu_codename) and macos_version == (17, 0, 0)) or \
-                    ("Ice Lake" in cpu_codename and (19, 0, 0) > macos_version))
+                    ("Ice Lake" in cpu_codename and (19, 4, 0) > macos_version))
 
     def igpu_properties(self, platform, processor_name, gpu_codename, discrete_gpu, integrated_gpu_manufacturer, integrated_gpu_name, macos_version):
         if "Skylake".lower() in gpu_codename.lower() and macos_version > (21, 0, 0):
