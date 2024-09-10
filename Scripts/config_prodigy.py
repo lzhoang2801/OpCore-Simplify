@@ -186,7 +186,7 @@ class ConfigProdigy:
         if not "SURFACE" in motherboard_name and "I2C" in touchpad_communication:
             boot_args.append("-vi2c-force-polling")
 
-        if macos_version > (23, 0, 0):
+        if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
             boot_args.append("-lilubetaall")
 
         if "Discrete GPU" in unsupported_devices:
