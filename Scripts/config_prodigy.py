@@ -133,9 +133,6 @@ class ConfigProdigy:
             })
 
         for index, patch in enumerate(kernel_patch):
-            max_kernel = self.utils.parse_darwin_version(patch.get("MaxKernel") or os_data.get_latest_darwin_version())
-            min_kernel = self.utils.parse_darwin_version(patch.get("MinKernel") or os_data.get_lowest_darwin_version())
-
             if "cpuid_cores_per_package" in patch["Comment"]:
                 patch["Replace"] = patch["Replace"].hex()
                 patch["Replace"] = self.utils.hex_to_bytes(patch["Replace"][:2] + self.utils.int_to_hex(int(cpu_cores)) + patch["Replace"][4:])
@@ -150,12 +147,6 @@ class ConfigProdigy:
                         patch["Enabled"] = False
                     elif "shaneee" in patch["Comment"].lower():
                         patch["Enabled"] = True
-
-            if not min_kernel <= macos_version <= max_kernel or not patch["Enabled"]:
-                patches_to_remove.append(index)
-        
-        for index in patches_to_remove[::-1]:
-            kernel_patch.pop(index)
         
         return kernel_patch
 
