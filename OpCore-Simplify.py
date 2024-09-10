@@ -61,9 +61,6 @@ class OCPE:
             return
 
     def hardware_report(self):
-        if not self.hardware:
-            self.select_aida64_report()
-
         self.u.head("Review the hardware information")
         contents = []
         for index, device_type in enumerate(self.hardware, start=1):
@@ -83,9 +80,6 @@ class OCPE:
         return
         
     def compatibility_check(self):
-        if not self.hardware:
-            self.select_aida64_report()
-
         self.hardware = self.c.check_compatibility(self.hardware)
         self.compatibility = self.hardware.get("Compatibility")
         supported_macOS_version = self.compatibility.get("macOS Version")
@@ -108,9 +102,6 @@ class OCPE:
         return
     
     def select_macos_version(self):
-        if not self.compatibility:
-            self.compatibility_check()
-
         supported_macOS_version = self.compatibility.get("macOS Version")
         min_version = supported_macOS_version.get("Min Version")
         max_version = supported_macOS_version.get("Max Version")
@@ -203,11 +194,11 @@ class OCPE:
 
 if __name__ == '__main__':
     o = OCPE()
-    #try:
-    update_flag = updater.Updater().run_update()
-    if update_flag:
-        os.execv(sys.executable, ['python3'] + sys.argv)
-    else:
-        o.main()
-    #except Exception as e:
-    #    o.u.exit_program(o.u.message("\nAn error occurred: {}\n".format(e)))
+    try:
+        update_flag = updater.Updater().run_update()
+        if update_flag:
+            os.execv(sys.executable, ['python3'] + sys.argv)
+        else:
+            o.main()
+    except Exception as e:
+        o.u.exit_program(o.u.message("\nAn error occurred: {}\n".format(e)))

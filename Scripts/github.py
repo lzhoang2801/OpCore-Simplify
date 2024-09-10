@@ -56,7 +56,6 @@ class Github:
 
         response = self.fetcher.fetch_and_parse_content(url, "json")
 
-        # Iterate over the assets in the release
         for asset in response[0].get("assets"):
             asset_id = asset.get("id")
             download_url = asset.get("browser_download_url")
@@ -72,7 +71,6 @@ class Github:
         return result
     
     def extract_asset_name(self, name):
-        # Extract the base name from the asset name
         name_parts = name.split("-") if "-" in name else name.split("_")
 
         asset_name = name_parts[0].split(".")[0]

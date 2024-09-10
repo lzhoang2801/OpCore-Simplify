@@ -55,11 +55,9 @@ class AIDA64:
     def motherboard(self, motherboard_props, dmi):
         motherboard_info = {}
 
-        # Extract motherboard name and chipset from provided properties
         motherboard_info["Motherboard Name"] = motherboard_props.get("Motherboard Name", "Unknown").split("(")[0].strip()
         motherboard_info["Motherboard Chipset"] = motherboard_props.get("Motherboard Chipset", "Unknown").split(", ")[0]
 
-        # If motherboard name is still unknown, attempt to derive it from DMI information
         if "Unknown" in motherboard_info.get("Motherboard Name"):
             motherboard_info["Motherboard Name"] = "Unknown"
             merged_report = dmi.get("System", {}).copy()
@@ -69,7 +67,6 @@ class AIDA64:
                 if "O.E.M." not in motherboard_name and "System Product Name" not in motherboard_name and len(motherboard_name) > len(motherboard_info.get("Motherboard Name")):
                     motherboard_info["Motherboard Name"] = motherboard_name
 
-        # Extract platform type from chassis information
         motherboard_info["Platform"] = dmi.get("Chassis", {}).get("Chassis Properties", {}).get("Chassis Type", "Unknown")
         if any(word in motherboard_info["Platform"].lower() for word in ["convertible", "notebook", "laptop", "docking station", "portable"]):
             motherboard_info["Platform"] = "Laptop"
@@ -88,7 +85,6 @@ class AIDA64:
         cpu_props = cpu_table.get("CPU Properties", {})
         cpu_info["Processor Name"] = cpu_props.get("CPU Type", "Unknown").split(",")[0]
 
-        # Determine CPU Manufacturer if still unknown
         if "Intel" in cpu_info["CPU Manufacturer"]:
             cpu_info["CPU Manufacturer"] = "Intel"
         elif "Advanced Micro Devices" in cpu_info["CPU Manufacturer"]:
