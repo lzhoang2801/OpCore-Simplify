@@ -19,7 +19,6 @@ class gatheringFiles:
         self.download_history_file = os.path.join(self.ock_files_dir, "history.json")
         self.builds = [
             "AirportBrcmFixup",
-            "AppleALC",
             "BrcmPatchRAM",
             "BrightnessKeys",
             "CryptexFixup",
@@ -106,6 +105,11 @@ class gatheringFiles:
                 "product_name": "AMFIPass", 
                 "id": 926491527, 
                 "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Acidanthera/AMFIPass-v1.4.1-RELEASE.zip"
+            },
+            {
+                "product_name": "AppleALC", 
+                "id": 223994507, 
+                "url": "https://github.com/lzhoang2801/lzhoang2801.github.io/raw/main/public/extra-files/AppleALC-1.9.2-RELEASE.zip"
             },
             {
                 "product_name": "AppleIGB", 

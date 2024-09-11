@@ -157,7 +157,7 @@ class ConfigProdigy:
             "keepsyms=1"
         ]
 
-        if codec_id in codec_layouts.data and not ("AMD" in cpu_manufacturer and macos_version > (23, 0, 0)):
+        if codec_id in codec_layouts.data:
             boot_args.append("alcid={}".format(random.choice(codec_layouts.data.get(codec_id))))
 
         if "AMD" in cpu_manufacturer or self.is_intel_hedt_cpu(cpu_codename):
