@@ -397,6 +397,7 @@ class builder:
         hardware_shorc["Processor Name"] = hardware["CPU"].get("Processor Name")
         hardware_shorc["CPU Cores"] = hardware["CPU"].get("CPU Cores")
         hardware_shorc["CPU Codename"] = hardware["CPU"].get("CPU Codename")
+        hardware_shorc["Instruction Set"] = hardware["CPU"].get("Instruction Set")
         hardware_shorc["Integrated GPU"] = list(hardware.get("GPU").items())[-1][1] if "Integrated GPU" in list(hardware.get("GPU").items())[-1][1]["Device Type"] else {}
         hardware_shorc["Integrated GPU Name"] = list(hardware.get("GPU").keys())[-1] if hardware_shorc["Integrated GPU"] else ""
         hardware_shorc["Discrete GPU"] = list(hardware.get("GPU").items())[0][1].copy() if "Discrete GPU" in list(hardware.get("GPU").items())[0][1]["Device Type"] else {}
