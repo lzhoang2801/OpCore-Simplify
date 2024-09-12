@@ -64,7 +64,7 @@ class CompatibilityChecker:
                         if not is_supported_discrete_gpu:
                             self.max_supported_macos_version = self.min_supported_macos_version = (-1, -1, -1)
                 elif "AMD" in gpu_manufacturer:
-                    is_supported_gpu = gpu_props.get("Device ID") in pci_data.AMDGPUIDs
+                    is_supported_gpu = gpu_codename in ("Picasso", "Raven Ridge", "Barcelo", "Renoir", "Cezanne", "Lucienne")
                     if is_supported_gpu:
                         self.max_supported_macos_version = os_data.get_latest_darwin_version()
                         self.min_supported_macos_version = max((19, 0, 0), self.min_supported_macos_version)
