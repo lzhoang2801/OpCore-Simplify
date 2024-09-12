@@ -116,7 +116,7 @@ class OCPE:
             print("")
             print("Please enter the macOS version you want to select:")
             print("- To select a major version, enter the number (e.g., 19).")
-            print("- To specify a full version, enter it in 'major.minor.patch' format (e.g., 22.4.6).")
+            print("- To specify a full version, use the Darwin version format (e.g., 22.4.6).")
             print("- The version must be in the range from {} to {}.".format(".".join(str(item) for item in min_version), ".".join(str(item) for item in max_version)))
             print("")
             print("Q. Quit")
