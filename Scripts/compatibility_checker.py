@@ -3,6 +3,7 @@ from Scripts.datasets import cpu_data
 from Scripts.datasets import gpu_data
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
+from Scripts import codec_layouts
 from Scripts import utils
 
 class CompatibilityChecker:
@@ -120,8 +121,8 @@ class CompatibilityChecker:
             if "USB" in audio_props.get("Bus Type") or \
                 codec_id.startswith("8086") or \
                 codec_id.startswith("1002") or \
-                codec_id in pci_data.CodecIDs:
-                if codec_id in pci_data.CodecIDs:
+                codec_id in codec_layouts.data:
+                if codec_id in codec_layouts.data:
                     supported_audio = {**{audio_device: audio_props}, **supported_audio}
                 else:
                     supported_audio[audio_device] = audio_props

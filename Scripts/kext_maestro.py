@@ -2,6 +2,7 @@
 from Scripts.datasets import cpu_data
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
+from Scripts import codec_layouts
 from Scripts import utils
 import os
 import shutil
@@ -589,7 +590,7 @@ class KextMaestro:
         if macos_version > (22, 0, 0) or custom_cpu_name or "MacPro7,1" in smbios:
             kexts.append("RestrictEvents")
 
-        if codec_id in pci_data.CodecIDs:
+        if codec_id in codec_layouts.data:
             kexts.append("AppleALC")
         
         if "AMD" in cpu_manufacturer and macos_version > (21, 0, 0) or int(cpu_configuration) > 1 and macos_version > (18, 0, 0):
