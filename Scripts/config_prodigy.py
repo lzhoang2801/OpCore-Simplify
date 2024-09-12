@@ -105,9 +105,8 @@ class ConfigProdigy:
             
         return None
     
-    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_codename, cpu_cores, gpu_manufacturer, tsc_sync, macos_version):
+    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_codename, cpu_cores, gpu_manufacturer, tsc_sync):
         kernel_patch = []
-        patches_to_remove = []
 
         if "AMD" in cpu_manufacturer:
             kernel_patch.extend(self.g.get_amd_kernel_patches())
@@ -132,7 +131,7 @@ class ConfigProdigy:
                 "Skip": 0
             })
 
-        for index, patch in enumerate(kernel_patch):
+        for patch in kernel_patch:
             if "cpuid_cores_per_package" in patch["Comment"]:
                 patch["Replace"] = patch["Replace"].hex()
                 patch["Replace"] = self.utils.hex_to_bytes(patch["Replace"][:2] + self.utils.int_to_hex(int(cpu_cores)) + patch["Replace"][4:])
@@ -273,8 +272,7 @@ class ConfigProdigy:
             hardware.get("CPU Codename"), 
             hardware["CPU Cores"], 
             hardware["Discrete GPU"].get("Manufacturer", "") or hardware["Integrated GPU"].get("Manufacturer", ""), 
-            efi_option.get("Synchronize the TSC"), 
-            efi_option.get("macOS Version"), 
+            efi_option.get("Synchronize the TSC")
         )
         config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), end=2) is None
         config["Kernel"]["Quirks"]["AppleXcpmCfgLock"] = False if "AMD" in hardware.get("CPU Manufacturer") else not config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"]
