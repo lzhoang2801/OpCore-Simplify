@@ -338,12 +338,10 @@ class ACPIGuru:
             return None
       
     def check_acpi_directory(self, acpi_directory):
-        if acpi_directory:
-            if not os.path.isdir(acpi_directory):
-                self.utils.mkdirs(acpi_directory)
-                return acpi_directory
-            else:
-                return acpi_directory
+        self.utils.create_folder(acpi_directory, remove_content=True)
+
+        if os.path.exists(acpi_directory):
+            return acpi_directory
         return None
 
     def write_ssdt(self, ssdt_name, ssdt_content, compile=True):

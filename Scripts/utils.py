@@ -85,14 +85,14 @@ class Utils:
     def sort_dict_by_key(self, input_dict, sort_key):
         return dict(sorted(input_dict.items(), key=lambda item: item[1].get(sort_key, "")))
 
-    def mkdirs(self, *directories):
-        for directory in directories:
-            if not os.path.exists(os.path.dirname(directory)):
-                os.makedirs(os.path.dirname(directory))
-            if os.path.exists(directory):
-                shutil.rmtree(directory)
-            os.mkdir(directory)
-    
+    def create_folder(self, path, remove_content=False):
+        if os.path.exists(path):
+            if remove_content:
+                shutil.rmtree(path)
+                os.makedirs(path)
+        else:
+            os.makedirs(path)
+
     def hex_to_bytes(self, string):
         try:
             # Remove non-hex characters (e.g., hyphens)

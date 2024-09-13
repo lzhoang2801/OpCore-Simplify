@@ -278,7 +278,7 @@ class gatheringFiles:
         
         ock_data = self.get_bootloader_kexts_data()
 
-        self.utils.mkdirs(self.temporary_dir)
+        self.utils.create_folder(self.temporary_dir)
 
         for product_data in ock_data:
         
@@ -287,7 +287,7 @@ class gatheringFiles:
                 continue
 
             asset_dir = os.path.join(self.ock_files_dir, product_data.get("product_name"))
-            self.utils.mkdirs(asset_dir)
+            self.utils.create_folder(asset_dir, remove_content=True)
 
             zip_path = os.path.join(self.temporary_dir, product_data.get("product_name")) + ".zip"
             self.fetcher.download_and_save_file(product_data.get("url"), zip_path)

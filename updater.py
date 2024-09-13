@@ -34,7 +34,7 @@ class Updater:
         return latest_commit.get("sha") or "0506fb67111d5c5230bf59b826c318ea4251dfc4"
 
     def download_update(self):
-        self.utils.mkdirs(self.temporary_dir)
+        self.utils.create_folder(self.temporary_dir)
         file_path = os.path.join(self.temporary_dir, os.path.basename(self.download_repo_url))
         self.fetcher.download_and_save_file(self.download_repo_url, file_path)
         self.utils.extract_zip_file(file_path)

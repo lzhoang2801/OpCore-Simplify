@@ -379,7 +379,7 @@ class builder:
     def build_efi(self, hardware, macos_version):
         efi_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "Results")
         
-        self.utils.mkdirs(efi_directory)
+        self.utils.create_folder(efi_directory, remove_content=True)
         
         if not os.path.exists(self.kext.ock_files_dir):
             raise Exception("Directory '{}' does not exist.".format(self.kext.ock_files_dir))
