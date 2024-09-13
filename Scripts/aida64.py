@@ -114,8 +114,7 @@ class AIDA64:
         for controller_name, controller_props in storage_controllers.items():
             bus_type = controller_props.get("Bus Type", "Unknown")
             if "PCI" in bus_type or "VID" in bus_type:
-                pci_device = controller_props.get("PCI Device")
-                if " SD " in pci_device or "MMC" in pci_device:
+                if " SD " in controller_name or "MMC" in controller_name:
                     continue
 
                 storage_controllers_info[self.get_unique_key(controller_props.get("PCI Device", controller_name), storage_controllers_info)] = {
