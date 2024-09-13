@@ -27,17 +27,8 @@ class OCPE:
         print("Please wait for download OpenCore NO ACPI, kexts and macserial...")
         print("")
 
-        try:
-            self.o.gathering_bootloader_kexts()
-        except Exception as e:
-            print("")
-            print(self.u.message(e, "warning"))
-            print("")
-            self.u.request_input()
-            if len(os.listdir(self.o.ock_files_dir)) < 54:
-                os.remove(self.o.download_history_file)
-                raise Exception("The download process was not completed. Please try again once the REST API request quota is reset in about an hour")
-        return
+        self.o.get_bootloader_kexts_data()
+        self.o.gathering_bootloader_kexts()
 
     def select_aida64_report(self):
         while True:
@@ -182,11 +173,11 @@ class OCPE:
         return
 
     def main(self):
-        self.gathering_files()
         self.select_aida64_report()
         self.hardware_report()
         self.compatibility_check()
         self.select_macos_version()
+        self.gathering_files()
         self.b.build_efi(self.hardware, self.macos_version)
         self.show_result()
         reminder_message = "\n\nIMPORTANT REMINDER: Please make sure you add the USBMap.kext to /EFI/OC/Kexts before using this\nOpenCore EFI.\n\n"

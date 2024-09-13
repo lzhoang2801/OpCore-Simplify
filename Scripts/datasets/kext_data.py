@@ -268,10 +268,6 @@ kexts = [
         github_repo = {
             "owner": "SongXiaoXi",
             "repo": "AppleIGC"
-        },
-        download_info = {
-            "id": 138279923, 
-            "url": "https://github.com/SongXiaoXi/AppleIGC/releases/download/v1.5/AppleIGC.kext.zip"
         }
     ),
     KextInfo(
@@ -281,10 +277,6 @@ kexts = [
         github_repo = {
             "owner": "Mieze",
             "repo": "AtherosE2200Ethernet"
-        },
-        download_info = {
-            "id": 9746382, 
-            "url": "https://github.com/Mieze/AtherosE2200Ethernet/releases/download/2.2.2/AtherosE2200Ethernet-V2.2.2.zip"
         }
     ),
     KextInfo(
@@ -303,10 +295,6 @@ kexts = [
         github_repo = {
             "owner": "Mieze",
             "repo": "LucyRTL8125Ethernet"
-        },
-        download_info = {
-            "id": 159470181, 
-            "url": "https://github.com/Mieze/LucyRTL8125Ethernet/releases/download/v1.2.0d5/LucyRTL8125Ethernet-V1.2.0d5.zip"
         }
     ),
     KextInfo(
@@ -351,10 +339,6 @@ kexts = [
         github_repo = {
             "owner": "RattletraPM",
             "repo": "GUX-RyzenXHCIFix"
-        },
-        download_info = {
-            "id": 120325166, 
-            "url": "https://github.com/RattletraPM/GUX-RyzenXHCIFix/releases/download/v1.3.0b1-ryzenxhcifix/GenericUSBXHCI.kext.zip"
         }
     ),
     KextInfo(
@@ -378,10 +362,6 @@ kexts = [
         github_repo = {
             "owner": "blankmac",
             "repo": "AlpsHID"
-        },
-        download_info = {
-            "id": 69228327, 
-            "url": "https://github.com/blankmac/AlpsHID/releases/download/v1.2/AlpsHID1.2_release.zip"
         }
     ),
     KextInfo(
@@ -400,10 +380,6 @@ kexts = [
         github_repo = {
             "owner": "VoodooSMBus",
             "repo": "VoodooRMI"
-        },
-        download_info = {
-            "id": 13190749, 
-            "url": "https://github.com/VoodooSMBus/VoodooRMI/releases/download/1.3.5/VoodooRMI-1.3.5-Release.zip"
         }
     ),
     KextInfo(
@@ -462,10 +438,6 @@ kexts = [
         github_repo = {
             "owner": "hieplpvip",
             "repo": "AsusSMC"
-        },
-        download_info = {
-            "id": 41898282, 
-            "url": "https://github.com/hieplpvip/AsusSMC/releases/download/1.4.1/AsusSMC-1.4.1-RELEASE.zip"
         }
     ),
     KextInfo(
@@ -475,10 +447,6 @@ kexts = [
         github_repo = {
             "owner": "Xiashangning",
             "repo": "BigSurface"
-        },
-        download_info = {
-            "id": 18528518, 
-            "url": "https://github.com/Xiashangning/BigSurface/releases/download/v6.5/BigSurface.zip"
         }
     ),
     KextInfo(
@@ -509,10 +477,6 @@ kexts = [
         github_repo = {
             "owner": "0xFireWolf",
             "repo": "RealtekCardReader"
-        },
-        download_info = {
-            "id": 10460478, 
-            "url": "https://github.com/0xFireWolf/RealtekCardReader/releases/download/v0.9.7/RealtekCardReader_0.9.7_006a845_RELEASE.zip"
         }
     ),
     KextInfo(
@@ -525,10 +489,6 @@ kexts = [
         github_repo = {
             "owner": "0xFireWolf",
             "repo": "RealtekCardReaderFriend"
-        },
-        download_info = {
-            "id": 10460478, 
-            "url": "https://github.com/0xFireWolf/RealtekCardReaderFriend/releases/download/v1.0.4/RealtekCardReaderFriend_1.0.4_e1e3301_RELEASE.zip"
         }
     ), 
     KextInfo(
@@ -566,10 +526,6 @@ kexts = [
         github_repo = {
             "owner": "b00t0x",
             "repo": "CpuTopologyRebuild"
-        },
-        download_info = {
-            "id": 13190749, 
-            "url": "https://github.com/b00t0x/CpuTopologyRebuild/releases/download/1.1.0/CpuTopologyRebuild-1.1.0-RELEASE.zip"
         }
     ),
     KextInfo(

@@ -21,11 +21,10 @@ class SMBIOS:
             download_history = self.utils.read_file(self.g.download_history_file)
 
             if download_history:
-                product_index = self.g.product_index_in_history("OpenCore", download_history["versions"])
+                product_index = self.g.product_index_in_history("OpenCore", download_history)
                 
                 if product_index:
-                    download_history["versions"].pop(product_index)
-                    download_history["last_updated"] = "2024-07-25T12:00:00"
+                    download_history.pop(product_index)
                     self.utils.write_file(self.g.download_history_file, download_history)
 
             raise Exception("{} not found. Please reopen the program to download it".format(macserial_name))
