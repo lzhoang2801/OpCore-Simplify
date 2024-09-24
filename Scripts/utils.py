@@ -163,11 +163,8 @@ class Utils:
         # Convert the path to an absolute path and normalize it according to the OS
         return str(pathlib.Path(path).resolve())
     
-    def parse_darwin_version(self, version):
-        if not isinstance(version, str):
-            return version
-        
-        major, minor, patch = map(int, version.split('.'))
+    def parse_darwin_version(self, darwin_version):
+        major, minor, patch = map(int, darwin_version.split('.'))
         return major, minor, patch
     
     def open_folder(self, folder_path):

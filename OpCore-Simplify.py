@@ -102,13 +102,13 @@ class OCPE:
         while True:
             self.u.head("Select macOS Version")
             print("")
-            for index, macos_version_name in enumerate(os_data.get_macos_names(min_version, max_version), start=min_version[0]):
+            for index, macos_version_name in enumerate(os_data.get_macos_names(min_version, max_version), start=int(min_version[:2])):
                 print("{}. {}".format(index, macos_version_name))
             print("")
             print("Please enter the macOS version you want to select:")
             print("- To select a major version, enter the number (e.g., 19).")
             print("- To specify a full version, use the Darwin version format (e.g., 22.4.6).")
-            print("- The version must be in the range from {} to {}.".format(".".join(str(item) for item in min_version), ".".join(str(item) for item in max_version)))
+            print("- The version must be in the range from {} to {}.".format(min_version, max_version))
             print("")
             print("Q. Quit")
             print("")
@@ -118,9 +118,9 @@ class OCPE:
 
             match = version_pattern.match(option)
             if match:
-                target_version = (int(match.group(1)), int(match.group(2)) if match.group(2) else 99, int(match.group(3)) if match.group(3) else 99)
+                target_version = "{}.{}.{}".format(match.group(1), match.group(2) if match.group(2) else 99, match.group(3) if match.group(3) else 99)
                 
-                if min_version <= target_version <= max_version:
+                if self.u.parse_darwin_version(min_version) <= self.u.parse_darwin_version(target_version) <= self.u.parse_darwin_version(max_version):
                     self.macos_version = target_version
                     return
         

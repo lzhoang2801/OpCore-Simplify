@@ -51,14 +51,14 @@ class CompatibilityChecker:
                             self.max_supported_macos_version = max((22, 99, 99), self.max_supported_macos_version if is_supported_discrete_gpu else (-1, -1, -1))
                         elif "Amber Lake" in gpu_codename or "Whiskey Lake" in gpu_codename:
                             self.min_supported_macos_version = max((17, 0, 0), self.min_supported_macos_version if is_supported_discrete_gpu else (-1, -1, -1))
-                            self.max_supported_macos_version = os_data.get_latest_darwin_version()
+                            self.max_supported_macos_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())
                         elif not is_supported_discrete_gpu and "Comet Lake" in gpu_codename and self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=110, end=122):
                             self.max_supported_macos_version = self.min_supported_macos_version = (-1, -1, -1)
                         elif "Ice Lake" in gpu_codename:
                             self.min_supported_macos_version = max((19, 4, 0), self.min_supported_macos_version)
-                            self.max_supported_macos_version = os_data.get_latest_darwin_version()
+                            self.max_supported_macos_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())
                         else:
-                            self.max_supported_macos_version = os_data.get_latest_darwin_version()
+                            self.max_supported_macos_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())
                     else:
                         is_supported_gpu = False
                         if not is_supported_discrete_gpu:
@@ -66,7 +66,7 @@ class CompatibilityChecker:
                 elif "AMD" in gpu_manufacturer:
                     is_supported_gpu = gpu_codename in ("Picasso", "Raven Ridge", "Barcelo", "Renoir", "Cezanne", "Lucienne")
                     if is_supported_gpu:
-                        self.max_supported_macos_version = os_data.get_latest_darwin_version()
+                        self.max_supported_macos_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())
                         self.min_supported_macos_version = max((19, 0, 0), self.min_supported_macos_version)
             elif "Discrete GPU" in device_type:
                 if "AMD" in gpu_manufacturer:
@@ -182,8 +182,8 @@ class CompatibilityChecker:
                 del hardware["SD Controller"]
 
     def check_compatibility(self, hardware):
-        self.max_supported_macos_version = os_data.get_latest_darwin_version()
-        self.min_supported_macos_version = os_data.get_lowest_darwin_version()
+        self.max_supported_macos_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())
+        self.min_supported_macos_version = self.utils.parse_darwin_version(os_data.get_lowest_darwin_version())
         self.unsupported_devices = {}
 
         self.check_cpu_compatibility(
@@ -207,8 +207,8 @@ class CompatibilityChecker:
 
         hardware["Compatibility"] = {
             "macOS Version": {
-                "Max Version": self.max_supported_macos_version,
-                "Min Version": self.min_supported_macos_version
+                "Max Version": ".".join(str(item) for item in self.max_supported_macos_version),
+                "Min Version": ".".join(str(item) for item in self.min_supported_macos_version)
             } if self.max_supported_macos_version != (-1, -1, -1) else None,
             "Unsupported Devices": self.unsupported_devices
         }

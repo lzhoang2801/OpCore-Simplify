@@ -2219,7 +2219,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
             })
 
     def fix_system_clock_hedt(self, motherboard_chipset, macos_version):
-        if macos_version < (20, 0, 0) or not self.utils.contains_any(["X99", "X299"], motherboard_chipset):
+        if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0") or not self.utils.contains_any(["X99", "X299"], motherboard_chipset):
             return
         
         if not self.lpc_bus_device:
@@ -2455,7 +2455,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
         })
 
     def fix_uncore_bridge(self, motherboard_chipset, macos_version):
-        if macos_version < (20, 0, 0) or not self.utils.contains_any(["X79", "C602", "Patsburg", "C612", "X99", "Wellsburg"], motherboard_chipset):
+        if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0") or not self.utils.contains_any(["X79", "C602", "Patsburg", "C612", "X99", "Wellsburg"], motherboard_chipset):
             return
         
         unc0_device = self.acpi.get_device_paths("UNC0")

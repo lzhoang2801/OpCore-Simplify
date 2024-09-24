@@ -63,7 +63,7 @@ kexts = [
         name = "SMCRadeonSensors", 
         description = "Provides temperature readings for AMD GPUs",
         category = "VirtualSMC Plugins",
-        min_darwin_version = (18, 0, 0),
+        min_darwin_version = "18.0.0",
         requires_kexts = ["VirtualSMC"],
         github_repo = {
             "owner": "ChefKissInc",
@@ -80,7 +80,7 @@ kexts = [
         name = "NootRX", 
         description = "The rDNA 2 dGPU support patch kext",
         category = "Graphics",
-        min_darwin_version = (20, 5, 0),
+        min_darwin_version = "20.5.0",
         conflict_group_id = "GPU",
         github_repo = {
             "owner": "ChefKissInc",
@@ -91,7 +91,7 @@ kexts = [
         name = "NootedRed", 
         description = "The AMD Vega iGPU support kext",
         category = "Graphics",
-        min_darwin_version = (19, 0, 0),
+        min_darwin_version = "19.0.0",
         conflict_group_id = "GPU",
         github_repo = {
             "owner": "ChefKissInc",
@@ -134,7 +134,7 @@ kexts = [
         name = "AirportItlwm", 
         description = "Intel Wi-Fi drivers support the native macOS Wi-Fi interface",
         category = "Wi-Fi",
-        max_darwin_version = (23, 99, 99),
+        max_darwin_version = "23.99.99",
         conflict_group_id = "IntelWiFi",
         github_repo = {
             "owner": "OpenIntelWireless",
@@ -145,7 +145,7 @@ kexts = [
         name = "IO80211FamilyLegacy", 
         description = "Enable legacy native Apple Wireless adapters",
         category = "Wi-Fi",
-        min_darwin_version = (23, 0, 0),
+        min_darwin_version = "23.0.0",
         requires_kexts = ["IOSkywalkFamily"],
         download_info = {
             "id": 817294638, 
@@ -156,7 +156,7 @@ kexts = [
         name = "IOSkywalkFamily", 
         description = "Enable legacy native Apple Wireless adapters",
         category = "Wi-Fi",
-        min_darwin_version = (23, 0, 0),
+        min_darwin_version = "23.0.0",
         requires_kexts = ["IO80211FamilyLegacy"],
         download_info = {
             "id": 926584761, 
@@ -177,7 +177,7 @@ kexts = [
         name = "BlueToolFixup", 
         description = "Patches Bluetooth stack to support third-party cards",
         category = "Bluetooth",
-        min_darwin_version = (21, 0, 0),
+        min_darwin_version = "21.0.0",
         github_repo = {
             "owner": "acidanthera",
             "repo": "BrcmPatchRAM"
@@ -187,7 +187,7 @@ kexts = [
         name = "BrcmBluetoothInjector", 
         description = "Enables the Broadcom Bluetooth on/off switch on older versions",
         category = "Bluetooth",
-        max_darwin_version = (20, 99, 99),
+        max_darwin_version = "20.99.99",
         requires_kexts = ["BrcmBluetoothInjector", "BrcmFirmwareData", "BrcmPatchRAM2", "BrcmPatchRAM3"],
         github_repo = {
             "owner": "acidanthera",
@@ -208,7 +208,7 @@ kexts = [
         name = "BrcmPatchRAM2", 
         description = "Applies PatchRAM updates for Broadcom RAMUSB based devices",
         category = "Bluetooth",
-        max_darwin_version = (18, 99, 99),
+        max_darwin_version = "18.99.99",
         requires_kexts = ["BlueToolFixup", "BrcmBluetoothInjector", "BrcmFirmwareData", "BrcmPatchRAM3"],
         github_repo = {
             "owner": "acidanthera",
@@ -219,7 +219,7 @@ kexts = [
         name = "BrcmPatchRAM3", 
         description = "Applies PatchRAM updates for Broadcom RAMUSB based devices",
         category = "Bluetooth",
-        min_darwin_version = (19, 0, 0),
+        min_darwin_version = "19.0.0",
         requires_kexts = ["BlueToolFixup", "BrcmBluetoothInjector", "BrcmFirmwareData", "BrcmPatchRAM2"],
         github_repo = {
             "owner": "acidanthera",
@@ -246,7 +246,7 @@ kexts = [
         name = "IntelBluetoothInjector", 
         description = "Enables the Intel Bluetooth on/off switch on older versions",
         category = "Bluetooth",
-        max_darwin_version = (20, 99, 99),
+        max_darwin_version = "20.99.99",
         requires_kexts = ["BlueToolFixup", "IntelBluetoothFirmware", "IntelBTPatcher"]
     ),
     KextInfo(
@@ -387,7 +387,7 @@ kexts = [
         name = "VoodooSMBus", 
         description = "i2c-i801 + ELAN SMBus Touchpad kext",
         category = "Input",
-        min_darwin_version = (18, 0, 0),
+        min_darwin_version = "18.0.0",
         github_repo = {
             "owner": "VoodooSMBus",
             "repo": "VoodooSMBus"
@@ -463,8 +463,8 @@ kexts = [
         name = "NVMeFix", 
         description = "Addresses compatibility and performance issues with NVMe SSDs", 
         category = "Storage",
-        max_darwin_version = (23, 99, 99),
-        min_darwin_version = (18, 0, 0),
+        max_darwin_version = "23.99.99",
+        min_darwin_version = "18.0.0",
         github_repo = {
             "owner": "acidanthera",
             "repo": "NVMeFix"
@@ -474,7 +474,7 @@ kexts = [
         name = "RealtekCardReader", 
         description = "Realtek PCIe/USB-based SD card reader driver", 
         category = "SD Controller",
-        min_darwin_version = (18, 0, 0),
+        min_darwin_version = "18.0.0",
         requires_kexts = ["RealtekCardReaderFriend"],
         github_repo = {
             "owner": "0xFireWolf",
@@ -485,8 +485,8 @@ kexts = [
         name = "RealtekCardReaderFriend", 
         description = "Makes System Information recognize your Realtek card reader",
         category = "SD Controller",
-        min_darwin_version = (18, 0, 0),
-        max_darwin_version = (22, 99, 99),
+        min_darwin_version = "18.0.0",
+        max_darwin_version = "22.99.99",
         requires_kexts = ["RealtekCardReader"],
         github_repo = {
             "owner": "0xFireWolf",
@@ -497,7 +497,7 @@ kexts = [
         name = "AMFIPass", 
         description = "A replacement for amfi=0x80 boot argument",
         category = "Extras",
-        min_darwin_version = (20, 0, 0), 
+        min_darwin_version = "20.0.0", 
         download_info = {
             "id": 926491527, 
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Acidanthera/AMFIPass-v1.4.1-RELEASE.zip"
@@ -534,7 +534,7 @@ kexts = [
         name = "CryptexFixup", 
         description = "Various patches to install Rosetta cryptex",
         category = "Extras",
-        min_darwin_version = (22, 0, 0),
+        min_darwin_version = "22.0.0",
         github_repo = {
             "owner": "acidanthera",
             "repo": "CryptexFixup"

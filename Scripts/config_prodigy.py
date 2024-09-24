@@ -68,7 +68,7 @@ class ConfigProdigy:
     def block_kext_bundle(self, network, macos_version):
         kernel_block = []
 
-        if macos_version > (22, 0, 0):
+        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
             for network_name, network_props in network.items():
                 if network_props.get("Device ID") in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
                     kernel_block.append({
@@ -100,7 +100,7 @@ class ConfigProdigy:
         elif "Ice Lake" not in cpu_codename and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10):
             if not "Comet Lake" in cpu_codename:
                 return self.cpuids.get("Comet Lake")
-            if macos_version < (19, 0, 0):
+            if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.0.0"):
                 return self.cpuids.get("Coffee Lake")
             
         return None
@@ -162,14 +162,14 @@ class ConfigProdigy:
         if "AMD" in cpu_manufacturer or self.is_intel_hedt_cpu(cpu_codename):
             boot_args.append("npci=0x2000")
 
-        if macos_version > (22, 0, 0):
+        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
             boot_args.append("revpatch=sbvmm{}".format(",cpuname" if custom_cpu_name else ""))
 
         if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) and int(cpu_cores) > 6:
             boot_args.append("-ctrsmt")
 
         if "Intel" in cpu_manufacturer:
-            if "UHD" in integrated_gpu_name and macos_version > (18, 0, 0):
+            if "UHD" in integrated_gpu_name and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
                 boot_args.append("igfxonln=1")
 
             if "Ice Lake" in cpu_codename:
@@ -177,7 +177,7 @@ class ConfigProdigy:
 
             if "Laptop" in platform:
                 if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=6):
-                    boot_args.append("-igfxbl{}".format("t" if macos_version > (22, 0, 0) else "r"))
+                    boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else "r"))
 
         if "Navi" in discrete_gpu_codename and not "Navi 2" in discrete_gpu_codename:
             boot_args.append("agdpmod=pikera")
@@ -203,9 +203,9 @@ class ConfigProdigy:
         return " ".join(boot_args)
     
     def csr_active_config(self, macos_version):
-        if macos_version > (19, 0, 0):
+        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
             return "03080000"
-        elif macos_version > (17, 0, 0):
+        elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("18.0.0"):
             return "FF070000"
         else:
             return "FF030000"
@@ -295,7 +295,7 @@ class ConfigProdigy:
         config["Misc"]["Entries"] = []
         config["Misc"]["Security"]["AllowSetDefault"] = True
         config["Misc"]["Security"]["ScanPolicy"] = 0
-        config["Misc"]["Security"]["SecureBootModel"] = "Default" if (19, 0, 0) < efi_option.get("macOS Version") < (23, 0, 0) else "Disabled"
+        config["Misc"]["Security"]["SecureBootModel"] = "Default" if self.utils.parse_darwin_version("20.0.0") <= self.utils.parse_darwin_version(efi_option.get("macOS Version")) < self.utils.parse_darwin_version("23.0.0") else "Disabled"
         config["Misc"]["Security"]["Vault"] = "Optional"
         config["Misc"]["Tools"] = []
 

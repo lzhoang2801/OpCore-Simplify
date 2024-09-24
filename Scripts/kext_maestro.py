@@ -587,16 +587,16 @@ class KextMaestro:
             "USBMap"
         ]
 
-        if macos_version > (22, 0, 0) or custom_cpu_name or "MacPro7,1" in smbios:
+        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") or custom_cpu_name or "MacPro7,1" in smbios:
             kexts.append("RestrictEvents")
 
         if codec_id in codec_layouts.data:
             kexts.append("AppleALC")
         
-        if "AMD" in cpu_manufacturer and macos_version > (21, 0, 0) or int(cpu_configuration) > 1 and macos_version > (18, 0, 0):
+        if "AMD" in cpu_manufacturer and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.4.0") or int(cpu_configuration) > 1 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
             kexts.append("AppleMCEReporterDisabler")
 
-        if macos_version > (21, 0, 0) and not "AVX2" in simd_features:
+        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("22.0.0") and not "AVX2" in simd_features:
             kexts.append("CryptexFixup")
 
         if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) and int(cpu_cores) > 6:
@@ -620,12 +620,12 @@ class KextMaestro:
             if self.utils.contains_any(pci_data.NetworkIDs, device_id, end=21):
                 wifi_pci = device_id
                 if device_id in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
-                    if macos_version > (22, 0, 0):
+                    if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                         kexts.extend(["AirportBrcmFixup", "IOSkywalkFamily", "IO80211FamilyLegacy", "AMFIPass"])
                 elif device_id in pci_data.NetworkIDs:
                     kexts.append("AirportBrcmFixup")
             elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=21, end=108):
-                kexts.append("AirportItlwm" if macos_version < (23, 0, 0) else "itlwm")
+                kexts.append("AirportItlwm" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "itlwm")
             elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=108, end=115):
                 kexts.append("AppleIGC")
             elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=115, end=122):
@@ -641,7 +641,7 @@ class KextMaestro:
             elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=181, end=219):
                 kexts.append("AppleIGB")
 
-        if bluetooth and macos_version > (20, 0, 0) and not wifi_pci in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
+        if bluetooth and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.0.0") and not wifi_pci in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
             kexts.append("BlueToolFixup")
         for usb_id in bluetooth:
             if usb_id in pci_data.BluetoothIDs:
@@ -649,7 +649,7 @@ class KextMaestro:
                 
                 if idx < 99:
                     kexts.append("BrcmPatchRAM")
-                    if bluetooth and macos_version > (20, 0, 0):
+                    if bluetooth and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.0.0"):
                         kexts.append("BlueToolFixup")
                 else:
                     kexts.append("IntelBluetoothFirmware")
@@ -712,7 +712,7 @@ class KextMaestro:
     def install_kexts_to_efi(self, kexts, macos_version, kexts_directory):
         for kext_name in kexts:
             if "AirportItlwm" in kext_name:
-                kext_name = "{}{}".format(kext_name, macos_version[0])
+                kext_name = "{}{}".format(kext_name, macos_version[:2])
             elif "BlueToolFixup" in kext_name or "BrcmPatchRAM" in kext_name:
                 kext_name = "BrcmPatchRAM"
 
@@ -761,7 +761,7 @@ class KextMaestro:
                 continue
             max_kernel = self.utils.parse_darwin_version(kext.get("MaxKernel") or os_data.get_latest_darwin_version())
             min_kernel = self.utils.parse_darwin_version(kext.get("MinKernel") or os_data.get_lowest_darwin_version())
-            if not min_kernel <= macos_version <= max_kernel:
+            if not min_kernel <= self.utils.parse_darwin_version(macos_version) <= max_kernel:
                 continue
 
             kernel_add.append({
