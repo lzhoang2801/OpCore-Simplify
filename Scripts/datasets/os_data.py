@@ -14,7 +14,7 @@ macos_versions = [
     macOSVersionInfo("Big Sur", "11"),
     macOSVersionInfo("Monterey", "12"),
     macOSVersionInfo("Ventura", "13"),
-    macOSVersionInfo("Sonoma", "14.4+"),
+    macOSVersionInfo("Sonoma", "14"),
     macOSVersionInfo("Sequoia", "15", "beta")
 ]
 
