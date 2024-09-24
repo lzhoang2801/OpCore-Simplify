@@ -134,6 +134,7 @@ kexts = [
         name = "AirportItlwm", 
         description = "Intel Wi-Fi drivers support the native macOS Wi-Fi interface",
         category = "Wi-Fi",
+        max_darwin_version = (23, 99, 99),
         conflict_group_id = "IntelWiFi",
         github_repo = {
             "owner": "OpenIntelWireless",
@@ -462,6 +463,7 @@ kexts = [
         name = "NVMeFix", 
         description = "Addresses compatibility and performance issues with NVMe SSDs", 
         category = "Storage",
+        max_darwin_version = (23, 99, 99),
         min_darwin_version = (18, 0, 0),
         github_repo = {
             "owner": "acidanthera",
@@ -545,6 +547,15 @@ kexts = [
         github_repo = {
             "owner": "1Revenger1",
             "repo": "ECEnabler"
+        }
+    ),
+    KextInfo(
+        name = "FeatureUnlock", 
+        description = "Enable additional features on unsupported hardware",
+        category = "Extras",
+        github_repo = {
+            "owner": "acidanthera",
+            "repo": "FeatureUnlock"
         }
     ),
     KextInfo(
