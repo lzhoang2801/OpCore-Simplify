@@ -70,31 +70,36 @@ class Github:
 
         return result
     
-    def extract_asset_name(self, name):
-        name_parts = name.split("-") if "-" in name else name.split("_")
+    def extract_asset_name(self, file_name):
+        end_idx = len(file_name)
+        if "-" in file_name:
+            end_idx = min(file_name.index("-"), end_idx)
+        if "_" in file_name:
+            end_idx = min(file_name.index("_"), end_idx)
+        if "." in file_name:
+            end_idx = min(file_name.index("."), end_idx)
+            if file_name[end_idx] == "." and file_name[end_idx - 1].isdigit():
+                end_idx = end_idx - 1
+        asset_name = file_name[:end_idx]
 
-        asset_name = name_parts[0].split(".")[0]
-        if asset_name[-1].isdigit():
-            asset_name = asset_name[:-1]
-            
-        if (len(name_parts) > 1):
-            if "uns" in name_parts[1]:
-                asset_name += "-" + name_parts[1]
-            elif "Sonoma14.4" in name:
+        if "unsupported" in file_name:
+            asset_name += "-unsupported"
+        elif "itlwm" in file_name.lower():
+            if "Sonoma14.4" in file_name:
                 asset_name += "23.4"
-            elif "Sonoma" in name:
-                asset_name += "23"
-            elif "Ventura" in name:
+            elif "Sonoma14.0" in file_name:
+                asset_name += "23.0"
+            elif "Ventura" in file_name:
                 asset_name += "22"
-            elif "Monterey" in name:
+            elif "Monterey" in file_name:
                 asset_name += "21"
-            elif "Catalina" in name:
-                asset_name += "19"
-            elif "Mojave" in name:
-                asset_name += "18"
-            elif "HighSierra" in name:
-                asset_name += "17"
-            elif "BigSur" in name:
+            elif "BigSur" in file_name:
                 asset_name += "20"
+            elif "Catalina" in file_name:
+                asset_name += "19"
+            elif "Mojave" in file_name:
+                asset_name += "18"
+            elif "HighSierra" in file_name:
+                asset_name += "17"
 
         return asset_name
