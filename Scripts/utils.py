@@ -59,28 +59,33 @@ class Utils:
 
         return {}
 
-    def find_matching_paths(self, directory, target_file_extension=None, target_name_pattern=None):
+    def find_matching_paths(self, root_path, extension_filter=None, name_filter=None, type_filter=None):
+
+        def is_valid_item(name):
+            if name.startswith("."):
+                return False
+            if extension_filter and not name.lower().endswith(extension_filter.lower()):
+                return False
+            if name_filter and name_filter not in name:
+                return False
+            return True
+        
         found_paths = []
 
-        if not os.path.exists(directory):
-            print("Error: The directory {} does not exist.".format(directory))
-            return found_paths
-        
-        for root, dirs, files in os.walk(directory):
-            if "MACOSX" in root:
-                continue
+        for root, dirs, files in os.walk(root_path):
+            relative_root = root.replace(root_path, "")[1:]
 
-            if target_file_extension and root.endswith(target_file_extension) or target_name_pattern and target_name_pattern in root:
-                if not os.path.exists(os.path.join(root, os.path.basename(root))):
-                    found_paths.append(root.replace(directory, "")[1:])
+            if type_filter in (None, "dir"):
+                for d in dirs:
+                    if is_valid_item(d):
+                        found_paths.append((os.path.join(relative_root, d), "dir"))
 
-            for file in files:
-                file_name, file_extension = os.path.splitext(file)
+            if type_filter in (None, "file"):
+                for file in files:
+                    if is_valid_item(file):
+                        found_paths.append((os.path.join(relative_root, file), "file"))
 
-                if target_file_extension and file_extension.endswith(target_file_extension) or target_name_pattern and target_name_pattern in file_name:
-                    found_paths.append(os.path.join(root, file).replace(directory, "")[1:])
-
-        return found_paths
+        return sorted(found_paths, key=lambda path: path[0])
 
     def sort_dict_by_key(self, input_dict, sort_key):
         return dict(sorted(input_dict.items(), key=lambda item: item[1].get(sort_key, "")))

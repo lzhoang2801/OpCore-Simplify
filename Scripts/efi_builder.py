@@ -340,23 +340,23 @@ class builder:
         files_to_remove = []
 
         drivers_directory = os.path.join(efi_directory, "EFI", "OC", "Drivers")
-        driver_list = self.utils.find_matching_paths(drivers_directory, ".efi")
+        driver_list = self.utils.find_matching_paths(drivers_directory, extension_filter=".efi")
         driver_loaded = [kext.get("Path") for kext in config.get("UEFI").get("Drivers")]
-        for driver_path in driver_list:
+        for driver_path, type in driver_list:
             if not driver_path in driver_loaded:
                 files_to_remove.append(os.path.join(drivers_directory, driver_path))
 
         kexts_directory = os.path.join(efi_directory, "EFI", "OC", "Kexts")
-        kext_list = self.utils.find_matching_paths(kexts_directory, ".kext")
+        kext_list = self.utils.find_matching_paths(kexts_directory, extension_filter=".kext")
         kext_loaded = [os.path.basename(kext.get("BundlePath")) for kext in config.get("Kernel").get("Add")]
-        for kext_path in kext_list:
+        for kext_path, type in kext_list:
             if not os.path.basename(kext_path) in kext_loaded:
                 files_to_remove.append(os.path.join(kexts_directory, kext_path))
 
         tools_directory = os.path.join(efi_directory, "EFI", "OC", "Tools")
-        tool_list = self.utils.find_matching_paths(tools_directory, ".efi")
+        tool_list = self.utils.find_matching_paths(tools_directory, extension_filter=".efi")
         tool_loaded = [tool.get("Path") for tool in config.get("Misc").get("Tools")]
-        for tool_path in tool_list:
+        for tool_path, type in tool_list:
             if not tool_path in tool_loaded:
                 files_to_remove.append(os.path.join(tools_directory, tool_path))
 

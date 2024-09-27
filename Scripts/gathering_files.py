@@ -70,8 +70,8 @@ class gatheringFiles:
             raise FileNotFoundError("The directory {} does not exist.".format(self.temporary_dir))
         
         if not "OpenCore" in product_name:
-            kext_paths = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), ".kext")
-            for kext_path in kext_paths:
+            kext_paths = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), extension_filter=".kext")
+            for kext_path, type in kext_paths:
                 source_kext_path = os.path.join(self.temporary_dir, product_name, kext_path)
                 destination_kext_path = os.path.join(self.ock_files_dir, product_name, os.path.basename(kext_path))
                 
@@ -87,9 +87,9 @@ class gatheringFiles:
                 source_config_path = os.path.join(os.path.dirname(os.path.dirname(source_bootloader_path)), "Docs", "Sample.plist")
                 destination_config_path = os.path.join(destination_efi_path, "OC", "config.plist")
                 shutil.move(source_config_path, destination_config_path)
-            macserial_paths = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), target_name_pattern="macserial")
+            macserial_paths = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), name_filter="macserial", type_filter="file")
             if macserial_paths:
-                for macserial_path in macserial_paths:
+                for macserial_path, type in macserial_paths:
                     source_macserial_path = os.path.join(self.temporary_dir, product_name, macserial_path)
                     destination_macserial_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.path.basename(macserial_path))
                     shutil.move(source_macserial_path, destination_macserial_path)
