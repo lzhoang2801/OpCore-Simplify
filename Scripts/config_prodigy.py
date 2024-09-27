@@ -20,13 +20,19 @@ class ConfigProdigy:
             "Comet Lake": "55060A00"
         }
 
-    def mmio_whitelist(self, cpu_codename):
+    def mmio_whitelist(self, motherboard_chipset):
         booter_mmiowhitelist = []
 
-        if "Ice Lake" in cpu_codename:
+        if "Ice Lake" in motherboard_chipset:
             booter_mmiowhitelist.append({
                 "Address": 4284481536,
-                "Comment": "MMIO 0xFF600000 Ice Lake",
+                "Comment": "MMIO 0xFF600000",
+                "Enable": True
+            })
+        elif "B650" in motherboard_chipset or "X670" in motherboard_chipset:
+            booter_mmiowhitelist.append({
+                "Address": 4244635648,
+                "Comment": "MMIO 0xFD000000",
                 "Enable": True
             })
         
@@ -233,7 +239,7 @@ class ConfigProdigy:
         config["ACPI"]["Delete"] = efi_option.get("ACPI").get("Delete")
         config["ACPI"]["Patch"] = efi_option.get("ACPI").get("Patch")
 
-        config["Booter"]["MmioWhitelist"] = self.mmio_whitelist(hardware.get("CPU Codename"))
+        config["Booter"]["MmioWhitelist"] = self.mmio_whitelist(hardware.get("Motherboard Chipset"))
         config["Booter"]["Patch"] = []
         config["Booter"]["Quirks"]["DevirtualiseMmio"] = self.check_mats_support(hardware.get("CPU Manufacturer"), hardware.get("Motherboard Chipset"))
         if "AMD" in hardware.get("CPU Manufacturer") and not "TRX40" in hardware.get("Motherboard Chipset"):
