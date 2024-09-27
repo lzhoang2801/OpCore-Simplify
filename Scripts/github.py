@@ -84,6 +84,8 @@ class Github:
 
         if "unsupported" in file_name:
             asset_name += "-unsupported"
+        elif "rtsx" in file_name:
+            asset_name += "-rtsx"
         elif "itlwm" in file_name.lower():
             if "Sonoma14.4" in file_name:
                 asset_name += "23.4"

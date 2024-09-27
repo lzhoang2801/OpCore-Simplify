@@ -281,6 +281,19 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "HoRNDIS", 
+        description = "Use the USB tethering mode of the Android phone to access the Internet",
+        category = "Ethernet",
+        github_repo = {
+            "owner": "TomHeaven",
+            "repo": "HoRNDIS"
+        },
+        download_info = {
+            "id": 79378595,
+            "url": "https://github.com/TomHeaven/HoRNDIS/releases/download/rel9.3_2/Release.zip"
+        }
+    ),
+    KextInfo(
         name = "IntelMausi", 
         description = "Intel Ethernet LAN driver for macOS",
         category = "Ethernet",
@@ -366,7 +379,7 @@ kexts = [
         }
     ),
     KextInfo(
-        name = "VoodooPS2", 
+        name = "VoodooPS2Controller", 
         description = "Provides support for PS/2 keyboards, trackpads, and mouse",
         category = "Input",
         github_repo = {
@@ -473,9 +486,11 @@ kexts = [
     KextInfo(
         name = "RealtekCardReader", 
         description = "Realtek PCIe/USB-based SD card reader driver", 
-        category = "SD Controller",
+        category = "Card Reader",
         min_darwin_version = "18.0.0",
+        max_darwin_version = "23.99.99",
         requires_kexts = ["RealtekCardReaderFriend"],
+        conflict_group_id = "RealtekCardReader",
         github_repo = {
             "owner": "0xFireWolf",
             "repo": "RealtekCardReader"
@@ -484,7 +499,7 @@ kexts = [
     KextInfo(
         name = "RealtekCardReaderFriend", 
         description = "Makes System Information recognize your Realtek card reader",
-        category = "SD Controller",
+        category = "Card Reader",
         min_darwin_version = "18.0.0",
         max_darwin_version = "22.99.99",
         requires_kexts = ["RealtekCardReader"],
@@ -493,6 +508,16 @@ kexts = [
             "repo": "RealtekCardReaderFriend"
         }
     ), 
+    KextInfo(
+        name = "Sinetek-rtsx", 
+        description = "Realtek PCIe-based SD card reader driver",
+        category = "Card Reader",
+        conflict_group_id = "RealtekCardReader",
+        github_repo = {
+            "owner": "cholonam",
+            "repo": "Sinetek-rtsx"
+        }
+    ),
     KextInfo(
         name = "AMFIPass", 
         description = "A replacement for amfi=0x80 boot argument",
