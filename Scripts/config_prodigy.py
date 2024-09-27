@@ -286,6 +286,7 @@ class ConfigProdigy:
             not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), start=13) is None
 
         config["Misc"]["BlessOverride"] = []
+        config["Misc"]["Boot"]["HideAuxiliary"] = False
         config["Misc"]["Boot"]["LauncherOption"] = "Full"
         config["Misc"]["Boot"]["PickerMode"] = "External"
         config["Misc"]["Boot"]["Timeout"] = 10
