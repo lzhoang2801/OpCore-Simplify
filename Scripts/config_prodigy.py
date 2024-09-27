@@ -37,8 +37,8 @@ class ConfigProdigy:
             not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=97) is None or \
             not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=49, end=60) is None
 
-    def check_resizable_bar_support(self, motherboard_chipset, cpu_codename, discrete_gpu):
-        return discrete_gpu and (not self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset) is None or not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10) is None)
+    def check_resizable_bar_support(self, motherboard_chipset, cpu_codename):
+        return not self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset) is None or not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10) is None
 
     def is_low_end_intel_cpu(self, processor_name):
         return any(brand in processor_name for brand in ["Celeron", "Pentium"])
@@ -244,8 +244,7 @@ class ConfigProdigy:
         config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"]
         config["Booter"]["Quirks"]["ResizeAppleGpuBars"] = 0 if self.check_resizable_bar_support(
             hardware.get("Motherboard Chipset"), 
-            hardware.get("CPU Codename"), 
-            hardware.get("Discrete GPU")
+            hardware.get("CPU Codename")
         ) else -1
         config["Booter"]["Quirks"]["SetupVirtualMap"] = not (not self.utils.contains_any(chipset_data.AMDChipsets, hardware.get("Motherboard Chipset"), end=5) is None or \
             "ASUS" in hardware.get("Motherboard Name") and self.is_intel_hedt_cpu(hardware.get("CPU Codename")) and config["Booter"]["Quirks"]["DevirtualiseMmio"])
