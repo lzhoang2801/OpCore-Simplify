@@ -376,7 +376,7 @@ class builder:
             print("")
             self.utils.request_input()
 
-    def build_efi(self, hardware, macos_version):
+    def build_efi(self, hardware, unsupported_devices, macos_version):
         efi_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "Results")
         
         self.utils.create_folder(efi_directory, remove_content=True)
@@ -410,7 +410,7 @@ class builder:
         hardware_shorc["Input"] = hardware.get("Input")
         hardware_shorc["Storage Controllers"] = hardware.get("Storage Controllers")
         hardware_shorc["Intel MEI"] = hardware.get("Intel MEI")
-        hardware_shorc["Unsupported Devices"] = hardware.get("Compatibility").get("Unsupported Devices")
+        hardware_shorc["Unsupported Devices"] = unsupported_devices
 
         forbidden_chars = r'[<>:"/\\|?*]'
         hardware_shorc["Motherboard Name"] = re.sub(forbidden_chars, '_', hardware_shorc["Motherboard Name"])

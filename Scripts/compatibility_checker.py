@@ -205,12 +205,4 @@ class CompatibilityChecker:
                 hardware["Storage Controllers"] = self.check_storage_compatibility(hardware.get("Storage Controllers"))
                 self.check_sd_controller_compatibility(hardware)
 
-        hardware["Compatibility"] = {
-            "macOS Version": {
-                "Max Version": ".".join(str(item) for item in self.max_supported_macos_version),
-                "Min Version": ".".join(str(item) for item in self.min_supported_macos_version)
-            } if self.max_supported_macos_version != (-1, -1, -1) else None,
-            "Unsupported Devices": self.unsupported_devices
-        }
-
-        return hardware
+        return () if self.max_supported_macos_version[0] == -1 else (".".join(str(item) for item in self.min_supported_macos_version), ".".join(str(item) for item in self.max_supported_macos_version)), self.unsupported_devices
