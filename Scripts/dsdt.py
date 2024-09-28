@@ -1,5 +1,5 @@
 # Original source:
-# https://github.com/corpnewt/SSDTTime/blob/7b3fb78112bf320a1bc6a7e50dddb2b375cb70b0/Scripts/dsdt.py
+# https://github.com/corpnewt/SSDTTime/blob/b3863aff1b387585a54825f325f071f43e1970db/Scripts/dsdt.py
 
 import os, errno, tempfile, shutil, plistlib, sys, binascii, zipfile, getpass, re
 from Scripts import resource_fetcher
@@ -40,13 +40,6 @@ class DSDT:
         # Setup regex matches
         self.hex_match  = re.compile(r"^\s*[0-9A-F]{4,}:(\s[0-9A-F]{2})+(\s+\/\/.*)?$")
         self.type_match = re.compile(r".*(?P<type>Processor|Scope|Device|Method|Name) \((?P<name>[^,\)]+).*")
-
-    def _table_name_is_valid(self, table_name):
-            if table_name.startswith(".") or not table_name.lower().endswith(self.table_suffixes):
-                return False
-            if not table_name.lower().startswith(self.table_prefixes):
-                return False
-            return True
 
     def _table_signature(self, table_path, table_name = None):
         path = os.path.join(table_path,table_name) if table_name else table_path
@@ -352,11 +345,22 @@ class DSDT:
                 print("Dumping tables to {}...".format(res))
                 cwd = os.getcwd()
                 os.chdir(res)
-                out = self.r.run({"args":[target, "-b"]})
+                out = self.r.run({"args":[target,"-b"]})
                 os.chdir(cwd)
                 if out[2] != 0:
                     print(" - {}".format(out[1]))
                     return
+                # Make sure we have a DSDT
+                if not next((x for x in os.listdir(res) if x.lower().startswith("dsdt.")),None):
+                    # We need to try and dump the DSDT individually - this sometimes
+                    # happens on older Windows installs or odd OEM machines
+                    print(" - DSDT not found - dumping by signature...")
+                    os.chdir(res)
+                    out = self.r.run({"args":[target,"-b","-n","DSDT"]})
+                    os.chdir(cwd)
+                    if out[2] != 0:
+                        print(" - {}".format(out[1]))
+                        return
                 # Iterate the dumped files and ensure the names are uppercase, and the
                 # extension used is .aml, not the default .dat
                 print("Updating names...")
@@ -539,6 +543,19 @@ class DSDT:
         # direction can be True = forward, False = backward, None = both
         start_index = index
         line,last_index = self.get_hex_starting_at(index,table=table)
+        if last_index == -1:
+            raise Exception("Could not find hex starting at index {}!".format(index))
+        first_line = line
+        # Assume at least 1 byte of our current_hex exists at index, so we need to at
+        # least load in len(current_hex)-2 worth of data if we haven't found it.
+        while True:
+            if current_hex in line or len(line) >= len(first_line)+len(current_hex):
+                break # Assume we've hit our cap
+            new_line,_index,last_index = self.find_next_hex(last_index, table=table)
+            if last_index == -1:
+                raise Exception("Hit end of file before passed hex was located!")
+            # Append the new info
+            line += new_line
         if not current_hex in line:
             raise Exception("{} not found in table at index {}-{}!".format(current_hex,start_index,last_index))
         padl = padr = ""
@@ -639,10 +656,10 @@ class DSDT:
         _path      = []
         brackets = 0
         for i,line in enumerate(table.get("lines",[])):
-            line = self.get_line(line)
             if self.is_hex(line):
                 # Skip hex
                 continue
+            line = self.get_line(line)
             brackets += line.count("{")-line.count("}")
             while len(_path):
                 # Remove any path entries that are nested
