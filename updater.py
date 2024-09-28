@@ -15,18 +15,18 @@ class Updater:
         })
         self.run = run.Run().run
         self.utils = utils.Utils()
-        self.sha_version = os.path.join(os.path.dirname(os.path.realpath(__file__)), "sha_version.json")
+        self.sha_version = os.path.join(os.path.dirname(os.path.realpath(__file__)), "sha_version.txt")
         self.download_repo_url = "https://github.com/lzhoang2801/OpCore-Simplify/archive/refs/heads/main.zip"
         self.temporary_dir = tempfile.mkdtemp()
 
     def get_current_sha_version(self):
-        sha_version_data = self.utils.read_file(self.sha_version)
+        current_sha_version = self.utils.read_file(self.sha_version)
 
-        if not sha_version_data or not isinstance(sha_version_data, dict):
-            print("SHA version information is missing in the commit_sha.json file.\n")
+        if not current_sha_version:
+            print("SHA version information is missing in the sha_version.txt file.\n")
             return "0506fb67111d5c5230bf59b826c318ea4251dfc4"
 
-        return sha_version_data.get("sha_version", "0506fb67111d5c5230bf59b826c318ea4251dfc4")
+        return current_sha_version.decode()
 
     def get_latest_sha_version(self):
         latest_commit = self.github.get_latest_commit("lzhoang2801", "OpCore-Simplify")
@@ -41,23 +41,20 @@ class Updater:
 
     def update_files(self):
         target_dir = os.path.join(self.temporary_dir, "main", "OpCore-Simplify-main")
-        for root, dirs, files in os.walk(target_dir):
-            for file in files:
-                source = os.path.join(root, file)
-                destination = source.replace(target_dir, os.path.dirname(os.path.realpath(__file__)))
-                shutil.move(source, destination)
-                if ".command" in os.path.splitext(file)[-1] and os.name != "nt":
-                    self.run({
-                        "args":["chmod", "+x", destination]
-                    })
+        file_paths = self.utils.find_matching_paths(target_dir, type_filter="file")
+
+        for path, type in file_paths:
+            source = os.path.join(target_dir, path)
+            destination = source.replace(target_dir, os.path.dirname(os.path.realpath(__file__)))
+            shutil.move(source, destination)
+            if ".command" in os.path.splitext(path)[-1] and os.name != "nt":
+                self.run({
+                    "args":["chmod", "+x", destination]
+                })
         shutil.rmtree(self.temporary_dir)
 
     def save_latest_sha_version(self, latest_sha):
-        sha_version_info = {
-            "sha_version": latest_sha
-        }
-
-        self.utils.write_file(self.sha_version, sha_version_info)
+        self.utils.write_file(self.sha_version, latest_sha.encode())
 
     def run_update(self):
         self.utils.head("Check for Updates")
