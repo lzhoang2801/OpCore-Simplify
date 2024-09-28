@@ -257,85 +257,6 @@ class builder:
         igpu_properties["framebuffer-patch-enable"] = "01000000"
         return igpu_properties   
 
-    def system_product_info(self, platform, cpu_manufacturer, processor_name, cpu_codename, cpu_cores, discrete_gpu, igpu_props, macos_version):
-        product_name = "iMacPro1,1" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0") or self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=12) else "MacPro7,1"
-
-        if "AMD" in cpu_manufacturer and not discrete_gpu:
-            product_name = "MacBookPro16,3" if "Laptop" in platform else "iMacPro1,1"
-
-        if igpu_props:
-            if "Kaby Lake-R".lower() in cpu_codename.lower() and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                cpu_codename = "Coffee Lake"
-
-            if "Sandy Bridge" in cpu_codename:
-                if "Desktop" in platform:
-                    if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("18.0.0"):
-                        product_name = "iMac12,2"
-                    else:
-                        product_name = "MacPro6,1"
-                elif "NUC" in platform:
-                    product_name = "Macmini5,1" if int(cpu_cores) < 4 else "Macmini5,3"
-                else:
-                    product_name = "MacBookPro8,1" if int(cpu_cores) < 4 else "MacBookPro8,2"
-            elif "Ivy Bridge" in cpu_codename:
-                if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("21.0.0"):
-                    if "Desktop" in platform:
-                        product_name = "iMac14,4" if not discrete_gpu else "iMac15,1"
-                    elif "NUC" in platform:
-                        product_name = "Macmini7,1"
-                    else:
-                        product_name = "MacBookPro11,1" if int(cpu_cores) < 4 else "MacBookPro11,5"
-                elif self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0"):
-                    if "Desktop" in platform:
-                        product_name = "iMac13,1" if not discrete_gpu else "iMac13,2"
-                    elif "NUC" in platform:
-                        product_name = "Macmini6,1" if int(cpu_cores) < 4 else "Macmini6,2"
-                    else:
-                        product_name = "MacBookPro10,2" if int(cpu_cores) < 4 else "MacBookPro10,1"
-                else:
-                    product_name = "MacPro6,1"
-            elif "Haswell" in cpu_codename:
-                if "Desktop" in platform:
-                    product_name = "iMac14,4" if not discrete_gpu else "iMac15,1"
-                    if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("22.0.0"):
-                        product_name = "iMac16,2" if not discrete_gpu else "iMac17,1"
-                elif "NUC" in platform:
-                    product_name = "Macmini7,1"
-                else:
-                    product_name = "MacBookPro11,1" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("21.0.0") and int(cpu_cores) < 4 else "MacBookPro11,5"
-            elif "Broadwell" in cpu_codename:
-                if "Desktop" in platform:
-                    product_name = "iMac16,2" if not discrete_gpu else "iMac17,1"
-                elif "NUC" in platform:
-                    product_name = "iMac16,1"
-                else:
-                    product_name = "MacBookPro12,1" if int(cpu_cores) < 4 else "MacBookPro11,5"
-            elif "Skylake" in cpu_codename:
-                product_name = "iMac17,1"
-                if "Laptop" in platform:
-                    product_name = "MacBookPro13,1" if int(cpu_cores) < 4 else "MacBookPro13,3"
-            elif self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=8, end=11):
-                product_name = "Macmini8,1"
-                if "Desktop" in platform:
-                    product_name = "iMac18,3" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("18.0.0") else "iMac19,1"
-                    if "Comet Lake" in cpu_codename:
-                        product_name = "iMac20,1" if int(cpu_cores) < 10 else "iMac20,2"
-                elif "Laptop" in platform:
-                    if "-8" in processor_name:
-                        product_name = "MacBookPro15,2" if int(cpu_cores) < 6 else "MacBookPro15,3"
-                    else:
-                        product_name = "MacBookPro16,3" if int(cpu_cores) < 6 else "MacBookPro16,1"
-            elif "Kaby Lake" in cpu_codename:
-                product_name = "iMac18,1" if not discrete_gpu else "iMac18,3"
-                if "Laptop" in platform:
-                    product_name = "MacBookPro14,1" if int(cpu_cores) < 4 else "MacBookPro14,3"
-            elif "Amber Lake" in cpu_codename:
-                product_name = "MacBookAir8,1"
-            elif "Ice Lake" in cpu_codename:
-                product_name = "MacBookAir9,1" if int(cpu_cores) < 4 else "MacBookPro16,2"
-
-        return product_name
-
     def clean_up(self, config, efi_directory):
         files_to_remove = []
 
@@ -376,7 +297,7 @@ class builder:
             print("")
             self.utils.request_input()
 
-    def build_efi(self, hardware, unsupported_devices, macos_version):
+    def build_efi(self, hardware, unsupported_devices, smbios_model, macos_version):
         efi_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "Results")
         
         self.utils.create_folder(efi_directory, remove_content=True)
@@ -427,15 +348,7 @@ class builder:
             hardware_shorc["Integrated GPU"].get("Manufacturer", ""), 
             hardware_shorc["Integrated GPU Name"], 
             efi_option.get("macOS Version"))
-        efi_option["SMBIOS"] = self.system_product_info(
-            hardware_shorc["Platform"], 
-            hardware_shorc["CPU Manufacturer"], 
-            hardware_shorc.get("Processor Name"), 
-            hardware_shorc["CPU Codename"], 
-            hardware_shorc["CPU Cores"],
-            hardware_shorc["Discrete GPU"], 
-            efi_option["iGPU Properties"],
-            efi_option.get("macOS Version"))
+        efi_option["SMBIOS"] = smbios_model
 
         input_devices = ", ".join(list(hardware_shorc.get("Input", {}).keys()))
         hardware_shorc["Touchpad Communication"] = "None" if not "Laptop" in hardware_shorc.get("Platform") else "I2C" if "I2C" in input_devices else "PS2" if "PS2" in input_devices else "None"

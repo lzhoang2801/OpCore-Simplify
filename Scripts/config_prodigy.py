@@ -330,7 +330,7 @@ class ConfigProdigy:
             config["NVRAM"]["Delete"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"].extend(["revcpu", "revcpuname"])
         config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].append("csr-active-config")
 
-        config["PlatformInfo"]["Generic"].update(self.smbios.generate(efi_option.get("SMBIOS")))
+        config["PlatformInfo"]["Generic"].update(self.smbios.generate_smbios(efi_option.get("SMBIOS")))
         if efi_option.get("Custom CPU Name"):
             config["PlatformInfo"]["Generic"]["ProcessorType"] = 1537 if int(hardware["CPU Cores"]) < 8 else 3841
         config["PlatformInfo"]["Generic"]["ROM"] = self.utils.hex_to_bytes(config["PlatformInfo"]["Generic"]["ROM"])
