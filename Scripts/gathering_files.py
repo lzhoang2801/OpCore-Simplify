@@ -13,6 +13,7 @@ class gatheringFiles:
         self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher()
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
+        self.ocbinarydata_url = "https://github.com/acidanthera/OcBinaryData/archive/refs/heads/master.zip"
         self.amd_vanilla_patches_url = "https://raw.githubusercontent.com/AMD-OSX/AMD_Vanilla/beta/patches.plist"
         self.temporary_dir = tempfile.mkdtemp()
         self.ock_files_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "OCK_Files")
@@ -94,6 +95,20 @@ class gatheringFiles:
                 source_config_path = os.path.join(os.path.dirname(os.path.dirname(source_bootloader_path)), "Docs", "Sample.plist")
                 destination_config_path = os.path.join(destination_efi_path, "OC", "config.plist")
                 shutil.move(source_config_path, destination_config_path)
+
+                ocbinarydata_dir = os.path.join(self.temporary_dir, "OcBinaryData", "OcBinaryData-master")
+                background_picker_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "datasets", "background_picker.icns")
+                if os.path.exists(ocbinarydata_dir):
+                    for name in os.listdir(ocbinarydata_dir):
+                        if name.startswith("."):
+                            continue
+                        shutil.copytree(os.path.join(ocbinarydata_dir, name), os.path.join(destination_efi_path, "OC", name), dirs_exist_ok=True)
+                    resources_image_dir = os.path.join(destination_efi_path, "OC", "Resources", "Image")
+                    picker_variants = self.utils.find_matching_paths(resources_image_dir, type_filter="dir")
+                    for picker_variant, type in picker_variants:
+                        if ".icns" in ", ".join(os.listdir(os.path.join(resources_image_dir, picker_variant))):
+                            shutil.copy(background_picker_path, os.path.join(resources_image_dir, picker_variant, "Background.icns"))
+
             macserial_paths = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), name_filter="macserial", type_filter="file")
             if macserial_paths:
                 for macserial_path, type in macserial_paths:
@@ -126,6 +141,13 @@ class gatheringFiles:
             zip_path = os.path.join(self.temporary_dir, product.get("product_name")) + ".zip"
             self.fetcher.download_and_save_file(product.get("url"), zip_path)
             self.utils.extract_zip_file(zip_path)
+
+            if "OpenCore" in product.get("product_name"):
+                ocbinarydata_dir = os.path.join(self.temporary_dir, "OcBinaryData")
+                if not os.path.exists(ocbinarydata_dir):
+                    zip_path = ocbinarydata_dir + ".zip"
+                    self.fetcher.download_and_save_file(self.ocbinarydata_url, zip_path)
+                    self.utils.extract_zip_file(zip_path)
 
             if self.move_bootloader_kexts_to_product_directory(product.get("product_name")):
                 if product_index is None:
