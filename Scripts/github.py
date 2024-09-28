@@ -16,12 +16,10 @@ class Github:
         url = "https://api.github.com/rate_limit"
 
         response = self.fetcher.fetch_and_parse_content(url, "json")
-        if response.get("rate").get("remaining") == 0:
-            raise Exception("Please try again later, you have exhausted your GitHub REST API request quota")
+
+        return response.get("rate").get("remaining") != 0
         
     def get_latest_commit(self, owner, repo):
-        self.check_ratelimit()
-
         url = "https://api.github.com/repos/{}/{}/commits".format(owner, repo)
 
         response = self.fetcher.fetch_and_parse_content(url, "json")
@@ -30,8 +28,6 @@ class Github:
         
     def get_latest_artifact(self, owner, repo):
         results = []
-
-        self.check_ratelimit()
 
         url = "https://api.github.com/repos/{}/{}/actions/artifacts?per_page=1".format(owner, repo)
 
@@ -48,9 +44,7 @@ class Github:
         return results
 
     def get_latest_release(self, owner, repo):
-        result = []
-
-        self.check_ratelimit()
+        results = []
 
         url = "https://api.github.com/repos/{}/{}/releases?per_page=1".format(owner, repo)
 
@@ -62,13 +56,13 @@ class Github:
             asset_name = self.extract_asset_name(asset.get("name"))
 
             if "tlwm" in download_url or ("tlwm" not in download_url and "DEBUG" not in download_url.upper()):
-                result.append({
+                results.append({
                     "product_name": asset_name, 
                     "id": asset_id, 
                     "url": download_url
                 })
 
-        return result
+        return results
     
     def extract_asset_name(self, file_name):
         end_idx = len(file_name)

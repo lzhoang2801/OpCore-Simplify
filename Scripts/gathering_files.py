@@ -45,9 +45,11 @@ class gatheringFiles:
                         "url": dortania_builds_data[name]["versions"][0]["links"]["release"]
                     })
                 else:
-                    download_urls.extend(self.github.get_latest_release(kext.github_repo.get("owner"), kext.github_repo.get("repo")))
+                    if self.github.check_ratelimit():
+                        download_urls.extend(self.github.get_latest_release(kext.github_repo.get("owner"), kext.github_repo.get("repo")))
 
-        download_urls.extend(self.github.get_latest_release("wjz304", "OpenCore_Patch_Build"))
+        if self.github.check_ratelimit():
+            download_urls.extend(self.github.get_latest_release("wjz304", "OpenCore_Patch_Build"))
 
         sorted_data = sorted(download_urls, key=lambda x:x["product_name"])
 
