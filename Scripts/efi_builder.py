@@ -13,7 +13,6 @@ class builder:
         self.config = config_prodigy.ConfigProdigy()
         self.kext = kext_maestro.KextMaestro()
         self.utils = utils.Utils()
-        self.oc_binary_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "OcBinaryData")
         self.intel_igpu_properties = {
             "Ice Lake": {
                 "Laptop": {
@@ -307,7 +306,6 @@ class builder:
         
         source_efi_dir = os.path.join(self.kext.ock_files_dir, "OpenCore")
         shutil.copytree(source_efi_dir, efi_directory, dirs_exist_ok=True)
-        shutil.copytree(self.oc_binary_data_dir, os.path.join(efi_directory, "EFI", "OC"), dirs_exist_ok=True)
 
         hardware_shorc = {}
         hardware_shorc["Motherboard Name"] = hardware["Motherboard"].get("Motherboard Name").upper()
