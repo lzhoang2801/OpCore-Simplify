@@ -22,7 +22,7 @@ class SMBIOS:
             download_history = self.utils.read_file(self.g.download_history_file)
 
             if download_history:
-                product_index = self.g.product_index_in_history("OpenCore", download_history)
+                product_index = self.g.get_product_index(download_history, "OpenCore")
                 
                 if product_index:
                     download_history.pop(product_index)
