@@ -89,3 +89,6 @@ mac_devices = [
     MacDevice("MacPro6,1", "E5-1620 v2", "Ivy Bridge EP", "AMD FirePro D300", "10.9.1", "21.99.99"),
     MacDevice("MacPro7,1", "W-3245M", "Cascade Lake-W", "AMD Radeon Pro 580X", "19.0.0")
 ]
+
+def get_mac_device_by_name(name):
+    return next((mac_device for mac_device in mac_devices if mac_device.name == name), None)

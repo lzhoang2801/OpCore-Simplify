@@ -1,5 +1,6 @@
 from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
+from Scripts.datasets import mac_model_data
 from Scripts.datasets import os_data
 from Scripts import codec_layouts
 from Scripts import gathering_files
@@ -37,6 +38,27 @@ class ConfigProdigy:
             })
         
         return booter_mmiowhitelist
+    
+    def add_booter_patch(self, smbios_model, macos_version):
+        booter_patch = []
+
+        mac_device = mac_model_data.get_mac_device_by_name(smbios_model)
+        if not self.utils.parse_darwin_version(mac_device.initial_support) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(mac_device.last_supported_version):
+            booter_patch.append({
+                "Arch": "x86_64",
+                "Comment": "Skip Board ID check",
+                "Count": 0,
+                "Enabled": True,
+                "Find": self.utils.hex_to_bytes("0050006C006100740066006F0072006D0053007500700070006F00720074002E0070006C006900730074"),
+                "Identifier": "Apple",
+                "Limit": 0,
+                "Mask": self.utils.hex_to_bytes(""),
+                "Replace": self.utils.hex_to_bytes("002E002E002E002E002E002E002E002E002E002E002E002E002E002E002E002E002E002E002E002E002E"),
+                "ReplaceMask": self.utils.hex_to_bytes(""),
+                "Skip": 0
+            })
+
+        return booter_patch
 
     def check_mats_support(self, cpu_manufacturer, motherboard_chipset):
         return "AMD" in cpu_manufacturer or \
@@ -240,7 +262,7 @@ class ConfigProdigy:
         config["ACPI"]["Patch"] = efi_option.get("ACPI").get("Patch")
 
         config["Booter"]["MmioWhitelist"] = self.mmio_whitelist(hardware.get("Motherboard Chipset"))
-        config["Booter"]["Patch"] = []
+        config["Booter"]["Patch"] = self.add_booter_patch(efi_option.get("SMBIOS"), efi_option.get("macOS Version"))
         config["Booter"]["Quirks"]["DevirtualiseMmio"] = self.check_mats_support(hardware.get("CPU Manufacturer"), hardware.get("Motherboard Chipset"))
         if "AMD" in hardware.get("CPU Manufacturer") and not "TRX40" in hardware.get("Motherboard Chipset"):
             config["Booter"]["Quirks"]["DevirtualiseMmio"] = False
