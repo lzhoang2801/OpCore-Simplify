@@ -17,6 +17,11 @@ patches = [
         function_name = "fix_apic_processor_id"
     ),
     PatchInfo(
+        name = "BATP",
+        description = "Enables displaying the battery percentage on laptops",
+        function_name = "battery_status_patch"
+    ),
+    PatchInfo(
         name = "BUS0",
         description = "Add a System Management Bus device to fix AppleSMBus issues",
         function_name = "add_system_management_bus_device"

@@ -580,7 +580,7 @@ class KextMaestro:
 
         return pci_ids
 
-    def gathering_kexts(self, motherboard_name, platform, cpu_configuration, cpu_manufacturer, cpu_codename, cpu_cores, simd_features, discrete_gpu_codename, integrated_gpu, network, bluetooth, codec_id, input, sd_controller, storage_controllers, usb_controllers, smbios, custom_cpu_name, tsc_sync, acpi, macos_version):
+    def gathering_kexts(self, motherboard_name, platform, cpu_configuration, cpu_manufacturer, cpu_codename, cpu_cores, simd_features, discrete_gpu_codename, integrated_gpu, network, bluetooth, codec_id, input, sd_controller, storage_controllers, usb_controllers, smbios, custom_cpu_name, tsc_sync, acpi_patches, macos_version):
         kexts = [
             "Lilu", 
             "VirtualSMC", 
@@ -610,7 +610,7 @@ class KextMaestro:
         else:
             kexts.append("NootRX" if "Navi 2" in discrete_gpu_codename else "WhateverGreen")
 
-        if "SSDT-RMNE" in ", ".join(acpi_table.get("Path") for acpi_table in acpi.get("Add")):
+        if any(patch.checked for patch in acpi_patches if patch.name == "RMNE"):
             kexts.append("NullEthernet")
 
         wifi_pci = None
@@ -685,7 +685,7 @@ class KextMaestro:
                             elif 79 < idx:
                                 kexts.append("VoodooRMI")
 
-        if "Laptop" in platform and "SURFACE" not in motherboard_name and acpi.get("Battery Status Patch Needed"):
+        if any(patch.checked for patch in acpi_patches if patch.name == "BATP"):
             kexts.append("ECEnabler")
 
         if sd_controller and sd_controller.get("Device ID") in pci_data.RealtekCardReaderIDs:

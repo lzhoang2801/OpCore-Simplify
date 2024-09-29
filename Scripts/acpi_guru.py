@@ -1,6 +1,4 @@
-# Original source:
-# https://github.com/corpnewt/SSDTTime/blob/7b3fb78112bf320a1bc6a7e50dddb2b375cb70b0/SSDTTime.py
-
+from Scripts.datasets import acpi_patch_data
 from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
 from Scripts.datasets import pci_data
@@ -21,6 +19,11 @@ class ACPIGuru:
         self.smbios = smbios.SMBIOS()
         self.run = run.Run().run
         self.utils = utils.Utils()
+        self.patches = acpi_patch_data.patches
+        self.hardware_report = None
+        self.unsupported_devices = None
+        self.acpi_directory = None
+        self.smbios_model = None
         self.dsdt = None
         self.lpc_bus_device = None
         self.osi_strings = {
@@ -75,11 +78,6 @@ class ACPIGuru:
         )
         self.target_irqs = [0, 2, 8, 11]
         self.illegal_names = ("XHC1", "EHC1", "EHC2", "PXSX")
-        self.result = {
-            "Add": [],
-            "Delete": [],
-            "Patch": []
-        }
 
     def get_unique_name(self,name,target_folder,name_append="-Patched"):
         # Get a new file name in the Results folder so we don't override the original
@@ -113,7 +111,7 @@ class ACPIGuru:
         alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key.lower()) ] 
         return sorted(l, key = alphanum_key)
     
-    def read_dsdt(self, path):
+    def read_acpi_tables(self, path):
         if not path:
             return
         tables = []
@@ -134,7 +132,7 @@ class ACPIGuru:
                 # directory - this may indicate SysReport was dropped
                 if os.path.isdir(os.path.join(path,"ACPI")):
                     # Rerun this function with that updated path
-                    return self.read_dsdt(os.path.join(path,"ACPI"))
+                    return self.read_acpi_tables(os.path.join(path,"ACPI"))
                 print(" - No valid .aml files were found!")
                 print("")
                 self.utils.request_input()
@@ -163,6 +161,7 @@ class ACPIGuru:
                 if not self.acpi.load(os.path.join(path,dsdt))[0]:
                     trouble_dsdt = dsdt
                 else:
+                    self.dsdt = self.acpi.get_dsdt_or_only()
                     print("\nDisassembled successfully!\n")
         elif os.path.isfile(path):
             #print("Loading {}...".format(os.path.basename(path)))
@@ -218,7 +217,7 @@ class ACPIGuru:
                 print(" - {}".format(p["PrePatch"]))
                 find = binascii.unhexlify(p["Find"])
                 if d.count(find) == 1:
-                    self.result.get("Patch").append(p) # Retain the patch
+                    patches.append(p) # Retain the patch
                     repl = binascii.unhexlify(p["Replace"])
                     print(" --> Located - applying...")
                     d = d.replace(find,repl) # Replace it in memory
@@ -315,8 +314,7 @@ class ACPIGuru:
                 scope = "\n".join(self.acpi.get_scope(sta[0][1],strip_comments=True,table=table))
                 has_var = var in scope
                 #print(" --> {} {} variable".format("Has" if has_var else "Does NOT have",var))
-        else:
-            pass
+        #else:
             #print(" --> No _STA method/name found")
         # Let's find out of we need a unique patch for _STA -> XSTA
         if sta and not has_var:
@@ -336,360 +334,6 @@ class ACPIGuru:
             return int(table["lines"][line].split(split_by)[1].split(")")[0].replace("Zero","0x0").replace("One","0x1"),16)
         except:
             return None
-      
-    def check_acpi_directory(self, acpi_directory):
-        self.utils.create_folder(acpi_directory, remove_content=True)
-
-        if os.path.exists(acpi_directory):
-            return acpi_directory
-        return None
-
-    def write_ssdt(self, ssdt_name, ssdt_content, compile=True):
-        dsl_path = os.path.join(self.acpi_directory, ssdt_name + ".dsl")
-        aml_path = os.path.join(self.acpi_directory, ssdt_name + ".aml")
-
-        with open(dsl_path,"w") as f:
-            f.write(ssdt_content)
-
-        if not compile:
-            return False
-        
-        output = self.run({
-            "args":[self.acpi.iasl, dsl_path]
-        })
-        
-        if output[-1] != 0:
-            return False
-        else:
-            os.remove(dsl_path)
-        
-        return os.path.exists(aml_path)
-
-    def apply_acpi_patches(self):
-        for acpi_patch in self.result.get("Patch"):
-            acpi_patch["Base"] = acpi_patch.get("Base", "")
-            acpi_patch["BaseSkip"] = acpi_patch.get("BaseSkip", 0)
-            acpi_patch["Count"] = acpi_patch.get("Count", 0)
-            acpi_patch["Enabled"] = True
-            acpi_patch["Find"] = self.utils.hex_to_bytes(acpi_patch["Find"])
-            acpi_patch["Limit"] = acpi_patch.get("Limit", 0)
-            acpi_patch["Mask"] = self.utils.hex_to_bytes(acpi_patch.get("Mask", ""))
-            acpi_patch["OemTableId"] = self.utils.hex_to_bytes(acpi_patch.get("OemTableId", ""))
-            acpi_patch["Replace"] = self.utils.hex_to_bytes(acpi_patch["Replace"])
-            acpi_patch["ReplaceMask"] = self.utils.hex_to_bytes(acpi_patch.get("ReplaceMask", ""))
-            acpi_patch["Skip"] = acpi_patch.get("Skip", 0)
-            acpi_patch["TableLength"] = acpi_patch.get("TableLength", 0)
-            acpi_patch["TableSignature"] = self.utils.hex_to_bytes(acpi_patch.get("TableSignature", ""))
-
-        self.result["Patch"] = sorted(self.result["Patch"], key=lambda x: x["Comment"])
-
-    def get_low_pin_count_bus_device(self):
-        for lpc_bus_name in ("LPCB", "LPC0", "LPC", "SBRG", "PX40"):
-            try:
-                self.lpc_bus_device = self.acpi.get_device_paths(lpc_bus_name)[0][0]
-                break
-            except: 
-                pass
-
-    def add_intel_management_engine(self, cpu_codename, intel_mei):
-        comment = "Creates a fake IMEI device to ensure Intel iGPUs acceleration functions properly"
-        ssdt_name = "SSDT-IMEI"
-        ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "IMEI", 0x00000000)
-{
-    External (_SB_.PCI0, DeviceObj)
-
-    Scope (_SB.PCI0)
-    {
-        Device (IMEI)
-        {
-            Name (_ADR, 0x00160000)  // _ADR: Address
-            Method (_STA, 0, NotSerialized)  // _STA: Status
-            {
-                If (_OSI ("Darwin"))
-                {
-                    Return (0x0F)
-                }
-                Else
-                {
-                    Return (Zero)
-                }
-            }
-        }
-    }
-}"""
-
-        if intel_mei:
-            if "Sandy Bridge" in cpu_codename and intel_mei.get("Device ID") in "8086-1E3A" or  "Ivy Bridge" in cpu_codename and intel_mei.get("Device ID") in "8086-1C3A":
-                imei_device = self.acpi.get_device_paths_with_hid("0x00160000", self.dsdt)
-
-                if not imei_device:
-                    self.result["Add"].append({
-                        "Comment": comment,
-                        "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-                        "Path": ssdt_name + ".aml"
-                    })
-
-    def add_memory_controller_device(self, cpu_manufacturer, smbios):
-        if "Intel" not in cpu_manufacturer or "MacPro" in smbios:
-            return
-        
-        comment = "Add a Memory Controller Hub Controller device to fix AppleSMBus"
-        ssdt_name = "SSDT-MCHC"
-        ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
-{
-    External ([[PCIName]], DeviceObj)
-
-    Scope ([[PCIName]])
-    {
-        Device (MCHC)
-        {
-            Name (_ADR, Zero)
-            Method (_STA, 0, NotSerialized)
-            {
-                If (_OSI ("Darwin"))
-                {
-                    Return (0x0F)
-                }
-                Else
-                {
-                    Return (Zero)
-                }
-            }
-        }
-    }
-}"""
-
-        mchc_device = self.acpi.get_device_paths("MCHC", self.dsdt)
-
-        if mchc_device:
-            return
-        
-        pci_bus_device = ".".join(self.lpc_bus_device.split(".")[:2])
-        ssdt_content = ssdt_content.replace("[[PCIName]]", pci_bus_device)
-
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
-
-    def add_system_management_bus_device(self, cpu_manufacturer, cpu_codename):
-        if "Intel" not in cpu_manufacturer:
-            return
-        
-        try:
-            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=4) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
-        except:
-            smbus_device_name = "SBUS"
-            
-        pci_bus_device = ".".join(self.lpc_bus_device.split(".")[:2])
-        smbus_device_path = "{}.{}".format(pci_bus_device, smbus_device_name)
-
-        comment = "Add a System Management Bus device to fix AppleSMBus issues"
-        ssdt_name = "SSDT-{}".format(smbus_device_name)
-        ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[SMBUSName]]", 0)
-{
-    External ([[SMBUSDevice]], DeviceObj)
-
-    Scope ([[SMBUSDevice]])
-    {
-        Device (BUS0)
-        {
-            Name (_CID, "smbus")
-            Name (_ADR, Zero)
-            Method (_STA, 0, NotSerialized)
-            {
-                If (_OSI ("Darwin"))
-                {
-                    Return (0x0F)
-                }
-                Else
-                {
-                    Return (Zero)
-                }
-            }
-        }
-    }
-}""".replace("[[SMBUSName]]", smbus_device_name).replace("[[SMBUSDevice]]", smbus_device_path)
-
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
-
-    def add_usb_power_properties(self, smbios):
-        comment = "Creates an USBX device to inject USB power properties"
-        ssdt_name = "SSDT-USBX"
-        ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "USBX", 0x00001000)
-{
-    Scope (\\_SB)
-    {
-        Device (USBX)
-        {
-            Name (_ADR, Zero)  // _ADR: Address
-            Method (_DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
-            {
-                If (LNot (Arg2))
-                {
-                    Return (Buffer ()
-                    {
-                        0x03
-                    })
-                }
-                Return (Package ()
-                {[[USBX_PROPS]]
-                })
-            }
-            Method (_STA, 0, NotSerialized)  // _STA: Status
-            {
-                If (_OSI ("Darwin"))
-                {
-                    Return (0x0F)
-                }
-                Else
-                {
-                    Return (Zero)
-                }
-            }
-        }
-    }
-}"""
-        
-        usb_power_properties = None
-        if self.utils.contains_any(["MacPro7,1", "iMacPro1,1", "iMac20,", "iMac19,", "iMac18,", "iMac17,", "iMac16,"], smbios):
-            usb_power_properties = {
-                "kUSBSleepPowerSupply":"0x13EC",
-                "kUSBSleepPortCurrentLimit":"0x0834",
-                "kUSBWakePowerSupply":"0x13EC",
-                "kUSBWakePortCurrentLimit":"0x0834"
-            }
-        elif "MacMini8,1" in smbios:
-            usb_power_properties = {
-                "kUSBSleepPowerSupply":"0x0C80",
-                "kUSBSleepPortCurrentLimit":"0x0834",
-                "kUSBWakePowerSupply":"0x0C80",
-                "kUSBWakePortCurrentLimit":"0x0834"
-            }
-        elif self.utils.contains_any(["MacBookPro16,", "MacBookPro15,", "MacBookPro14,", "MacBookPro13,", "MacBookAir9,1"], smbios):
-            usb_power_properties = {
-                "kUSBSleepPortCurrentLimit":"0x0BB8",
-                "kUSBWakePortCurrentLimit":"0x0BB8"
-            }
-        elif "MacBook9,1" in smbios:
-            usb_power_properties = {
-                "kUSBSleepPowerSupply":"0x05DC",
-                "kUSBSleepPortCurrentLimit":"0x05DC",
-                "kUSBWakePowerSupply":"0x05DC",
-                "kUSBWakePortCurrentLimit":"0x05DC"
-            }
-
-        if usb_power_properties:
-            ssdt_content = ssdt_content.replace("[[USBX_PROPS]]",
-                "".join("\n                    \"{}\",\n                    {}{}".format(key, usb_power_properties[key], "," if index < len(usb_power_properties) else "")
-                for index, key in enumerate(usb_power_properties, start=1))
-            )
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-                "Path": ssdt_name + ".aml"
-            })
-
-    def ambient_light_sensor(self, motherboard_name, platform, integrated_gpu):
-        if "Laptop" not in platform or not integrated_gpu or "SURFACE" in motherboard_name:
-            return
-        
-        ssdt_name = "SSDT-ALS0"
-        ssdt_content = """
-// Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-ALS0.dsl
-
-/*
- * Starting with macOS 10.15 Ambient Light Sensor presence is required for backlight functioning.
- * Here we create an Ambient Light Sensor ACPI Device, which can be used by SMCLightSensor kext
- * to report either dummy (when no device is present) or valid values through SMC interface.
- */
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "ALS0", 0x00000000)
-{
-    Scope (_SB)
-    {
-        Device (ALS0)
-        {
-            Name (_HID, "ACPI0008" /* Ambient Light Sensor Device */)  // _HID: Hardware ID
-            Name (_CID, "smc-als")  // _CID: Compatible ID
-            Name (_ALI, 0x012C)  // _ALI: Ambient Light Illuminance
-            Name (_ALR, Package (0x01)  // _ALR: Ambient Light Response
-            {
-                Package (0x02)
-                {
-                    0x64, 
-                    0x012C
-                }
-            })
-            Method (_STA, 0, NotSerialized)  // _STA: Status
-            {
-                If (_OSI ("Darwin"))
-                {
-                    Return (0x0F)
-                }
-                Else
-                {
-                    Return (Zero)
-                }
-            }
-        }
-    }
-}"""
-        try:
-            als_device = self.acpi.get_device_paths_with_hid("ACPI0008", self.dsdt)[0][0]
-        except:
-            als_device = None
-
-        if als_device:
-            als_device_name = als_device.split(".")[-1]
-            if "." not in als_device:
-                als_device_name = als_device_name[1:]
-
-            sta = self.get_sta_var(var=None, device=None, dev_hid="ACPI0008", dev_name=als_device_name, table=self.dsdt)
-
-            if sta.get("patches"):
-                self.result["Patch"].extend(sta.get("patches", []))
-            
-            ssdt_name = "SSDT-{}".format(als_device_name)
-            ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
-{
-    External ([[ALSDevice]], DeviceObj)
-    External ([[ALSDevice]].XSTA, [[STAType]])
-
-    Scope ([[ALSDevice]])
-    {
-        Method (_STA, 0, NotSerialized)  // _STA: Status
-        {
-            If (_OSI ("Darwin"))
-            {
-                Return (0)
-            }
-            Else
-            {
-                Return ([[XSTA]])
-            }
-        }
-    }
-}""".replace("[[ALSName]]", als_device_name) \
-    .replace("[[ALSDevice]]", als_device) \
-    .replace("[[STAType]]", sta.get("sta_type","MethodObj")) \
-    .replace("[[XSTA]]", "{}.XSTA{}".format(als_device," ()" if sta.get("sta_type","MethodObj") == "MethodObj" else "") if sta else "0x0F")
-
-        comment = "{} Ambient Light Sensor device for storing the current brightness/auto-brightness level".format("Fake" if not als_device else "Enable")
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
 
     def disable_rhub_devices(self):
         comment = "Disable RHUB/HUBN/URTH devices and rename PXSX, XHC1, EHC1, and EHC2 devices"
@@ -704,6 +348,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if not len(rhub_devices):
             return
         
+        patches = []
         tasks = []
         used_names = []
         xhc_num = 2
@@ -727,19 +372,19 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
                 used_names.append(task["rename"])
             else:
                 used_names.append(name)
-            sta_method = self.acpi.get_method_paths(task["device"]+"._STA", self.dsdt)
+            sta_method = self.acpi.get_method_paths(task["device"]+"._STA")
             if len(sta_method):
-                sta_index = self.acpi.find_next_hex(sta_method[0][1], self.dsdt)[1]
+                sta_index = self.acpi.find_next_hex(sta_method[0][1])[1]
                 sta_hex  = "5F535441"
                 xsta_hex = "58535441"
-                padl,padr = self.acpi.get_shortest_unique_pad(sta_hex, sta_index, self.dsdt)
-                self.result.get("Patch").append({
+                padl,padr = self.acpi.get_shortest_unique_pad(sta_hex, sta_index)
+                patches.append({
                     "Comment": "{} _STA to XSTA Rename".format(task["device"].split(".")[-1]),
                     "Find": padl+sta_hex+padr,
                     "Replace": padl+xsta_hex+padr
                 })
-            scope_adr = self.acpi.get_name_paths(task["device"]+"._ADR", self.dsdt)
-            task["address"] = self.dsdt.get("lines")[scope_adr[0][1]].strip() if len(scope_adr) else "Name (_ADR, Zero)  // _ADR: Address"
+            scope_adr = self.acpi.get_name_paths(task["device"]+"._ADR")
+            task["address"] = self.acpi.get_dsdt_or_only()["lines"][scope_adr[0][1]].strip() if len(scope_adr) else "Name (_ADR, Zero)  // _ADR: Address"
             tasks.append(task)
 
         parents = sorted(list(set([task["parent"] for task in tasks if task.get("parent", None)])))
@@ -806,281 +451,37 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
     """.replace("[[device]]", task["device"])
         ssdt_content += "\n}"
 
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
-
-    def disable_unsupported_device(self, unsupported_devices):
-        for device_name, device_props in unsupported_devices.items():
-            if not "Storage" in device_name:
-                continue
-
-            comment = "Disable {}".format(device_name.split(": ")[-1])
-            ssdt_name = None
-            if "Storage" in device_name:
-                ssdt_name = "SSDT-Disable_NVMe"
-                ssdt_content = """
-// Replace all "_SB.PCI0.RP09.PXSX" with the ACPI path of your SSD NVMe
-
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
-{
-    External (_SB.PCI0.RP09.PXSX, DeviceObj)
-
-    Method (_SB.PCI0.RP09.PXSX._DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
-    {
-        If (_OSI ("Darwin"))
-        {
-            If (!Arg2)
-            {
-                Return (Buffer (One)
+        return {
+            "Add": [
                 {
-                     0x03                                             // .
-                })
-            }
-
-            Return (Package (0x02)
-            {
-                "class-code", 
-                Buffer (0x04)
-                {
-                     0xFF, 0x08, 0x01, 0x00                           // ....
-                }
-            })
-        }
-    }
-}
-"""
-
-            if ssdt_name:
-                self.result["Add"].append({
                     "Comment": comment,
-                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
-                })
-  
-    def enable_backlight_controls(self, platform, cpu_codename, integrated_gpu):
-        if "Laptop" not in platform or not integrated_gpu:
-            return
-        
-        uid_value = 19
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=2):
-            uid_value = 14
-        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=2, end=4):
-            uid_value = 15
-        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=4, end=7):
-            uid_value = 16
-        
-        igpu = ""
-        if uid_value == 14:
-            # Try to gather our iGPU device
-            paths = self.acpi.get_path_of_type(obj_type="Name", obj="_ADR", table=self.dsdt)
-            for path in paths:
-                adr = self.get_address_from_line(path[1], self.dsdt)
-                if adr == 0x00020000:
-                    igpu = path[0][:-5]
-                    break
-            if not igpu: # Try matching by name
-                pci_roots = self.acpi.get_device_paths_with_hid("PNP0A08", self.dsdt)
-                pci_roots += self.acpi.get_device_paths_with_hid("PNP0A03", self.dsdt)
-                pci_roots += self.acpi.get_device_paths_with_hid("ACPI0016", self.dsdt)
-                external = []
-                for line in self.dsdt.get("lines"):
-                    if not line.strip().startswith("External ("): continue # We don't need it
-                    try:
-                        path = line.split("(")[1].split(", ")[0]
-                        # Prepend the backslash and ensure trailing underscores are stripped.
-                        path = "\\"+".".join([x.rstrip("_").replace("\\","") for x in path.split(".")])
-                        external.append(path)
-                    except: pass
-                for root in pci_roots:
-                    for name in ("IGPU","_VID","VID0","VID1","GFX0","VGA","_VGA"):
-                        test_path = "{}.{}".format(root[0],name)
-                        device = self.acpi.get_device_paths(test_path, self.dsdt)
-                        if device: device = device[0][0] # Unpack to the path
-                        else:
-                            # Walk the external paths and see if it's declared elsewhere?
-                            # We're not patching anything directly - just getting a pathing
-                            # reference, so it's fine to not have the surrounding code.
-                            device = next((x for x in external if test_path == x),None)
-                        if not device: continue # Not found :(
-                        # Got a device - see if it has an _ADR, and skip if so - as it was wrong in the prior loop
-                        if self.acpi.get_path_of_type(obj_type="Name",obj=device+"._ADR", table=self.dsdt): continue
-                        # At this point - we got a hit
-                        igpu = device
-                        
-        if "PNLF" in self.dsdt.get("table"):
-            self.result.get("Patch").append({
-                "Comment": "PNLF to XNLF Rename",
-                "Find": "504E4C46",
-                "Replace": "584E4C46"
-            })
-
-        nbcf = binascii.unhexlify("084E42434600")
-        if nbcf in self.dsdt.get("raw"):
-            self.result.get("Patch").append({
-                "Comment": "NBCF Zero to One for BrightnessKeys.kext",
-                "Find": "084E42434600",
-                "Replace": "084E42434601"
-            })
-
-        comment = "Defines a PNLF device to enable backlight controls on laptops"
-        ssdt_name = "SSDT-PNLF"
-        ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
-{"""
-        if igpu:
-            ssdt_content += """\n    External ([[igpu_path]], DeviceObj)\n"""
-        ssdt_content += """
-    Device (PNLF)
-    {
-        Name (_HID, EisaId ("APP0002"))  // _HID: Hardware ID
-        Name (_CID, "backlight")  // _CID: Compatible ID
-        Name (_UID, [[uid_value]])  // _UID: Unique ID
-        
-        Method (_STA, 0, NotSerialized)  // _STA: Status
-        {
-            If (_OSI ("Darwin"))
-            {
-                Return (0x0B)
-            }
-            Else
-            {
-                Return (Zero)
-            }
-        }"""
-        if igpu:
-            ssdt_content += """
-        Method (_INI, 0, Serialized)
-        {
-            If (LAnd (_OSI ("Darwin"), CondRefOf ([[igpu_path]])))
-            {
-                OperationRegion ([[igpu_path]].RMP3, PCI_Config, Zero, 0x14)
-                Field ([[igpu_path]].RMP3, AnyAcc, NoLock, Preserve)
-                {
-                    Offset (0x02), GDID,16,
-                    Offset (0x10), BAR1,32,
                 }
-                // IGPU PWM backlight register descriptions:
-                //   LEV2 not currently used
-                //   LEVL level of backlight in Sandy/Ivy
-                //   P0BL counter, when zero is vertical blank
-                //   GRAN see description below in INI1 method
-                //   LEVW should be initialized to 0xC0000000
-                //   LEVX PWMMax except FBTYPE_HSWPLUS combo of max/level (Sandy/Ivy stored in MSW)
-                //   LEVD level of backlight for Coffeelake
-                //   PCHL not currently used
-                OperationRegion (RMB1, SystemMemory, BAR1 & ~0xF, 0xe1184)
-                Field(RMB1, AnyAcc, Lock, Preserve)
-                {
-                    Offset (0x48250),
-                    LEV2, 32,
-                    LEVL, 32,
-                    Offset (0x70040),
-                    P0BL, 32,
-                    Offset (0xc2000),
-                    GRAN, 32,
-                    Offset (0xc8250),
-                    LEVW, 32,
-                    LEVX, 32,
-                    LEVD, 32,
-                    Offset (0xe1180),
-                    PCHL, 32,
-                }
-                // Now fixup the backlight PWM depending on the framebuffer type
-                // At this point:
-                //   Local4 is RMCF.BLKT value (unused here), if specified (default is 1)
-                //   Local0 is device-id for IGPU
-                //   Local2 is LMAX, if specified (Ones means based on device-id)
-                //   Local3 is framebuffer type
+            ],
+            "Patch": patches
+        }
 
-                // Adjustment required when using WhateverGreen.kext
-                Local0 = GDID
-                Local2 = Ones
-                Local3 = 0
-
-                // check Sandy/Ivy
-                // #define FBTYPE_SANDYIVY 1
-                If (LOr (LEqual (1, Local3), LNotEqual (Match (Package()
-                {
-                    // Sandy HD3000
-                    0x010b, 0x0102,
-                    0x0106, 0x1106, 0x1601, 0x0116, 0x0126,
-                    0x0112, 0x0122,
-                    // Ivy
-                    0x0152, 0x0156, 0x0162, 0x0166,
-                    0x016a,
-                    // Arrandale
-                    0x0046, 0x0042,
-                }, MEQ, Local0, MTR, 0, 0), Ones)))
-                {
-                    if (LEqual (Local2, Ones))
-                    {
-                        // #define SANDYIVY_PWMMAX 0x710
-                        Store (0x710, Local2)
-                    }
-                    // change/scale only if different than current...
-                    Store (LEVX >> 16, Local1)
-                    If (LNot (Local1))
-                    {
-                        Store (Local2, Local1)
-                    }
-                    If (LNotEqual (Local2, Local1))
-                    {
-                        // set new backlight PWMMax but retain current backlight level by scaling
-                        Store ((LEVL * Local2) / Local1, Local0)
-                        Store (Local2 << 16, Local3)
-                        If (LGreater (Local2, Local1))
-                        {
-                            // PWMMax is getting larger... store new PWMMax first
-                            Store (Local3, LEVX)
-                            Store (Local0, LEVL)
-                        }
-                        Else
-                        {
-                            // otherwise, store new brightness level, followed by new PWMMax
-                            Store (Local0, LEVL)
-                            Store (Local3, LEVX)
-                        }
-                    }
-                }
-            }
-        }"""
-        ssdt_content += """
-    }
-}"""
-        # Perform the replacements
-        ssdt_content = ssdt_content.replace("[[uid_value]]", str(uid_value)).replace("[[igpu_path]]",igpu)        
-        
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
-
-    def enable_cpu_power_management(self, cpu_codename):
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=2):
-            return
-        
+    def enable_cpu_power_management(self):
         comment = "Sets plugin-type to 1 on the first Processor object to enable CPU power management"
         ssdt_name = "SSDT-PLUG"
 
         try: 
-            cpu_name = self.acpi.get_processor_paths()[0][0]
+            processor_path = self.acpi.get_processor_paths(table=self.dsdt)[0][0]
         except: 
-            cpu_name = None
+            processor_path = None
 
-        if cpu_name:
+        if processor_path:
             ssdt_content = """
 // Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/SSDT-PLUG.dsl
 
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlug", 0x00003000)
 {
-    External ([[CPUName]], ProcessorObj)
-    Scope ([[CPUName]])
+    External ([[processor_path]], ProcessorObj)
+    Scope ([[processor_path]])
     {
-        If (_OSI ("Darwin")) {
+        If (_OSI ("Darwin")) 
+        {
             Method (_DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
             {
                 If (LNot (Arg2))
@@ -1098,11 +499,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlug", 0x00003000)
             }
         }
     }
-}""".replace("[[CPUName]]", cpu_name)
+}""".replace("[[processor_path]]", processor_path)
         else:
             comment = "Redefines modern CPU Devices as legacy Processor objects and sets plugin-type to 1 on the first to enable CPU power management"
             ssdt_name += "-ALT"
-            procs = self.acpi.get_device_paths_with_hid("ACPI0007", self.dsdt)
+            procs = self.acpi.get_device_paths_with_hid("ACPI0007", table=self.dsdt)
             if not procs:
                 return
             parent = procs[0][0].split(".")[0]
@@ -1171,419 +572,15 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
     }
 }"""
 
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
-
-    def enable_gpio_device(self, platform, cpu_manufacturer, touchpad_communication):
-        if "Laptop" not in platform or "Intel" not in cpu_manufacturer or not "I2C" in touchpad_communication:
-            return
-
-        try:
-            gpio_device = self.acpi.get_device_paths("GPI0", self.dsdt)[0][0] or self.acpi.get_device_paths("GPIO", self.dsdt)[0][0]
-        except:
-            gpio_device = None
-
-        if not gpio_device:
-            return
-        
-        sta = self.get_sta_var(var=None, device=gpio_device, dev_hid=None, dev_name=gpio_device.split(".")[-1], table=self.dsdt)
-
-        if sta.get("patches"):
-            self.result["Patch"].extend(sta.get("patches", []))
-        
-        comment = "Enable GPIO device for a I2C TouchPads to function properly"
-        ssdt_name = "SSDT-GPI0"
-        ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPI0", 0x00000000)
-{
-    External ([[GPI0Path]], DeviceObj)
-    External ([[GPI0Path]].XSTA, [[STAType]])
-
-    Scope ([[GPI0Path]])
-    {
-        Method (_STA, 0, NotSerialized)  // _STA: Status
-        {
-            If (_OSI ("Darwin"))
-            {
-                Return (0x0F)
-            }
-            Else
-            {
-                Return ([[XSTA]])
-            }
-        }
-    }
-}""".replace("[[GPI0Path]]", gpio_device) \
-    .replace("[[STAType]]", sta.get("sta_type","MethodObj")) \
-    .replace("[[XSTA]]", "{}.XSTA{}".format(gpio_device," ()" if sta.get("sta_type","MethodObj") == "MethodObj" else "") if sta else "0x0F")
-
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
-    
-    def enable_nvram_support(self, motherboard_chipset):
-        if not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=85, end=97) or not self.lpc_bus_device:
-            return
-        
-        comment = "Add a PMCR device to enable NVRAM support for 300-series mainboards"
-        ssdt_name = "SSDT-PMC"
-        ssdt_content = """
-// Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-PMC.dsl
-
-/*
- * Intel 300-series PMC support for macOS
- *
- * Starting from Z390 chipsets PMC (D31:F2) is only available through MMIO.
- * Since there is no standard device for PMC in ACPI, Apple introduced its
- * own naming "APP9876" to access this device from AppleIntelPCHPMC driver.
- * To avoid confusion we disable this device for all other operating systems,
- * as they normally use another non-standard device with "PNP0C02" HID and
- * "PCHRESV" UID.
- *
- * On certain implementations, including APTIO V, PMC initialisation is
- * required for NVRAM access. Otherwise it will freeze in SMM mode.
- * The reason for this is rather unclear. Note, that PMC and SPI are
- * located in separate memory regions and PCHRESV maps both, yet only
- * PMC region is used by AppleIntelPCHPMC:
- * 0xFE000000~0xFE00FFFF - PMC MBAR
- * 0xFE010000~0xFE010FFF - SPI BAR0
- * 0xFE020000~0xFE035FFF - SerialIo BAR in ACPI mode
- *
- * PMC device has nothing to do to LPC bus, but is added to its scope for
- * faster initialisation. If we add it to PCI0, where it normally exists,
- * it will start in the end of PCI configuration, which is too late for
- * NVRAM support.
- */
-DefinitionBlock ("", "SSDT", 2, "ACDT", "PMCR", 0x00001000)
-{
-    External ([[LPCPath]], DeviceObj)
-
-    Scope ([[LPCPath]])
-    {
-        Device (PMCR)
-        {
-            Name (_HID, EisaId ("APP9876"))  // _HID: Hardware ID
-            Method (_STA, 0, NotSerialized)  // _STA: Status
-            {
-                If (_OSI ("Darwin"))
+        return {
+            "Add": [
                 {
-                    Return (0x0B)
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
                 }
-                Else
-                {
-                    Return (Zero)
-                }
-            }
-            Name (_CRS, ResourceTemplate ()  // _CRS: Current Resource Settings
-            {
-                Memory32Fixed (ReadWrite,
-                    0xFE000000,         // Address Base
-                    0x00010000,         // Address Length
-                    )
-            })
+            ]
         }
-    }
-}""".replace("[[LPCPath]]", self.lpc_bus_device)
-
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
-
-    def fake_embedded_controller(self, platform):
-        comment = "Add a fake EC to ensure macOS compatibility"
-        ssdt_name = "SSDT-EC"
-
-        laptop = "Laptop" in platform
-        
-        def sta_needs_patching(sta):
-            if not isinstance(sta,dict) or not sta.get("sta"):
-                return False
-            # Check if we have an IntObj or MethodObj
-            # _STA, and scrape for values if possible.
-            if sta.get("sta_type") == "IntObj":
-                # We got an int - see if it's force-enabled
-                try:
-                    sta_scope = self.dsdt.get("lines")[sta["sta"][0][1]]
-                    if not "Name (_STA, 0x0F)" in sta_scope:
-                        return True
-                except Exception as e:
-                    print(e)
-                    return True
-            elif sta.get("sta_type") == "MethodObj":
-                # We got a method - if we have more than one
-                # "Return (", or not a single "Return (0x0F)",
-                # then we need to patch this out and replace
-                try:
-                    sta_scope = "\n".join(self.acpi.get_scope(sta["sta"][0][1],strip_comments=True,table=self.dsdt))
-                    if sta_scope.count("Return (") > 1 or not "Return (0x0F)" in sta_scope:
-                        # More than one return, or our return isn't force-enabled
-                        return True
-                except Exception as e:
-                    return True
-            # If we got here - it's not a recognized type, or
-            # it was fullly qualified and doesn't need patching
-            return False
-        rename = False
-        named_ec = False
-        ec_to_patch = []
-        ec_to_enable = []
-        ec_sta = {}
-        ec_enable_sta = {}
-        patches = []
-        ec_located = False
-        
-        ec_list = self.acpi.get_device_paths_with_hid("PNP0C09",table=self.dsdt)
-        if len(ec_list):
-            self.lpc_bus_device = ".".join(ec_list[0][0].split(".")[:-1])
-            for x in ec_list:
-                device = orig_device = x[0]
-                #print(" --> {}".format(device))
-                if device.split(".")[-1] == "EC":
-                    named_ec = True
-                    if not laptop:
-                        # Only rename if we're trying to replace it
-                        #print(" ----> PNP0C09 (EC) called EC. Renaming")
-                        device = ".".join(device.split(".")[:-1]+["EC0"])
-                        rename = True
-                scope = "\n".join(self.acpi.get_scope(x[1],strip_comments=True,table=self.dsdt))
-                # We need to check for _HID, _CRS, and _GPE
-                if all(y in scope for y in ["_HID","_CRS","_GPE"]):
-                    #print(" ----> Valid PNP0C09 (EC) Device")
-                    ec_located = True
-                    sta = self.get_sta_var(
-                        var=None,
-                        device=orig_device,
-                        dev_hid="PNP0C09",
-                        dev_name=orig_device.split(".")[-1],
-                        log_locate=False,
-                        table=self.dsdt
-                    )
-                    if not laptop:
-                        ec_to_patch.append(device)
-                        # Only unconditionally override _STA methods
-                        # if not building for a laptop
-                        if sta.get("patches"):
-                            patches.extend(sta.get("patches",[]))
-                            ec_sta[device] = sta
-                    elif sta.get("patches"):
-                        if sta_needs_patching(sta):
-                            # Retain the info as we need to override it
-                            ec_to_enable.append(device)
-                            ec_enable_sta[device] = sta
-                            # Disable the patches by default and add to the list
-                            for patch in sta.get("patches",[]):
-                                patch["Enabled"] = False
-                                patch["Disabled"] = True
-                                patches.append(patch)
-        if not ec_located:
-            pass
-            #print(" - No valid PNP0C09 (EC) devices found - only needs a Fake EC device")
-        if laptop and named_ec and not patches:
-            #print(" ----> Named EC device located - no fake needed.")
-            #print("")
-            #self.utils.request_input("Press [enter] to return to main menu...")
-            return
-        if not self.lpc_bus_device:
-            #self.utils.request_input("Press [enter] to return to main menu...")
-            return
-        if rename == True:
-            patches.insert(0,{
-                "Comment":"EC to EC0{}".format("" if not ec_sta else " - must come before any EC _STA to XSTA renames!"),
-                "Find":"45435f5f",
-                "Replace":"4543305f"
-            })
-            comment += " - Needs EC to EC0 {}".format(
-                "and EC _STA to XSTA renames" if ec_sta else "rename"
-            )
-        elif ec_sta:
-            comment += " - Needs EC _STA to XSTA renames"
-        #oc = {"Comment":comment,"Enabled":True,"Path":"SSDT-EC.aml"}
-        #self.make_plist(oc, "SSDT-EC.aml", patches, replace=True)
-        #print("Creating SSDT-EC...")
-        ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "CORP ", "SsdtEC", 0x00001000)
-{
-    External ([[LPCName]], DeviceObj)
-""".replace("[[LPCName]]",self.lpc_bus_device)
-        for x in ec_to_patch:
-            ssdt_content += "    External ({}, DeviceObj)\n".format(x)
-            if x in ec_sta:
-                ssdt_content += "    External ({}.XSTA, {})\n".format(x,ec_sta[x].get("sta_type","MethodObj"))
-        # Walk the ECs to enable
-        for x in ec_to_enable:
-            ssdt_content += "    External ({}, DeviceObj)\n".format(x)
-            if x in ec_enable_sta:
-                # Add the _STA and XSTA refs as the patch may not be enabled
-                ssdt_content += "    External ({0}._STA, {1})\n    External ({0}.XSTA, {1})\n".format(x,ec_enable_sta[x].get("sta_type","MethodObj"))
-        # Walk them again and add the _STAs
-        for x in ec_to_patch:
-            ssdt_content += """
-    Scope ([[ECName]])
-    {
-        Method (_STA, 0, NotSerialized)  // _STA: Status
-        {
-            If (_OSI ("Darwin"))
-            {
-                Return (0)
-            }
-            Else
-            {
-                Return ([[XSTA]])
-            }
-        }
-    }
-""".replace("[[LPCName]]",self.lpc_bus_device).replace("[[ECName]]",x) \
-    .replace("[[XSTA]]","{}.XSTA{}".format(x," ()" if ec_sta[x].get("sta_type","MethodObj")=="MethodObj" else "") if x in ec_sta else "0x0F")
-        # Walk them yet again - and force enable as needed
-        for x in ec_to_enable:
-            ssdt_content += """
-    If (LAnd (CondRefOf ([[ECName]].XSTA), LNot (CondRefOf ([[ECName]]._STA))))
-    {
-        Scope ([[ECName]])
-        {
-            Method (_STA, 0, NotSerialized)  // _STA: Status
-            {
-                If (_OSI ("Darwin"))
-                {
-                    Return (0x0F)
-                }
-                Else
-                {
-                    Return ([[XSTA]])
-                }
-            }
-        }
-    }
-""".replace("[[LPCName]]", self.lpc_bus_device).replace("[[ECName]]",x) \
-    .replace("[[XSTA]]","{}.XSTA{}".format(x," ()" if ec_enable_sta[x].get("sta_type","MethodObj")=="MethodObj" else "") if x in ec_enable_sta else "Zero")
-        # Create the faked EC
-        if not laptop or not named_ec:
-            ssdt_content += """
-    Scope ([[LPCName]])
-    {
-        Device (EC)
-        {
-            Name (_HID, "ACID0001")  // _HID: Hardware ID
-            Method (_STA, 0, NotSerialized)  // _STA: Status
-            {
-                If (_OSI ("Darwin"))
-                {
-                    Return (0x0F)
-                }
-                Else
-                {
-                    Return (Zero)
-                }
-            }
-        }
-    }""".replace("[[LPCName]]", self.lpc_bus_device)
-        # Close the SSDT scope
-        ssdt_content += """
-}"""
-        
-        if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result.get("Patch").extend(patches)
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": ssdt_name + ".aml"
-            })
-
-    def fix_hp_005_post_error(self, motherboard_name):
-        if "HP" not in motherboard_name:
-            return
-        
-        if binascii.unhexlify("4701700070000108") in self.dsdt.get("raw"):
-            self.result.get("Patch").append({
-                "Comment": "Fix HP Real-Time Clock Power Loss (005) Post Error",
-                "Find": "4701700070000108",
-                "Replace": "4701700070000102"
-            })
-
-    def add_null_ethernet_device(self, network):
-        for network_name, network_props in network.items():
-            if self.utils.contains_any(pci_data.NetworkIDs, network_props.get("Device ID"), start=108, end=219):
-                return
-        
-        random_mac_address = self.smbios.generate_random_mac()
-        mac_address_byte = ", ".join([f'0x{random_mac_address[i:i+2]}' for i in range(0, len(random_mac_address), 2)])
-        
-        comment = "Creates a Null Ethernet to allow macOS system access to iServices"
-        ssdt_name = "SSDT-RMNE"
-        ssdt_content = """
-// Resource: https://github.com/RehabMan/OS-X-Null-Ethernet/blob/master/SSDT-RMNE.dsl
-
-/* ssdt.dsl -- SSDT injector for NullEthernet
- *
- * Copyright (c) 2014 RehabMan <racerrehabman@gmail.com>
- * All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 2 of the License, or (at your option)
- * any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- */
-
-// Use this SSDT as an alternative to patching your DSDT...
-
-DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
-{
-    Device (RMNE)
-    {
-        Name (_ADR, Zero)
-        // The NullEthernet kext matches on this HID
-        Name (_HID, "NULE0000")
-        // This is the MAC address returned by the kext. Modify if necessary.
-        Name (MAC, Buffer() { [[MACAddress]] })
-        Method (_DSM, 4, NotSerialized)
-        {
-            If (LEqual (Arg2, Zero)) { Return (Buffer() { 0x03 } ) }
-            Return (Package()
-            {
-                "built-in", Buffer() { 0x00 },
-                "IOName", "ethernet",
-                "name", Buffer() { "ethernet" },
-                "model", Buffer() { "RM-NullEthernet-1001" },
-                "device_type", Buffer() { "ethernet" },
-            })
-        }
-
-        Method (_STA, 0, NotSerialized)  // _STA: Status
-        {
-            If (_OSI ("Darwin"))
-            {
-                Return (0x0F)
-            }
-            Else
-            {
-                Return (Zero)
-            }
-        }
-    }
-}""".replace("[[MACAddress]]", mac_address_byte)
-
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
-
-    def is_intel_hedt_cpu(self, cpu_codename):
-        return "-E" in cpu_codename and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=4) is None or \
-            ("-X" in cpu_codename or "-W" in cpu_codename) and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=4, end=6) is None
 
     def list_irqs(self):
         # Walks the DSDT keeping track of the current device and
@@ -1594,7 +591,7 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
         irq = False
         last_irq = False
         irq_index = 0
-        for index,line in enumerate(self.acpi.get_dsdt_or_only()["lines"]):
+        for index,line in enumerate(self.dsdt["lines"]):
             if self.acpi.is_hex(line):
                 # Skip all hex lines
                 continue
@@ -1721,21 +718,19 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
             total = total | self.convert_irq_to_int(i)
         return total
     
-    def fix_irq_conflicts(self, platform, cpu_codename):
-        if "Laptop" not in platform or self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=4) is None:
-            return
-        
+    def fix_irq_conflicts(self):
         hpets = self.acpi.get_device_paths_with_hid("PNP0103")
         hpet_fake = not hpets
         hpet_sta = False
         sta = None
+        patches = []
         if hpets:
             name = hpets[0][0]
             
             sta = self.get_sta_var(var=None,dev_hid="PNP0103",dev_name="HPET",log_locate=False)
             if sta.get("patches"):
                 hpet_sta = True
-                self.result.get("Patch").extend(sta.get("patches",[]))
+                patches.extend(sta.get("patches",[]))
 
             hpet = self.acpi.get_method_paths(name+"._CRS") or self.acpi.get_name_paths(name+"._CRS")
             if not hpet:
@@ -1772,7 +767,7 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
             crs  = "5F435253"
             xcrs = "58435253"
             padl,padr = self.acpi.get_shortest_unique_pad(crs, crs_index)
-            self.result.get("Patch").append({"Comment":"{} _CRS to XCRS Rename".format(name.split(".")[-1].lstrip("\\")),"Find":padl+crs+padr,"Replace":padl+xcrs+padr})
+            patches.append({"Comment":"{} _CRS to XCRS Rename".format(name.split(".")[-1].lstrip("\\")),"Find":padl+crs+padr,"Replace":padl+xcrs+padr})
         else:
             ec_list = self.acpi.get_device_paths_with_hid("PNP0C09")
             name = None
@@ -1838,7 +833,7 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
                     patch_name = "{} IRQ {} Patch".format(x, p["remd"])
                     if len(unique_patches[x]) > 1:
                         patch_name += " - {} of {}".format(i+1, len(unique_patches[x]))
-                    self.result.get("Patch").append({
+                    patches.append({
                         "Comment": patch_name,
                         "Find": p["find"],
                         "Replace": p["repl"]
@@ -1853,7 +848,7 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
 
             for i,x in enumerate(generic_set):
                 patch_name = "Generic IRQ Patch {} of {} - {} - {}".format(i+1,len(generic_set),x["remd"],x["orig"])
-                self.result.get("Patch").append({
+                patches.append({
                     "Comment": patch_name,
                     "Find": x["find"],
                     "Replace": x["repl"],
@@ -1968,29 +963,31 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
     }
 }"""
 
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ],
+            "Patch": patches
+        }
 
-    def fix_system_clock_awac(self, motherboard_chipset):
-        if not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=85):
-            return
-        
+    def fix_system_clock_awac(self):
         rtc_range_needed = False
         rtc_crs_type = None
         crs_lines = []
-        lpc_name = None
+        lpc_name = self.lpc_bus_device
         awac_dict = self.get_sta_var(var="STAS",dev_hid="ACPI000E",dev_name="AWAC")
         rtc_dict = self.get_sta_var(var="STAS",dev_hid="PNP0B00",dev_name="RTC")
         # At this point - we should have any info about our AWAC and RTC devices
         # we need.  Let's see if we need an RTC fake - then build the SSDT.
         if not rtc_dict.get("valid"):
             #print(" - Fake needed!")
-            lpc_name = self.get_lpc_name()
+            #lpc_name = self.get_lpc_name()
             if lpc_name is None:
-                self.utils.request_input("Press [enter] to return to main menu...")
+                #self.utils.request_input("Press [enter] to return to main menu...")
                 return
         else:
             # Let's check if our RTC device has a _CRS variable - and if so, let's look for any skipped ranges
@@ -2052,8 +1049,7 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
                     patches.append({"Comment":"{} _CRS to XCRS Rename".format(rtc_dict["dev_name"]),"Find":padl+crs_hex+padr,"Replace":padl+xcrs_hex+padr})
                     rtc_dict["patches"] = patches
                     rtc_dict["crs"] = True
-            else:
-                pass
+            #else:
                 #print(" ----> Not found")
         # Let's see if we even need an SSDT
         # Not required if AWAC is not present; RTC is present, doesn't have an STAS var, and doesn't have an _STA method, and no range fixes are needed
@@ -2211,22 +1207,1018 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
         ssdt_content += "}"
         
         if self.write_ssdt(ssdt_name, ssdt_content):
-            self.result.get("Patch").extend(rtc_dict["patches"])
-            self.result["Add"].append({
-                "Comment": comment,
-                "Enabled": True,
-                "Path": ssdt_name + ".aml"
-            })
+            return {
+                "Add": [
+                    {
+                        "Comment": comment,
+                        "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                        "Path": ssdt_name + ".aml"
+                    }
+                ],
+                "Patch": rtc_dict["patches"]
+            }
 
-    def fix_system_clock_hedt(self, motherboard_chipset, macos_version):
-        if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0") or not self.utils.contains_any(["X99", "X299"], motherboard_chipset):
+    def fake_embedded_controller(self):
+        comment = "Add a fake EC to ensure macOS compatibility"
+        ssdt_name = "SSDT-EC"
+
+        laptop = "Laptop" in self.hardware_report.get("Motherboard").get("Platform")
+        
+        def sta_needs_patching(sta):
+            if not isinstance(sta,dict) or not sta.get("sta"):
+                return False
+            # Check if we have an IntObj or MethodObj
+            # _STA, and scrape for values if possible.
+            if sta.get("sta_type") == "IntObj":
+                # We got an int - see if it's force-enabled
+                try:
+                    sta_scope = table["lines"][sta["sta"][0][1]]
+                    if not "Name (_STA, 0x0F)" in sta_scope:
+                        return True
+                except Exception as e:
+                    #print(e)
+                    return True
+            elif sta.get("sta_type") == "MethodObj":
+                # We got a method - if we have more than one
+                # "Return (", or not a single "Return (0x0F)",
+                # then we need to patch this out and replace
+                try:
+                    sta_scope = "\n".join(self.acpi.get_scope(sta["sta"][0][1],strip_comments=True,table=table))
+                    if sta_scope.count("Return (") > 1 or not "Return (0x0F)" in sta_scope:
+                        # More than one return, or our return isn't force-enabled
+                        return True
+                except Exception as e:
+                    return True
+            # If we got here - it's not a recognized type, or
+            # it was fullly qualified and doesn't need patching
+            return False
+        rename = False
+        named_ec = False
+        ec_to_patch = []
+        ec_to_enable = []
+        ec_sta = {}
+        ec_enable_sta = {}
+        patches = []
+        lpc_name = None
+        ec_located = False
+        ec_list = self.acpi.get_device_paths_with_hid("PNP0C09", table=self.dsdt)
+        if len(ec_list):
+            lpc_name = ".".join(ec_list[0][0].split(".")[:-1])
+            #print(" - Got {:,} in {}".format(len(ec_list), table=self.dsdt))
+            #print(" - Validating...")
+            for x in ec_list:
+                device = orig_device = x[0]
+                #print(" --> {}".format(device))
+                if device.split(".")[-1] == "EC":
+                    named_ec = True
+                    if not laptop:
+                        # Only rename if we're trying to replace it
+                        #print(" ----> PNP0C09 (EC) called EC. Renaming")
+                        device = ".".join(device.split(".")[:-1]+["EC0"])
+                        rename = True
+                scope = "\n".join(self.acpi.get_scope(x[1],strip_comments=True, table=self.dsdt))
+                # We need to check for _HID, _CRS, and _GPE
+                if all(y in scope for y in ["_HID","_CRS","_GPE"]):
+                    #print(" ----> Valid PNP0C09 (EC) Device")
+                    ec_located = True
+                    sta = self.get_sta_var(
+                        var=None,
+                        device=orig_device,
+                        dev_hid="PNP0C09",
+                        dev_name=orig_device.split(".")[-1],
+                        log_locate=False,
+                        table=self.dsdt
+                    )
+                    if not laptop:
+                        ec_to_patch.append(device)
+                        # Only unconditionally override _STA methods
+                        # if not building for a laptop
+                        if sta.get("patches"):
+                            patches.extend(sta.get("patches",[]))
+                            ec_sta[device] = sta
+                    elif sta.get("patches"):
+                        if sta_needs_patching(sta):
+                            # Retain the info as we need to override it
+                            ec_to_enable.append(device)
+                            ec_enable_sta[device] = sta
+                            # Disable the patches by default and add to the list
+                            for patch in sta.get("patches",[]):
+                                patch["Enabled"] = False
+                                patch["Disabled"] = True
+                                patches.append(patch)
+                        #else:
+                            #print(" --> _STA properly enabled - skipping rename")
+                #else:
+                    #print(" ----> NOT Valid PNP0C09 (EC) Device")
+        #if not ec_located:
+            #print(" - No valid PNP0C09 (EC) devices found - only needs a Fake EC device")
+        if laptop and named_ec and not patches:
+            #print(" ----> Named EC device located - no fake needed.")
+            #print("")
+            #self.u.grab("Press [enter] to return to main menu...")
+            return
+        if lpc_name is None:
+            #lpc_name = self.get_lpc_name(skip_ec=True,skip_common_names=True)
+            lpc_name = self.lpc_bus_device
+        if lpc_name is None:
+            #self.u.grab("Press [enter] to return to main menu...")
+            return
+        #comment = "Faked Embedded Controller"
+        if rename == True:
+            patches.insert(0,{
+                "Comment":"EC to EC0{}".format("" if not ec_sta else " - must come before any EC _STA to XSTA renames!"),
+                "Find":"45435f5f",
+                "Replace":"4543305f"
+            })
+            #comment += " - Needs EC to EC0 {}".format(
+            #    "and EC _STA to XSTA renames" if ec_sta else "rename"
+            #)
+        #elif ec_sta:
+            #comment += " - Needs EC _STA to XSTA renames"
+        #oc = {"Comment":comment,"Enabled":True,"Path":"SSDT-EC.aml"}
+        #self.make_plist(oc, "SSDT-EC.aml", patches, replace=True)
+        #print("Creating SSDT-EC...")
+        ssdt = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "EC", 0x00001000)
+{
+    External ([[LPCName]], DeviceObj)
+""".replace("[[LPCName]]",lpc_name)
+        for x in ec_to_patch:
+            ssdt += "    External ({}, DeviceObj)\n".format(x)
+            if x in ec_sta:
+                ssdt += "    External ({}.XSTA, {})\n".format(x,ec_sta[x].get("sta_type","MethodObj"))
+        # Walk the ECs to enable
+        for x in ec_to_enable:
+            ssdt += "    External ({}, DeviceObj)\n".format(x)
+            if x in ec_enable_sta:
+                # Add the _STA and XSTA refs as the patch may not be enabled
+                ssdt += "    External ({0}._STA, {1})\n    External ({0}.XSTA, {1})\n".format(x,ec_enable_sta[x].get("sta_type","MethodObj"))
+        # Walk them again and add the _STAs
+        for x in ec_to_patch:
+            ssdt += """
+    Scope ([[ECName]])
+    {
+        Method (_STA, 0, NotSerialized)  // _STA: Status
+        {
+            If (_OSI ("Darwin"))
+            {
+                Return (0)
+            }
+            Else
+            {
+                Return ([[XSTA]])
+            }
+        }
+    }
+""".replace("[[LPCName]]",lpc_name).replace("[[ECName]]",x) \
+    .replace("[[XSTA]]","{}.XSTA{}".format(x," ()" if ec_sta[x].get("sta_type","MethodObj")=="MethodObj" else "") if x in ec_sta else "0x0F")
+        # Walk them yet again - and force enable as needed
+        for x in ec_to_enable:
+            ssdt += """
+    If (LAnd (CondRefOf ([[ECName]].XSTA), LNot (CondRefOf ([[ECName]]._STA))))
+    {
+        Scope ([[ECName]])
+        {
+            Method (_STA, 0, NotSerialized)  // _STA: Status
+            {
+                If (_OSI ("Darwin"))
+                {
+                    Return (0x0F)
+                }
+                Else
+                {
+                    Return ([[XSTA]])
+                }
+            }
+        }
+    }
+""".replace("[[LPCName]]",lpc_name).replace("[[ECName]]",x) \
+    .replace("[[XSTA]]","{}.XSTA{}".format(x," ()" if ec_enable_sta[x].get("sta_type","MethodObj")=="MethodObj" else "") if x in ec_enable_sta else "Zero")
+        # Create the faked EC
+        if not laptop or not named_ec:
+            ssdt += """
+    Scope ([[LPCName]])
+    {
+        Device (EC)
+        {
+            Name (_HID, "ACID0001")  // _HID: Hardware ID
+            Method (_STA, 0, NotSerialized)  // _STA: Status
+            {
+                If (_OSI ("Darwin"))
+                {
+                    Return (0x0F)
+                }
+                Else
+                {
+                    Return (Zero)
+                }
+            }
+        }
+    }""".replace("[[LPCName]]",lpc_name)
+        # Close the SSDT scope
+        ssdt += """
+}"""
+
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt),
+                    "Path": ssdt_name + ".aml"
+                }
+            ],
+            "Patch": patches
+        }
+
+    def write_ssdt(self, ssdt_name, ssdt_content, compile=True):
+        dsl_path = os.path.join(self.acpi_directory, ssdt_name + ".dsl")
+        aml_path = os.path.join(self.acpi_directory, ssdt_name + ".aml")
+
+        with open(dsl_path,"w") as f:
+            f.write(ssdt_content)
+
+        if not compile:
+            return False
+        
+        output = self.run({
+            "args":[self.acpi.iasl, dsl_path]
+        })
+        
+        if output[-1] != 0:
+            return False
+        else:
+            os.remove(dsl_path)
+        
+        return os.path.exists(aml_path)
+
+    def apply_acpi_patches(self, acpi_patches):
+        acpi_patches = [
+            {
+                "Base": acpi_patch.get("Base", ""),
+                "BaseSkip": acpi_patch.get("BaseSkip", 0),
+                "Comment": acpi_patch.get("Comment", ""),
+                "Count": acpi_patch.get("Count", 0),
+                "Enabled": True,
+                "Find": self.utils.hex_to_bytes(acpi_patch["Find"]),
+                "Limit": acpi_patch.get("Limit", 0),
+                "Mask": self.utils.hex_to_bytes(acpi_patch.get("Mask", "")),
+                "OemTableId": self.utils.hex_to_bytes(acpi_patch.get("OemTableId", "")),
+                "Replace": self.utils.hex_to_bytes(acpi_patch["Replace"]),
+                "ReplaceMask": self.utils.hex_to_bytes(acpi_patch.get("ReplaceMask", "")),
+                "Skip": acpi_patch.get("Skip", 0),
+                "TableLength": acpi_patch.get("TableLength", 0),
+                "TableSignature": self.utils.hex_to_bytes(acpi_patch.get("TableSignature", "")),
+            }
+            for acpi_patch in acpi_patches
+        ]
+
+        return sorted(acpi_patches, key=lambda x: x["Comment"])
+
+    def get_low_pin_count_bus_device(self):
+        for lpc_bus_name in ("LPCB", "LPC0", "LPC", "SBRG", "PX40"):
+            try:
+                self.lpc_bus_device = self.acpi.get_device_paths(lpc_bus_name, self.dsdt)[0][0]
+                break
+            except: 
+                pass
+
+    def add_intel_management_engine(self):
+        comment = "Creates a fake IMEI device to ensure Intel iGPUs acceleration functions properly"
+        ssdt_name = "SSDT-IMEI"
+        ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "IMEI", 0x00000000)
+{
+    External (_SB_.PCI0, DeviceObj)
+
+    Scope (_SB.PCI0)
+    {
+        Device (IMEI)
+        {
+            Name (_ADR, 0x00160000)  // _ADR: Address
+            Method (_STA, 0, NotSerialized)  // _STA: Status
+            {
+                If (_OSI ("Darwin"))
+                {
+                    Return (0x0F)
+                }
+                Else
+                {
+                    Return (Zero)
+                }
+            }
+        }
+    }
+}"""
+
+        imei_device = self.acpi.get_device_paths_with_hid("0x00160000", self.dsdt)
+
+        if not imei_device:
+            return {
+                "Add": [
+                    {
+                        "Comment": comment,
+                        "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                        "Path": ssdt_name + ".aml"
+                    }
+                ]
+            }
+
+    def add_memory_controller_device(self):
+        comment = "Add a Memory Controller Hub Controller device to fix AppleSMBus"
+        ssdt_name = "SSDT-MCHC"
+        ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
+{
+    External ([[PCIName]], DeviceObj)
+
+    Scope ([[PCIName]])
+    {
+        Device (MCHC)
+        {
+            Name (_ADR, Zero)
+            Method (_STA, 0, NotSerialized)
+            {
+                If (_OSI ("Darwin"))
+                {
+                    Return (0x0F)
+                }
+                Else
+                {
+                    Return (Zero)
+                }
+            }
+        }
+    }
+}"""
+
+        mchc_device = self.acpi.get_device_paths("MCHC", self.dsdt)
+
+        if mchc_device:
             return
         
+        pci_bus_device = ".".join(self.lpc_bus_device.split(".")[:2])
+        ssdt_content = ssdt_content.replace("[[PCIName]]", pci_bus_device)
+
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ]
+        }
+
+    def add_system_management_bus_device(self):
+        try:
+            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), end=4) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
+        except:
+            smbus_device_name = "SBUS"
+            
+        pci_bus_device = ".".join(self.lpc_bus_device.split(".")[:2])
+        smbus_device_path = "{}.{}".format(pci_bus_device, smbus_device_name)
+
+        comment = "Add a System Management Bus device to fix AppleSMBus issues"
+        ssdt_name = "SSDT-{}".format(smbus_device_name)
+        ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[SMBUSName]]", 0)
+{
+    External ([[SMBUSDevice]], DeviceObj)
+
+    Scope ([[SMBUSDevice]])
+    {
+        Device (BUS0)
+        {
+            Name (_CID, "smbus")
+            Name (_ADR, Zero)
+            Method (_STA, 0, NotSerialized)
+            {
+                If (_OSI ("Darwin"))
+                {
+                    Return (0x0F)
+                }
+                Else
+                {
+                    Return (Zero)
+                }
+            }
+        }
+    }
+}""".replace("[[SMBUSName]]", smbus_device_name).replace("[[SMBUSDevice]]", smbus_device_path)
+
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ]
+        }
+
+    def add_usb_power_properties(self):
+        comment = "Creates an USBX device to inject USB power properties"
+        ssdt_name = "SSDT-USBX"
+        ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "USBX", 0x00001000)
+{
+    Scope (\\_SB)
+    {
+        Device (USBX)
+        {
+            Name (_ADR, Zero)  // _ADR: Address
+            Method (_DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
+            {
+                If (LNot (Arg2))
+                {
+                    Return (Buffer ()
+                    {
+                        0x03
+                    })
+                }
+                Return (Package ()
+                {[[USBX_PROPS]]
+                })
+            }
+            Method (_STA, 0, NotSerialized)  // _STA: Status
+            {
+                If (_OSI ("Darwin"))
+                {
+                    Return (0x0F)
+                }
+                Else
+                {
+                    Return (Zero)
+                }
+            }
+        }
+    }
+}"""
+        
+        usb_power_properties = None
+        if self.utils.contains_any(["MacPro7,1", "iMacPro1,1", "iMac20,", "iMac19,", "iMac18,", "iMac17,", "iMac16,"], self.smbios_model):
+            usb_power_properties = {
+                "kUSBSleepPowerSupply":"0x13EC",
+                "kUSBSleepPortCurrentLimit":"0x0834",
+                "kUSBWakePowerSupply":"0x13EC",
+                "kUSBWakePortCurrentLimit":"0x0834"
+            }
+        elif "MacMini8,1" in self.smbios_model:
+            usb_power_properties = {
+                "kUSBSleepPowerSupply":"0x0C80",
+                "kUSBSleepPortCurrentLimit":"0x0834",
+                "kUSBWakePowerSupply":"0x0C80",
+                "kUSBWakePortCurrentLimit":"0x0834"
+            }
+        elif self.utils.contains_any(["MacBookPro16,", "MacBookPro15,", "MacBookPro14,", "MacBookPro13,", "MacBookAir9,1"], self.smbios_model):
+            usb_power_properties = {
+                "kUSBSleepPortCurrentLimit":"0x0BB8",
+                "kUSBWakePortCurrentLimit":"0x0BB8"
+            }
+        elif "MacBook9,1" in self.smbios_model:
+            usb_power_properties = {
+                "kUSBSleepPowerSupply":"0x05DC",
+                "kUSBSleepPortCurrentLimit":"0x05DC",
+                "kUSBWakePowerSupply":"0x05DC",
+                "kUSBWakePortCurrentLimit":"0x05DC"
+            }
+
+        if usb_power_properties:
+            ssdt_content = ssdt_content.replace("[[USBX_PROPS]]", ",".join("\n                    \"{}\",\n                    {}".format(key, usb_power_properties[key]) for key in usb_power_properties))
+            
+            return {
+                "Add": [
+                    {
+                        "Comment": comment,
+                        "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                        "Path": ssdt_name + ".aml"
+                    }
+                ]
+            }
+
+    def ambient_light_sensor(self):
+        ssdt_name = "SSDT-ALS0"
+        ssdt_content = """
+// Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-ALS0.dsl
+
+/*
+ * Starting with macOS 10.15 Ambient Light Sensor presence is required for backlight functioning.
+ * Here we create an Ambient Light Sensor ACPI Device, which can be used by SMCLightSensor kext
+ * to report either dummy (when no device is present) or valid values through SMC interface.
+ */
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "ALS0", 0x00000000)
+{
+    Scope (_SB)
+    {
+        Device (ALS0)
+        {
+            Name (_HID, "ACPI0008" /* Ambient Light Sensor Device */)  // _HID: Hardware ID
+            Name (_CID, "smc-als")  // _CID: Compatible ID
+            Name (_ALI, 0x012C)  // _ALI: Ambient Light Illuminance
+            Name (_ALR, Package (0x01)  // _ALR: Ambient Light Response
+            {
+                Package (0x02)
+                {
+                    0x64, 
+                    0x012C
+                }
+            })
+            Method (_STA, 0, NotSerialized)  // _STA: Status
+            {
+                If (_OSI ("Darwin"))
+                {
+                    Return (0x0F)
+                }
+                Else
+                {
+                    Return (Zero)
+                }
+            }
+        }
+    }
+}"""
+        try:
+            als_device = self.acpi.get_device_paths_with_hid("ACPI0008", self.dsdt)[0][0]
+        except:
+            als_device = None
+
+        patches = []
+
+        if als_device:
+            als_device_name = als_device.split(".")[-1]
+            if "." not in als_device:
+                als_device_name = als_device_name[1:]
+
+            sta = self.get_sta_var(var=None, device=None, dev_hid="ACPI0008", dev_name=als_device_name, table=self.dsdt)
+            patches.extend(sta.get("patches", []))
+            
+            ssdt_name = "SSDT-{}".format(als_device_name)
+            ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
+{
+    External ([[ALSDevice]], DeviceObj)
+    External ([[ALSDevice]].XSTA, [[STAType]])
+
+    Scope ([[ALSDevice]])
+    {
+        Method (_STA, 0, NotSerialized)  // _STA: Status
+        {
+            If (_OSI ("Darwin"))
+            {
+                Return (0x0F)
+            }
+            Else
+            {
+                Return ([[XSTA]])
+            }
+        }
+    }
+}""".replace("[[ALSName]]", als_device_name) \
+    .replace("[[ALSDevice]]", als_device) \
+    .replace("[[STAType]]", sta.get("sta_type","MethodObj")) \
+    .replace("[[XSTA]]", "{}.XSTA{}".format(als_device," ()" if sta.get("sta_type","MethodObj") == "MethodObj" else "") if sta else "0x0F")
+
+        comment = "{} Ambient Light Sensor device for storing the current brightness/auto-brightness level".format("Fake" if not als_device else "Enable")
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ],
+            "Patch": patches
+        }
+
+    def disable_unsupported_device(self):
+        for device_name, device_props in self.unsupported_devices.items():
+            if not "Storage" in device_name:
+                continue
+
+            comment = "Disable {}".format(device_name.split(": ")[-1])
+            ssdt_name = None
+            if "Storage" in device_name:
+                ssdt_name = "SSDT-Disable_NVMe"
+                ssdt_content = """
+// Replace all "_SB.PCI0.RP09.PXSX" with the ACPI path of your SSD NVMe
+
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
+{
+    External (_SB.PCI0.RP09.PXSX, DeviceObj)
+
+    Method (_SB.PCI0.RP09.PXSX._DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
+    {
+        If (_OSI ("Darwin"))
+        {
+            If (!Arg2)
+            {
+                Return (Buffer (One)
+                {
+                     0x03                                             // .
+                })
+            }
+
+            Return (Package (0x02)
+            {
+                "class-code", 
+                Buffer (0x04)
+                {
+                     0xFF, 0x08, 0x01, 0x00                           // ....
+                }
+            })
+        }
+    }
+}
+"""
+
+            if ssdt_name:
+                self.result["Add"].append({
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
+                    "Path": ssdt_name + ".aml"
+                })
+  
+    def enable_backlight_controls(self):
+        patches = []
+
+        uid_value = 19
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), end=2):
+            uid_value = 14
+        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=2, end=4):
+            uid_value = 15
+        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=4, end=7):
+            uid_value = 16
+        
+        igpu = ""
+                        
+        if "PNLF" in self.dsdt.get("table"):
+            patches.append({
+                "Comment": "PNLF to XNLF Rename",
+                "Find": "504E4C46",
+                "Replace": "584E4C46"
+            })
+
+        if binascii.unhexlify("084E42434600") in self.dsdt.get("raw"):
+            patches.append({
+                "Comment": "NBCF Zero to One for BrightnessKeys.kext",
+                "Find": "084E42434600",
+                "Replace": "084E42434601"
+            })
+
+        comment = "Defines a PNLF device to enable backlight controls on laptops"
+        ssdt_name = "SSDT-PNLF"
+        ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
+{"""
+        if igpu:
+            ssdt_content += """\n    External ([[igpu_path]], DeviceObj)\n"""
+        ssdt_content += """
+    Device (PNLF)
+    {
+        Name (_HID, EisaId ("APP0002"))  // _HID: Hardware ID
+        Name (_CID, "backlight")  // _CID: Compatible ID
+        Name (_UID, [[uid_value]])  // _UID: Unique ID
+        
+        Method (_STA, 0, NotSerialized)  // _STA: Status
+        {
+            If (_OSI ("Darwin"))
+            {
+                Return (0x0B)
+            }
+            Else
+            {
+                Return (Zero)
+            }
+        }"""
+        if igpu:
+            ssdt_content += """
+        Method (_INI, 0, Serialized)
+        {
+            If (LAnd (_OSI ("Darwin"), CondRefOf ([[igpu_path]])))
+            {
+                OperationRegion ([[igpu_path]].RMP3, PCI_Config, Zero, 0x14)
+                Field ([[igpu_path]].RMP3, AnyAcc, NoLock, Preserve)
+                {
+                    Offset (0x02), GDID,16,
+                    Offset (0x10), BAR1,32,
+                }
+                // IGPU PWM backlight register descriptions:
+                //   LEV2 not currently used
+                //   LEVL level of backlight in Sandy/Ivy
+                //   P0BL counter, when zero is vertical blank
+                //   GRAN see description below in INI1 method
+                //   LEVW should be initialized to 0xC0000000
+                //   LEVX PWMMax except FBTYPE_HSWPLUS combo of max/level (Sandy/Ivy stored in MSW)
+                //   LEVD level of backlight for Coffeelake
+                //   PCHL not currently used
+                OperationRegion (RMB1, SystemMemory, BAR1 & ~0xF, 0xe1184)
+                Field(RMB1, AnyAcc, Lock, Preserve)
+                {
+                    Offset (0x48250),
+                    LEV2, 32,
+                    LEVL, 32,
+                    Offset (0x70040),
+                    P0BL, 32,
+                    Offset (0xc2000),
+                    GRAN, 32,
+                    Offset (0xc8250),
+                    LEVW, 32,
+                    LEVX, 32,
+                    LEVD, 32,
+                    Offset (0xe1180),
+                    PCHL, 32,
+                }
+                // Now fixup the backlight PWM depending on the framebuffer type
+                // At this point:
+                //   Local4 is RMCF.BLKT value (unused here), if specified (default is 1)
+                //   Local0 is device-id for IGPU
+                //   Local2 is LMAX, if specified (Ones means based on device-id)
+                //   Local3 is framebuffer type
+
+                // Adjustment required when using WhateverGreen.kext
+                Local0 = GDID
+                Local2 = Ones
+                Local3 = 0
+
+                // check Sandy/Ivy
+                // #define FBTYPE_SANDYIVY 1
+                If (LOr (LEqual (1, Local3), LNotEqual (Match (Package()
+                {
+                    // Sandy HD3000
+                    0x010b, 0x0102,
+                    0x0106, 0x1106, 0x1601, 0x0116, 0x0126,
+                    0x0112, 0x0122,
+                    // Ivy
+                    0x0152, 0x0156, 0x0162, 0x0166,
+                    0x016a,
+                    // Arrandale
+                    0x0046, 0x0042,
+                }, MEQ, Local0, MTR, 0, 0), Ones)))
+                {
+                    if (LEqual (Local2, Ones))
+                    {
+                        // #define SANDYIVY_PWMMAX 0x710
+                        Store (0x710, Local2)
+                    }
+                    // change/scale only if different than current...
+                    Store (LEVX >> 16, Local1)
+                    If (LNot (Local1))
+                    {
+                        Store (Local2, Local1)
+                    }
+                    If (LNotEqual (Local2, Local1))
+                    {
+                        // set new backlight PWMMax but retain current backlight level by scaling
+                        Store ((LEVL * Local2) / Local1, Local0)
+                        Store (Local2 << 16, Local3)
+                        If (LGreater (Local2, Local1))
+                        {
+                            // PWMMax is getting larger... store new PWMMax first
+                            Store (Local3, LEVX)
+                            Store (Local0, LEVL)
+                        }
+                        Else
+                        {
+                            // otherwise, store new brightness level, followed by new PWMMax
+                            Store (Local0, LEVL)
+                            Store (Local3, LEVX)
+                        }
+                    }
+                }
+            }
+        }"""
+        ssdt_content += """
+    }
+}"""
+
+        ssdt_content = ssdt_content.replace("[[uid_value]]", str(uid_value)).replace("[[igpu_path]]",igpu)        
+        
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ],
+            "Patch": patches
+        }
+
+    def enable_gpio_device(self):
+        try:
+            gpio_device = self.acpi.get_device_paths("GPI0", self.dsdt)[0][0] or self.acpi.get_device_paths("GPIO", self.dsdt)[0][0]
+        except:
+            return
+        
+        sta = self.get_sta_var(var=None, device=gpio_device, dev_hid=None, dev_name=gpio_device.split(".")[-1], table=self.dsdt)
+        
+        comment = "Enable GPIO device for a I2C TouchPads to function properly"
+        ssdt_name = "SSDT-GPI0"
+        ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPI0", 0x00000000)
+{
+    External ([[GPI0Path]], DeviceObj)
+    External ([[GPI0Path]].XSTA, [[STAType]])
+
+    Scope ([[GPI0Path]])
+    {
+        Method (_STA, 0, NotSerialized)  // _STA: Status
+        {
+            If (_OSI ("Darwin"))
+            {
+                Return (0x0F)
+            }
+            Else
+            {
+                Return ([[XSTA]])
+            }
+        }
+    }
+}""".replace("[[GPI0Path]]", gpio_device) \
+    .replace("[[STAType]]", sta.get("sta_type","MethodObj")) \
+    .replace("[[XSTA]]", "{}.XSTA{}".format(gpio_device," ()" if sta.get("sta_type","MethodObj") == "MethodObj" else "") if sta else "0x0F")
+
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ],
+            "Patch": sta.get("patches", [])
+        }
+    
+    def enable_nvram_support(self):
+        if not self.lpc_bus_device:
+            return
+              
+        comment = "Add a PMCR device to enable NVRAM support for 300-series mainboards"
+        ssdt_name = "SSDT-PMC"
+        ssdt_content = """
+// Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-PMC.dsl
+
+/*
+ * Intel 300-series PMC support for macOS
+ *
+ * Starting from Z390 chipsets PMC (D31:F2) is only available through MMIO.
+ * Since there is no standard device for PMC in ACPI, Apple introduced its
+ * own naming "APP9876" to access this device from AppleIntelPCHPMC driver.
+ * To avoid confusion we disable this device for all other operating systems,
+ * as they normally use another non-standard device with "PNP0C02" HID and
+ * "PCHRESV" UID.
+ *
+ * On certain implementations, including APTIO V, PMC initialisation is
+ * required for NVRAM access. Otherwise it will freeze in SMM mode.
+ * The reason for this is rather unclear. Note, that PMC and SPI are
+ * located in separate memory regions and PCHRESV maps both, yet only
+ * PMC region is used by AppleIntelPCHPMC:
+ * 0xFE000000~0xFE00FFFF - PMC MBAR
+ * 0xFE010000~0xFE010FFF - SPI BAR0
+ * 0xFE020000~0xFE035FFF - SerialIo BAR in ACPI mode
+ *
+ * PMC device has nothing to do to LPC bus, but is added to its scope for
+ * faster initialisation. If we add it to PCI0, where it normally exists,
+ * it will start in the end of PCI configuration, which is too late for
+ * NVRAM support.
+ */
+DefinitionBlock ("", "SSDT", 2, "ACDT", "PMCR", 0x00001000)
+{
+    External ([[LPCPath]], DeviceObj)
+
+    Scope ([[LPCPath]])
+    {
+        Device (PMCR)
+        {
+            Name (_HID, EisaId ("APP9876"))  // _HID: Hardware ID
+            Method (_STA, 0, NotSerialized)  // _STA: Status
+            {
+                If (_OSI ("Darwin"))
+                {
+                    Return (0x0B)
+                }
+                Else
+                {
+                    Return (Zero)
+                }
+            }
+            Name (_CRS, ResourceTemplate ()  // _CRS: Current Resource Settings
+            {
+                Memory32Fixed (ReadWrite,
+                    0xFE000000,         // Address Base
+                    0x00010000,         // Address Length
+                    )
+            })
+        }
+    }
+}""".replace("[[LPCPath]]", self.lpc_bus_device)
+
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ],
+        }
+
+    def fix_hp_005_post_error(self):
+        if binascii.unhexlify("4701700070000108") in self.dsdt.get("raw"):
+            return {
+                "Patch": [
+                    {
+                        "Comment": "Fix HP Real-Time Clock Power Loss (005) Post Error",
+                        "Find": "4701700070000108",
+                        "Replace": "4701700070000102"
+                    }
+                ]
+            }
+
+    def add_null_ethernet_device(self):
+        random_mac_address = self.smbios.generate_random_mac()
+        mac_address_byte = ", ".join([f'0x{random_mac_address[i:i+2]}' for i in range(0, len(random_mac_address), 2)])
+        
+        comment = "Creates a Null Ethernet to allow macOS system access to iServices"
+        ssdt_name = "SSDT-RMNE"
+        ssdt_content = """
+// Resource: https://github.com/RehabMan/OS-X-Null-Ethernet/blob/master/SSDT-RMNE.dsl
+
+/* ssdt.dsl -- SSDT injector for NullEthernet
+ *
+ * Copyright (c) 2014 RehabMan <racerrehabman@gmail.com>
+ * All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ */
+
+// Use this SSDT as an alternative to patching your DSDT...
+
+DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
+{
+    Device (RMNE)
+    {
+        Name (_ADR, Zero)
+        // The NullEthernet kext matches on this HID
+        Name (_HID, "NULE0000")
+        // This is the MAC address returned by the kext. Modify if necessary.
+        Name (MAC, Buffer() { [[MACAddress]] })
+        Method (_DSM, 4, NotSerialized)
+        {
+            If (LEqual (Arg2, Zero)) { Return (Buffer() { 0x03 } ) }
+            Return (Package()
+            {
+                "built-in", Buffer() { 0x00 },
+                "IOName", "ethernet",
+                "name", Buffer() { "ethernet" },
+                "model", Buffer() { "RM-NullEthernet-1001" },
+                "device_type", Buffer() { "ethernet" },
+            })
+        }
+
+        Method (_STA, 0, NotSerialized)  // _STA: Status
+        {
+            If (_OSI ("Darwin"))
+            {
+                Return (0x0F)
+            }
+            Else
+            {
+                Return (Zero)
+            }
+        }
+    }
+}""".replace("[[MACAddress]]", mac_address_byte)
+
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ]
+        }
+
+    def is_intel_hedt_cpu(self, cpu_codename):
+        return "-E" in cpu_codename and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=4) is None or \
+            ("-X" in cpu_codename or "-W" in cpu_codename) and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=4, end=6) is None
+
+    def fix_system_clock_hedt(self):
         if not self.lpc_bus_device:
             return
 
-        awac_device = self.acpi.get_device_paths_with_hid("ACPI000E")
-        rtc_device_name = self.acpi.get_device_paths_with_hid("PNP0B00")[0][0].split(".")[-1]
+        awac_device = self.acpi.get_device_paths_with_hid("ACPI000E", self.dsdt)
+        rtc_device_name = self.acpi.get_device_paths_with_hid("PNP0B00", self.dsdt)[0][0].split(".")[-1]
 
         comment = "Creates a new RTC device to resolve PCI Configuration issues in macOS Big Sur 11+"
         ssdt_name = "SSDT-RTC0-RANGE"
@@ -2252,30 +2244,30 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
         if not awac_device:
             ssdt_content += """
     External ([[LPCPath]].[[RTCName]], DeviceObj)"""
-            ssdt_content += """
+        ssdt_content += """
     Scope ([[LPCPath]])
     {"""
         if not awac_device:
             ssdt_content += """
-            Scope ([[RTCName]])
+        Scope ([[RTCName]])
+        {
+            Method (_STA, 0, NotSerialized)  // _STA: Status
             {
-                Method (_STA, 0, NotSerialized)  // _STA: Status
+                If (_OSI ("Darwin"))
                 {
-                    If (_OSI ("Darwin"))
-                    {
-                        Return (Zero)
-                    }
-                    Else
-                    {
-                        Return (0x0F)
-                    }
+                    Return (Zero)
                 }
-            }""".replace("[[RTCName]]", rtc_device_name) 
+                Else
+                {
+                    Return (0x0F)
+                }
+            }
+        }""" 
 
         ssdt_content += """
         Device (RTC0)
         {
-           /*
+            /*
             * Change the below _CSR range to match your hardware.
             *
             * For this example, we'll use the Asus Strix X299-E Gaming's ACPI, and show how to correct it.
@@ -2339,13 +2331,18 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
 }"""
         
         ssdt_content = ssdt_content.replace("[[LPCPath]]", self.lpc_bus_device).replace("[[RTCName]]", rtc_device_name)
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
+        
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ]
+        }
 
-    def instant_wake_fix(self):        
+    def instant_wake_fix(self):
         comment = "Fix sleep state values in _PRW methods to prevent immediate wake in macOS"
         ssdt_name = "SSDT-PRW"
 
@@ -2355,18 +2352,24 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
         uprw_method = "5550525702"
         xprw_method = "5850525702"
 
+        patches = []
+
         if binascii.unhexlify(gprw_method) in self.dsdt.get("raw"):
-            self.result.get("Patch").append({
+            patches.append({
                 "Comment": "GPRW to XPRW Rename",
                 "Find": gprw_method,
                 "Replace": xprw_method
             })
+        else:
+            gprw_method = None
         if binascii.unhexlify(uprw_method) in self.dsdt.get("raw"):
-            self.result.get("Patch").append({
+            patches.append({
                 "Comment": "UPRW to XPRW Rename",
                 "Find": uprw_method,
                 "Replace": xprw_method
             })
+        else:
+            uprw_method = None
         if not binascii.unhexlify(uswe_object) in self.dsdt.get("raw"):
             uswe_object = None
         if not binascii.unhexlify(wole_object) in self.dsdt.get("raw"):
@@ -2377,7 +2380,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
 
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
 {"""
-        if binascii.unhexlify(gprw_method[2:]) in self.dsdt.get("raw"):
+        if gprw_method or uprw_method:
             ssdt_content += """\n    External(XPRW, MethodObj)"""
         if uswe_object:
             ssdt_content += "\n    External (USWE, FieldUnitObj)"
@@ -2395,7 +2398,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
                 ssdt_content += "\n            WOLE = Zero"
             ssdt_content += """        }
     }"""
-        if binascii.unhexlify(gprw_method) in self.dsdt.get("raw"):
+        if gprw_method:
             ssdt_content += """
     Method (GPRW, 2, NotSerialized)
     {
@@ -2421,7 +2424,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
         }
         Return (XPRW (Arg0, Arg1))
     }"""
-        if binascii.unhexlify(uprw_method) in self.dsdt.get("raw"):
+        if uprw_method:
             ssdt_content += """
     Method (UPRW, 2, NotSerialized)
     {
@@ -2448,17 +2451,21 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
         Return (XPRW (Arg0, Arg1))
     }"""
         ssdt_content += "\n}"
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
 
-    def fix_uncore_bridge(self, motherboard_chipset, macos_version):
-        if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0") or not self.utils.contains_any(["X79", "C602", "Patsburg", "C612", "X99", "Wellsburg"], motherboard_chipset):
-            return
-        
-        unc0_device = self.acpi.get_device_paths("UNC0")
+        if gprw_method or uprw_method or uswe_object or wole_object:
+            return {
+                "Add": [
+                    {
+                        "Comment": comment,
+                        "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                        "Path": ssdt_name + ".aml"
+                    }
+                ],
+                "Patch": patches
+            }
+
+    def fix_uncore_bridge(self):
+        unc0_device = self.acpi.get_device_paths("UNC0", self.dsdt)
 
         if not unc0_device:
             return
@@ -2501,16 +2508,17 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UNC", 0x00000000)
     }
 }"""
 
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ]
+        }
 
-    def operating_system_patch(self, platform):
-        if not "Laptop" in platform:
-            return
-        
+    def operating_system_patch(self):
         comment = "Spoofs the operating system to Windows, enabling devices locked behind non-Windows systems on macOS"
         ssdt_name = "SSDT-XOSI"
         ssdt_content = """
@@ -2538,43 +2546,47 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "XOSI", 0x00001000)
         }
     }
 }""".replace("[[OSIStrings]]", "\n,".join(["            \"{}\"".format(osi_string) for target_os, osi_string in self.osi_strings.items() if osi_string in self.dsdt.get("table")]))
+        
+        patches = []
 
-        osid = self.acpi.get_method_paths("OSID")
+        osid = self.acpi.get_method_paths("OSID", self.dsdt)
         if osid:
-            self.result.get("Patch").append({
+            patches.append({
                 "Comment": "OSID to XSID rename - must come before _OSI to XOSI rename!",
                 "Find": "4F534944",
                 "Replace": "58534944"
             })
 
-        osif = self.acpi.get_method_paths("OSIF")
+        osif = self.acpi.get_method_paths("OSIF", self.dsdt)
         if osif:
-            self.result.get("Patch").append({
+            patches.append({
                 "Comment": "OSIF to XSIF rename - must come before _OSI to XOSI rename!",
                 "Find": "4F534946",
                 "Replace": "58534946"
             })
 
-        self.result.get("Patch").append({
+        patches.append({
             "Comment": "_OSI to XOSI rename - requires SSDT-XOSI.aml",
             "Find": "5F4F5349",
             "Replace": "584F5349"
         })
         
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ],
+            "Patch": patches
+        }
 
-    def surface_laptop_special_patch(self, motherboard_name, platform):
-        if "Surface".upper() not in motherboard_name or "Laptop" not in platform:
-            return
-
+    def surface_laptop_special_patch(self):
         comment = "Special Patch for all Surface Pro / Book / Laptop hardwares"
         ssdt_name = "SSDT-SURFACE"
         ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
 {
     External (_SB_.PCI0, DeviceObj)
     External (GPRW, MethodObj)    // 2 Arguments
@@ -2688,22 +2700,23 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
             }
         }
     }
-}""" 
+}
+""" 
 
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ]
+        }
 
-    def battery_status_check(self, platform):
-        if "Laptop" not in platform:
-            return
-        
+    def battery_status_patch(self):
         if not self.dsdt:
-            self.result["Battery Status Patch Needed"] = True
-            return
-
+            return False
+        
         search_start_idx = 0
 
         while "EmbeddedControl" in self.dsdt.get("table")[search_start_idx:]:
@@ -2713,14 +2726,76 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
 
             for line in emb_ctrl_block.splitlines():
                 if ",   " in line and ",   8" not in line:
-                    self.result["Battery Status Patch Needed"] = True
-                    return 
+                    return True
 
             search_start_idx = emb_ctrl_end_idx
 
-        return
+        return False
 
-    def select_dsdt(self):
+    def dropping_the_table(self, signature=None, oemtableid=None):
+        table_data = self.acpi.get_table_with_signature(signature) or self.acpi.get_table_with_id(oemtableid)
+
+        if not table_data:
+            return
+                
+        return {
+            "All": True,
+            "Comment": "Delete {}".format(signature or oemtableid),
+            "Enabled": True,
+            "OemTableId": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("id"))),
+            "TableLength": 0,
+            "TableSignature": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("signature")))
+        }
+
+    def fix_apic_processor_id(self):
+        self.apic = self.acpi.get_table_with_signature("APIC")
+        processors = [line for line in self.dsdt.get("lines") if line.strip().startswith("Processor")]
+
+        if not self.apic or not processors:
+            return
+
+        processor_index = -1
+        for index, line in enumerate(self.apic.get("lines")):
+            if "Subtable Type" in line and "[Processor Local APIC]" in line:
+                processor_index += 1
+                apic_processor_id = self.apic["lines"][index + 2][-2:]
+                try:
+                    dsdt_processor_id = processors[processor_index].split("0x")[1].split(",")[0]
+                except:
+                    return
+                if processor_index == 0 and apic_processor_id == dsdt_processor_id:
+                    break
+                self.apic["lines"][index + 2] = self.apic["lines"][index + 2][:-2] + dsdt_processor_id
+
+        if processor_index != -1:
+            if self.write_ssdt("APIC", "\n".join(self.apic.get("lines"))):
+                return {
+                    "Add": [
+                        {
+                            "Comment": "Avoid kernel panic by pointing the first CPU entry to an active CPU on HEDT systems",
+                            "Enabled": True,
+                            "Path": "APIC.aml"
+                        }
+                    ],
+                    "Delete": [
+                        self.dropping_the_table("APIC")
+                    ]
+                }
+
+    def drop_cpu_tables(self):
+        deletes = []
+
+        if self.dropping_the_table(oemtableid="CpuPm"):
+            deletes.append(self.dropping_the_table(oemtableid="CpuPm"))
+
+        if self.dropping_the_table(oemtableid="Cpu0Ist"):
+            deletes.append(self.dropping_the_table(oemtableid="Cpu0Ist"))
+
+        return {
+            "Delete": deletes
+        }
+
+    def select_acpi_tables(self):
         results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "Results")
         apcidump_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "acpidump.exe")
         while True:
@@ -2743,7 +2818,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
             print(" ")
             menu = self.utils.request_input("Please drag and drop ACPI Tables folder here: ")
             if menu.lower() == "p" and (sys.platform.startswith("linux") or sys.platform == "win32"):
-                return self.read_dsdt(
+                return self.read_acpi_tables(
                     self.acpi.dump_tables(os.path.join(results_path, "ACPITables"))
                 )
             elif menu.lower() == "q":
@@ -2751,185 +2826,138 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "Surface", 0x00001000)
             path = self.utils.normalize_path(menu)
             if not path: 
                 continue
-            return self.read_dsdt(path)
+            return self.read_acpi_tables(path)
+
+    def get_patch_index(self, name):
+        for index, patch in enumerate(self.patches):
+            if patch.name == name:
+                return index
+        return None
+
+    def select_acpi_patches(self, hardware_report, unsupported_devices, smbios_model):
+        selected_patches = []
+
+        if  "Laptop" in hardware_report.get("Motherboard").get("Platform") and \
+            "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") and \
+            not "SURFACE" in hardware_report.get("Motherboard").get("Motherboard Name"):
+            selected_patches.append("ALS")
+            selected_patches.append("PNLF")
+
+        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("CPU Codename")):
+            selected_patches.append("APIC")
+
+        if "Intel" in hardware_report.get("CPU").get("CPU Manufacturer"):
+            selected_patches.append("BUS0")
+
+        for device_name, device_info in unsupported_devices.items():
+            if "PCI" in device_info.get("Bus Type", "PCI"):
+                selected_patches.append("Disable Devices")
+
+        selected_patches.append("FakeEC")
+
+        if "HP" in hardware_report.get("Motherboard").get("Motherboard Name"):
+            selected_patches.append("CMOS")
+
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), end=4) or \
+            self.is_intel_hedt_cpu(hardware_report.get("CPU").get("CPU Codename")):
+            selected_patches.append("FixHPET")
+
+        if hardware_report.get("Intel MEI"):
+            if  "Sandy Bridge" in hardware_report.get("CPU").get("CPU Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1E3A" or \
+                "Ivy Bridge" in hardware_report.get("CPU").get("CPU Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1C3A":
+                selected_patches.append("IMEI")
+
+        if "Intel" in hardware_report.get("CPU").get("CPU Manufacturer") or not "MacPro" in smbios_model:
+            selected_patches.append("MCHC")
+
+        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Motherboard Chipset"), start=85, end=97):
+            selected_patches.append("PMC")
+
+        if "Sandy Bridge" in hardware_report.get("CPU").get("CPU Codename") or "Ivy Bridge" in hardware_report.get("CPU").get("CPU Codename"):
+            selected_patches.append("PM (Legacy)")
+        else:
+            selected_patches.append("PLUG")
+
+        ethernet_pci = None
+        for network_name, network_props in hardware_report.get("Network").items():
+            device_id = network_props.get("Device ID")
+
+            if self.utils.contains_any(pci_data.NetworkIDs, device_id, start=108, end=219):
+                ethernet_pci = 108
+                break
+
+        if not ethernet_pci:
+            selected_patches.append("RMNE")
+
+        if hardware_report.get("Motherboard").get("Motherboard Chipset") in ("C610/X99", "Wellsburg", "X299"):
+            selected_patches.append("RTC0")
+
+        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Motherboard Chipset"), start=85):
+            selected_patches.append("RTCAWAC")
+
+        selected_patches.append("PRW")
+
+        if "SURFACE" in hardware_report.get("Motherboard").get("Motherboard Name"):
+            selected_patches.append("Surface Patch")
+        else:
+            if "Intel" in hardware_report.get("CPU").get("CPU Manufacturer"):
+                for input in hardware_report.get("Input").keys():
+                    if "I2C" in input:
+                        selected_patches.append("GPI0")
+                        break
+
+        if hardware_report.get("Motherboard").get("Motherboard Chipset") in ("C600/X79", "C610/X99", "Wellsburg"):
+            selected_patches.append("UNC")
+            
+        selected_patches.append("USB Reset")
+
+        selected_patches.append("USBX")
         
-    def add_dtgp_method(self):
-        comment = "Enables macOS to read and merge device properties from ACPI and determine if a specific device should temporarily receive power"
-        ssdt_name = "SSDT-DTGP"
-        ssdt_content = """
-// Resource: https://github.com/5T33Z0/OC-Little-Translated/blob/main/01_Adding_missing_Devices_and_enabling_Features/Method_DTGP/SSDT-DTGP.dsl
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
+            selected_patches.append("BATP")
+            selected_patches.append("XOSI")
 
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "DTGP", 0x00001000)
-{
-    Method (DTGP, 5, NotSerialized)
-    {
-        If ((Arg0 == ToUUID ("a0b5b7c6-1318-441c-b0c9-fe695eaf949b") /* Unknown UUID */))
-        {
-            If ((Arg1 == One))
-            {
-                If ((Arg2 == Zero))
-                {
-                    Arg4 = Buffer (One)
-                        {
-                             0x03                                             // .
-                        }
-                    Return (One)
-                }
-
-                If ((Arg2 == One))
-                {
-                    Return (One)
-                }
-            }
-        }
-
-        Arg4 = Buffer (One)
-            {
-                 0x00                                             // .
-            }
-        Return (Zero)
-    }
-}
-"""
-
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
-            "Path": ssdt_name + ".aml"
-        })
-
-    def spoof_discrete_gpu(self, discrete_gpu):
-        device_id = discrete_gpu.get("Device ID")
-
-        if not device_id in pci_data.SpoofGPUIDs:
-            return
-        
-        self.add_dtgp_method()
-        new_device_id_le = self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(device_id).split("-")[-1])
-        device_id_byte = ", ".join([f'0x{new_device_id_le[i:i+2]}' for i in range(0, len(new_device_id_le), 2)])
-        comment = "Spoof GPU ID to enable graphics acceleration in macOS"
-        ssdt_name = "SSDT-GPU-SPOOF"
-        ssdt_content = """
-// Resource: https://github.com/dortania/Getting-Started-With-ACPI/blob/master/extra-files/decompiled/SSDT-GPU-SPOOF.dsl
-
-// Replace all "_SB.PCI0.PEG0.PEGP" with the ACPI path of your discrete GPU
-
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPUSPOOF", 0x00001000)
-{
-    External (_SB.PCI0.PEG0.PEGP, DeviceObj)
-    External (DTGP, MethodObj)
-
-    Scope (_SB.PCI0.PEG0.PEGP)
-    {
-        if (_OSI ("Darwin"))
-        {
-            Method (_DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
-            {
-                Local0 = Package (0x04)
-                {
-                    "device-id",
-                    Buffer (0x04)
-                    {
-                        [[DeviceID]]
-                    },
-
-                    "model",
-                    Buffer ()
-                    {
-                        "[[model]]"
-                    }
-                }
-                DTGP (Arg0, Arg1, Arg2, Arg3, RefOf (Local0))
-                Return (Local0)
-            }
-        }
-    }
-}""".replace("[[DeviceID]]", device_id_byte).replace("[[model]]", discrete_gpu.get("GPU Name"))
-
-        self.result["Add"].append({
-            "Comment": comment,
-            "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
-            "Path": ssdt_name + ".aml"
-        })
-
-    def dropping_the_table(self, signature=None, oemtableid=None):
-        table_data = self.acpi.get_table_with_signature(signature) or self.acpi.get_table_with_id(oemtableid)
-
-        if not table_data:
-            return
+        for patch in self.patches:
+            patch.checked = patch.name in selected_patches
+    
+    def customize_patch_selection(self, hardware_report, unsupported_devices, smbios_model):
+        while True:
+            contents = []
+            contents.append("")
+            contents.append("List of available patches:")
+            contents.append("")
+            for index, kext in enumerate(self.patches, start=1):
+                checkbox = "[*]" if kext.checked else "[ ]"
                 
-        self.result["Delete"].append({
-            "All": True,
-            "Comment": "Delete {}".format(signature or oemtableid),
-            "Enabled": True,
-            "OemTableId": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("id"))),
-            "TableLength": 0,
-            "TableSignature": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("signature")))
-        })
+                line = "{} {:2}. {:15} - {:60}".format(checkbox, index, kext.name, kext.description)
+                if kext.checked:
+                    line = "\033[1;32m{}\033[0m".format(line)
+                contents.append(line)
+            contents.append("\033[1;36m")
+            contents.append("Note: You can select multiple kexts by entering their indices separated by commas (e.g., '1, 2, 3').")
+            contents.append("\033[0m")
+            contents.append("R. Restore defaults")
+            contents.append("")
+            contents.append("B. Back")
+            contents.append("Q. Quit")
+            contents.append("")
+            content = "\n".join(contents)
 
-    def fix_apic_processor_id(self, cpu_codename):
-        self.apic = self.acpi.get_table_with_signature("APIC")
-        processors = [line for line in self.dsdt.get("lines") if line.strip().startswith("Processor")]
+            self.utils.adjust_window_size(content)
+            self.utils.head("Customize ACPI Patch Selections", resize=False)
+            print(content)
+            option = self.utils.request_input("Select your option: ")
+            if option.lower() == "q":
+                self.utils.exit_program()
+            if option.lower() == "b":
+                return
 
-        if not self.is_intel_hedt_cpu(cpu_codename) or not self.apic or not processors:
-            return
-
-        processor_index = -1
-        for index, line in enumerate(self.apic.get("lines")):
-            if "Subtable Type" in line and "[Processor Local APIC]" in line:
-                processor_index += 1
-                apic_processor_id = self.apic["lines"][index + 2][-2:]
-                try:
-                    dsdt_processor_id = processors[processor_index].split("0x")[1].split(",")[0]
-                except:
-                    return
-                if processor_index == 0 and apic_processor_id == dsdt_processor_id:
-                    break
-                self.apic["lines"][index + 2] = self.apic["lines"][index + 2][:-2] + dsdt_processor_id
-
-        if processor_index != -1:
-            if self.write_ssdt("APIC", "\n".join(self.apic.get("lines"))):
-                self.result["Add"].append({
-                    "Comment": "Avoid kernel panic by pointing the first CPU entry to an active CPU on HEDT systems",
-                    "Enabled": True,
-                    "Path": "APIC.aml"
-                })
-                self.dropping_the_table("APIC")
-
-    def initialize_patches(self, motherboard_name, motherboard_chipset, platform, cpu_manufacturer, cpu_codename, integrated_gpu, discrete_gpu, network, touchpad_communication, smbios, intel_mei, unsupported_devices, macos_version, acpi_directory):
-        self.acpi_directory = self.check_acpi_directory(acpi_directory)
-
-        if self.select_dsdt():
-            self.dsdt = self.acpi.get_dsdt_or_only()
-            self.get_low_pin_count_bus_device()
-            self.add_intel_management_engine(cpu_codename, intel_mei)
-            self.add_memory_controller_device(cpu_manufacturer, smbios)
-            self.add_null_ethernet_device(network)
-            self.add_system_management_bus_device(cpu_manufacturer, cpu_codename)
-            self.add_usb_power_properties(smbios)
-            self.ambient_light_sensor(motherboard_name, platform, integrated_gpu)
-            self.battery_status_check(platform)
-            self.disable_rhub_devices()
-            self.disable_unsupported_device(unsupported_devices)
-            if not self.is_intel_hedt_cpu(cpu_codename) and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=2):
-                self.dropping_the_table(oemtableid="CpuPm")
-                self.dropping_the_table(oemtableid="Cpu0Ist")
-            self.enable_backlight_controls(platform, cpu_codename, integrated_gpu)
-            self.enable_cpu_power_management(cpu_codename)
-            self.enable_gpio_device(platform, cpu_manufacturer, touchpad_communication)
-            self.enable_nvram_support(motherboard_chipset)
-            self.fake_embedded_controller(platform)
-            self.fix_apic_processor_id(cpu_codename)
-            self.fix_hp_005_post_error(motherboard_name)
-            self.fix_irq_conflicts(platform, cpu_codename)
-            self.fix_system_clock_awac(motherboard_chipset)
-            self.fix_system_clock_hedt(motherboard_chipset, macos_version)
-            self.fix_uncore_bridge(motherboard_chipset, macos_version)
-            self.instant_wake_fix()
-            self.operating_system_patch(platform)
-            self.spoof_discrete_gpu(discrete_gpu)
-            self.surface_laptop_special_patch(motherboard_name, platform)
-
-        self.result["Add"] = sorted(self.result["Add"], key=lambda x: x["Path"])
-        self.apply_acpi_patches()
-        return self.result
+            if option.lower() == "r":
+                self.select_acpi_patches(hardware_report, unsupported_devices, smbios_model)
+            else:
+                indices = [int(i.strip()) -1 for i in option.split(",") if i.strip().isdigit()]
+        
+                for index in indices:
+                    if index >= 0 and index < len(self.patches):
+                        patch = self.patches[index]
+                        patch.checked = not patch.checked

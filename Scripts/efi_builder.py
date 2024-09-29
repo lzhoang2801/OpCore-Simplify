@@ -1,5 +1,4 @@
 from Scripts.datasets import cpu_data
-from Scripts import acpi_guru
 from Scripts import config_prodigy
 from Scripts import kext_maestro
 from Scripts import utils
@@ -9,7 +8,6 @@ import re
 
 class builder:
     def __init__(self):
-        self.acpi = acpi_guru.ACPIGuru()
         self.config = config_prodigy.ConfigProdigy()
         self.kext = kext_maestro.KextMaestro()
         self.utils = utils.Utils()
@@ -296,10 +294,13 @@ class builder:
             print("")
             self.utils.request_input()
 
-    def build_efi(self, hardware, unsupported_devices, smbios_model, macos_version):
+    def build_efi(self, hardware, unsupported_devices, smbios_model, macos_version, acpi_guru):
         efi_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "Results")
         
         self.utils.create_folder(efi_directory, remove_content=True)
+
+        forbidden_chars = r'[<>:"/\\|?*]'
+        self.utils.write_file(os.path.join(efi_directory, re.sub(forbidden_chars, '_', hardware.get("Motherboard").get("Motherboard Name")) + ".json"), hardware)
         
         if not os.path.exists(self.kext.ock_files_dir):
             raise Exception("Directory '{}' does not exist.".format(self.kext.ock_files_dir))
@@ -327,12 +328,11 @@ class builder:
         hardware_shorc["Codec ID"] = next((device_props.get("Codec ID") for device_name, device_props in hardware.get("Audio").items()), None)
         hardware_shorc["SD Controller"] = hardware.get("SD Controller")
         hardware_shorc["Input"] = hardware.get("Input")
+        input_devices = ", ".join(list(hardware_shorc.get("Input", {}).keys()))
+        hardware_shorc["Touchpad Communication"] = "None" if not "Laptop" in hardware_shorc.get("Platform") else "I2C" if "I2C" in input_devices else "PS2" if "PS2" in input_devices else "None"
         hardware_shorc["Storage Controllers"] = hardware.get("Storage Controllers")
         hardware_shorc["Intel MEI"] = hardware.get("Intel MEI")
         hardware_shorc["Unsupported Devices"] = unsupported_devices
-
-        forbidden_chars = r'[<>:"/\\|?*]'
-        hardware_shorc["Motherboard Name"] = re.sub(forbidden_chars, '_', hardware_shorc["Motherboard Name"])
 
         efi_option = {}
         efi_option["macOS Version"] = macos_version
@@ -347,26 +347,38 @@ class builder:
             hardware_shorc["Integrated GPU Name"], 
             efi_option.get("macOS Version"))
         efi_option["SMBIOS"] = smbios_model
-
-        input_devices = ", ".join(list(hardware_shorc.get("Input", {}).keys()))
-        hardware_shorc["Touchpad Communication"] = "None" if not "Laptop" in hardware_shorc.get("Platform") else "I2C" if "I2C" in input_devices else "PS2" if "PS2" in input_devices else "None"
-        efi_option["ACPI"] = self.acpi.initialize_patches(
-            hardware_shorc["Motherboard Name"],
-            hardware_shorc["Motherboard Chipset"],
-            hardware_shorc["Platform"],
-            hardware_shorc["CPU Manufacturer"],
-            hardware_shorc["CPU Codename"],
-            hardware_shorc["Integrated GPU"],
-            hardware_shorc["Discrete GPU"],
-            hardware_shorc["Network"],
-            hardware_shorc["Touchpad Communication"],
-            efi_option.get("SMBIOS"),
-            hardware_shorc.get("Intel MEI"),
-            hardware_shorc["Unsupported Devices"],
-            efi_option.get("macOS Version"),
-            os.path.join(efi_directory, "EFI", "OC", "ACPI")
-        )
         
+        config_file = os.path.join(efi_directory, "EFI", "OC", "config.plist")
+        config_data = self.utils.read_file(config_file)
+        
+        if not config_data:
+            raise Exception("Error: The file {} does not exist.".format(config_file))
+        
+        self.config.genarate(hardware_shorc, efi_option, config_data)
+
+        acpi_guru.hardware_report = hardware
+        acpi_guru.unsupported_devices = unsupported_devices
+        acpi_guru.acpi_directory = os.path.join(efi_directory, "EFI", "OC", "ACPI")
+        acpi_guru.smbios_model = smbios_model
+        acpi_guru.get_low_pin_count_bus_device()
+
+        for patch in acpi_guru.patches:
+            if patch.checked:
+                if patch.name == "BATP":
+                    patch.checked = getattr(acpi_guru, patch.function_name)()
+                    continue
+
+                acpi_load = getattr(acpi_guru, patch.function_name)()
+
+                if not isinstance(acpi_load, dict):
+                    continue
+
+                config_data["ACPI"]["Add"].extend(acpi_load.get("Add", []))
+                config_data["ACPI"]["Delete"].extend(acpi_load.get("Delete", []))
+                config_data["ACPI"]["Patch"].extend(acpi_load.get("Patch", []))
+
+        config_data["ACPI"]["Patch"] = acpi_guru.apply_acpi_patches(config_data["ACPI"]["Patch"])
+
         kexts = self.kext.gathering_kexts(
             hardware_shorc["Motherboard Name"], 
             hardware_shorc["Platform"], 
@@ -387,13 +399,13 @@ class builder:
             efi_option.get("SMBIOS"),
             efi_option.get("Custom CPU Name"),
             efi_option.get("Synchronize the TSC"),
-            efi_option.get("ACPI"),
+            acpi_guru.patches,
             efi_option.get("macOS Version")
         )
 
         kexts_directory = os.path.join(efi_directory, "EFI", "OC", "Kexts")
         self.kext.install_kexts_to_efi(kexts, efi_option.get("macOS Version"), kexts_directory)
-        efi_option["Kernel_Add"] = self.kext.load_kexts(
+        config_data["Kernel"]["Add"] = self.kext.load_kexts(
             kexts, 
             hardware_shorc["Motherboard Name"], 
             hardware_shorc["Platform"],
@@ -401,16 +413,7 @@ class builder:
             hardware_shorc["Discrete GPU"].get("GPU Codename", ""),
             efi_option["macOS Version"]
         )
-        
-        config_file = os.path.join(efi_directory, "EFI", "OC", "config.plist")
-        config_data = self.utils.read_file(config_file)
-        
-        if not config_data:
-            raise Exception("Error: The file {} does not exist.".format(config_file))
-        
-        self.config.genarate(hardware_shorc, efi_option, config_data)
+
         self.utils.write_file(config_file, config_data)
 
         self.clean_up(config_data, efi_directory)
-        hardware_file = os.path.join(efi_directory, hardware_shorc.get("Motherboard Name") + ".json")
-        self.utils.write_file(hardware_file, hardware)

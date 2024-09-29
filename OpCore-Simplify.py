@@ -1,4 +1,5 @@
 from Scripts.datasets import os_data
+from Scripts import acpi_guru
 from Scripts import aida64
 from Scripts import compatibility_checker
 from Scripts import efi_builder
@@ -14,6 +15,7 @@ class OCPE:
     def __init__(self):
         self.u = utils.Utils("OpCore Simplify")
         self.o = gathering_files.gatheringFiles()
+        self.ac = acpi_guru.ACPIGuru()
         self.a = aida64.AIDA64()
         self.c = compatibility_checker.CompatibilityChecker()
         self.b = efi_builder.builder()
@@ -178,15 +180,22 @@ class OCPE:
             print("")
             print("1. Select Hardware Report")
             print("2. Select macOS Version")
-            print("3. Customize SMBIOS Model")
-            print("4. Build OpenCore EFI")
+            print("3. Customize ACPI Patch")
+            print("4. Customize SMBIOS Model")
+            print("5. Build OpenCore EFI")
             print("")
             print("Q. Quit")
             print("")
             option = self.u.request_input("Select an option: ")
             if option.lower() == "q":
                 self.u.exit_program()
-            if option == "1":
+
+            try:
+                option = int(option)
+            except:
+                continue
+
+            if option == 1:
                 hardware_report_path, hardware_report = self.select_hardware_report()
                 self.show_hardware_report(hardware_report)
                 supported_macos_version, unsupported_devices = self.compatibility_check(hardware_report)
@@ -194,20 +203,26 @@ class OCPE:
                 if int(macos_version[:2]) == os_data.macos_versions[-1].darwin_version and os_data.macos_versions[-1].release_status == "beta":
                     macos_version = str(int(macos_version[:2]) - 1) + macos_version[2:]
                 smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
-            try:
-                hardware_report
+                self.ac.select_acpi_tables()
+                self.ac.select_acpi_patches(hardware_report, unsupported_devices, smbios_model)
+            elif option < 6:
+                try:
+                    hardware_report
+                except:
+                    self.u.request_input("\nPlease select a hardware report to proceed")
+                    continue
 
                 if option == "2":
                     macos_version = self.select_macos_version(supported_macos_version)
                     smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
                 elif option == "3":
+                    self.ac.customize_patch_selection(hardware_report, unsupported_devices, smbios_model)
+                elif option == "4":
                     smbios_model = self.s.customize_smbios_model(hardware_report, smbios_model, macos_version)
-                if option == "4":
+                elif option == "5":
                     self.gathering_files()
-                    self.b.build_efi(hardware_report, unsupported_devices, smbios_model, macos_version)
+                    self.b.build_efi(hardware_report, unsupported_devices, smbios_model, macos_version, self.ac)
                     self.show_result(hardware_report)
-            except:
-                self.u.request_input("\nPlease select a hardware report to proceed")
 
 if __name__ == '__main__':
     o = OCPE()

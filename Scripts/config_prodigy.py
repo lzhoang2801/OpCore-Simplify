@@ -257,9 +257,10 @@ class ConfigProdigy:
         del config["#WARNING - 2"]
         del config["#WARNING - 3"]
         del config["#WARNING - 4"]
-        config["ACPI"]["Add"] = efi_option.get("ACPI").get("Add")
-        config["ACPI"]["Delete"] = efi_option.get("ACPI").get("Delete")
-        config["ACPI"]["Patch"] = efi_option.get("ACPI").get("Patch")
+        
+        config["ACPI"]["Add"] = []
+        config["ACPI"]["Delete"] = []
+        config["ACPI"]["Patch"] = []
 
         config["Booter"]["MmioWhitelist"] = self.mmio_whitelist(hardware.get("Motherboard Chipset"))
         config["Booter"]["Patch"] = self.add_booter_patch(efi_option.get("SMBIOS"), efi_option.get("macOS Version"))
@@ -280,7 +281,7 @@ class ConfigProdigy:
 
         config["DeviceProperties"]["Add"] = self.deviceproperties(hardware.get("CPU Codename"), hardware.get("Intel MEI"), efi_option.get("iGPU Properties"))
 
-        config["Kernel"]["Add"] = efi_option.get("Kernel_Add")
+        config["Kernel"]["Add"] = []
         config["Kernel"]["Block"] = self.block_kext_bundle(hardware.get("Network"), efi_option.get("macOS Version"))
         spoof_cpuid = self.spoof_cpuid(
             hardware.get("Processor Name"), 
