@@ -450,6 +450,7 @@ kexts = [
         name = "AsusSMC", 
         description = "Supports ALS, keyboard backlight, and Fn keys on ASUS laptops",
         category = "Brand Specific",
+        max_darwin_version = "23.99.99",
         github_repo = {
             "owner": "hieplpvip",
             "repo": "AsusSMC"
