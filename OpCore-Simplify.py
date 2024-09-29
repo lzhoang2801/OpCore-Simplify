@@ -212,14 +212,14 @@ class OCPE:
                     self.u.request_input("\nPlease select a hardware report to proceed")
                     continue
 
-                if option == "2":
+                if option == 2:
                     macos_version = self.select_macos_version(supported_macos_version)
                     smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
-                elif option == "3":
+                elif option == 3:
                     self.ac.customize_patch_selection(hardware_report, unsupported_devices, smbios_model)
-                elif option == "4":
+                elif option == 4:
                     smbios_model = self.s.customize_smbios_model(hardware_report, smbios_model, macos_version)
-                elif option == "5":
+                elif option == 5:
                     self.gathering_files()
                     self.b.build_efi(hardware_report, unsupported_devices, smbios_model, macos_version, self.ac)
                     self.show_result(hardware_report)
