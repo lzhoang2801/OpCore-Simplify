@@ -380,6 +380,15 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "VoodooInput", 
+        description = "Provides Magic Trackpad 2 software emulation for arbitrary input sources",
+        category = "Input",
+        github_repo = {
+            "owner": "acidanthera",
+            "repo": "VoodooInput"
+        }
+    ),
+    KextInfo(
         name = "VoodooPS2Controller", 
         description = "Provides support for PS/2 keyboards, trackpads, and mouse",
         category = "Input",
