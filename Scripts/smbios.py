@@ -159,7 +159,7 @@ class SMBIOS:
                     category += char
                 if category != current_category:
                     current_category = category
-                    category_header = f"Category: {current_category if current_category else "Uncategorized"}"
+                    category_header = "Category: {}".format(current_category if current_category else "Uncategorized")
                     contents.append(f"\n{category_header}\n" + "=" * len(category_header))
                 
                 line = "{:2}. {:15} - {:10} {:20}{}".format(index, device.name, device.cpu, "({})".format(device.cpu_generation), "" if not device.discrete_gpu else " - {}".format(device.discrete_gpu))
