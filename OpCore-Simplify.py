@@ -97,8 +97,8 @@ class OCPE:
         while True:
             self.u.head("Select macOS Version")
             print("")
-            for index, macos_version_name in enumerate(os_data.get_macos_names(supported_macos_version[0], supported_macos_version[-1]), start=int(supported_macos_version[0][:2])):
-                print("{}. {}".format(index, macos_version_name))
+            for darwin_version in range(int(supported_macos_version[0][:2]), int(supported_macos_version[-1][:2]) + 1):
+                print("{}. {}".format(darwin_version, os_data.get_macos_name_by_darwin(str(darwin_version))))
             print("")
             print("Please enter the macOS version you want to select:")
             print("- To select a major version, enter the number (e.g., 19).")

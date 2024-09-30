@@ -22,13 +22,6 @@ def get_latest_darwin_version():
 def get_lowest_darwin_version():
     return "{}.{}.{}".format(macos_versions[0].darwin_version, 0, 0)
 
-def get_macos_names(min_darwin, max_darwin):
-    return [
-        "macOS {} {}{}".format(data.name, data.macos_version, "" if data.release_status == "final" else " (Beta)")
-        for data in macos_versions
-        if int(min_darwin[:2]) <= data.darwin_version <= int(max_darwin[:2])
-    ]
-
 def get_macos_name_by_darwin(darwin_version):
     for data in macos_versions:
         if data.darwin_version == int(darwin_version[:2]):
