@@ -1832,11 +1832,15 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
 """
 
             if ssdt_name:
-                self.result["Add"].append({
-                    "Comment": comment,
-                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
-                    "Path": ssdt_name + ".aml"
-                })
+                return {
+                    "Add": [
+                        {
+                            "Comment": comment,
+                            "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
+                            "Path": ssdt_name + ".aml"
+                        }
+                    ]
+                }
   
     def enable_backlight_controls(self):
         patches = []
