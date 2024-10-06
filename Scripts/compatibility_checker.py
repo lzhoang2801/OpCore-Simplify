@@ -52,7 +52,7 @@ class CompatibilityChecker:
                         elif "Amber Lake" in gpu_codename or "Whiskey Lake" in gpu_codename:
                             self.min_supported_macos_version = max((17, 0, 0), self.min_supported_macos_version if is_supported_discrete_gpu else (-1, -1, -1))
                             self.max_supported_macos_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())
-                        elif not is_supported_discrete_gpu and "Comet Lake" in gpu_codename and self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=110, end=122):
+                        elif not is_supported_discrete_gpu and "Comet Lake" in gpu_codename and self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=116, end=130):
                             self.max_supported_macos_version = self.min_supported_macos_version = (-1, -1, -1)
                         elif "Ice Lake" in gpu_codename:
                             self.min_supported_macos_version = max((19, 4, 0), self.min_supported_macos_version)

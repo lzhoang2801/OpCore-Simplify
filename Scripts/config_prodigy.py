@@ -62,11 +62,12 @@ class ConfigProdigy:
 
     def check_mats_support(self, cpu_manufacturer, motherboard_chipset):
         return "AMD" in cpu_manufacturer or \
-            not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=97) is None or \
-            not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=49, end=60) is None
+            not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=101) is None or \
+            not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=79, end=89) is None
 
-    def check_resizable_bar_support(self, motherboard_chipset, cpu_codename):
-        return not self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset) is None or not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10) is None
+    def check_resizable_bar_support(self, motherboard_chipset):
+        return  not self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset, start=11) is None or \
+                not "Ice Lake" in motherboard_chipset and not self.utils.contains_any(chipset_data, motherboard_chipset, start=101) is None
 
     def is_low_end_intel_cpu(self, processor_name):
         return any(brand in processor_name for brand in ["Celeron", "Pentium"])
@@ -112,11 +113,10 @@ class ConfigProdigy:
         return kernel_block
 
     def is_low_end_haswell_plus(self, processor_name, cpu_codename):
-        return self.is_low_end_intel_cpu(processor_name) and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=2) is None
+        return self.is_low_end_intel_cpu(processor_name) and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=38) is None
 
     def is_intel_hedt_cpu(self, cpu_codename):
-        return "-E" in cpu_codename and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=4) is None or \
-            ("-X" in cpu_codename or "-W" in cpu_codename) and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=4, end=6) is None
+        return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=21) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
             
     def spoof_cpuid(self, processor_name, cpu_codename, macos_version):
         if self.is_low_end_haswell_plus(processor_name, cpu_codename):
@@ -125,7 +125,7 @@ class ConfigProdigy:
             return self.cpuids.get("Haswell")
         elif "Broadwell" in cpu_codename and self.is_intel_hedt_cpu(cpu_codename):
             return self.cpuids.get("Broadwell")
-        elif "Ice Lake" not in cpu_codename and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=10):
+        elif "Ice Lake" not in cpu_codename and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=10):
             if not "Comet Lake" in cpu_codename:
                 return self.cpuids.get("Comet Lake")
             if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.0.0"):
@@ -141,7 +141,7 @@ class ConfigProdigy:
         elif tsc_sync:
             kernel_patch.extend(self.g.get_amd_kernel_patches()[-6:-4])
         
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) and int(cpu_cores) > 6:
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=2) and int(cpu_cores) > 6:
             kernel_patch.append({
                 "Arch": "Any",
                 "Base": "_cpu_thread_alloc",
@@ -164,10 +164,10 @@ class ConfigProdigy:
                 patch["Replace"] = patch["Replace"].hex()
                 patch["Replace"] = self.utils.hex_to_bytes(patch["Replace"][:2] + self.utils.int_to_hex(int(cpu_cores)) + patch["Replace"][4:])
             elif "IOPCIIsHotplugPort" in patch["Comment"]:
-                if self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset, start=6):
+                if self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset, start=17):
                     patch["Enabled"] = True
             if "_mtrr_update_action" in patch["Comment"]:
-                if chipset_data.AMDChipsets[0].lower() in motherboard_chipset.lower():
+                if "TRX" in motherboard_chipset.upper():
                     patch["Enabled"] = False
                 elif "AMD" in gpu_manufacturer:
                     if "algrey" in patch["Comment"].lower():
@@ -193,7 +193,7 @@ class ConfigProdigy:
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
             boot_args.append("revpatch=sbvmm{}".format(",cpuname" if custom_cpu_name else ""))
 
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) and int(cpu_cores) > 6:
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=2) and int(cpu_cores) > 6:
             boot_args.append("-ctrsmt")
 
         if "Intel" in cpu_manufacturer:
@@ -204,7 +204,7 @@ class ConfigProdigy:
                 boot_args.extend(["-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"])
 
             if "Laptop" in platform:
-                if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=6):
+                if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=21):
                     boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else "r"))
 
         if "Navi" in discrete_gpu_codename and not "Navi 2" in discrete_gpu_codename:
@@ -269,13 +269,10 @@ class ConfigProdigy:
             config["Booter"]["Quirks"]["DevirtualiseMmio"] = False
         config["Booter"]["Quirks"]["EnableWriteUnprotector"] = False if "AMD" in hardware.get("CPU Manufacturer") else not config["Booter"]["Quirks"]["DevirtualiseMmio"]
         config["Booter"]["Quirks"]["ProtectUefiServices"] = "Z390" in hardware.get("Motherboard Chipset") or \
-            not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), start=10) is None
+            not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), end=14) is None
         config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"]
-        config["Booter"]["Quirks"]["ResizeAppleGpuBars"] = 0 if self.check_resizable_bar_support(
-            hardware.get("Motherboard Chipset"), 
-            hardware.get("CPU Codename")
-        ) else -1
-        config["Booter"]["Quirks"]["SetupVirtualMap"] = not (not self.utils.contains_any(chipset_data.AMDChipsets, hardware.get("Motherboard Chipset"), end=5) is None or \
+        config["Booter"]["Quirks"]["ResizeAppleGpuBars"] = 0 if self.check_resizable_bar_support(hardware.get("Motherboard Chipset")) else -1
+        config["Booter"]["Quirks"]["SetupVirtualMap"] = not (not self.utils.contains_any(chipset_data.AMDChipsets, hardware.get("Motherboard Chipset"), start=11, end=17) is None or \
             "ASUS" in hardware.get("Motherboard Name") and self.is_intel_hedt_cpu(hardware.get("CPU Codename")) and config["Booter"]["Quirks"]["DevirtualiseMmio"])
         config["Booter"]["Quirks"]["SyncRuntimePermissions"] = config["Booter"]["Quirks"]["RebuildAppleMemoryMap"]
 
@@ -302,16 +299,16 @@ class ConfigProdigy:
             hardware["Discrete GPU"].get("Manufacturer", "") or hardware["Integrated GPU"].get("Manufacturer", ""), 
             efi_option.get("Synchronize the TSC")
         )
-        config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), end=2) is None
+        config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), start=38) is None
         config["Kernel"]["Quirks"]["AppleXcpmCfgLock"] = False if "AMD" in hardware.get("CPU Manufacturer") else not config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"]
-        config["Kernel"]["Quirks"]["AppleXcpmExtraMsrs"] = self.is_intel_hedt_cpu(hardware.get("CPU Codename")) and not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), end=4) is None
+        config["Kernel"]["Quirks"]["AppleXcpmExtraMsrs"] = "-E" in hardware.get("CPU Codename") and not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), start=26) is None
         config["Kernel"]["Quirks"]["CustomSMBIOSGuid"] = True
         config["Kernel"]["Quirks"]["DisableIoMapper"] = not "AMD" in hardware.get("CPU Manufacturer")
         config["Kernel"]["Quirks"]["DisableRtcChecksum"] = "ASUS" in hardware.get("Motherboard Name") or "HP" in hardware.get("Motherboard Name")
         config["Kernel"]["Quirks"]["LapicKernelPanic"] = "HP" in hardware.get("Motherboard Name")
         config["Kernel"]["Quirks"]["PanicNoKextDump"] = config["Kernel"]["Quirks"]["PowerTimeoutKernelPanic"] = True
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware.get("CPU Manufacturer") or \
-            not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), start=13) is None
+            not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), end=2) is None
 
         config["Misc"]["BlessOverride"] = []
         config["Misc"]["Boot"]["HideAuxiliary"] = False
@@ -361,7 +358,7 @@ class ConfigProdigy:
 
         config["UEFI"]["APFS"]["MinDate"] = config["UEFI"]["APFS"]["MinVersion"] = -1
         config["UEFI"]["Drivers"] = self.load_drivers()
-        config["UEFI"]["Quirks"]["IgnoreInvalidFlexRatio"] = not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), end=4) is None
+        config["UEFI"]["Quirks"]["IgnoreInvalidFlexRatio"] = not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware.get("CPU Codename"), start=26) is None
         config["UEFI"]["Quirks"]["ReleaseUsbOwnership"] = True
         config["UEFI"]["Quirks"]["UnblockFsConnect"] = "HP" in hardware.get("Motherboard Name")
         config["UEFI"]["ReservedMemory"] = []

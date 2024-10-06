@@ -599,7 +599,7 @@ class KextMaestro:
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("22.0.0") and not "AVX2" in simd_features:
             kexts.append("CryptexFixup")
 
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=13) and int(cpu_cores) > 6:
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=2) and int(cpu_cores) > 6:
             kexts.append("CpuTopologyRebuild")
 
         if tsc_sync:

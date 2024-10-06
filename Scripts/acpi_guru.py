@@ -1571,7 +1571,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
 
     def add_system_management_bus_device(self):
         try:
-            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), end=4) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
+            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=26) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
         except:
             smbus_device_name = "SBUS"
             
@@ -1846,11 +1846,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
         patches = []
 
         uid_value = 19
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), end=2):
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=38):
             uid_value = 14
-        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=2, end=4):
+        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=26):
             uid_value = 15
-        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=4, end=7):
+        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=16):
             uid_value = 16
         
         igpu = ""
@@ -2214,9 +2214,8 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
         }
 
     def is_intel_hedt_cpu(self, cpu_codename):
-        return "-E" in cpu_codename and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=4) is None or \
-            ("-X" in cpu_codename or "-W" in cpu_codename) and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=4, end=6) is None
-
+        return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=21) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
+         
     def fix_system_clock_hedt(self):
         if not self.lpc_bus_device:
             return
@@ -2862,7 +2861,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
         if "HP" in hardware_report.get("Motherboard").get("Motherboard Name"):
             selected_patches.append("CMOS")
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), end=4) or \
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), start=26) or \
             self.is_intel_hedt_cpu(hardware_report.get("CPU").get("CPU Codename")):
             selected_patches.append("FixHPET")
 
@@ -2874,7 +2873,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
         if "Intel" in hardware_report.get("CPU").get("CPU Manufacturer") or not "MacPro" in smbios_model:
             selected_patches.append("MCHC")
 
-        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Motherboard Chipset"), start=85, end=97):
+        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Motherboard Chipset"), start=89, end=101):
             selected_patches.append("PMC")
 
         if "Sandy Bridge" in hardware_report.get("CPU").get("CPU Codename") or "Ivy Bridge" in hardware_report.get("CPU").get("CPU Codename"):
@@ -2896,7 +2895,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
         if hardware_report.get("Motherboard").get("Motherboard Chipset") in ("C610/X99", "Wellsburg", "X299"):
             selected_patches.append("RTC0")
 
-        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Motherboard Chipset"), start=85):
+        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Motherboard Chipset"), start=89):
             selected_patches.append("RTCAWAC")
 
         selected_patches.append("PRW")
