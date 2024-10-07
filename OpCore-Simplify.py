@@ -4,6 +4,7 @@ from Scripts import aida64
 from Scripts import compatibility_checker
 from Scripts import efi_builder
 from Scripts import gathering_files
+from Scripts import kext_maestro
 from Scripts import smbios
 from Scripts import utils
 import updater
@@ -19,6 +20,7 @@ class OCPE:
         self.a = aida64.AIDA64()
         self.c = compatibility_checker.CompatibilityChecker()
         self.b = efi_builder.builder()
+        self.k = kext_maestro.KextMaestro()
         self.s = smbios.SMBIOS()
         self.u = utils.Utils()
         self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
@@ -181,8 +183,9 @@ class OCPE:
             print("1. Select Hardware Report")
             print("2. Select macOS Version")
             print("3. Customize ACPI Patch")
-            print("4. Customize SMBIOS Model")
-            print("5. Build OpenCore EFI")
+            print("4. Customize Kexts")
+            print("5. Customize SMBIOS Model")
+            print("6. Build OpenCore EFI")
             print("")
             print("Q. Quit")
             print("")
@@ -205,7 +208,8 @@ class OCPE:
                 smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
                 self.ac.select_acpi_tables()
                 self.ac.select_acpi_patches(hardware_report, unsupported_devices, smbios_model)
-            elif option < 6:
+                self.k.select_required_kexts(hardware_report, smbios_model, macos_version, self.ac.patches)
+            elif option < 7:
                 try:
                     hardware_report
                 except:
@@ -215,13 +219,17 @@ class OCPE:
                 if option == 2:
                     macos_version = self.select_macos_version(supported_macos_version)
                     smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
+                    self.k.select_required_kexts(hardware_report, smbios_model, macos_version, self.ac.patches)
                 elif option == 3:
                     self.ac.customize_patch_selection(hardware_report, unsupported_devices, smbios_model)
                 elif option == 4:
-                    smbios_model = self.s.customize_smbios_model(hardware_report, smbios_model, macos_version)
+                    self.k.kext_configuration_menu(hardware_report, smbios_model, macos_version, self.ac.patches)
                 elif option == 5:
+                    smbios_model = self.s.customize_smbios_model(hardware_report, smbios_model, macos_version)
+                    self.k.kext_configuration_menu(hardware_report, smbios_model, macos_version, self.ac.patches)
+                elif option == 6:
                     self.gathering_files()
-                    self.b.build_efi(hardware_report, unsupported_devices, smbios_model, macos_version, self.ac)
+                    self.b.build_efi(hardware_report, unsupported_devices, smbios_model, macos_version, self.ac, self.k)
                     self.show_result(hardware_report)
 
 if __name__ == '__main__':
