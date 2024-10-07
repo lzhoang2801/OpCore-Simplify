@@ -310,14 +310,14 @@ class KextMaestro:
             if not isinstance(bundle_info.get("CFBundleIdentifier", None), (str, unicode)):
                 continue
 
-            executable_path = os.path.join("Contents", "MacOS", bundle_info.get("CFBundleExecutable", "None")).replace("\\", "/").lstrip("/")
-            if not os.path.exists(os.path.join(kexts_directory, kexts_directory, executable_path)):
+            executable_path = os.path.join("Contents", "MacOS", bundle_info.get("CFBundleExecutable", "None"))
+            if not os.path.exists(os.path.join(kexts_directory, kext_path, executable_path)):
                 executable_path = ""
             
             bundle_list.append({
                 "BundlePath": kext_path.replace("\\", "/").lstrip("/"),
                 "Enabled": True,
-                "ExecutablePath": executable_path,
+                "ExecutablePath": executable_path.replace("\\", "/").lstrip("/"),
                 "PlistPath": plist_path.replace("\\", "/").lstrip("/"),
                 "BundleIdentifier": bundle_info.get("CFBundleIdentifier"),
                 "BundleVersion": bundle_info.get("CFBundleVersion"),
