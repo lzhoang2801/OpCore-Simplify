@@ -13,24 +13,24 @@ class CompatibilityChecker:
     def is_low_end_intel_cpu(self, processor_name):
         return any(brand in processor_name for brand in ["Celeron", "Pentium"])
 
-    def check_cpu_compatibility(self, processor_name, instruction_set):
-        if "x86-64" not in instruction_set or "SSE4" not in instruction_set:
+    def check_cpu_compatibility(self, processor_name, simd_features):
+        if "SSE4" not in simd_features:
             self.max_supported_macos_version = self.min_supported_macos_version = (-1, -1, -1)
             self.unsupported_devices.append("CPU: {}".format(processor_name))
             return
         
-        if "SSE4.2" not in instruction_set:
+        if "SSE4.2" not in simd_features:
             self.min_supported_macos_version = (18, 0, 0)
-            if "SSE4.1" in instruction_set:
+            if "SSE4.1" in simd_features:
                 self.max_supported_macos_version = (21, 99, 99)
 
-    def check_gpu_compatibility(self, motherboard_chipset, processor_name, instruction_set, gpu_info):
+    def check_gpu_compatibility(self, motherboard_chipset, processor_name, simd_features, gpu_info):
         supported_gpus = {}
         is_supported_discrete_gpu = False
 
         for gpu_name, gpu_props in gpu_info.items():
             gpu_manufacturer = gpu_props.get("Manufacturer")
-            gpu_codename = gpu_props.get("GPU Codename")
+            gpu_codename = gpu_props.get("Codename")
             device_id = gpu_props.get("Device ID")
             device_type = gpu_props.get("Device Type")
             is_supported_gpu = True
@@ -73,7 +73,7 @@ class CompatibilityChecker:
                     is_supported_discrete_gpu = True
 
                     if "Navi 2" in gpu_codename:
-                        if not "AVX2" in instruction_set:
+                        if not "AVX2" in simd_features:
                             self.max_supported_macos_version = min((21, 99, 99), self.max_supported_macos_version)
                         else:
                             if gpu_codename in ("Navi 23", "Navi 22"):
@@ -117,7 +117,7 @@ class CompatibilityChecker:
         supported_audio = {}
         
         for audio_device, audio_props in audio_info.items():
-            codec_id = audio_props.get("Codec ID")
+            codec_id = audio_props.get("Device ID")
             if "USB" in audio_props.get("Bus Type") or \
                 codec_id.startswith("8086") or \
                 codec_id.startswith("1002") or \
@@ -131,13 +131,13 @@ class CompatibilityChecker:
         
         return supported_audio
 
-    def check_biometric_compatibility(self, hardware):
-        biometric = hardware.get("Biometric", {})
+    def check_biometric_compatibility(self, hardware_report):
+        biometric = hardware_report.get("Biometric", {})
         if biometric:
             for biometric_device, biometric_props in biometric.items():
                 self.unsupported_devices["Biometric: {}".format(biometric_device)] = biometric_props
             
-            del hardware["Biometric"]
+            del hardware_report["Biometric"]
 
     def check_network_compatibility(self, network_info):
         supported_network = {}
@@ -148,7 +148,7 @@ class CompatibilityChecker:
             is_device_supported = device_id in pci_data.NetworkIDs
 
             if bus_type.startswith("PCI"):
-                if device_id in ["8086-125B", "8086-125C", "8086-125D", "8086-3102"]:
+                if device_id in ("8086-125B", "8086-125C", "8086-125D", "8086-3102"):
                     self.min_supported_macos_version = (19, 0, 0)
 
             if not is_device_supported:
@@ -173,15 +173,24 @@ class CompatibilityChecker:
         
         return supported_storage
 
-    def check_sd_controller_compatibility(self, hardware):
-        sd_controller_props = hardware.get("SD Controller", {})
+    def check_sd_controller_compatibility(self, hardware_report):
+        if not hardware_report.get("SD Controller"):
+            return
+        
+        supported_sd_controller = {}
 
-        if sd_controller_props:
-            if sd_controller_props.get("Device ID") not in pci_data.RealtekCardReaderIDs:
-                self.unsupported_devices["SD Controller: {}".format(sd_controller_props.get("Device Description"))] = sd_controller_props
-                del hardware["SD Controller"]
+        for controller_name, controller_props in hardware_report.get("SD Controller", {}).items():
+            if controller_props.get("Device ID") not in pci_data.RealtekCardReaderIDs:
+                self.unsupported_devices["SD Controller: {}".format(controller_name)] = controller_props
+            else:
+                supported_sd_controller[controller_name] = controller_props
 
-    def check_compatibility(self, hardware):
+        if supported_sd_controller:
+            hardware_report["SD Controller"] = supported_sd_controller
+        else:
+            del hardware_report["SD Controller"]
+
+    def check_compatibility(self, hardware_report):
         self.utils.head("Compatibility Checker")
         print("")
 
@@ -190,23 +199,23 @@ class CompatibilityChecker:
         self.unsupported_devices = {}
 
         self.check_cpu_compatibility(
-            hardware.get("CPU").get("Processor Name"),
-            hardware.get("CPU").get("Instruction Set")
+            hardware_report.get("CPU").get("Processor Name"),
+            hardware_report.get("CPU").get("SIMD Features")
         )
 
         if self.max_supported_macos_version != (-1, -1, -1):
-            hardware["GPU"] = self.check_gpu_compatibility(
-                hardware.get("Motherboard").get("Motherboard Chipset"), 
-                hardware.get("CPU").get("Processor Name"),
-                hardware.get("CPU").get("Instruction Set"), 
-                hardware.get("GPU")
+            hardware_report["GPU"] = self.check_gpu_compatibility(
+                hardware_report.get("Motherboard").get("Chipset"), 
+                hardware_report.get("CPU").get("Processor Name"),
+                hardware_report.get("CPU").get("SIMD Features"), 
+                hardware_report.get("GPU")
             )
-            if hardware.get("GPU"):
-                hardware["Audio"] = self.check_audio_compatibility(hardware.get("Audio"))
-                self.check_biometric_compatibility(hardware)
-                hardware["Network"] = self.check_network_compatibility(hardware.get("Network"))
-                hardware["Storage Controllers"] = self.check_storage_compatibility(hardware.get("Storage Controllers"))
-                self.check_sd_controller_compatibility(hardware)
+            if hardware_report.get("GPU"):
+                hardware_report["Sound"] = self.check_audio_compatibility(hardware_report.get("Sound"))
+                self.check_biometric_compatibility(hardware_report)
+                hardware_report["Network"] = self.check_network_compatibility(hardware_report.get("Network"))
+                hardware_report["Storage Controllers"] = self.check_storage_compatibility(hardware_report.get("Storage Controllers"))
+                self.check_sd_controller_compatibility(hardware_report)
 
         if self.max_supported_macos_version[0] == -1:
             self.u.request_input("Your hardware is not compatible with macOS!")

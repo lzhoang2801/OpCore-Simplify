@@ -1571,7 +1571,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
 
     def add_system_management_bus_device(self):
         try:
-            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=26) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
+            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=26) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
         except:
             smbus_device_name = "SBUS"
             
@@ -1846,11 +1846,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
         patches = []
 
         uid_value = 19
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=38):
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=38):
             uid_value = 14
-        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=26):
+        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=26):
             uid_value = 15
-        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("CPU Codename"), start=16):
+        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=16):
             uid_value = 16
         
         igpu = ""
@@ -2823,14 +2823,14 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
 
         if  "Laptop" in hardware_report.get("Motherboard").get("Platform") and \
             "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") and \
-            not "SURFACE" in hardware_report.get("Motherboard").get("Motherboard Name"):
+            not "SURFACE" in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("ALS")
             selected_patches.append("PNLF")
 
-        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("CPU Codename")):
+        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
             selected_patches.append("APIC")
 
-        if "Intel" in hardware_report.get("CPU").get("CPU Manufacturer"):
+        if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
             selected_patches.append("BUS0")
 
         for device_name, device_info in unsupported_devices.items():
@@ -2839,25 +2839,25 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
 
         selected_patches.append("FakeEC")
 
-        if "HP" in hardware_report.get("Motherboard").get("Motherboard Name"):
+        if "HP" in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("CMOS")
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), start=26) or \
-            self.is_intel_hedt_cpu(hardware_report.get("CPU").get("CPU Codename")):
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=26) or \
+            self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
             selected_patches.append("FixHPET")
 
         if hardware_report.get("Intel MEI"):
-            if  "Sandy Bridge" in hardware_report.get("CPU").get("CPU Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1E3A" or \
-                "Ivy Bridge" in hardware_report.get("CPU").get("CPU Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1C3A":
+            if  "Sandy Bridge" in hardware_report.get("CPU").get("Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1E3A" or \
+                "Ivy Bridge" in hardware_report.get("CPU").get("Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1C3A":
                 selected_patches.append("IMEI")
 
-        if "Intel" in hardware_report.get("CPU").get("CPU Manufacturer") or not "MacPro" in smbios_model:
+        if "Intel" in hardware_report.get("CPU").get("Manufacturer") or not "MacPro" in smbios_model:
             selected_patches.append("MCHC")
 
-        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Motherboard Chipset"), start=89, end=101):
+        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Chipset"), start=89, end=101):
             selected_patches.append("PMC")
 
-        if "Sandy Bridge" in hardware_report.get("CPU").get("CPU Codename") or "Ivy Bridge" in hardware_report.get("CPU").get("CPU Codename"):
+        if "Sandy Bridge" in hardware_report.get("CPU").get("Codename") or "Ivy Bridge" in hardware_report.get("CPU").get("Codename"):
             selected_patches.append("PM (Legacy)")
         else:
             selected_patches.append("PLUG")
@@ -2873,24 +2873,24 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
         if not ethernet_pci:
             selected_patches.append("RMNE")
 
-        if hardware_report.get("Motherboard").get("Motherboard Chipset") in ("C610/X99", "Wellsburg", "X299"):
+        if hardware_report.get("Motherboard").get("Chipset") in ("C610/X99", "Wellsburg", "X299"):
             selected_patches.append("RTC0")
 
-        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Motherboard Chipset"), start=89):
+        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Chipset"), start=89):
             selected_patches.append("RTCAWAC")
 
         selected_patches.append("PRW")
 
-        if "SURFACE" in hardware_report.get("Motherboard").get("Motherboard Name"):
+        if "SURFACE" in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("Surface Patch")
         else:
-            if "Intel" in hardware_report.get("CPU").get("CPU Manufacturer"):
+            if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
                 for input in hardware_report.get("Input").keys():
                     if "I2C" in input:
                         selected_patches.append("GPI0")
                         break
 
-        if hardware_report.get("Motherboard").get("Motherboard Chipset") in ("C600/X79", "C610/X99", "Wellsburg"):
+        if hardware_report.get("Motherboard").get("Chipset") in ("C600/X79", "C610/X99", "Wellsburg"):
             selected_patches.append("UNC")
             
         selected_patches.append("USB Reset")

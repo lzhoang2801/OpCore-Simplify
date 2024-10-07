@@ -49,9 +49,6 @@ class builder:
         
         self.utils.create_folder(efi_directory, remove_content=True)
 
-        forbidden_chars = r'[<>:"/\\|?*]'
-        self.utils.write_file(os.path.join(efi_directory, re.sub(forbidden_chars, '_', hardware_report.get("Motherboard").get("Motherboard Name")) + ".json"), hardware_report)
-        
         if not os.path.exists(self.kext.ock_files_dir):
             raise Exception("Directory '{}' does not exist.".format(self.kext.ock_files_dir))
         

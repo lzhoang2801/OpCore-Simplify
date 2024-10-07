@@ -47,8 +47,9 @@ class OCPE:
             user_input = self.u.request_input("Please drag and drop your hardware report here: (.JSON) ")
             if user_input.lower() == "q":
                 self.u.exit_program()
-            path, data = self.u.normalize_path(user_input), self.u.read_file(path)
-            if not path or os.path.splitext(path).lower() == ".json" or not isinstance(data, dict): 
+            path = self.u.normalize_path(user_input)
+            data = self.u.read_file(path)
+            if not path or os.path.splitext(path)[1].lower() != ".json" or not isinstance(data, dict): 
                 continue
             return path, data
 
@@ -82,7 +83,7 @@ class OCPE:
     def results(self, hardware_report, smbios_model):
         self.u.head("Results")
         print("")
-        print("Your OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Motherboard Name")))
+        print("Your OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Name")))
         print("\t{}".format(self.result_dir))
         print("")
         print("Before using EFI, please complete the following steps:")

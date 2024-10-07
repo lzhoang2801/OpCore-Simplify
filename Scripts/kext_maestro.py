@@ -102,44 +102,44 @@ class KextMaestro:
 
         selected_kexts = []
 
-        if "Intel" in hardware_report.get("CPU").get("CPU Manufacturer"):
+        if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
             selected_kexts.extend(("SMCProcessor", "SMCSuperIO"))
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and not "SURFACE" in hardware_report.get("Motherboard").get("Motherboard Name"):
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and not "SURFACE" in hardware_report.get("Motherboard").get("Name"):
             selected_kexts.append("SMCBatteryManager")
-            if "DELL" in hardware_report.get("Motherboard").get("Motherboard Name"):
+            if "DELL" in hardware_report.get("Motherboard").get("Name"):
                 selected_kexts.append("SMCDellSensors")
             selected_kexts.append("SMCLightSensor")
 
         if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-                 self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), end=3)) or \
+                 self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=3)) or \
             self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") or "MacPro7,1" in smbios_model:
             selected_kexts.append("RestrictEvents")
 
-        if list(hardware_report.get("Audio").items())[0][-1].get("Codec ID") in codec_layouts.data:
+        if list(hardware_report.get("Sound").items())[0][-1].get("Device ID") in codec_layouts.data:
             selected_kexts.append("AppleALC")
         
-        if "AMD" in hardware_report.get("CPU").get("CPU Manufacturer") and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.4.0") or \
-            int(hardware_report.get("CPU").get("CPU Configuration")) > 1 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
+        if "AMD" in hardware_report.get("CPU").get("Manufacturer") and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.4.0") or \
+            int(hardware_report.get("CPU").get("CPU Count")) > 1 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
             selected_kexts.append("AppleMCEReporterDisabler")
 
-        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("22.0.0") and not "AVX2" in hardware_report.get("CPU").get("Instruction Set"):
+        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("22.0.0") and not "AVX2" in hardware_report.get("CPU").get("SIMD Features"):
             selected_kexts.append("CryptexFixup")
 
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), end=2) and \
-            int(hardware_report.get("CPU").get("CPU Cores")) > 6:
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=2) and \
+            int(hardware_report.get("CPU").get("Core Count")) > 6:
             selected_kexts.append("CpuTopologyRebuild")
 
-        if  "AMD" in hardware_report.get("CPU").get("CPU Manufacturer") and \
+        if  "AMD" in hardware_report.get("CPU").get("Manufacturer") and \
             "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") and \
             "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
             selected_kexts.append("NootedRed")
         else:
-            selected_kexts.append("NootRX" if "Navi 2" in list(hardware_report.get("GPU").items())[-1][-1].get("GPU Codename") else "WhateverGreen")
+            selected_kexts.append("NootRX" if "Navi 2" in list(hardware_report.get("GPU").items())[-1][-1].get("Codename") else "WhateverGreen")
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and "ASUS" in hardware_report.get("Motherboard").get("Motherboard Name") or \
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and "ASUS" in hardware_report.get("Motherboard").get("Name") or \
             "NootedRed" in selected_kexts or \
-            self.is_intel_hedt_cpu(hardware_report.get("CPU").get("CPU Codename")):
+            self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
             selected_kexts.append("ForgedInvariant")
 
         ethernet_pci = None
@@ -188,10 +188,10 @@ class KextMaestro:
                     selected_kexts.append("IntelBluetoothFirmware")
 
         if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
-            if "SURFACE" in hardware_report.get("Motherboard").get("Motherboard Name"):
+            if "SURFACE" in hardware_report.get("Motherboard").get("Name"):
                 selected_kexts.append("BigSurface")
             else:
-                if "ASUS" in hardware_report.get("Motherboard").get("Motherboard Name"):
+                if "ASUS" in hardware_report.get("Motherboard").get("Name"):
                     selected_kexts.append("AsusSMC")
                 selected_kexts.append("BrightnessKeys")
 
