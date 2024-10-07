@@ -72,26 +72,6 @@ class OCPE:
         print(content)
         self.u.request_input()
         return
-        
-    def compatibility_check(self, hardware_report):
-        supported_macos_version, unsupported_devices = self.c.check_compatibility(hardware_report)
-
-        self.u.head("Compatibility Checker")
-        print("")
-        if not supported_macos_version:
-            self.u.request_input("Your hardware is not compatible with macOS!")
-            self.u.exit_program()
-        print("* Supported macOS Version:")
-        print("{}Max Version: {}".format(" "*4, os_data.get_macos_name_by_darwin(supported_macos_version[-1])))
-        print("{}Min Version: {}".format(" "*4, os_data.get_macos_name_by_darwin(supported_macos_version[0])))
-        if unsupported_devices:
-            print("* Unsupported devices:")
-            for index, device_name in enumerate(unsupported_devices, start=1):
-                device_props = unsupported_devices.get(device_name)
-                print("{}{}. {}{}".format(" "*4, index, device_name, "" if not device_props.get("Audio Endpoints") else " ({})".format(", ".join(device_props.get("Audio Endpoints")))))
-        print("")
-        self.u.request_input()
-        return supported_macos_version, unsupported_devices
     
     def select_macos_version(self, supported_macos_version):
         version_pattern = re.compile(r'^(\d+)(?:\.(\d+)(?:\.(\d+))?)?$')
@@ -145,6 +125,8 @@ class OCPE:
 
     def main(self):
         hardware_report_path = None
+        supported_macos_version = None
+        unsupported_devices = None
         macos_version = None
         smbios_model = None
 
@@ -152,9 +134,20 @@ class OCPE:
             self.u.head()
             print("")
             print("Hardware Report: {}".format("No report selected" if not hardware_report_path else hardware_report_path))
-            print("macOS Version: {}{}".format("Unknown" if not macos_version else os_data.get_macos_name_by_darwin(macos_version), "" if not macos_version else " ({})".format(macos_version)))
-            print("SMBIOS: {}".format("Unknown" if not smbios_model else smbios_model))
             print("")
+            if hardware_report_path:
+                print("* Hardware Compatibility:")
+                if supported_macos_version:
+                    print("   - Supported macOS Version: {} - {}".format(os_data.get_macos_name_by_darwin(supported_macos_version[-1]), os_data.get_macos_name_by_darwin(supported_macos_version[0])))
+                if unsupported_devices:
+                    print("   - Unsupported devices:")
+                    for index, device_name in enumerate(unsupported_devices, start=1):
+                        device_props = unsupported_devices.get(device_name)
+                        print("{}{}. {}{}".format(" "*6, index, device_name, "" if not device_props.get("Audio Endpoints") else " ({})".format(", ".join(device_props.get("Audio Endpoints")))))
+                print("* EFI Options:")
+                print("   - macOS Version: {}{}".format("Unknown" if not macos_version else os_data.get_macos_name_by_darwin(macos_version), "" if not macos_version else " ({})".format(macos_version)))
+                print("   - SMBIOS: {}".format("Unknown" if not smbios_model else smbios_model))
+                print("")
             print("1. Select Hardware Report")
             print("2. Select macOS Version")
             print("3. Customize ACPI Patch")
@@ -176,7 +169,7 @@ class OCPE:
             if option == 1:
                 hardware_report_path, hardware_report = self.select_hardware_report()
                 self.show_hardware_report(hardware_report)
-                supported_macos_version, unsupported_devices = self.compatibility_check(hardware_report)
+                supported_macos_version, unsupported_devices = self.c.check_compatibility(hardware_report)
                 macos_version = supported_macos_version[-1]
                 if int(macos_version[:2]) == os_data.macos_versions[-1].darwin_version and os_data.macos_versions[-1].release_status == "beta":
                     macos_version = str(int(macos_version[:2]) - 1) + macos_version[2:]

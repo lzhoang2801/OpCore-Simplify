@@ -182,6 +182,9 @@ class CompatibilityChecker:
                 del hardware["SD Controller"]
 
     def check_compatibility(self, hardware):
+        self.utils.head("Compatibility Checker")
+        print("")
+
         self.max_supported_macos_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())
         self.min_supported_macos_version = self.utils.parse_darwin_version(os_data.get_lowest_darwin_version())
         self.unsupported_devices = {}
@@ -205,4 +208,8 @@ class CompatibilityChecker:
                 hardware["Storage Controllers"] = self.check_storage_compatibility(hardware.get("Storage Controllers"))
                 self.check_sd_controller_compatibility(hardware)
 
-        return () if self.max_supported_macos_version[0] == -1 else (".".join(str(item) for item in self.min_supported_macos_version), ".".join(str(item) for item in self.max_supported_macos_version)), self.unsupported_devices
+        if self.max_supported_macos_version[0] == -1:
+            self.u.request_input("Your hardware is not compatible with macOS!")
+            self.u.exit_program()
+
+        return (".".join(str(item) for item in self.min_supported_macos_version), ".".join(str(item) for item in self.max_supported_macos_version)), self.unsupported_devices
