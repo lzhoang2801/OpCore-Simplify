@@ -11,6 +11,7 @@ import updater
 import os
 import sys
 import re
+import traceback
 
 class OCPE:
     def __init__(self):
@@ -201,12 +202,16 @@ class OCPE:
                     self.results(hardware_report, smbios_model)
 
 if __name__ == '__main__':
+    update_flag = updater.Updater().run_update()
+    if update_flag:
+        os.execv(sys.executable, ['python3'] + sys.argv)
+
     o = OCPE()
-    try:
-        update_flag = updater.Updater().run_update()
-        if update_flag:
-            os.execv(sys.executable, ['python3'] + sys.argv)
-        else:
+    while True:
+        try:
             o.main()
-    except Exception as e:
-        o.u.exit_program(o.u.message("\nAn error occurred: {}\n".format(e)))
+        except Exception as e:
+            o.u.head("An Error Occurred")
+            print("")
+            print(traceback.format_exc())
+            o.u.request_input()
