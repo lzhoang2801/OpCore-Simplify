@@ -367,17 +367,6 @@ class KextMaestro:
                 "PlistPath": bundle.get("PlistPath")
             })
 
-        kernel_add.append({
-            "Arch": "x86_64",
-            "BundlePath": "USBMap.kext",
-            "Comment": "",
-            "Enabled": True,
-            "ExecutablePath": "",
-            "MaxKernel": "",
-            "MinKernel": "",
-            "PlistPath": "Contents/Info.plist"
-        })
-
         return kernel_add
 
     def uncheck_kext(self, index):
