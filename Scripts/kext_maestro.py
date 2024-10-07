@@ -112,7 +112,7 @@ class KextMaestro:
             selected_kexts.append("SMCLightSensor")
 
         if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-                 self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), end=12)) or \
+                 self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), end=3)) or \
             self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") or "MacPro7,1" in smbios_model:
             selected_kexts.append("RestrictEvents")
 
@@ -126,7 +126,7 @@ class KextMaestro:
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("22.0.0") and not "AVX2" in hardware_report.get("CPU").get("Instruction Set"):
             selected_kexts.append("CryptexFixup")
 
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), start=13) and \
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), end=2) and \
             int(hardware_report.get("CPU").get("CPU Cores")) > 6:
             selected_kexts.append("CpuTopologyRebuild")
 

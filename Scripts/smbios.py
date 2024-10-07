@@ -60,7 +60,7 @@ class SMBIOS:
     
     def select_smbios_model(self, hardware_report, macos_version):
         if  self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0") or \
-            self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), start=12):
+            self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), end=4):
             smbios_model = "iMacPro1,1"
         else:
             smbios_model = "MacPro7,1"
@@ -121,7 +121,7 @@ class SMBIOS:
                 smbios_model = "iMac17,1"
                 if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
                     smbios_model = "MacBookPro13,1" if int(hardware_report.get("CPU").get("CPU Cores")) < 4 else "MacBookPro13,3"
-            elif self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), start=8, end=11):
+            elif self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("CPU Codename"), start=6, end=16):
                 smbios_model = "Macmini8,1"
                 if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
                     smbios_model = "iMac18,3" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("18.0.0") else "iMac19,1"
