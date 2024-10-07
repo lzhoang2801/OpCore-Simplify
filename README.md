@@ -3,7 +3,7 @@
   <h3 align="center">OpCore Simplify</h3>
 
   <p align="center">
-    A tool designed to simplify the creation of <a href="https://github.com/acidanthera/OpenCorePkg">OpenCore</a> EFI. It includes features such as auto-patching DSDT, adding suitable kexts, and customizing the config.plist to make Hackintosh installation easy for beginners.
+    A tool designed to simplify the creation of <a href="https://github.com/acidanthera/OpenCorePkg">OpenCore</a> EFI. It streamlines the Hackintosh installation process by automating tasks such as auto-patching DSDT, adding suitable kexts, and customizing the config.plist. Whether you're a beginner or experienced user, OpCore Simplify takes away much of the complexity associated with Hackintosh setups.
     <br />
     <br />
     <a href="https://github.com/lzhoang2601/OpCore-Simplify/issues">Report Bug</a>
@@ -15,65 +15,92 @@
 <details>
   <summary>Table of Contents</summary>
   <ol>
-    <li><a href="#features">Features</a></li>
-    <li><a href="#usage-guide">Usage Guide</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
+    <li><a href="#-features">Features</a></li>
+    <li><a href="#-usage-guide">Usage Guide</a></li>
+    <li><a href="#-contributing">Contributing</a></li>
+    <li><a href="#-license">License</a></li>
+    <li><a href="#-acknowledgments--credits">Acknowledgments & Credits</a></li>
+    <li><a href="#-contact">Contact</a></li>
   </ol>
 </details>
 
-## Features 
+---
 
-1. **Automatic Updates**: Check and update AMD Vanilla Patches, OpenCore NO ACPI, and kexts automatically.
-2. **Hardware Information Gathering**: Use AIDA64 reports to collect detailed hardware information, utilizing USB ID and PCI ID for the most precise compatibility checks.
-3. **Comprehensive Hardware Support**: Fully supports all available hardware (excluding legacy hardware). Try and view results on the Compatibility Checker screen.
-4. **Enhanced ACPI Patching**: Add various ACPI patches with support from the [SSDTTime](https://github.com/corpnewt/SSDTTime).
-5. **Device-Specific Kexts**: Identify and add the correct kexts for devices such as WiFi, ethernet, sound codec, bluetooth, keyboard, mouse, touchpad, USB controller, and SATA controller based on their IDs.
-6. **Custom Tweaks**: Apply additional customizations based on a variety of sources and personal experience.
+## ✨ **Features**
 
-## Usage Guide
+1. **Automatic Updates**: Automatically check and update AMD Vanilla Patches, OpenCore NO ACPI, and kexts.
+   
+2. **Hardware Information Gathering**: Leverages the [Hardware Sniffer](https://github.com/lzhoang2801/Hardware-Sniffer) tool to gather detailed hardware information. It uses USB ID and PCI ID databases to ensure precise hardware compatibility checks.
+   
+3. **Comprehensive Hardware Support**: Fully supports most modern hardware (excluding legacy devices). Use the Compatibility Checker to view supported/unsupported devices.
 
-Follow the steps, customize as needed, and enjoy your optimized system!
+4. **Enhanced ACPI Patching**: Add and customize various ACPI patches with integrated support from [SSDTTime](https://github.com/corpnewt/SSDTTime).
+   
+5. **Device-Specific Kexts**: Automatically identifies and adds kexts for devices like WiFi, ethernet, sound codec, Bluetooth, keyboard, mouse, touchpad, USB controller, and SATA controller based on their hardware IDs.
+   
+6. **Custom Tweaks**: Apply additional customization based on both widely used sources and personal experience.
 
-1. Run `OpCore-Simplify.bat` on Windows or `OpCore-Simplify.command` on macOS.
+---
 
-2. **AIDA64 Report**: Enter the path or drag and drop your AIDA64 report.
-   - Ensure you follow any instructions on this screen.
+## 🚀 **Usage Guide**
 
-3. **Review Hardware Information**: Verify the detected hardware information and receive compatibility results.
+1. **Running OpCore Simplify**:
+   - On **Windows**, run `OpCore-Simplify.bat`.
+   - On **macOS**, run `OpCore-Simplify.command`.
 
-4. **Select macOS Version**: Choose the compatible macOS version you wish to install.
+2. **Selecting a Hardware Report**:
+   - Use [**Hardware Sniffer**](https://github.com/lzhoang2801/Hardware-Sniffer) to generate a hardware report and an ACPI dump.
+   - Select your hardware report (`Report.json`) and ACPI folder to proceed with configuration.
 
-5. **Enter ACPI Tables Folder Path**: 
-   - Select `P` to dump ACPI tables from the current machine if it is the same machine used for the AIDA64 report.
+3. **Selecting macOS Version and Customizing EFI**:
+   - By default, the latest compatible macOS version will be selected for your hardware.
+   - OpCore Simplify will automatically apply essential ACPI patches and kexts. 
+   - You can manually review and customize these settings as needed.
 
-6. **Preview OpenCore EFI Results**: 
-   - Review the generated OpenCore EFI for your hardware.
-   - Make sure to read any cyan-highlighted lines (in parentheses).
+4. **Building OpenCore EFI**:
+   - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
+   - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
 
-7. **USB Mapping**: Use USBToolBox with the 'Use Native Class' option enabled to map USBs and add the resulting kext to `OC/Kexts`.
+5. **USB Mapping**:
+   - After building your EFI, follow the steps for mapping USB ports.
 
-8. **Create USB and Install macOS**: Follow the guide at [OpenCore Install Guide](https://dortania.github.io/OpenCore-Install-Guide/installer-guide/) and use the generated OpenCore EFI.
-    - For troubleshooting issues booting macOS, please refer to the [OpenCore Troubleshooting Guide](https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html) or contact me for assistance.
+6. **Create USB and Install macOS**: Follow the guide at [OpenCore Install Guide](https://dortania.github.io/OpenCore-Install-Guide/installer-guide/) and use the generated OpenCore EFI.
+   - For troubleshooting, refer to the [OpenCore Troubleshooting Guide](https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html).
 
 #### Reference Resources
 
 - [OpenCore Install Guide](https://dortania.github.io/OpenCore-Install-Guide) (some parts may be outdated)
-- [ChefKissNext](https://chefkissnext.netlify.app/guides/hackintosh/) (dedicated to AMD CPU systems)
+- [ChefKiss](https://chefkissinc.github.io/guides/hackintosh/) (dedicated to AMD CPU systems)
 
-## Contributing
+---
 
-Any contributions you make are **greatly appreciated**.
+## 🤝 **Contributing**
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Contributions are **highly appreciated**! If you have ideas to improve this project, feel free to fork the repo and create a pull request, or open an issue with the "enhancement" tag.
 
-**Don't forget to give the project a star! Thanks again!**
+Don't forget to ⭐ star the project! Thank you for your support! 🌟
 
-## License
+---
+
+## 📜 **License**
 
 Distributed under the BSD 3-Clause License. See `LICENSE` for more information.
 
-## Contact
+---
 
-Hoang Hong Quan - [@facebook](https://facebook.com/macforce2601) - [@telegram](https://t.me/lzhoang2601) - lzhoang2601@gmail.com
+## 🙌 **Acknowledgments & Credits**
+
+- [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg) and [kexts](https://github.com/lzhoang2801/OpCore-Simplify/blob/main/Scripts/datasets/kext_data.py) – The backbone of this project.
+- [SSDTTime](https://github.com/corpnewt/SSDTTime) – SSDT patching utilities.
+- [Hardware Sniffer](https://github.com/lzhoang2801/Hardware-Sniffer) – For hardware information gathering.
+- [USBToolBox](https://github.com/USBToolBox/tool) – A USB mapping tool.
+- [ProperTree](https://github.com/corpnewt/ProperTree) – For editing `config.plist` files.
+
+---
+
+## 📞 **Contact**
+
+**Hoang Hong Quan**  
+- Facebook: [@macforce2601](https://facebook.com/macforce2601)  
+- Telegram: [@lzhoang2601](https://t.me/lzhoang2601)  
+- Email: lzhoang2601@gmail.com
