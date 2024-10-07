@@ -120,53 +120,28 @@ class OCPE:
                 if self.u.parse_darwin_version(supported_macos_version[0]) <= self.u.parse_darwin_version(target_version) <= self.u.parse_darwin_version(supported_macos_version[-1]):
                     return target_version
         
-    def show_result(self, hardware_report):
-        def generate_tree_content(dir_path, prefix=''):
-            contents = sorted(os.listdir(dir_path))
-            pointers = ['├── '] * (len(contents) - 1) + ['└── ']
-            content = ""
-
-            if not contents:
-                content += prefix + '└── (empty)\n'
-            elif ".kext" in ", ".join(contents):
-                pointers = pointers[:-1] + ['├── '] + ['└── ']
-                contents.append("USBMap.kext ({})".format(self.u.message("use USBToolBox with the 'Use Native Class' option enabled to create this kext", "reminder")))
-
-            for pointer, path in zip(pointers, contents):
-                if path.startswith("."):
-                    continue
-
-                if path.endswith(".dsl"):
-                    path += " ({})".format(self.u.message("adjust the ACPI path accordingly before compiling and using it", "reminder"))
-                elif path.startswith("itlwm"):
-                    path += " ({})".format(self.u.message("use the HeliPort app to connect to WiFi", "reminder"))
-                full_path = os.path.join(dir_path, path)
-                content += prefix + pointer + path + "\n"
-                if os.path.isdir(full_path) and not ".kext" in os.path.splitext(path)[1]:
-                    extension = '│   ' if pointer == '├── ' else '    '
-                    if "Resources" in path:
-                        content += prefix + extension + '└── ...hidden\n'
-                    else:
-                        content += generate_tree_content(full_path, prefix + extension)
-
-            return content
-
-        efi_dir = os.path.join(self.result_dir, "EFI")
-        content = "\nYour OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Motherboard Name"))
-        content += "\n\t{}\n".format(self.result_dir)
-        content += "\nEFI\n{}\n".format(generate_tree_content(efi_dir))
-        self.u.adjust_window_size(content)
-
-        while True:
-            self.u.head("Results", resize=False)
-            print(content)
-            option = self.u.request_input("Do you want to open the OpenCore EFI folder? (yes/no): ")
-            if option.lower() == "yes":
-                self.u.open_folder(self.result_dir)
-                break
-            elif option.lower() == "no":
-                break
-        return
+    def results(self, hardware_report, smbios_model):
+        self.u.head("Results")
+        print("")
+        print("Your OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Motherboard Name")))
+        print("\t{}".format(self.result_dir))
+        print("")
+        print("Before using EFI, please complete the following steps:")
+        print("")
+        print("1. Use USBToolBox:")
+        print("   - Mapping USB with the option 'Use Native Class' enabled.")
+        print("   - Use the model identifier '{}'.".format(smbios_model))
+        print("")
+        print("2. Add USBMap.kext:")
+        print("   - Place the created USBMap.kext file into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+        print("")
+        print("3. Edit config.plist:")
+        print("   - Use ProperTree to open your config.plist.")
+        print("   - Run OC Snapshot by pressing Command/Ctrl + R.")
+        print("   - Save the file when finished.")
+        print("")
+        self.u.open_folder(self.result_dir)
+        self.u.request_input()
 
     def main(self):
         hardware_report_path = None
@@ -230,7 +205,7 @@ class OCPE:
                 elif option == 6:
                     self.gathering_files()
                     self.b.build_efi(hardware_report, unsupported_devices, smbios_model, macos_version, self.ac, self.k)
-                    self.show_result(hardware_report)
+                    self.results(hardware_report, smbios_model)
 
 if __name__ == '__main__':
     o = OCPE()
