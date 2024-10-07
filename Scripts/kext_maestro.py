@@ -7,6 +7,13 @@ from Scripts import utils
 import os
 import shutil
 
+try:
+    long
+    unicode
+except NameError:
+    long = int
+    unicode = str
+
 class KextMaestro:
     def __init__(self):
         self.utils = utils.Utils()
@@ -429,7 +436,7 @@ class KextMaestro:
             for index in indices:
                 if index >= 0 and index < len(self.kexts):
                     kext = self.kexts[index]
-                    if kext.checked:
+                    if kext.checked and not kext.required:
                         self.uncheck_kext(index)
                     else:
                         self.check_kext(index, macos_version)
