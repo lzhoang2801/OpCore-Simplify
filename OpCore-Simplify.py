@@ -1,6 +1,5 @@
 from Scripts.datasets import os_data
 from Scripts import acpi_guru
-from Scripts import aida64
 from Scripts import compatibility_checker
 from Scripts import efi_builder
 from Scripts import gathering_files
@@ -16,7 +15,6 @@ class OCPE:
         self.u = utils.Utils("OpCore Simplify")
         self.o = gathering_files.gatheringFiles()
         self.ac = acpi_guru.ACPIGuru()
-        self.a = aida64.AIDA64()
         self.c = compatibility_checker.CompatibilityChecker()
         self.b = efi_builder.builder()
         self.s = smbios.SMBIOS()
@@ -34,42 +32,22 @@ class OCPE:
 
     def select_hardware_report(self):
         while True:
-            self.u.head("Select your AIDA64 report")
+            self.u.head("Select hardware report")
             print("")
-            print("To ensure the best results, please follow these instructions before generating the AIDA64 report:")
+            print("To ensure the best results, please follow these instructions before generating the hardware report:")
             print("")
             print("  1. Install all available drivers if possible (skip this step when using Windows PE)")
-            print("  2. Use the latest version of AIDA64 Extreme, available at \"https://aida64.com/downloads\"")
-            print("  3. In the Report Wizard, ensure \"Hardware-related pages\" is selected on the Report Profiles\n     and choose the \"HTML\" format")
+            print("  2. Use the latest version of Hardware Sniffer")
             print("")
             print("Q. Quit")
             print("")
-            user_input = self.u.request_input("Please drag and drop your AIDA64 report here: (*HTML/.htm) ")
+            user_input = self.u.request_input("Please drag and drop your hardware report here: (.JSON) ")
             if user_input.lower() == "q":
                 self.u.exit_program()
-            path = self.u.normalize_path(user_input)
-            if not path: 
+            path, data = self.u.normalize_path(user_input), self.u.read_file(path)
+            if not path or os.path.splitext(path).lower() == ".json" or not isinstance(data, dict): 
                 continue
-            return path, self.a.dump(path)
-
-    def show_hardware_report(self, hardware_report):
-        self.u.head("Review the hardware information")
-        contents = []
-        for index, device_type in enumerate(hardware_report, start=1):
-            contents.append("{}. {}{}".format(index, device_type, "" if device_type == "Intel MEI" else ":"))
-
-            if device_type == "SD Controller":
-                contents.append("{}* {}".format(" "*4, hardware_report.get(device_type).get("Device Description")))
-            elif device_type == "Intel MEI":
-                pass
-            else:
-                for device_name, device_props in hardware_report.get(device_type).items():
-                    contents.append("{}* {}{}".format(" "*4, device_name, ": {}".format(device_props) if isinstance(device_props, str) else ""))
-        content = "\n".join(contents) + "\n"
-        self.u.adjust_window_size(content)
-        print(content)
-        self.u.request_input()
-        return
+            return path, data
         
     def compatibility_check(self, hardware_report):
         supported_macos_version, unsupported_devices = self.c.check_compatibility(hardware_report)
@@ -197,7 +175,6 @@ class OCPE:
 
             if option == 1:
                 hardware_report_path, hardware_report = self.select_hardware_report()
-                self.show_hardware_report(hardware_report)
                 supported_macos_version, unsupported_devices = self.compatibility_check(hardware_report)
                 macos_version = supported_macos_version[-1]
                 if int(macos_version[:2]) == os_data.macos_versions[-1].darwin_version and os_data.macos_versions[-1].release_status == "beta":
