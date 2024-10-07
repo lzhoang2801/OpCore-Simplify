@@ -2800,32 +2800,13 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
         }
 
     def select_acpi_tables(self):
-        results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "Results")
-        apcidump_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "acpidump.exe")
         while True:
             self.utils.head("Select ACPI Tables")
             print("")
-            if sys.platform == "win32":
-                print("To manually dump ACPI tables, open Command Prompt and enter the following commands in sequence:")
-                print("")
-                print("  > cd \"{}\"".format(results_path.replace("/", "\\")))
-                print("  > mkdir ACPITables")
-                print("  > cd ACPITables")
-                print("  > \"{}\" -b".format(apcidump_path.replace("/", "\\")))
-                print("  > rename *.dat *.aml")
-                print("")
-                print("The ACPI tables will now be available in\n  \"{}\\ACPITables\"".format(results_path.replace("/", "\\")))
-                print("")
-            if sys.platform.startswith("linux") or sys.platform == "win32":
-                print("P. Dump ACPI Tables")
             print("Q. Quit")
             print(" ")
             menu = self.utils.request_input("Please drag and drop ACPI Tables folder here: ")
-            if menu.lower() == "p" and (sys.platform.startswith("linux") or sys.platform == "win32"):
-                return self.read_acpi_tables(
-                    self.acpi.dump_tables(os.path.join(results_path, "ACPITables"))
-                )
-            elif menu.lower() == "q":
+            if menu.lower() == "q":
                 self.utils.exit_program()
             path = self.utils.normalize_path(menu)
             if not path: 
