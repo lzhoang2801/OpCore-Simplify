@@ -40,26 +40,6 @@ class Utils:
                 data = file_handle.read()
             return data
 
-    def search_dict_iter(self, dictionary, search_term, equal=True, reverse=False):
-        dictionary_copy = dictionary.copy()
-
-        if reverse:
-            dictionary_copy = dict(list(dictionary_copy.items())[::-1])
-
-        stack = [(dictionary_copy, None)]
-
-        while stack:
-            current_dict, parent_dict = stack.pop()
-            for key, value in current_dict.items():
-                if equal and value == search_term or not equal and search_term in value:
-                    return current_dict
-                if isinstance(value, dict):
-                    stack.append((value, current_dict))
-                if equal and key == search_term or not equal and search_term in key:
-                    return value
-
-        return {}
-
     def find_matching_paths(self, root_path, extension_filter=None, name_filter=None, type_filter=None):
 
         def is_valid_item(name):
@@ -88,9 +68,6 @@ class Utils:
 
         return sorted(found_paths, key=lambda path: path[0])
 
-    def sort_dict_by_key(self, input_dict, sort_key):
-        return dict(sorted(input_dict.items(), key=lambda item: item[1].get(sort_key, "")))
-
     def create_folder(self, path, remove_content=False):
         if os.path.exists(path):
             if remove_content:
@@ -117,16 +94,6 @@ class Utils:
     
     def int_to_hex(self, number):
         return format(number, '02X')
-
-    def hex_to_int(self, hex_string):
-        return int(hex_string, 16)
-    
-    def to_little_endian_hex(self, hex_string):
-        hex_string = hex_string.lower().lstrip("0x").zfill(8)
-
-        little_endian_hex = ''.join(reversed([hex_string[i:i+2] for i in range(0, len(hex_string), 2)]))
-        
-        return little_endian_hex.upper()
     
     def string_to_hex(self, string):
         return ''.join(format(ord(char), '02X') for char in string)
@@ -227,6 +194,7 @@ class Utils:
         print("* GitHub: https://github.com/lzhoang2801/OpCore-Simplify")
         print("")
 
-        print("Thank you for using our program!\n")
+        print("Thank you for using our program!")
+        print("")
         self.request_input("Press Enter to exit.")
         sys.exit(0)
