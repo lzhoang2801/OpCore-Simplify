@@ -218,7 +218,7 @@ class CompatibilityChecker:
                 self.check_sd_controller_compatibility(hardware_report)
 
         if self.max_supported_macos_version[0] == -1:
-            self.u.request_input("Your hardware is not compatible with macOS!")
-            self.u.exit_program()
+            self.utils.request_input("Your hardware is not compatible with macOS!")
+            self.utils.exit_program()
 
         return (".".join(str(item) for item in self.min_supported_macos_version), ".".join(str(item) for item in self.max_supported_macos_version)), self.unsupported_devices
