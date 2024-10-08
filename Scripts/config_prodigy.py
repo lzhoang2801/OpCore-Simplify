@@ -241,7 +241,10 @@ class ConfigProdigy:
             igpu_properties["framebuffer-patch-enable"] = "01000000"
 
         if any(map(int, "3840x2160".split("x")) <= map(int, monitor_info.get("Resolution").split("x")) for monitor_name, monitor_info in monitor):
-            igpu_properties["enable-max-pixel-clock-override"] = "01000000"
+            if platform == "Laptop":
+                igpu_properties["enable-max-pixel-clock-override"] = "01000000"
+            del igpu_properties["framebuffer-stolenmem"]
+            del igpu_properties["framebuffer-fbmem"]
 
         return dict(sorted(igpu_properties.items(), key=lambda item: item[0]))
   
