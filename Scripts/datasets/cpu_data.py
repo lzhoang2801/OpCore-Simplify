@@ -33,24 +33,6 @@ AMDCPUGenerations = [
 ]
 
 IntelCPUGenerations = [
-    "Sandy Bridge", 
-    "Ivy Bridge",
-    "Haswell", 
-    "Broadwell", 
-    "Skylake",
-    "Cascade Lake",
-    "Kaby Lake", 
-    "Amber Lake", 
-    "Whiskey Lake",
-    "Coffee Lake", 
-    "Comet Lake", 
-    "Ice Lake",
-    "Rocket Lake",
-    "Alder Lake",
-    "Raptor Lake"
-]
-
-new_IntelCPUGenerations = [
     "Raptor Lake-S",
     "Alder Lake-S",
     "Rocket Lake-S",
