@@ -143,12 +143,10 @@ class KextMaestro:
             selected_kexts.append("ForgedInvariant")
 
         ethernet_pci = None
-        wifi_pci = None
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
             if self.utils.contains_any(pci_data.NetworkIDs, device_id, end=21):
-                wifi_pci = device_id
                 if device_id in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
                     if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                         selected_kexts.extend(("AirportBrcmFixup", "IOSkywalkFamily", "AMFIPass"))
@@ -204,13 +202,13 @@ class KextMaestro:
                     if device_id in pci_data.InputIDs:
                         idx = pci_data.InputIDs.index(device_id)
 
-                    if "PS/2" in device_name:
+                    if "PS/2" in device_props.get("Device Type", "None"):
                         selected_kexts.append("VoodooPS2Controller")
                         if device_id.startswith("SYN"):
                             selected_kexts.append("VoodooRMI")
                         elif idx and 76 < idx < 80:
                             selected_kexts.append("VoodooSMBus")
-                    if "I2C" in device_name:
+                    if "I2C" in device_props.get("Device Type", "None"):
                         selected_kexts.append("VoodooI2CHID")
                         if idx:
                             if idx < 77:
@@ -221,8 +219,9 @@ class KextMaestro:
         if any(patch.checked for patch in acpi_patches if patch.name == "BATP"):
             selected_kexts.append("ECEnabler")
 
-        if hardware_report.get("SD Controller", {}).get("Device ID") in pci_data.RealtekCardReaderIDs:
-            selected_kexts.append("RealtekCardReader")
+        for controller_name, controller_props in hardware_report.get("SD Controller", {}).items():
+            if controller_props.get("Device ID") in pci_data.RealtekCardReaderIDs:
+                selected_kexts.append("RealtekCardReader")
         
         for controller_name, controller_props in hardware_report.get("Storage Controllers").items():
             if "NVMe" in controller_name or "NVM Express" in controller_name:

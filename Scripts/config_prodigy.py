@@ -70,7 +70,7 @@ class ConfigProdigy:
                 not "Ice Lake" in motherboard_chipset and not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=101) is None
 
     def is_low_end_intel_cpu(self, processor_name):
-        return any(cpu_branding in processor_name for cpu_branding in ["Celeron", "Pentium"])
+        return any(cpu_branding in processor_name for cpu_branding in ("Celeron", "Pentium"))
   
     def deviceproperties(self, cpu_codename, intel_mei, igpu_properties):
         deviceproperties_add = {}
@@ -94,12 +94,12 @@ class ConfigProdigy:
 
         return deviceproperties_add
 
-    def block_kext_bundle(self, network, macos_version):
+    def block_kext_bundle(self, kexts):
         kernel_block = []
 
-        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-            for network_name, network_props in network.items():
-                if network_props.get("Device ID") in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
+        for kext in kexts:
+            if kext.checked:
+                if kext.name == "IOSkywalkFamily":
                     kernel_block.append({
                         "Arch": "x86_64",
                         "Comment": "Allow IOSkywalk Downgrade",
@@ -179,7 +179,7 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, hardware_report, unsupported_devices, macos_version):
+    def boot_args(self, hardware_report, unsupported_devices, macos_version, kexts):
         boot_args = [
             "-v",
             "debug=0x100",
@@ -197,7 +197,7 @@ class ConfigProdigy:
             boot_args.append("revpatch=sbvmm{}".format(",cpuname" if not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
             self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=3)) else ""))
 
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=2) and int(hardware_report.get("CPU").get("Core Count")) > 6:
+        if any(kext.checked for kext in kexts if kext.name == "CpuTopologyRebuild"):
             boot_args.append("-ctrsmt")
 
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
@@ -215,10 +215,9 @@ class ConfigProdigy:
             boot_args.append("agdpmod=pikera")
 
         if not "SURFACE" in hardware_report.get("Motherboard").get("Name"):
-            for input in hardware_report.get("Input").keys():
-                if "I2C" in input:
+            for device_name, device_info in hardware_report.get("Input").items():
+                if "I2C" in device_info.get("Device Type", "None"):
                     boot_args.append("-vi2c-force-polling")
-                    break
 
         if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
             boot_args.append("-lilubetaall")
@@ -248,7 +247,7 @@ class ConfigProdigy:
     def load_drivers(self):
         uefi_drivers = []
 
-        for driver_path in ["OpenCanopy.efi", "OpenHfsPlus.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"]:
+        for driver_path in ("OpenCanopy.efi", "OpenHfsPlus.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"):
             uefi_drivers.append({
                 "Arguments": "",
                 "Comment": "",
@@ -288,7 +287,7 @@ class ConfigProdigy:
             next((device_props for device_name, device_props in hardware_report.get("System Devices").items() if "HECI" in device_name or "Management Engine Interface" in device_name), None), {})
 
         config["Kernel"]["Add"] = []
-        config["Kernel"]["Block"] = self.block_kext_bundle(hardware_report.get("Network"), macos_version)
+        config["Kernel"]["Block"] = self.block_kext_bundle(kexts)
         spoof_cpuid = self.spoof_cpuid(
             hardware_report.get("CPU").get("Processor Name"), 
             hardware_report.get("CPU").get("Codename"), 
@@ -334,7 +333,7 @@ class ConfigProdigy:
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
-        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, unsupported_devices, macos_version)
+        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, unsupported_devices, macos_version, kexts)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = "en:252"
         config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].append("csr-active-config")
