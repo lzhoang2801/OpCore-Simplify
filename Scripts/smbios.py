@@ -59,22 +59,18 @@ class SMBIOS:
         }
     
     def select_smbios_model(self, hardware_report, macos_version):
-        if  self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0") or \
-            self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=4):
-            smbios_model = "iMacPro1,1"
-        else:
-            smbios_model = "MacPro7,1"
+        smbios_model = "iMacPro1,1"
 
-        if "AMD" in hardware_report.get("CPU").get("Manufacturer") and \
+        if  "Laptop" in hardware_report.get("Motherboard").get("Platform") and \
+            "AMD" in hardware_report.get("CPU").get("Manufacturer") and \
             "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
-            smbios_model = "MacBookPro16,3" if "Laptop" in hardware_report.get("Motherboard").get("Platform") else "iMacPro1,1"
+            smbios_model = "MacBookPro16,3"
 
         if  "Intel" in list(hardware_report.get("GPU").items())[0][-1].get("Manufacturer") and \
-            "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type"):
-            if "Kaby Lake-R".lower() in hardware_report.get("CPU").get("Codename").lower() and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                hardware_report["CPU"]["Codename"] = "Coffee Lake"
+            "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
 
-            if "Sandy Bridge" in hardware_report.get("CPU").get("Codename"):
+            codename = list(hardware_report.get("GPU").items())[-1][-1].get("Codename")
+            if "Sandy Bridge" in codename:
                 if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
                     if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("18.0.0"):
                         smbios_model = "iMac12,2"
@@ -84,44 +80,48 @@ class SMBIOS:
                     smbios_model = "Macmini5,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "Macmini5,3"
                 else:
                     smbios_model = "MacBookPro8,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro8,2"
-            elif "Ivy Bridge" in hardware_report.get("CPU").get("Codename"):
+            elif "Ivy Bridge" in codename:
                 if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("21.0.0"):
                     if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
-                        smbios_model = "iMac14,4" if "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type") else "iMac15,1"
+                        smbios_model = "iMac14,4" if "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") else "iMac15,1"
                     elif "NUC" in hardware_report.get("Motherboard").get("Platform"):
                         smbios_model = "Macmini7,1"
                     else:
                         smbios_model = "MacBookPro11,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro11,5"
                 elif self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0"):
                     if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
-                        smbios_model = "iMac13,1" if "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type") else "iMac13,2"
+                        smbios_model = "iMac13,1" if "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") else "iMac13,2"
                     elif "NUC" in hardware_report.get("Motherboard").get("Platform"):
                         smbios_model = "Macmini6,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "Macmini6,2"
                     else:
                         smbios_model = "MacBookPro10,2" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro10,1"
                 else:
                     smbios_model = "MacPro6,1"
-            elif "Haswell" in hardware_report.get("CPU").get("Codename"):
+            elif "Haswell" in codename:
                 if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
-                    smbios_model = "iMac14,4" if "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type") else "iMac15,1"
+                    smbios_model = "iMac14,4" if "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") else "iMac15,1"
                     if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("22.0.0"):
-                        smbios_model = "iMac16,2" if "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type") else "iMac17,1"
+                        smbios_model = "iMac16,2" if "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") else "iMac17,1"
                 elif "NUC" in hardware_report.get("Motherboard").get("Platform"):
                     smbios_model = "Macmini7,1"
                 else:
                     smbios_model = "MacBookPro11,1" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("21.0.0") and int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro11,5"
-            elif "Broadwell" in hardware_report.get("CPU").get("Codename"):
+            elif "Broadwell" in codename:
                 if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
-                    smbios_model = "iMac16,2" if "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type") else "iMac17,1"
+                    smbios_model = "iMac16,2" if "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") else "iMac17,1"
                 elif "NUC" in hardware_report.get("Motherboard").get("Platform"):
                     smbios_model = "iMac16,1"
                 else:
                     smbios_model = "MacBookPro12,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro11,5"
-            elif "Skylake" in hardware_report.get("CPU").get("Codename"):
+            elif "Skylake" in codename:
                 smbios_model = "iMac17,1"
                 if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
                     smbios_model = "MacBookPro13,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro13,3"
-            elif self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=6, end=16):
+            elif "Kaby Lake" in codename:
+                smbios_model = "iMac18,1" if "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") else "iMac18,3"
+                if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
+                    smbios_model = "MacBookPro14,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro14,3"
+            elif "Coffee Lake" in codename:
                 smbios_model = "Macmini8,1"
                 if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
                     smbios_model = "iMac18,3" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("18.0.0") else "iMac19,1"
@@ -132,13 +132,7 @@ class SMBIOS:
                         smbios_model = "MacBookPro15,2" if int(hardware_report.get("CPU").get("Core Count")) < 6 else "MacBookPro15,3"
                     else:
                         smbios_model = "MacBookPro16,3" if int(hardware_report.get("CPU").get("Core Count")) < 6 else "MacBookPro16,1"
-            elif "Kaby Lake" in hardware_report.get("CPU").get("Codename"):
-                smbios_model = "iMac18,1" if "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type") else "iMac18,3"
-                if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
-                    smbios_model = "MacBookPro14,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro14,3"
-            elif "Amber Lake" in hardware_report.get("CPU").get("Codename"):
-                smbios_model = "MacBookAir8,1"
-            elif "Ice Lake" in hardware_report.get("CPU").get("Codename"):
+            elif "Ice Lake" in codename:
                 smbios_model = "MacBookAir9,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro16,2"
 
         return smbios_model
