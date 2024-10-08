@@ -1,4 +1,3 @@
-from Scripts.datasets.kext_data import kexts
 from Scripts import github
 from Scripts import resource_fetcher
 from Scripts import utils
@@ -26,7 +25,7 @@ class gatheringFiles:
                 return index
         return None
         
-    def get_bootloader_kexts_data(self):
+    def get_bootloader_kexts_data(self, kexts):
         download_urls = self.utils.read_file(self.bootloader_kexts_data_path)
 
         if not isinstance(download_urls, list):
@@ -48,6 +47,9 @@ class gatheringFiles:
                     download_urls[product_index] = product
 
         for kext in kexts:
+            if not kext.checked:
+                continue
+
             if kext.download_info:
                 add_product_to_download_urls({"product_name": kext.name, **kext.download_info})
             elif kext.github_repo and kext.github_repo.get("repo") not in seen_repos:
@@ -121,42 +123,66 @@ class gatheringFiles:
                 raise FileNotFoundError("No bootloader or kexts files found in the product directory.")
         
         return True
-
-    def gathering_bootloader_kexts(self):
+    
+    def gather_bootloader_kexts(self, kexts, macos_version):
         download_history = self.utils.read_file(self.download_history_file)
 
         if not isinstance(download_history, list):
             download_history = []
+
+        bootloader_kext_urls = self.utils.read_file(self.bootloader_kexts_data_path)
+
+        if not isinstance(bootloader_kext_urls, list):
+            bootloader_kext_urls = self.get_bootloader_kexts_data(kexts)
         
         self.utils.create_folder(self.temporary_dir)
 
-        for product in self.utils.read_file(self.bootloader_kexts_data_path) or []:
-            product_index = self.get_product_index(download_history, product.get("product_name"))
-            if not product_index is None and product.get("id") == download_history[product_index].get("id"):
+        for product in kexts + [{"Name": "OpenCore"}]:
+            if not isinstance(product, dict) and not product.checked:
                 continue
 
-            asset_dir = os.path.join(self.ock_files_dir, product.get("product_name"))
+            product_name = product.name if not isinstance(product, dict) else product.get("Name")
+            
+            if product_name == "AirportItlwm":
+                version = macos_version[:2]
+                if self.utils.parse_darwin_version("23.4.0") <= self.utils.parse_darwin_version(macos_version):
+                    version = "23.4"
+                elif self.utils.parse_darwin_version("23.0.0") <= self.utils.parse_darwin_version(macos_version):
+                    version = "23.0"
+                product_name += version
+            elif "VoodooPS2" in product_name:
+                product_name = "VoodooPS2"
+            
+            try:
+                product_index = self.get_product_index(bootloader_kext_urls, product_name)
+                product_download_url = bootloader_kext_urls[product_index].get("url")
+                product_id = bootloader_kext_urls[product_index].get("id")
+            except:
+                continue
+            
+            history_index = self.get_product_index(download_history, product_name)
+            if history_index is not None and product_id == download_history[history_index].get("id"):
+                continue
+
+            asset_dir = os.path.join(self.ock_files_dir, product_name)
             self.utils.create_folder(asset_dir, remove_content=True)
 
-            zip_path = os.path.join(self.temporary_dir, product.get("product_name")) + ".zip"
-            self.fetcher.download_and_save_file(product.get("url"), zip_path)
+            zip_path = os.path.join(self.temporary_dir, product_name) + ".zip"
+            self.fetcher.download_and_save_file(product_download_url, zip_path)
             self.utils.extract_zip_file(zip_path)
 
-            if "OpenCore" in product.get("product_name"):
+            if "OpenCore" in product_name:
                 ocbinarydata_dir = os.path.join(self.temporary_dir, "OcBinaryData")
                 if not os.path.exists(ocbinarydata_dir):
                     zip_path = ocbinarydata_dir + ".zip"
                     self.fetcher.download_and_save_file(self.ocbinarydata_url, zip_path)
                     self.utils.extract_zip_file(zip_path)
 
-            if self.move_bootloader_kexts_to_product_directory(product.get("product_name")):
-                if product_index is None:
-                    download_history.append({
-                        "product_name": product.get("product_name"),
-                        "id": product.get("id")
-                    })
+            if self.move_bootloader_kexts_to_product_directory(product_name):
+                if history_index is None:
+                    download_history.append({"product_name": product_name, "id": product_id})
                 else:
-                    download_history[product_index]["id"] = product.get("id")
+                    download_history[history_index]["id"] = product_id
                 
                 self.utils.write_file(self.download_history_file, download_history)
 

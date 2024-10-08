@@ -26,14 +26,14 @@ class OCPE:
         self.u = utils.Utils()
         self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
 
-    def gathering_files(self):
+    def gathering_files(self, macos_version):
         self.u.head("Gathering Files")
         print("")
         print("Please wait for download OpenCore NO ACPI, kexts and macserial...")
         print("")
 
-        self.o.get_bootloader_kexts_data()
-        self.o.gathering_bootloader_kexts()
+        self.o.get_bootloader_kexts_data(self.k.kexts)
+        self.o.gather_bootloader_kexts(self.k.kexts, macos_version)
 
     def select_hardware_report(self):
         while True:
@@ -284,7 +284,7 @@ class OCPE:
                     smbios_model = self.s.customize_smbios_model(hardware_report, smbios_model, macos_version)
                     self.k.select_required_kexts(hardware_report, smbios_model, macos_version, self.ac.patches)
                 elif option == 6:
-                    self.gathering_files()
+                    self.gathering_files(macos_version)
                     self.build_opencore_efi(hardware_report, unsupported_devices, smbios_model, macos_version)
                     self.results(hardware_report, smbios_model)
 
