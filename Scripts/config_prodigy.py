@@ -71,6 +71,179 @@ class ConfigProdigy:
 
     def is_low_end_intel_cpu(self, processor_name):
         return any(cpu_branding in processor_name for cpu_branding in ("Celeron", "Pentium"))
+    
+    def igpu_properties(self, motherboard_name, platform, gpu, monitor, macos_version):
+        if "NUC" in motherboard_name:
+            platform = "NUC"
+
+        integrated_gpu = discrete_gpu = igpu_properties = {}
+
+        for gpu_name, gpu_info in gpu.items():
+            if gpu_info.get("Device Type") == "Integrated GPU":
+                integrated_gpu = gpu_info
+            elif gpu_info.get("Device Type") == "Discrete GPU":
+                discrete_gpu = gpu_info
+
+        if not integrated_gpu or not "Intel" in integrated_gpu.get("Manufacturer"):
+            return {}
+        
+        device_id = integrated_gpu.get("Device ID")[5:]
+
+        if device_id.startswith("01") and not device_id[-2] in ("5", "6"):
+            native_supported_ids = ("0106", "1106", "1601", "0116", "0126", "0102")
+            if not device_id in native_supported_ids:
+                igpu_properties["device-id"] = "26010000"
+            igpu_properties["AAPL,snb-platform-id"] = "10000300"
+            if platform == "Desktop":
+                if discrete_gpu:
+                    igpu_properties["AAPL,snb-platform-id"] = "00000500"
+                    igpu_properties["device-id"] = "02010000"
+            elif platform == "Laptop":
+                if any(map(int, "1600x900".split("x")) <= map(int, monitor_info.get("Resolution").split("x")) for monitor_name, monitor_info in monitor):
+                    igpu_properties["AAPL00,DualLink"] = "01000000"
+                igpu_properties["AAPL,snb-platform-id"] = "00000100"
+        elif device_id.startswith("01"):
+            native_supported_ids = ("0152", "0156", "0162", "0166")
+            if not device_id in native_supported_ids:
+                igpu_properties["device-id"] = "62010000"
+            if platform == "Desktop":
+                if discrete_gpu:
+                    igpu_properties["AAPL,ig-platform-id"] = "07006201"
+                igpu_properties["AAPL,ig-platform-id"] = "0A006601"
+            elif platform == "NUC":
+                igpu_properties["AAPL,ig-platform-id"] = "0B006601"
+            elif platform == "Laptop":
+                igpu_properties["AAPL,ig-platform-id"] = "03006601"
+                if any(map(int, "1600x900".split("x")) <= map(int, monitor_info.get("Resolution").split("x")) for monitor_name, monitor_info in monitor):
+                    igpu_properties["AAPL,ig-platform-id"] = "04006601"
+                    igpu_properties["framebuffer-patch-enable"] = "01000000"
+                    igpu_properties["framebuffer-memorycount"] = "02000000"
+                    igpu_properties["framebuffer-pipecount"] = "02000000"
+                    igpu_properties["framebuffer-portcount"] = "04000000"
+                    igpu_properties["framebuffer-stolenmem"] = "00000004"
+                    igpu_properties["framebuffer-con1-enable"] = "01000000"
+                    igpu_properties["framebuffer-con1-alldata"] = "020500000004000007040000030400000004000081000000040600000004000081000000"
+        elif device_id.startswith(("04", "0A", "0C", "0D")):
+            native_supported_ids = ("0D26", "0A26", "0A2E", "0D22", "0412")
+            if not device_id in native_supported_ids:
+                igpu_properties["device-id"] = "12040000"
+            if platform == "Desktop":
+                if discrete_gpu:
+                    igpu_properties["AAPL,ig-platform-id"] = "04001204"
+                    return igpu_properties
+                igpu_properties["AAPL,ig-platform-id"] = "0300220D"
+                igpu_properties["framebuffer-stolenmem"] = "00003001"
+                igpu_properties["framebuffer-fbmem"] = "00009000"
+            elif platform == "NUC":
+                igpu_properties["AAPL,ig-platform-id"] = "0300220D"
+                igpu_properties["framebuffer-cursormem"] = "00009000"
+            elif platform == "Laptop":
+                igpu_properties["AAPL,ig-platform-id"] = "0600260A"
+                if device_id.startswith(("0A2", "0D2")):
+                    igpu_properties["AAPL,ig-platform-id"] = "0500260A"
+                igpu_properties["framebuffer-cursormem"] = "00009000"
+            igpu_properties["framebuffer-patch-enable"] = "01000000"
+        elif device_id.startswith(("0B", "16")):
+            native_supported_ids = ("0BD1", "0BD2", "0BD3", "1606", "160E", "1616", "161E", "1626", "1622", "1612", "162B")
+            if not device_id in native_supported_ids:
+                igpu_properties["device-id"] = "26160000"
+            if platform == "Desktop":
+                igpu_properties["AAPL,ig-platform-id"] = "07002216"
+            elif platform == "NUC":
+                igpu_properties["AAPL,ig-platform-id"] = "02001616"
+            elif platform == "Laptop":
+                igpu_properties["AAPL,ig-platform-id"] = "06002616"
+            igpu_properties["framebuffer-stolenmem"] = "00003001"
+            igpu_properties["framebuffer-fbmem"] = "00009000"
+            igpu_properties["framebuffer-patch-enable"] = "01000000"
+        elif device_id.startswith(("09", "19")) and self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("22.0.0"):
+            native_supported_ids = ("1916", "191E", "1926", "1927", "1912", "1932", "1902", "1917", "193B", "191B")
+            if not device_id in native_supported_ids:
+                igpu_properties["device-id"] = "1B190000"
+            if device_id in ("1906", "190B"):
+                igpu_properties["device-id"] = "02190000"
+            if device_id.startswith("191E"):
+                igpu_properties["AAPL,ig-platform-id"] = "00001E19"
+            if platform == "Desktop":
+                if discrete_gpu:
+                    igpu_properties["AAPL,ig-platform-id"] = "01001219"
+                    return igpu_properties
+                igpu_properties["AAPL,ig-platform-id"] = "00001219"
+            elif platform == "NUC":
+                igpu_properties["AAPL,ig-platform-id"] = "02001619"
+                if device_id.startswith(("1926", "1927")):
+                    igpu_properties["AAPL,ig-platform-id"] = "02002619"
+                elif device_id.startswith(("1932", "193B", "193A", "193D")):
+                    igpu_properties["AAPL,ig-platform-id"] = "05003B19"
+            elif platform == "Laptop":
+                igpu_properties["AAPL,ig-platform-id"] = "00001619"
+                if device_id.startswith(("1902", "1906", "190B")):
+                    igpu_properties["AAPL,ig-platform-id"] = "00001B19"
+            igpu_properties["framebuffer-stolenmem"] = "00003001"
+            igpu_properties["framebuffer-fbmem"] = "00009000"
+            igpu_properties["framebuffer-patch-enable"] = "01000000"
+        elif device_id.startswith(("09", "19", "59", "87C0")):
+            native_supported_ids = ("5912", "5916", "591B", "591C", "591E", "5926", "5927", "5923", "87C0")
+            if not device_id in native_supported_ids:
+                igpu_properties["device-id"] = "16590000"
+            if device_id.startswith(("5917", "5916", "5921")):
+                igpu_properties["AAPL,ig-platform-id"] = "00001659"
+            if platform == "Desktop":
+                if discrete_gpu:
+                    igpu_properties["AAPL,ig-platform-id"] = "03001259"
+                    return igpu_properties
+                igpu_properties["AAPL,ig-platform-id"] = "00001259"
+            elif platform == "NUC":
+                igpu_properties["AAPL,ig-platform-id"] = "00001E59"
+                if device_id.startswith(("5912", "591B", "591A", "591D")):
+                    igpu_properties["AAPL,ig-platform-id"] = "00001B59"
+                elif device_id.startswith(("5926", "5927")):
+                    igpu_properties["AAPL,ig-platform-id"] = "02002659"
+            elif platform == "Laptop":
+                igpu_properties["AAPL,ig-platform-id"] = "00001B59"
+                if device_id.startswith(("5917", "87C0")):
+                    igpu_properties["AAPL,ig-platform-id"] = "00001659"
+                else:
+                    igpu_properties["framebuffer-con1-alldata"] = "01050A00000800008701000002040A000008000087010000"
+                    igpu_properties["framebuffer-con1-enable"] = "01000000"
+                    igpu_properties["#framebuffer-con1-alldata"] = "01050A00000800008701000003060A000004000087010000"
+                    igpu_properties["#framebuffer-con1-enable"] = "01000000"
+            igpu_properties["framebuffer-stolenmem"] = "00003001"
+            igpu_properties["framebuffer-fbmem"] = "00009000"
+            igpu_properties["framebuffer-patch-enable"] = "01000000"
+        elif device_id.startswith(("3E", "87", "9B")):
+            native_supported_ids = ("3E9B", "3EA5", "3EA6", "3E92", "3E91", "3E98", "9BC8", "9BC5", "9BC4")
+            if not device_id in native_supported_ids:
+                igpu_properties["device-id"] = "9B3E0000"
+            if platform == "Desktop":
+                if discrete_gpu:
+                    igpu_properties["AAPL,ig-platform-id"] = "0300913E" if not device_id.startswith("9B") else "0300C89B"
+                    return igpu_properties
+                igpu_properties["AAPL,ig-platform-id"] = "07009B3E" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.5.0") else "00009B3E"
+            elif platform == "NUC":
+                igpu_properties["AAPL,ig-platform-id"] = "07009B3E"
+                if device_id.startswith(("3EA5", "3EA8")):
+                    igpu_properties["AAPL,ig-platform-id"] = "0000A53E"
+            elif platform == "Laptop":
+                igpu_properties["AAPL,ig-platform-id"] = "0900A53E"
+                if device_id.startswith(("3EA9", "3EA0")):
+                    igpu_properties["AAPL,ig-platform-id"] = "00009B3E"
+            igpu_properties["framebuffer-stolenmem"] = "00003001"
+            igpu_properties["framebuffer-fbmem"] = "00009000"
+            igpu_properties["framebuffer-patch-enable"] = "01000000"
+        elif device_id.startswith("8A"):
+            native_supported_ids = ("FF05", "8A70", "8A71", "8A51", "8A5C", "8A5D", "8A52", "8A53", "8A5A", "8A5B")
+            if not device_id in native_supported_ids:
+                igpu_properties["device-id"] = "528A0000"
+            igpu_properties["AAPL,ig-platform-id"] = "0000528A"
+            igpu_properties["framebuffer-stolenmem"] = "00003001"
+            igpu_properties["framebuffer-fbmem"] = "00009000"
+            igpu_properties["framebuffer-patch-enable"] = "01000000"
+
+        if any(map(int, "3840x2160".split("x")) <= map(int, monitor_info.get("Resolution").split("x")) for monitor_name, monitor_info in monitor):
+            igpu_properties["enable-max-pixel-clock-override"] = "01000000"
+
+        return dict(sorted(igpu_properties.items(), key=lambda item: item[0]))
   
     def deviceproperties(self, cpu_codename, intel_mei, igpu_properties):
         deviceproperties_add = {}
@@ -200,12 +373,17 @@ class ConfigProdigy:
         if any(kext.checked for kext in kexts if kext.name == "CpuTopologyRebuild"):
             boot_args.append("-ctrsmt")
 
+        if  any(map(int, "3840x2160".split("x")) <= map(int, monitor_info.get("Resolution").split("x")) for monitor_name, monitor_info in hardware_report.get("Monitor", {})) and \
+            self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0"):
+            boot_args.append("-cdfon")
+
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
-            if "UHD" in list(hardware_report.get("GPU").keys())[0] and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
+            if  list(hardware_report.get("GPU").items())[-1][-1].get("Device ID")[5:].startswith(("3E", "87", "9B")) and \
+                self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.4.0"):
                 boot_args.append("igfxonln=1")
 
-            if "Ice Lake" in list(hardware_report.get("GPU").items())[0][-1].get("Codename"):
-                boot_args.extend(["-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"])
+            if "Ice Lake" in list(hardware_report.get("GPU").items())[-1][-1].get("Codename"):
+                boot_args.extend(("-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"))
 
             if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
                 if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=21):
@@ -284,7 +462,15 @@ class ConfigProdigy:
 
         config["DeviceProperties"]["Add"] = self.deviceproperties(
             hardware_report.get("CPU").get("Codename"), 
-            next((device_props for device_name, device_props in hardware_report.get("System Devices").items() if "HECI" in device_name or "Management Engine Interface" in device_name), None), {})
+            next((device_props for device_name, device_props in hardware_report.get("System Devices").items() if "HECI" in device_name or "Management Engine Interface" in device_name), None), 
+            self.igpu_properties(
+                hardware_report.get("Motherboard").get("Name"), 
+                hardware_report.get("Motherboard").get("Platform"), 
+                hardware_report.get("GPU", {}),
+                hardware_report.get("Monitor", {}),
+                macos_version
+            )
+        )
 
         config["Kernel"]["Add"] = []
         config["Kernel"]["Block"] = self.block_kext_bundle(kexts)
