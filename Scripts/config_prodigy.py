@@ -99,7 +99,7 @@ class ConfigProdigy:
                     igpu_properties["AAPL,snb-platform-id"] = "00000500"
                     igpu_properties["device-id"] = "02010000"
             elif platform == "Laptop":
-                if any(map(int, "1600x900".split("x")) <= map(int, monitor_info.get("Resolution").split("x")) for monitor_name, monitor_info in monitor):
+                if any(tuple(map(int, "1600x900".split("x"))) <= tuple(map(int, monitor_info.get("Resolution").split("x"))) for monitor_name, monitor_info in monitor.items()):
                     igpu_properties["AAPL00,DualLink"] = "01000000"
                 igpu_properties["AAPL,snb-platform-id"] = "00000100"
         elif device_id.startswith("01"):
@@ -114,7 +114,7 @@ class ConfigProdigy:
                 igpu_properties["AAPL,ig-platform-id"] = "0B006601"
             elif platform == "Laptop":
                 igpu_properties["AAPL,ig-platform-id"] = "03006601"
-                if any(map(int, "1600x900".split("x")) <= map(int, monitor_info.get("Resolution").split("x")) for monitor_name, monitor_info in monitor):
+                if any(tuple(map(int, "1600x900".split("x"))) <= tuple(map(int, monitor_info.get("Resolution").split("x"))) for monitor_name, monitor_info in monitor.items()):
                     igpu_properties["AAPL,ig-platform-id"] = "04006601"
                     igpu_properties["framebuffer-patch-enable"] = "01000000"
                     igpu_properties["framebuffer-memorycount"] = "02000000"
@@ -240,7 +240,7 @@ class ConfigProdigy:
             igpu_properties["framebuffer-fbmem"] = "00009000"
             igpu_properties["framebuffer-patch-enable"] = "01000000"
 
-        if any(map(int, "3840x2160".split("x")) <= map(int, monitor_info.get("Resolution").split("x")) for monitor_name, monitor_info in monitor):
+        if any(tuple(map(int, "3840x2160".split("x"))) <= tuple(map(int, monitor_info.get("Resolution").split("x"))) for monitor_name, monitor_info in monitor.items()):
             if platform == "Laptop":
                 igpu_properties["enable-max-pixel-clock-override"] = "01000000"
             del igpu_properties["framebuffer-stolenmem"]
@@ -376,7 +376,7 @@ class ConfigProdigy:
         if any(kext.checked for kext in kexts if kext.name == "CpuTopologyRebuild"):
             boot_args.append("-ctrsmt")
 
-        if  any(map(int, "3840x2160".split("x")) <= map(int, monitor_info.get("Resolution").split("x")) for monitor_name, monitor_info in hardware_report.get("Monitor", {})) and \
+        if  any(tuple(map(int, "3840x2160".split("x"))) <= tuple(map(int, monitor_info.get("Resolution").split("x"))) for monitor_name, monitor_info in hardware_report.get("Monitor", {}).items()) and \
             self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0"):
             boot_args.append("-cdfon")
 
@@ -399,6 +399,7 @@ class ConfigProdigy:
             for device_name, device_info in hardware_report.get("Input").items():
                 if "I2C" in device_info.get("Device Type", "None"):
                     boot_args.append("-vi2c-force-polling")
+                    break
 
         if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
             boot_args.append("-lilubetaall")
