@@ -194,10 +194,10 @@ class KextMaestro:
                 selected_kexts.append("BrightnessKeys")
 
                 for device_name, device_props in hardware_report.get("Input").items():
-                    if not device_props.get("Bus Type", "").startswith("ACPI"):
+                    if not device_props.get("Device"):
                         continue
 
-                    device_id = device_props.get("Device ID")
+                    device_id = device_props.get("Device")
                     idx = None
                     if device_id in pci_data.InputIDs:
                         idx = pci_data.InputIDs.index(device_id)
