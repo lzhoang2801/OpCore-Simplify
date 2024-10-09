@@ -335,7 +335,8 @@ class ConfigProdigy:
                         "Skip": 0
                     })
                 elif kext.name == "ForgedInvariant":
-                    kernel_patch.extend(self.g.get_amd_kernel_patches()[-6:-4])
+                    if not "AMD" in cpu_manufacturer:
+                        kernel_patch.extend(self.g.get_amd_kernel_patches()[-6:-4])
 
         for patch in kernel_patch:
             if "cpuid_cores_per_package" in patch["Comment"]:
