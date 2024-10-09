@@ -65,8 +65,11 @@ class gatheringFiles:
                     if self.github.check_ratelimit():
                         add_product_to_download_urls(self.github.get_latest_release(kext.github_repo.get("owner"), kext.github_repo.get("repo")))
 
-        if self.github.check_ratelimit():
-            add_product_to_download_urls(self.github.get_latest_release("wjz304", "OpenCore_Patch_Build"))
+        add_product_to_download_urls({
+            "product_name": "OpenCorePkg",
+            "id": dortania_builds_data["OpenCorePkg"]["versions"][0]["release"]["id"], 
+            "url": dortania_builds_data["OpenCorePkg"]["versions"][0]["links"]["release"]
+        })
 
         sorted_download_urls = sorted(download_urls, key=lambda x:x["product_name"])
 
@@ -137,7 +140,7 @@ class gatheringFiles:
         
         self.utils.create_folder(self.temporary_dir)
 
-        for product in kexts + [{"Name": "OpenCore"}]:
+        for product in kexts + [{"Name": "OpenCorePkg"}]:
             if not isinstance(product, dict) and not product.checked:
                 continue
 

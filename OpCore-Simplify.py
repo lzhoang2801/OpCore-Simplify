@@ -29,7 +29,7 @@ class OCPE:
     def gathering_files(self, macos_version):
         self.u.head("Gathering Files")
         print("")
-        print("Please wait for download OpenCore NO ACPI, kexts and macserial...")
+        print("Please wait for download OpenCorePkg, kexts and macserial...")
         print("")
 
         self.o.get_bootloader_kexts_data(self.k.kexts)
@@ -91,7 +91,7 @@ class OCPE:
         if not os.path.exists(self.k.ock_files_dir):
             raise Exception("Directory '{}' does not exist.".format(self.k.ock_files_dir))
         
-        source_efi_dir = os.path.join(self.k.ock_files_dir, "OpenCore")
+        source_efi_dir = os.path.join(self.k.ock_files_dir, "OpenCorePkg")
         shutil.copytree(source_efi_dir, self.result_dir, dirs_exist_ok=True)
         print("Done")
         print("2. Generate config.plist...", end=" ")

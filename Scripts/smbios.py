@@ -22,13 +22,17 @@ class SMBIOS:
             download_history = self.utils.read_file(self.g.download_history_file)
 
             if download_history:
-                product_index = self.g.get_product_index(download_history, "OpenCore")
+                product_index = self.g.get_product_index(download_history, "OpenCorePkg")
                 
                 if product_index:
                     download_history.pop(product_index)
                     self.utils.write_file(self.g.download_history_file, download_history)
 
-            raise Exception("{} not found. Please reopen the program to download it".format(macserial_name))
+            print("\n")
+            print("{} not found. Please reopen the program to download it".format(macserial_name))
+            print("")
+            self.utils.request_input()
+            self.utils.exit_program()
         
         return macserial_path
 

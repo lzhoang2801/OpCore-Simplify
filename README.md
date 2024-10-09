@@ -28,7 +28,7 @@
 
 ## ✨ **Features**
 
-1. **Automatic Updates**: Automatically check and update AMD Vanilla Patches, OpenCore NO ACPI, and kexts.
+1. **Automatic Updates**: Automatically check and update OpenCorePkg, kexts and AMD Vanilla Patches.
    
 2. **Hardware Information Gathering**: Leverages the [Hardware Sniffer](https://github.com/lzhoang2801/Hardware-Sniffer) tool to gather detailed hardware information. It uses USB ID and PCI ID databases to ensure precise hardware compatibility checks.
    
