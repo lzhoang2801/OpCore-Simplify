@@ -66,7 +66,7 @@ class SMBIOS:
             "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
             smbios_model = "MacBookPro16,3"
 
-        if  "Intel" in list(hardware_report.get("GPU").items())[0][-1].get("Manufacturer") and \
+        if  "Intel" in list(hardware_report.get("GPU").items())[-1][-1].get("Manufacturer") and \
             "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
 
             codename = list(hardware_report.get("GPU").items())[-1][-1].get("Codename")
