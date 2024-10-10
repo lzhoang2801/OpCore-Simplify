@@ -114,6 +114,7 @@ class OCPE:
             if patch.checked:
                 if patch.name == "BATP":
                     patch.checked = getattr(self.ac, patch.function_name)()
+                    self.k.kexts[self.k.get_kext_index("ECEnabler")].checked = patch.checked
                     continue
 
                 acpi_load = getattr(self.ac, patch.function_name)()
