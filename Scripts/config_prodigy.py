@@ -72,21 +72,9 @@ class ConfigProdigy:
     def is_low_end_intel_cpu(self, processor_name):
         return any(cpu_branding in processor_name for cpu_branding in ("Celeron", "Pentium"))
     
-    def igpu_properties(self, motherboard_name, platform, gpu, monitor, macos_version):
-        if "NUC" in motherboard_name:
-            platform = "NUC"
+    def igpu_properties(self, platform, integrated_gpu, discrete_gpu, monitor, macos_version):
+        igpu_properties = {}
 
-        integrated_gpu = discrete_gpu = igpu_properties = {}
-
-        for gpu_name, gpu_info in gpu.items():
-            if gpu_info.get("Device Type") == "Integrated GPU":
-                integrated_gpu = gpu_info
-            elif gpu_info.get("Device Type") == "Discrete GPU":
-                discrete_gpu = gpu_info
-
-        if not integrated_gpu or not "Intel" in integrated_gpu.get("Manufacturer"):
-            return {}
-        
         device_id = integrated_gpu.get("Device ID")[5:]
 
         if device_id.startswith("01") and not device_id[-2] in ("5", "6"):
@@ -116,7 +104,6 @@ class ConfigProdigy:
                 igpu_properties["AAPL,ig-platform-id"] = "03006601"
                 if any(tuple(map(int, "1600x900".split("x"))) <= tuple(map(int, monitor_info.get("Resolution").split("x"))) for monitor_name, monitor_info in monitor.items()):
                     igpu_properties["AAPL,ig-platform-id"] = "04006601"
-                    igpu_properties["framebuffer-patch-enable"] = "01000000"
                     igpu_properties["framebuffer-memorycount"] = "02000000"
                     igpu_properties["framebuffer-pipecount"] = "02000000"
                     igpu_properties["framebuffer-portcount"] = "04000000"
@@ -142,7 +129,6 @@ class ConfigProdigy:
                 if device_id.startswith(("0A2", "0D2")):
                     igpu_properties["AAPL,ig-platform-id"] = "0500260A"
                 igpu_properties["framebuffer-cursormem"] = "00009000"
-            igpu_properties["framebuffer-patch-enable"] = "01000000"
         elif device_id.startswith(("0B", "16")):
             native_supported_ids = ("0BD1", "0BD2", "0BD3", "1606", "160E", "1616", "161E", "1626", "1622", "1612", "162B")
             if not device_id in native_supported_ids:
@@ -155,7 +141,6 @@ class ConfigProdigy:
                 igpu_properties["AAPL,ig-platform-id"] = "06002616"
             igpu_properties["framebuffer-stolenmem"] = "00003001"
             igpu_properties["framebuffer-fbmem"] = "00009000"
-            igpu_properties["framebuffer-patch-enable"] = "01000000"
         elif device_id.startswith(("09", "19")) and self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("22.0.0"):
             native_supported_ids = ("1916", "191E", "1926", "1927", "1912", "1932", "1902", "1917", "193B", "191B")
             if not device_id in native_supported_ids:
@@ -181,7 +166,6 @@ class ConfigProdigy:
                     igpu_properties["AAPL,ig-platform-id"] = "00001B19"
             igpu_properties["framebuffer-stolenmem"] = "00003001"
             igpu_properties["framebuffer-fbmem"] = "00009000"
-            igpu_properties["framebuffer-patch-enable"] = "01000000"
         elif device_id.startswith(("09", "19", "59", "87C0")):
             native_supported_ids = ("5912", "5916", "591B", "591C", "591E", "5926", "5927", "5923", "87C0")
             if not device_id in native_supported_ids:
@@ -210,7 +194,6 @@ class ConfigProdigy:
                     igpu_properties["#framebuffer-con1-enable"] = "01000000"
             igpu_properties["framebuffer-stolenmem"] = "00003001"
             igpu_properties["framebuffer-fbmem"] = "00009000"
-            igpu_properties["framebuffer-patch-enable"] = "01000000"
         elif device_id.startswith(("3E", "87", "9B")):
             native_supported_ids = ("3E9B", "3EA5", "3EA6", "3E92", "3E91", "3E98", "9BC8", "9BC5", "9BC4")
             if not device_id in native_supported_ids:
@@ -230,7 +213,6 @@ class ConfigProdigy:
                     igpu_properties["AAPL,ig-platform-id"] = "00009B3E"
             igpu_properties["framebuffer-stolenmem"] = "00003001"
             igpu_properties["framebuffer-fbmem"] = "00009000"
-            igpu_properties["framebuffer-patch-enable"] = "01000000"
         elif device_id.startswith("8A"):
             native_supported_ids = ("FF05", "8A70", "8A71", "8A51", "8A5C", "8A5D", "8A52", "8A53", "8A5A", "8A5B")
             if not device_id in native_supported_ids:
@@ -238,7 +220,6 @@ class ConfigProdigy:
             igpu_properties["AAPL,ig-platform-id"] = "0000528A"
             igpu_properties["framebuffer-stolenmem"] = "00003001"
             igpu_properties["framebuffer-fbmem"] = "00009000"
-            igpu_properties["framebuffer-patch-enable"] = "01000000"
 
         if any(tuple(map(int, "3840x2160".split("x"))) <= tuple(map(int, monitor_info.get("Resolution").split("x"))) for monitor_name, monitor_info in monitor.items()):
             if platform == "Laptop":
@@ -246,22 +227,42 @@ class ConfigProdigy:
             del igpu_properties["framebuffer-stolenmem"]
             del igpu_properties["framebuffer-fbmem"]
 
+        for key in igpu_properties.keys():
+            if key not in ("AAPL,ig-platform-id", "device-id"):
+                igpu_properties["framebuffer-patch-enable"] = "01000000"
+                break
+
         return dict(sorted(igpu_properties.items(), key=lambda item: item[0]))
   
-    def deviceproperties(self, cpu_codename, intel_mei, igpu_properties):
+    def deviceproperties(self, hardware_report, macos_version):
         deviceproperties_add = {}
 
-        if igpu_properties:
-            deviceproperties_add["PciRoot(0x0)/Pci(0x2,0x0)"] = igpu_properties
-        if intel_mei:
-            if "Sandy Bridge" in cpu_codename and intel_mei.get("Device ID") in "8086-1E3A":
-                deviceproperties_add["PciRoot(0x0)/Pci(0x16,0x0)"] = {
-                    "device-id": "3A1C0000"
-                }
-            elif "Ivy Bridge" in cpu_codename and intel_mei.get("Device ID") in "8086-1C3A":
-                deviceproperties_add["PciRoot(0x0)/Pci(0x16,0x0)"] = {
-                    "device-id": "3A1E0000"
-                }
+        discrete_gpu = None
+        for gpu_name, gpu_info in hardware_report.get("GPU", {}).items():
+            if gpu_info.get("Device Type") == "Integrated GPU":
+                if "Intel" in gpu_info.get("Manufacturer"):
+                    igpu_properties = self.igpu_properties(
+                        "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform"), 
+                        gpu_info,
+                        discrete_gpu,
+                        hardware_report.get("Monitor", {}),
+                        macos_version
+                    )
+                    if igpu_properties:
+                        deviceproperties_add[gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")] = igpu_properties
+                        if gpu_info.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
+                            intel_mei = next((device_props for device_name, device_props in hardware_report.get("System Devices").items() if "HECI" in device_name or "Management Engine Interface" in device_name), None)
+                            if intel_mei:
+                                if "Sandy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1E3A":
+                                    deviceproperties_add[intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)")] = {
+                                        "device-id": "3A1C0000"
+                                    }
+                                elif "Ivy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1C3A":
+                                    deviceproperties_add[intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)")] = {
+                                        "device-id": "3A1E0000"
+                                    }
+            elif gpu_info.get("Device Type") == "Discrete GPU":
+                discrete_gpu = gpu_info
 
         for key, value in deviceproperties_add.items():
             for key_child, value_child in value.items():
@@ -465,17 +466,7 @@ class ConfigProdigy:
             "ASUS" in hardware_report.get("Motherboard").get("Name") and self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")) and config["Booter"]["Quirks"]["DevirtualiseMmio"])
         config["Booter"]["Quirks"]["SyncRuntimePermissions"] = config["Booter"]["Quirks"]["RebuildAppleMemoryMap"]
 
-        config["DeviceProperties"]["Add"] = self.deviceproperties(
-            hardware_report.get("CPU").get("Codename"), 
-            next((device_props for device_name, device_props in hardware_report.get("System Devices").items() if "HECI" in device_name or "Management Engine Interface" in device_name), None), 
-            self.igpu_properties(
-                hardware_report.get("Motherboard").get("Name"), 
-                hardware_report.get("Motherboard").get("Platform"), 
-                hardware_report.get("GPU", {}),
-                hardware_report.get("Monitor", {}),
-                macos_version
-            )
-        )
+        config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, macos_version)
 
         config["Kernel"]["Add"] = []
         config["Kernel"]["Block"] = self.block_kext_bundle(kexts)
