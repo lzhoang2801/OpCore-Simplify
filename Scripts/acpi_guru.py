@@ -2823,7 +2823,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
         selected_patches = []
 
         if  "Laptop" in hardware_report.get("Motherboard").get("Platform") and \
-            "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") and \
+            "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type") and \
             not "SURFACE" in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("ALS")
             selected_patches.append("PNLF")

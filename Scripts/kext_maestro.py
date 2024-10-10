@@ -135,7 +135,7 @@ class KextMaestro:
             "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
             selected_kexts.append("NootedRed")
         else:
-            selected_kexts.append("NootRX" if "Navi 2" in list(hardware_report.get("GPU").items())[-1][-1].get("Codename") else "WhateverGreen")
+            selected_kexts.append("NootRX" if "Navi 2" in list(hardware_report.get("GPU").items())[0][-1].get("Codename") else "WhateverGreen")
 
         if "Laptop" in hardware_report.get("Motherboard").get("Platform") and "ASUS" in hardware_report.get("Motherboard").get("Name") or \
             "NootedRed" in selected_kexts or \

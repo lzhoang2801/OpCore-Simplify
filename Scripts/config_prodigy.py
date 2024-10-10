@@ -403,7 +403,7 @@ class ConfigProdigy:
                 if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=21):
                     boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else "r"))
 
-        if "Navi 1" in list(hardware_report.get("GPU").items())[-1][-1].get("Codename"):
+        if "Navi 1" in list(hardware_report.get("GPU").items())[0][-1].get("Codename"):
             boot_args.append("agdpmod=pikera")
 
         if not "SURFACE" in hardware_report.get("Motherboard").get("Name"):
@@ -418,10 +418,10 @@ class ConfigProdigy:
         if list(hardware_report.get("GPU").items())[0][-1].get("Device ID") in pci_data.SpoofGPUIDs:
             boot_args.append("-radcodec")
 
-        if list(hardware_report.get("GPU").items())[-1][-1].get("Device ID") in ("1002-6610", "1002-682B", "1002-6837", "1002-683D", "1002-683F"):
+        if list(hardware_report.get("GPU").items())[0][-1].get("Device ID") in ("1002-6610", "1002-682B", "1002-6837", "1002-683D", "1002-683F"):
             boot_args.append("radpg=15")
 
-        if list(hardware_report.get("GPU").items())[-1][-1].get("Device ID") in ("1002-67B0", "1002-67B1", "1002-67B8", "1002-6810", "1002-6811"):
+        if list(hardware_report.get("GPU").items())[0][-1].get("Device ID") in ("1002-67B0", "1002-67B1", "1002-67B8", "1002-6810", "1002-6811"):
             boot_args.append("-raddvi")
 
         if any("Discrete GPU" in device_name for device_name in unsupported_devices):
@@ -497,7 +497,7 @@ class ConfigProdigy:
             hardware_report.get("Motherboard").get("Chipset"),
             hardware_report.get("CPU").get("Manufacturer"), 
             hardware_report.get("CPU").get("Core Count"), 
-            list(hardware_report.get("GPU").items())[-1][-1].get("Manufacturer"),
+            list(hardware_report.get("GPU").items())[0][-1].get("Manufacturer"),
             kexts
         )
         config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=38) is None
