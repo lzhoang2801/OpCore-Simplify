@@ -1789,24 +1789,205 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
             ],
             "Patch": patches
         }
+    
+    def findall_power_resource_blocks(self, table_lines):
+        power_resource_blocks = []
+
+        i = 0
+        while i < len(table_lines):
+            line = table_lines[i].strip()
+            if line.startswith("PowerResource"):
+                start_index = i
+                open_brackets = 1
+                i += 1
+                while i < len(table_lines) and open_brackets > 0:
+                    if '{' in table_lines[i]:
+                        open_brackets += table_lines[i].count('{')
+                    if '}' in table_lines[i]:
+                        open_brackets -= table_lines[i].count('}')
+                    i += 1
+                end_index = i - 1
+                power_resource_blocks.append((start_index, end_index))
+            else:
+                i += 1
+
+        return power_resource_blocks
+
+    def is_method_in_power_resource(self, method, table_lines):
+        power_resource_blocks = self.findall_power_resource_blocks(table_lines)
+        
+        for start, end in power_resource_blocks:
+            if start <= method[1] <= end:
+                return True
+        return False
 
     def disable_unsupported_device(self):
+        results = {
+            "Add": []
+        }
+
         for device_name, device_props in self.unsupported_devices.items():
-            if not "Storage" in device_name:
+            if not device_props.get("Bus Type", "PCI") == "PCI" or not device_props.get("ACPI Path"):
                 continue
 
             comment = "Disable {}".format(device_name.split(": ")[-1])
             ssdt_name = None
-            if "Storage" in device_name:
-                ssdt_name = "SSDT-Disable_NVMe"
-                ssdt_content = """
-// Replace all "_SB.PCI0.RP09.PXSX" with the ACPI path of your SSD NVMe
+            if "GPU" in device_name:
+                ssdt_name = "SSDT-Disable_GPU_{}".format(device_props.get("ACPI Path").split(".")[-2])
+                target_device = device_props.get("ACPI Path")
+                target_off_method = target_ps3_method = None
+                for table_name, table_data in self.acpi.acpi_tables.items():
+                    if not "DSDT" in table_data.get("signature", "") and not "SSDT" in table_data.get("signature", ""):
+                        continue
 
+                    off_methods = self.acpi.get_method_paths("_OFF", table_data)
+                    ps3_methods = self.acpi.get_method_paths("_PS3", table_data)
+                    
+                    if not off_methods:
+                        continue
+                    off_method_of_target_device = next((method for method in off_methods if method[0].startswith(target_device)), None)
+                    ps3_method_of_target_device = next((method for method in ps3_methods if method[0].startswith(target_device)), None)
+
+                    if off_method_of_target_device:
+                        if self.is_method_in_power_resource(off_method_of_target_device, table_data.get("lines")):
+                            off_method_of_target_device = None
+                        
+                        if off_method_of_target_device:
+                            target_off_method = off_method_of_target_device[0]
+
+                    if ps3_method_of_target_device:
+                        target_ps3_method = ps3_method_of_target_device[0]
+
+                    if not target_off_method and not target_ps3_method:
+                        ssdt_content = """
+// Resource: https://github.com/dortania/Getting-Started-With-ACPI/blob/master/extra-files/decompiled/SSDT-GPU-DISABLE.dsl
+
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "DisGPU", 0x00000000)
+{
+    External ([[DevicePath]], DeviceObj)
+
+    Method ([[DevicePath]]._DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
+    {
+        If ((!Arg2 || (_OSI ("Darwin") == Zero)))
+        {
+            Return (Buffer (One)
+            {
+                 0x03                                             // .
+            })
+        }
+
+        Return (Package (0x0A)
+        {
+            "name", 
+            Buffer (0x09)
+            {
+                "#display"
+            }, 
+
+            "IOName", 
+            "#display", 
+            "class-code", 
+            Buffer (0x04)
+            {
+                 0xFF, 0xFF, 0xFF, 0xFF                           // ....
+            }, 
+
+            "vendor-id", 
+            Buffer (0x04)
+            {
+                 0xFF, 0xFF, 0x00, 0x00                           // ....
+            }, 
+
+            "device-id", 
+            Buffer (0x04)
+            {
+                 0xFF, 0xFF, 0x00, 0x00                           // ....
+            }
+        })
+    }
+}
+"""
+                    else:
+                        ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
+{"""
+                        if target_off_method:
+                            ssdt_content += """
+    External ([[DevicePath]]._OFF, MethodObj)
+    External ([[DevicePath]]._ON_, MethodObj)"""
+                        if target_ps3_method:
+                            ssdt_content += """
+    External ([[DevicePath]]._PS0, MethodObj)
+    External ([[DevicePath]]._PS3, MethodObj)
+    External ([[DevicePath]]._DSM, MethodObj)
+"""
+                        ssdt_content += """
+    Device (DGPU)
+    {
+        Name (_HID, "DGPU1000")
+        Method (_INI, 0, NotSerialized)
+        {
+            _OFF ()
+        }
+
+        Method (_STA, 0, NotSerialized)
+        {
+            If (_OSI ("Darwin"))
+            {
+                Return (0x0F)
+            }
+            Else
+            {
+                Return (Zero)
+            }
+        }
+
+        Method (_ON, 0, NotSerialized)
+        {
+"""
+                        if target_off_method:
+                            ssdt_content += """
+            [[DevicePath]]._ON ()
+            """
+
+                        if target_ps3_method:
+                            ssdt_content += """
+            [[DevicePath]]._PS0 ()
+            """
+        
+                        ssdt_content += """
+        }
+
+        Method (_OFF, 0, NotSerialized)
+        {
+"""
+                        if target_off_method:
+                            ssdt_content += """
+            [[DevicePath]]._OFF ()
+            """
+
+                        if target_ps3_method:
+                            ssdt_content += """
+            [[DevicePath]]._DSM (ToUUID ("a486d8f8-0bda-471b-a72b-6042a6b5bee0") /* Unknown UUID */, 0x0100, 0x1A, Buffer (0x04)
+            {
+                    0x01, 0x00, 0x00, 0x03                           // ....
+            })
+            [[DevicePath]]._PS3 ()
+            """
+        
+                        ssdt_content += """
+        }
+    }
+}
+"""
+            elif "Storage" in device_name:
+                ssdt_name = "SSDT-Disable_NVMe_{}".format(device_props.get("ACPI Path").split(".")[-2])
+                ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
 {
-    External (_SB.PCI0.RP09.PXSX, DeviceObj)
+    External ([[DevicePath]], DeviceObj)
 
-    Method (_SB.PCI0.RP09.PXSX._DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
+    Method ([[DevicePath]]._DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
     {
         If (_OSI ("Darwin"))
         {
@@ -1831,16 +2012,18 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
 }
 """
 
+            ssdt_content = ssdt_content.replace("[[DevicePath]]", device_props.get("ACPI Path"))
+
             if ssdt_name:
-                return {
-                    "Add": [
-                        {
-                            "Comment": comment,
-                            "Enabled": self.write_ssdt(ssdt_name, ssdt_content, compile=False),
-                            "Path": ssdt_name + ".aml"
-                        }
-                    ]
-                }
+                results["Add"].append(
+                    {
+                        "Comment": comment,
+                        "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                        "Path": ssdt_name + ".aml"
+                    }
+                )
+
+        return results
   
     def enable_backlight_controls(self):
         patches = []
