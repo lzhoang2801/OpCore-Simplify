@@ -1845,16 +1845,15 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
     def enable_backlight_controls(self):
         patches = []
 
+        integrated_gpu = list(self.hardware_report.get("GPU").items())[-1][-1]
         uid_value = 19
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=38):
+        if integrated_gpu.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
             uid_value = 14
-        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=26):
+        elif integrated_gpu.get("Codename") in ("Haswell", "Broadwell"):
             uid_value = 15
-        elif self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=16):
+        elif integrated_gpu.get("Codename") in ("Skylake", "Kaby Lake"):
             uid_value = 16
-        
-        igpu = ""
-                        
+                                
         if "PNLF" in self.dsdt.get("table"):
             patches.append({
                 "Comment": "PNLF to XNLF Rename",
@@ -1874,7 +1873,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
 {"""
-        if igpu:
+        if uid_value == 14 and integrated_gpu.get("ACPI Path"):
             ssdt_content += """\n    External ([[igpu_path]], DeviceObj)\n"""
         ssdt_content += """
     Device (PNLF)
@@ -1894,7 +1893,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
                 Return (Zero)
             }
         }"""
-        if igpu:
+        if uid_value == 14 and integrated_gpu.get("ACPI Path"):
             ssdt_content += """
         Method (_INI, 0, Serialized)
         {
@@ -1995,7 +1994,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
     }
 }"""
 
-        ssdt_content = ssdt_content.replace("[[uid_value]]", str(uid_value)).replace("[[igpu_path]]",igpu)        
+        ssdt_content = ssdt_content.replace("[[uid_value]]", str(uid_value))
+        if "[[igpu_path]]" in ssdt_content:
+            ssdt_content = ssdt_content.replace("[[igpu_path]]", integrated_gpu.get("ACPI Path"))       
         
         return {
             "Add": [
