@@ -195,7 +195,6 @@ InputIDs = [
     "DLL-07D0",
     "DLL-07D1",
     "DLL-07F3",
-    "MSFT-0001",
     "O44E-1220",
     # VoodooSMBus.kext
     "ELAN-001D",
