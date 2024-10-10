@@ -2012,9 +2012,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
 }
 """
 
-            ssdt_content = ssdt_content.replace("[[DevicePath]]", device_props.get("ACPI Path"))
-
             if ssdt_name:
+                ssdt_content = ssdt_content.replace("[[DevicePath]]", device_props.get("ACPI Path"))
+                
                 results["Add"].append(
                     {
                         "Comment": comment,
