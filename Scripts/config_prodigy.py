@@ -266,7 +266,7 @@ class ConfigProdigy:
                 discrete_gpu = gpu_info
 
                 if not discrete_gpu.get("PCI Path") or not discrete_gpu.get("Device ID") in pci_data.SpoofGPUIDs:
-                    pass
+                    continue
 
                 deviceproperties_add[discrete_gpu.get("PCI Path")] = {
                     "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(discrete_gpu.get("Device ID")).split("-")[-1]),
