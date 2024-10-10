@@ -2,6 +2,7 @@ from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
 from Scripts.datasets import mac_model_data
 from Scripts.datasets import os_data
+from Scripts.datasets import pci_data
 from Scripts import codec_layouts
 from Scripts import gathering_files
 from Scripts import smbios
@@ -264,6 +265,14 @@ class ConfigProdigy:
             elif gpu_info.get("Device Type") == "Discrete GPU":
                 discrete_gpu = gpu_info
 
+                if not discrete_gpu.get("PCI Path") or not discrete_gpu.get("Device ID") in pci_data.SpoofGPUIDs:
+                    pass
+
+                deviceproperties_add[discrete_gpu.get("PCI Path")] = {
+                    "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(discrete_gpu.get("Device ID")).split("-")[-1]),
+                    "model": gpu_name
+                }
+
         for key, value in deviceproperties_add.items():
             for key_child, value_child in value.items():
                 if isinstance(value_child, str):
@@ -405,6 +414,9 @@ class ConfigProdigy:
 
         if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
             boot_args.append("-lilubetaall")
+
+        if list(hardware_report.get("GPU").items())[0][-1].get("Device ID") in pci_data.SpoofGPUIDs:
+            boot_args.append("-radcodec")
 
         if list(hardware_report.get("GPU").items())[-1][-1].get("Device ID") in ("1002-6610", "1002-682B", "1002-6837", "1002-683D", "1002-683F"):
             boot_args.append("radpg=15")

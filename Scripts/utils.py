@@ -95,6 +95,13 @@ class Utils:
     def int_to_hex(self, number):
         return format(number, '02X')
     
+    def to_little_endian_hex(self, hex_string):
+        hex_string = hex_string.lower().lstrip("0x")
+
+        little_endian_hex = ''.join(reversed([hex_string[i:i+2] for i in range(0, len(hex_string), 2)]))
+        
+        return little_endian_hex.upper()
+    
     def string_to_hex(self, string):
         return ''.join(format(ord(char), '02X') for char in string)
     
