@@ -66,10 +66,6 @@ class ConfigProdigy:
             not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=101) is None or \
             not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=79, end=89) is None
 
-    def check_resizable_bar_support(self, motherboard_chipset):
-        return  not self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset, start=11) is None or \
-                not "Ice Lake" in motherboard_chipset and not self.utils.contains_any(chipset_data.IntelChipsets, motherboard_chipset, start=101) is None
-
     def is_low_end_intel_cpu(self, processor_name):
         return any(cpu_branding in processor_name for cpu_branding in ("Celeron", "Pentium"))
     
@@ -468,7 +464,7 @@ class ConfigProdigy:
         config["Booter"]["Quirks"]["ProtectUefiServices"] = "Z390" in hardware_report.get("Motherboard").get("Chipset") or \
             not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=14) is None
         config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"]
-        config["Booter"]["Quirks"]["ResizeAppleGpuBars"] = 0 if self.check_resizable_bar_support(hardware_report.get("Motherboard").get("Chipset")) else -1
+        config["Booter"]["Quirks"]["ResizeAppleGpuBars"] = 0 if any(gpu_props.get("Resizable BAR", "Disabled") == "Enabled" for gpu_name, gpu_props in hardware_report.get("GPU", {}).items()) else -1
         config["Booter"]["Quirks"]["SetupVirtualMap"] = not (not self.utils.contains_any(chipset_data.AMDChipsets, hardware_report.get("Motherboard").get("Chipset"), start=11, end=17) is None or \
             "ASUS" in hardware_report.get("Motherboard").get("Name") and self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")) and config["Booter"]["Quirks"]["DevirtualiseMmio"])
         config["Booter"]["Quirks"]["SyncRuntimePermissions"] = config["Booter"]["Quirks"]["RebuildAppleMemoryMap"]
