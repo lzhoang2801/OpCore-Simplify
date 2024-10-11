@@ -544,6 +544,13 @@ class ConfigProdigy:
         config["UEFI"]["Quirks"]["UnblockFsConnect"] = "HP" in hardware_report.get("Motherboard").get("Name")
         config["UEFI"]["ReservedMemory"] = []
 
+        for kext in kexts:
+            if kext.checked:
+                if kext.name == "BlueToolFixup":
+                    config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothExternalDongleFailed"] = self.utils.hex_to_bytes("00")
+                    config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothInternalControllerInfo"] = self.utils.hex_to_bytes("0000000000000000000000000000")
+                    config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].extend(["bluetoothExternalDongleFailed", "bluetoothInternalControllerInfo"])
+
         if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
             self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=3)):
             config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpu"] = 1
