@@ -155,6 +155,12 @@ class gatheringFiles:
                 product_name += version
             elif "VoodooPS2" in product_name:
                 product_name = "VoodooPS2"
+            elif product_name == "BlueToolFixup" or product_name.startswith("Brcm"):
+                product_name = "BrcmPatchRAM"
+            elif product_name.startswith("Intel"):
+                product_name = "IntelBluetoothFirmware"
+            elif product_name.startswith("VoodooI2C"):
+                product_name = "VoodooI2C"
             
             try:
                 product_index = self.get_product_index(bootloader_kext_urls, product_name)
