@@ -101,7 +101,7 @@ class OCPE:
         if not config_data:
             raise Exception("Error: The file {} does not exist.".format(config_file))
         
-        self.co.genarate(hardware_report, unsupported_devices, smbios_model, macos_version, self.k.kexts, config_data)
+        self.co.genarate(hardware_report, smbios_model, macos_version, self.k.kexts, config_data)
         print("Done")
         print("3. Apply ACPI patches...", end=" ")
         self.ac.hardware_report = hardware_report

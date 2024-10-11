@@ -366,7 +366,7 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, hardware_report, unsupported_devices, macos_version, kexts):
+    def boot_args(self, hardware_report, macos_version, kexts):
         boot_args = [
             "-v",
             "debug=0x100",
@@ -425,12 +425,6 @@ class ConfigProdigy:
         if list(hardware_report.get("GPU").items())[0][-1].get("Device ID") in ("1002-67B0", "1002-67B1", "1002-67B8", "1002-6810", "1002-6811"):
             boot_args.append("-raddvi")
 
-        if any("Discrete GPU" in device_name for device_name in unsupported_devices):
-            boot_args.append("-wegnoegpu")
-
-        if any("Integrated GPU" in device_name for device_name in unsupported_devices):
-            boot_args.append("-wegnoigpu")
-
         return " ".join(boot_args)
     
     def csr_active_config(self, macos_version):
@@ -455,7 +449,7 @@ class ConfigProdigy:
         
         return uefi_drivers
 
-    def genarate(self, hardware_report, unsupported_devices, smbios_model, macos_version, kexts, config):
+    def genarate(self, hardware_report, smbios_model, macos_version, kexts, config):
         del config["#WARNING - 1"]
         del config["#WARNING - 2"]
         del config["#WARNING - 3"]
@@ -528,7 +522,7 @@ class ConfigProdigy:
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
-        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, unsupported_devices, macos_version, kexts)
+        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = "en:252"
         config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].append("csr-active-config")
