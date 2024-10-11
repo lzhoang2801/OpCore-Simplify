@@ -2912,7 +2912,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
             emb_ctrl_block = self.dsdt.get("table")[emb_ctrl_start_idx:emb_ctrl_end_idx]
 
             for line in emb_ctrl_block.splitlines():
-                if ",   " in line and ",   8" not in line:
+                if ",   " in line and int(line.split(",")[1].strip()) > 8:
                     return True
 
             search_start_idx = emb_ctrl_end_idx
