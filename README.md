@@ -16,6 +16,7 @@
   <summary>Table of Contents</summary>
   <ol>
     <li><a href="#-features">Features</a></li>
+    <li><a href="#-support-the-project">Support the Project</a></li>
     <li><a href="#-usage-guide">Usage Guide</a></li>
     <li><a href="#-contributing">Contributing</a></li>
     <li><a href="#-license">License</a></li>
@@ -39,6 +40,20 @@
 5. **Device-Specific Kexts**: Automatically identifies and adds kexts for devices like WiFi, ethernet, sound codec, Bluetooth, keyboard, mouse, touchpad, USB controller, and SATA controller based on their hardware IDs.
    
 6. **Custom Tweaks**: Apply additional customization based on both widely used sources and personal experience.
+
+---
+
+### ☕ **Support the Project**:
+
+If you love what I'm building, consider buying me a coffee! Your support fuels new features and improvements. ☕✨
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/lzhoang2801">
+    <img src="https://img.buymeacoffee.com/button-api/?text=Donate with Buy Me a Coffee&emoji=☕&slug=lzhoang2801&button_colour=FFDD00&font_colour=000000&font_family=Bree&outline_colour=000000&coffee_colour=ffffff" />
+  </a>
+<p>
+
+Thank you for your support! Every little bit helps! 😊
 
 ---
 
