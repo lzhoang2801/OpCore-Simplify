@@ -373,9 +373,10 @@ class ConfigProdigy:
             "keepsyms=1"
         ]
 
-        codec_id = list(hardware_report.get("Sound").items())[0][-1].get("Device ID")
-        if codec_id in codec_layouts.data:
-            boot_args.append("alcid={}".format(random.choice(codec_layouts.data.get(codec_id))))
+        if hardware_report.get("Sound"):
+            codec_id = list(hardware_report.get("Sound").items())[0][-1].get("Device ID")
+            if codec_id in codec_layouts.data:
+                boot_args.append("alcid={}".format(random.choice(codec_layouts.data.get(codec_id))))
 
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
             boot_args.append("npci=0x2000")

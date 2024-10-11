@@ -116,8 +116,9 @@ class KextMaestro:
             self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") or "MacPro7,1" in smbios_model:
             selected_kexts.append("RestrictEvents")
 
-        if list(hardware_report.get("Sound").items())[0][-1].get("Device ID") in codec_layouts.data:
-            selected_kexts.append("AppleALC")
+        if hardware_report.get("Sound"):
+            if list(hardware_report.get("Sound").items())[0][-1].get("Device ID") in codec_layouts.data:
+                selected_kexts.append("AppleALC")
         
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.4.0") or \
             int(hardware_report.get("CPU").get("CPU Count")) > 1 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
