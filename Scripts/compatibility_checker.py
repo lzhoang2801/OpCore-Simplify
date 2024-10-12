@@ -50,9 +50,11 @@ class CompatibilityChecker:
                         self.max_supported_macos_version = max((20, 99, 99), self.max_supported_macos_version if is_supported_discrete_gpu else (-1, -1, -1))
                     elif device_id.startswith(("04", "0A", "0C", "0D", "0B", "16")):
                         self.max_supported_macos_version = max((21, 99, 99), self.max_supported_macos_version if is_supported_discrete_gpu else (-1, -1, -1))
-                    elif device_id.startswith(("09", "19", "59", "87C0")):
+                    elif device_id.startswith(("09", "19", "59")) and device_id != "5917":
                         self.max_supported_macos_version = max((22, 99, 99), self.max_supported_macos_version if is_supported_discrete_gpu else (-1, -1, -1))
-                    elif device_id.startswith(("3E", "87", "9B")):
+                    elif device_id == "87C0":
+                        self.max_supported_macos_version = max((23, 99, 99), self.max_supported_macos_version if is_supported_discrete_gpu else (-1, -1, -1))
+                    elif device_id.startswith(("59", "3E", "87", "9B")):
                         self.min_supported_macos_version = max((17, 0, 0), self.min_supported_macos_version if is_supported_discrete_gpu else (-1, -1, -1))
                         self.max_supported_macos_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())
                     elif device_id.startswith("8A"):
