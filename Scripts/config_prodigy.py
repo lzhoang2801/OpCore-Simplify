@@ -389,7 +389,8 @@ class ConfigProdigy:
             boot_args.append("-cdfon")
 
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
-            if  list(hardware_report.get("GPU").items())[-1][-1].get("Device ID")[5:].startswith(("3E", "87", "9B")) and \
+            intergrated_gpu = list(hardware_report.get("GPU").items())[-1][-1]
+            if  intergrated_gpu.get("Device ID")[5:].startswith(("3E", "87", "9B")) and \
                 self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.4.0"):
                 boot_args.append("igfxonln=1")
 
@@ -397,7 +398,7 @@ class ConfigProdigy:
                 boot_args.extend(("-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"))
 
             if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
-                if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=21):
+                if intergrated_gpu.get("Device ID")[5:].startswith(("09", "19", "59", "8C", "3E", "87", "9B", "8A")) and not intergrated_gpu.get("Device ID").endswith("5917"):
                     boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else "r"))
 
         if "Navi 1" in list(hardware_report.get("GPU").items())[0][-1].get("Codename"):
