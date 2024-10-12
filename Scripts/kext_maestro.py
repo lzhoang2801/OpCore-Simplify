@@ -112,7 +112,7 @@ class KextMaestro:
             selected_kexts.append("SMCLightSensor")
 
         if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-                 self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=3)) or \
+                 self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)) or \
             self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") or "MacPro7,1" in smbios_model:
             selected_kexts.append("RestrictEvents")
 

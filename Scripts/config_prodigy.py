@@ -379,7 +379,7 @@ class ConfigProdigy:
 
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
             boot_args.append("revpatch=sbvmm{}".format(",cpuname" if not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-            self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=3)) else ""))
+            self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)) else ""))
 
         if any(kext.checked for kext in kexts if kext.name == "CpuTopologyRebuild"):
             boot_args.append("-ctrsmt")
@@ -543,7 +543,7 @@ class ConfigProdigy:
                     config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].extend(["bluetoothExternalDongleFailed", "bluetoothInternalControllerInfo"])
 
         if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-            self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=3)):
+            self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)):
             config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpu"] = 1
             config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpuname"] = hardware_report.get("CPU").get("Processor Name")
             config["NVRAM"]["Delete"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"].extend(["revcpu", "revcpuname"])
