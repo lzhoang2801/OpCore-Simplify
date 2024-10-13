@@ -104,28 +104,30 @@ class OCPE:
         self.co.genarate(hardware_report, smbios_model, macos_version, self.k.kexts, config_data)
         print("Done")
         print("3. Apply ACPI patches...", end=" ")
-        self.ac.hardware_report = hardware_report
-        self.ac.unsupported_devices = unsupported_devices
-        self.ac.acpi_directory = os.path.join(self.result_dir, "EFI", "OC", "ACPI")
-        self.ac.smbios_model = smbios_model
-        self.ac.get_low_pin_count_bus_device()
+        if self.ac.ensure_dsdt():
+            self.ac.hardware_report = hardware_report
+            self.ac.unsupported_devices = unsupported_devices
+            self.ac.acpi_directory = os.path.join(self.result_dir, "EFI", "OC", "ACPI")
+            self.ac.smbios_model = smbios_model
+            self.lpc_bus_device = self.ac.get_lpc_name(skip_ec=True,skip_common_names=True)
 
-        for patch in self.ac.patches:
-            if patch.checked:
-                if patch.name == "BATP":
-                    patch.checked = getattr(self.ac, patch.function_name)()
-                    self.k.kexts[self.k.get_kext_index("ECEnabler")].checked = patch.checked
-                    continue
+            for patch in self.ac.patches:
+                if patch.checked:
+                    if patch.name == "BATP":
+                        patch.checked = getattr(self.ac, patch.function_name)()
+                        self.k.kexts[self.k.get_kext_index("ECEnabler")].checked = patch.checked
+                        continue
 
-                acpi_load = getattr(self.ac, patch.function_name)()
+                    acpi_load = getattr(self.ac, patch.function_name)()
 
-                if not isinstance(acpi_load, dict):
-                    continue
+                    if not isinstance(acpi_load, dict):
+                        continue
 
-                config_data["ACPI"]["Add"].extend(acpi_load.get("Add", []))
-                config_data["ACPI"]["Delete"].extend(acpi_load.get("Delete", []))
-                config_data["ACPI"]["Patch"].extend(acpi_load.get("Patch", []))
-
+                    config_data["ACPI"]["Add"].extend(acpi_load.get("Add", []))
+                    config_data["ACPI"]["Delete"].extend(acpi_load.get("Delete", []))
+                    config_data["ACPI"]["Patch"].extend(acpi_load.get("Patch", []))
+        
+        config_data["ACPI"]["Patch"].extend(self.ac.dsdt_patches)
         config_data["ACPI"]["Patch"] = self.ac.apply_acpi_patches(config_data["ACPI"]["Patch"])
         print("Done")
         print("4. Copy kexts and snapshot to config.plist...", end=" ")

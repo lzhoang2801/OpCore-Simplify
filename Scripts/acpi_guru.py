@@ -1,3 +1,5 @@
+# Original source: https://github.com/corpnewt/SSDTTime/blob/44aadf01b7fe75cb4a3eab5590e7b6c458265c6f/SSDTTime.py
+
 from Scripts.datasets import acpi_patch_data
 from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
@@ -11,7 +13,6 @@ import binascii
 import re
 import tempfile
 import shutil
-import sys
 
 class ACPIGuru:
     def __init__(self):
@@ -78,6 +79,7 @@ class ACPIGuru:
         )
         self.target_irqs = [0, 2, 8, 11]
         self.illegal_names = ("XHC1", "EHC1", "EHC2", "PXSX")
+        self.dsdt_patches = []
 
     def get_unique_name(self,name,target_folder,name_append="-Patched"):
         # Get a new file name in the Results folder so we don't override the original
@@ -114,6 +116,9 @@ class ACPIGuru:
     def read_acpi_tables(self, path):
         if not path:
             return
+        self.utils.head("Loading ACPI Table(s)")
+        print("by CorpNewt")
+        print("")
         tables = []
         trouble_dsdt = None
         fixed = False
@@ -124,7 +129,7 @@ class ACPIGuru:
         if os.path.isdir(path):
             print("Gathering valid tables from {}...\n".format(os.path.basename(path)))
             for t in self.sorted_nicely(os.listdir(path)):
-                if self.acpi.table_is_valid(path,t):
+                if not "Patched" in t and self.acpi.table_is_valid(path,t):
                     print(" - {}".format(t))
                     tables.append(t)
             if not tables:
@@ -135,6 +140,7 @@ class ACPIGuru:
                     return self.read_acpi_tables(os.path.join(path,"ACPI"))
                 print(" - No valid .aml files were found!")
                 print("")
+                #self.u.grab("Press [enter] to return...")
                 self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
@@ -150,6 +156,7 @@ class ACPIGuru:
                     print(" - {}".format(d))
                 print("\nOnly one is allowed at a time.  Please remove one of the above and try again.")
                 print("")
+                #self.u.grab("Press [enter] to return...")
                 self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
@@ -161,12 +168,11 @@ class ACPIGuru:
                 if not self.acpi.load(os.path.join(path,dsdt))[0]:
                     trouble_dsdt = dsdt
                 else:
-                    self.dsdt = self.acpi.get_dsdt_or_only()
                     print("\nDisassembled successfully!\n")
-        elif os.path.isfile(path):
-            #print("Loading {}...".format(os.path.basename(path)))
+        elif not "Patched" in path and os.path.isfile(path):
+            print("Loading {}...".format(os.path.basename(path)))
             if self.acpi.load(path)[0]:
-                #print("\nDone.")
+                print("\nDone.")
                 # If it loads fine - just return the path
                 # to the parent directory
                 return os.path.dirname(path)
@@ -174,6 +180,7 @@ class ACPIGuru:
                 # Not a DSDT, we aren't applying pre-patches
                 print("\n{} could not be disassembled!".format(os.path.basename(path)))
                 print("")
+                #self.u.grab("Press [enter] to return...")
                 self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
@@ -187,6 +194,7 @@ class ACPIGuru:
         else:
             print("Passed file/folder does not exist!")
             print("")
+            #self.u.grab("Press [enter] to return...")
             self.utils.request_input()
             # Restore any prior tables
             self.acpi.acpi_tables = prior_tables
@@ -208,16 +216,16 @@ class ACPIGuru:
             print("Loading {} into memory...".format(trouble_dsdt))
             with open(trouble_path,"rb") as f:
                 d = f.read()
-            res = self.acpi.check_output(self.output)
+            res = self.acpi.check_output(path)
             target_name = self.get_unique_name(trouble_dsdt,res,name_append="-Patched")
-            patches = []
+            self.dsdt_patches = []
             print("Iterating patches...\n")
             for p in self.pre_patches:
                 if not all(x in p for x in ("PrePatch","Comment","Find","Replace")): continue
                 print(" - {}".format(p["PrePatch"]))
                 find = binascii.unhexlify(p["Find"])
                 if d.count(find) == 1:
-                    patches.append(p) # Retain the patch
+                    self.dsdt_patches.append(p) # Retain the patch
                     repl = binascii.unhexlify(p["Replace"])
                     print(" --> Located - applying...")
                     d = d.replace(find,repl) # Replace it in memory
@@ -238,6 +246,7 @@ class ACPIGuru:
             if not fixed:
                 print("\n{} could not be disassembled!".format(trouble_dsdt))
                 print("")
+                #self.u.grab("Press [enter] to return...")
                 self.utils.request_input()
                 if temp:
                     shutil.rmtree(temp,ignore_errors=True)
@@ -266,12 +275,29 @@ class ACPIGuru:
         # make sure we get interaction from the user to continue
         if trouble_dsdt or not loaded_tables or failed:
             print("")
-            self.utils.request_input()
+            #self.u.grab("Press [enter] to return...")
+            #self.utils.request_input()
         if temp:
             shutil.rmtree(temp,ignore_errors=True)
+        self.dsdt = self.acpi.get_dsdt_or_only()
         return path
 
-    def get_sta_var(self,var="STAS",device=None,dev_hid="ACPI000E",dev_name="AWAC",log_locate=True,table=None):
+    def _ensure_dsdt(self, allow_any=False):
+        # Helper to check conditions for when we have valid tables
+        return self.dsdt and ((allow_any and self.acpi.acpi_tables) or (not allow_any and self.acpi.get_dsdt_or_only()))
+
+    def ensure_dsdt(self, allow_any=False):
+        if self._ensure_dsdt(allow_any=allow_any):
+            # Got it already
+            return True
+        # Need to prompt
+        self.select_acpi_tables()
+        self.dsdt = self.acpi.get_dsdt_or_only()
+        if self._ensure_dsdt(allow_any=allow_any):
+            return True
+        return False
+
+    def get_sta_var(self,var="STAS",device=None,dev_hid="ACPI000E",dev_name="AWAC",log_locate=False,table=None):
         # Helper to check for a device, check for (and qualify) an _STA method,
         # and look for a specific variable in the _STA scope
         #
@@ -283,16 +309,16 @@ class ACPIGuru:
         if device:
             dev_list = self.acpi.get_device_paths(device,table=table)
             if not len(dev_list):
-                #if log_locate: print(" - Could not locate {}".format(device))
+                if log_locate: print(" - Could not locate {}".format(device))
                 return {"value":False}
         else:
-            #if log_locate: print("Locating {} ({}) devices...".format(dev_hid,dev_name))
+            if log_locate: print("Locating {} ({}) devices...".format(dev_hid,dev_name))
             dev_list = self.acpi.get_device_paths_with_hid(dev_hid,table=table)
             if not len(dev_list):
-                #if log_locate: print(" - Could not locate any {} devices".format(dev_hid))
+                if log_locate: print(" - Could not locate any {} devices".format(dev_hid))
                 return {"valid":False}
         dev = dev_list[0]
-        #if log_locate: print(" - Found {}".format(dev[0]))
+        if log_locate: print(" - Found {}".format(dev[0]))
         root = dev[0].split(".")[0]
         #print(" --> Verifying _STA...")
         # Check Method first - then Name
@@ -327,6 +353,47 @@ class ACPIGuru:
             patches.append({"Comment":"{} _STA to XSTA Rename".format(dev_name),"Find":padl+sta_hex+padr,"Replace":padl+xsta_hex+padr})
         return {"valid":True,"has_var":has_var,"sta":sta,"patches":patches,"device":dev,"dev_name":dev_name,"dev_hid":dev_hid,"root":root,"sta_type":sta_type}
 
+    def get_lpc_name(self,log=False,skip_ec=False,skip_common_names=False):
+        # Intel devices appear to use _ADR, 0x001F0000
+        # AMD devices appear to use _ADR, 0x00140003
+        if log: print("Locating LPC(B)/SBRG...")
+        for table_name in self.sorted_nicely(list(self.acpi.acpi_tables)):
+            table = self.acpi.acpi_tables[table_name]
+            # The LPCB device will always be the parent of the PNP0C09 device
+            # if found
+            if not skip_ec:
+                ec_list = self.acpi.get_device_paths_with_hid("PNP0C09",table=table)
+                if len(ec_list):
+                    lpc_name = ".".join(ec_list[0][0].split(".")[:-1])
+                    if log: print(" - Found {} in {}".format(lpc_name,table_name))
+                    return lpc_name
+            # Maybe try common names if we haven't found it yet
+            if not skip_common_names:
+                for x in ("LPCB", "LPC0", "LPC", "SBRG", "PX40"):
+                    try:
+                        lpc_name = self.acpi.get_device_paths(x,table=table)[0][0]
+                        if log: print(" - Found {} in {}".format(lpc_name,table_name))
+                        return lpc_name
+                    except: pass
+            # Finally check by address - some Intel tables have devices at
+            # 0x00140003
+            paths = self.acpi.get_path_of_type(obj_type="Name",obj="_ADR",table=table)
+            for path in paths:
+                adr = self.get_address_from_line(path[1],table=table)
+                if adr in (0x001F0000, 0x00140003):
+                    # Get the path minus ._ADR
+                    lpc_name = path[0][:-5]
+                    # Make sure the LPCB device does not have an _HID
+                    lpc_hid = lpc_name+"._HID"
+                    if any(x[0]==lpc_hid for x in table.get("paths",[])):
+                        continue
+                    if log: print(" - Found {} in {}".format(lpc_name,table_name))
+                    return lpc_name
+        if log:
+            print(" - Could not locate LPC(B)! Aborting!")
+            print("")
+        return None # Didn't find it
+
     def get_address_from_line(self, line, split_by="_ADR, ", table=None):
         if table is None:
             table = self.acpi.get_dsdt_or_only()
@@ -338,31 +405,36 @@ class ACPIGuru:
     def disable_rhub_devices(self):
         comment = "Disable RHUB/HUBN/URTH devices and rename PXSX, XHC1, EHC1, and EHC2 devices"
         ssdt_name = "SSDT-USB-Reset"
-        ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
-{
-"""
-        rhub_devices = self.acpi.get_device_paths("RHUB", self.dsdt)
-        rhub_devices.extend(self.acpi.get_device_paths("HUBN", self.dsdt))
-        rhub_devices.extend(self.acpi.get_device_paths("URTH", self.dsdt))
-        if not len(rhub_devices):
+
+        #if not self.ensure_dsdt():
+        #    return
+        #self.u.head("USB Reset")
+        #print("")
+        #print("Gathering RHUB/HUBN/URTH devices...")
+        rhubs = self.acpi.get_device_paths("RHUB")
+        rhubs.extend(self.acpi.get_device_paths("HUBN"))
+        rhubs.extend(self.acpi.get_device_paths("URTH"))
+        if not len(rhubs):
+            #print(" - None found!  Aborting...")
+            #print("")
+            #self.u.grab("Press [enter] to return to main menu...")
             return
-        
+        #print(" - Found {:,}".format(len(rhubs)))
+        # Gather some info
         patches = []
         tasks = []
         used_names = []
         xhc_num = 2
         ehc_num = 1
-        for rhub_device in rhub_devices:
-            task = {
-                "device": rhub_device[0]
-            }
-            name = rhub_device[0].split(".")[-2]
-
+        for x in rhubs:
+            task = {"device":x[0]}
+            #print(" --> {}".format(".".join(x[0].split(".")[:-1])))
+            name = x[0].split(".")[-2]
             if name in self.illegal_names or name in used_names:
+                #print(" ----> Needs rename!")
+                # Get the new name, and the path to the device and its parent
                 task["device"] = ".".join(task["device"].split(".")[:-1])
                 task["parent"] = ".".join(task["device"].split(".")[:-1])
-
                 if name.startswith("EHC"):
                     task["rename"],ehc_num = self.get_unique_device(task["parent"],"EH01",ehc_num,used_names)
                     ehc_num += 1 # Increment the name number
@@ -373,28 +445,39 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             else:
                 used_names.append(name)
             sta_method = self.acpi.get_method_paths(task["device"]+"._STA")
+            # Let's find out of we need a unique patch for _STA -> XSTA
             if len(sta_method):
+                #print(" ----> Generating _STA to XSTA patch")
                 sta_index = self.acpi.find_next_hex(sta_method[0][1])[1]
+                #print(" ------> Found at index {}".format(sta_index))
                 sta_hex  = "5F535441"
                 xsta_hex = "58535441"
                 padl,padr = self.acpi.get_shortest_unique_pad(sta_hex, sta_index)
-                patches.append({
-                    "Comment": "{} _STA to XSTA Rename".format(task["device"].split(".")[-1]),
-                    "Find": padl+sta_hex+padr,
-                    "Replace": padl+xsta_hex+padr
-                })
+                patches.append({"Comment":"{} _STA to XSTA Rename".format(task["device"].split(".")[-1]),"Find":padl+sta_hex+padr,"Replace":padl+xsta_hex+padr})
+            # Let's try to get the _ADR
             scope_adr = self.acpi.get_name_paths(task["device"]+"._ADR")
             task["address"] = self.acpi.get_dsdt_or_only()["lines"][scope_adr[0][1]].strip() if len(scope_adr) else "Name (_ADR, Zero)  // _ADR: Address"
             tasks.append(task)
-
-        parents = sorted(list(set([task["parent"] for task in tasks if task.get("parent", None)])))
-        for parent in parents:
-            ssdt_content += "    External ({}, DeviceObj)\n".format(parent)
-        for task in tasks:
-            ssdt_content += "    External ({}, DeviceObj)\n".format(task["device"])
-        for task in tasks:
-            if task.get("rename", None):
-                ssdt_content += """
+        #oc = {"Comment":"SSDT to disable USB RHUB/HUBN/URTH and rename devices","Enabled":True,"Path":"SSDT-USB-Reset.aml"}
+        #self.make_plist(oc, "SSDT-USB-Reset.aml", patches)
+        ssdt = """//
+// SSDT to disable RHUB/HUBN/URTH devices and rename PXSX, XHC1, EHC1, and EHC2 devices
+//
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
+{
+"""
+        # Iterate the USB controllers and add external references
+        # Gather the parents first - ensure they're unique, and put them in order
+        parents = sorted(list(set([x["parent"] for x in tasks if x.get("parent",None)])))
+        for x in parents:
+            ssdt += "    External ({}, DeviceObj)\n".format(x)
+        for x in tasks:
+            ssdt += "    External ({}, DeviceObj)\n".format(x["device"])
+        # Let's walk them again and disable RHUBs and rename
+        for x in tasks:
+            if x.get("rename",None):
+                # Disable the old controller
+                ssdt += """
     Scope ([[device]])
     {
         Method (_STA, 0, NotSerialized)  // _STA: Status
@@ -428,12 +511,10 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             }
         }
     }
-""".replace("[[device]]", task["device"]) \
-    .replace("[[parent]]", task["parent"]) \
-    .replace("[[address]]", task.get("address", "Name (_ADR, Zero)  // _ADR: Address")) \
-    .replace("[[new_device]]", task["rename"])
+""".replace("[[device]]",x["device"]).replace("[[parent]]",x["parent"]).replace("[[address]]",x.get("address","Name (_ADR, Zero)  // _ADR: Address")).replace("[[new_device]]",x["rename"])
             else:
-                ssdt_content += """
+                # Only disabling the RHUB
+                ssdt += """
     Scope ([[device]])
     {
         Method (_STA, 0, NotSerialized)  // _STA: Status
@@ -448,14 +529,20 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             }
         }
     }
-    """.replace("[[device]]", task["device"])
-        ssdt_content += "\n}"
+    """.replace("[[device]]",x["device"])
+        ssdt += "\n}"
+        #self.write_ssdt("SSDT-USB-Reset",ssdt)
+        #print("")
+        #print("Done.")
+        #self.patch_warn()
+        #self.u.grab("Press [enter] to return...")
+        #return
 
         return {
             "Add": [
                 {
                     "Comment": comment,
-                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt),
                     "Path": ssdt_name + ".aml"
                 }
             ],
@@ -466,22 +553,32 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         comment = "Sets plugin-type to 1 on the first Processor object to enable CPU power management"
         ssdt_name = "SSDT-PLUG"
 
-        try: 
-            processor_path = self.acpi.get_processor_paths(table=self.dsdt)[0][0]
-        except: 
-            processor_path = None
-
-        if processor_path:
-            ssdt_content = """
-// Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/SSDT-PLUG.dsl
-
+        #if not self.ensure_dsdt(allow_any=True):
+        #    return
+        #self.u.head("Plugin Type")
+        #print("")
+        #print("Determining CPU name scheme...")
+        for table_name in self.sorted_nicely(list(self.acpi.acpi_tables)):
+            #ssdt_name = "SSDT-PLUG"
+            table = self.acpi.acpi_tables[table_name]
+            if not table.get("signature","").lower() in ("dsdt","ssdt"):
+                continue # We're not checking data tables
+            #print(" Checking {}...".format(table_name))
+            try: cpu_name = self.acpi.get_processor_paths(table=table)[0][0]
+            except: cpu_name = None
+            if cpu_name:
+                #print(" - Found Processor: {}".format(cpu_name))
+                #oc = {"Comment":"Sets plugin-type to 1 on first Processor object","Enabled":True,"Path":ssdt_name+".aml"}
+                #print("Creating SSDT-PLUG...")
+                ssdt = """//
+// Based on the sample found at https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/SSDT-PLUG.dsl
+//
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlug", 0x00003000)
 {
-    External ([[processor_path]], ProcessorObj)
-    Scope ([[processor_path]])
+    External ([[CPUName]], ProcessorObj)
+    Scope ([[CPUName]])
     {
-        If (_OSI ("Darwin")) 
-        {
+        If (_OSI ("Darwin")) {
             Method (_DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
             {
                 If (LNot (Arg2))
@@ -499,42 +596,52 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlug", 0x00003000)
             }
         }
     }
-}""".replace("[[processor_path]]", processor_path)
-        else:
-            comment = "Redefines modern CPU Devices as legacy Processor objects and sets plugin-type to 1 on the first to enable CPU power management"
-            ssdt_name += "-ALT"
-            procs = self.acpi.get_device_paths_with_hid("ACPI0007", table=self.dsdt)
-            if not procs:
-                return
-            parent = procs[0][0].split(".")[0]
-            proc_list = []
-            for proc in procs:
-                uid = self.acpi.get_path_of_type(obj_type="Name", obj=proc[0]+"._UID", table=self.dsdt)
-                if not uid:
+}""".replace("[[CPUName]]",cpu_name)
+            else:
+                ssdt_name += "-ALT"
+                #print(" - No Processor objects found...")
+                procs = self.acpi.get_device_paths_with_hid(hid="ACPI0007",table=table)
+                if not procs:
+                    #print(" - No ACPI0007 devices found...")
                     continue
-                # Let's get the actual _UID value
-                try:
-                    _uid = self.dsdt.get("lines")[uid[0][1]].split("_UID, ")[1].split(")")[0]
-                    proc_list.append((proc[0],_uid))
-                except:
-                    pass
-            if not proc_list:
-                return
-            ssdt_content = """
-// Resource:  https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-PLUG-ALT.dsl
-
+                #print(" - Located {:,} ACPI0007 device{}".format(
+                #    len(procs), "" if len(procs)==1 else "s"
+                #))
+                parent = procs[0][0].split(".")[0]
+                #print(" - Got parent at {}, iterating...".format(parent))
+                proc_list = []
+                for proc in procs:
+                    #print(" - Checking {}...".format(proc[0].split(".")[-1]))
+                    uid = self.acpi.get_path_of_type(obj_type="Name",obj=proc[0]+"._UID",table=table)
+                    if not uid:
+                        #print(" --> Not found!  Skipping...")
+                        continue
+                    # Let's get the actual _UID value
+                    try:
+                        _uid = table["lines"][uid[0][1]].split("_UID, ")[1].split(")")[0]
+                        #print(" --> _UID: {}".format(_uid))
+                        proc_list.append((proc[0],_uid))
+                    except:
+                        pass
+                        #print(" --> Not found!  Skipping...")
+                if not proc_list:
+                    continue
+                #print("Iterating {:,} valid processor device{}...".format(len(proc_list),"" if len(proc_list)==1 else "s"))
+                ssdt = """//
+// Based on the sample found at https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-PLUG-ALT.dsl
+//
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
 {
     External ([[parent]], DeviceObj)
 
     Scope ([[parent]])
     {""".replace("[[parent]]",parent)
-            # Walk the processor objects, and add them to the SSDT
-            for i,proc_uid in enumerate(proc_list):
-                proc,uid = proc_uid
-                adr = hex(i)[2:].upper()
-                name = "CP00"[:-len(adr)]+adr
-                ssdt_content += """
+                # Walk the processor objects, and add them to the SSDT
+                for i,proc_uid in enumerate(proc_list):
+                    proc,uid = proc_uid
+                    adr = hex(i)[2:].upper()
+                    name = "CP00"[:-len(adr)]+adr
+                    ssdt+="""
         Processor ([[name]], [[uid]], 0x00000510, 0x06)
         {
             // [[proc]]
@@ -551,8 +658,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
                     Return (Zero)
                 }
             }""".replace("[[name]]",name).replace("[[uid]]",uid).replace("[[proc]]",proc)
-                if i == 0: # Got the first, add plugin-type as well
-                    ssdt_content += """
+                    if i == 0: # Got the first, add plugin-type as well
+                        ssdt += """
             Method (_DSM, 4, NotSerialized)
             {
                 If (LNot (Arg2)) {
@@ -566,17 +673,30 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
                 })
             }"""
                 # Close up the SSDT
-                ssdt_content += """
+                    ssdt += """
         }"""
-            ssdt_content += """
+                ssdt += """
     }
 }"""
+            #    oc = {"Comment":"Redefines modern CPU Devices as legacy Processor objects and sets plugin-type to 1 on the first","Enabled":True,"Path":ssdt_name+".aml"}
+            #self.make_plist(oc, ssdt_name+".aml", ())
+            #self.write_ssdt(ssdt_name,ssdt)
+            #print("")
+            #print("Done.")
+            #self.patch_warn()
+            #self.u.grab("Press [enter] to return...")
+            return
+        # If we got here - we reached the end
+        #print("No valid processor devices found!")
+        #print("")
+        #self.u.grab("Press [enter] to return...")
+        #return
 
         return {
             "Add": [
                 {
                     "Comment": comment,
-                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt),
                     "Path": ssdt_name + ".aml"
                 }
             ]
@@ -863,7 +983,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
         if hpet_fake:
             ssdt_content = """// Fake HPET device
 //
-DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "HPET", 0x00000000)
 {
     External ([[name]], DeviceObj)
 
@@ -901,7 +1021,7 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
 // Supplementary HPET _CRS from Goldfish64
 // Requires the HPET's _CRS to XCRS rename
 //
-DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "HPET", 0x00000000)
 {
     External ([[name]], DeviceObj)
     External ([[name]].XCRS, [[type]])
@@ -975,19 +1095,23 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
         }
 
     def fix_system_clock_awac(self):
+        #if not self.ensure_dsdt():
+        #    return
+        #self.u.head("SSDT RTCAWAC")
+        #print("")
         rtc_range_needed = False
         rtc_crs_type = None
         crs_lines = []
-        lpc_name = self.lpc_bus_device
+        lpc_name = None
         awac_dict = self.get_sta_var(var="STAS",dev_hid="ACPI000E",dev_name="AWAC")
         rtc_dict = self.get_sta_var(var="STAS",dev_hid="PNP0B00",dev_name="RTC")
         # At this point - we should have any info about our AWAC and RTC devices
         # we need.  Let's see if we need an RTC fake - then build the SSDT.
         if not rtc_dict.get("valid"):
             #print(" - Fake needed!")
-            #lpc_name = self.get_lpc_name()
+            lpc_name = self.get_lpc_name()
             if lpc_name is None:
-                #self.utils.request_input("Press [enter] to return to main menu...")
+                #self.u.grab("Press [enter] to return to main menu...")
                 return
         else:
             # Let's check if our RTC device has a _CRS variable - and if so, let's look for any skipped ranges
@@ -998,6 +1122,7 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
                 rtc_crs_type = "MethodObj" if rtc_crs[0][-1] == "Method" else "BuffObj"
                 # Only check for the range if it's a buffobj
                 if rtc_crs_type.lower() == "buffobj":
+                    #print(" --> _CRS is a Buffer - checking RTC range...")
                     last_adr = last_len = last_ind = None
                     crs_scope = self.acpi.get_scope(rtc_crs[0][1])
                     # Let's try and clean up the scope - it's often a jumbled mess
@@ -1039,7 +1164,7 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
                             last_adr,last_len,last_ind = curr_adr,curr_len,curr_ind
                         crs_lines.append(line)
                 if rtc_range_needed: # We need to generate a rename for _CRS -> XCRS
-                   # print(" --> Generating _CRS to XCRS rename...")
+                    #print(" --> Generating _CRS to XCRS rename...")
                     crs_index = self.acpi.find_next_hex(rtc_crs[0][1])[1]
                     #print(" ----> Found at index {}".format(crs_index))
                     crs_hex  = "5F435253" # _CRS
@@ -1050,7 +1175,7 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
                     rtc_dict["patches"] = patches
                     rtc_dict["crs"] = True
             #else:
-                #print(" ----> Not found")
+            #    print(" ----> Not found")
         # Let's see if we even need an SSDT
         # Not required if AWAC is not present; RTC is present, doesn't have an STAS var, and doesn't have an _STA method, and no range fixes are needed
         if not awac_dict.get("valid") and rtc_dict.get("valid") and not rtc_dict.get("has_var") and not rtc_dict.get("sta") and not rtc_range_needed:
@@ -1058,7 +1183,7 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
             #print("Valid PNP0B00 (RTC) device located and qualified, and no ACPI000E (AWAC) devices found.")
             #print("No patching or SSDT needed.")
             #print("")
-            #self.utils.request_input("Press [enter] to return to main menu...")
+            #self.u.grab("Press [enter] to return to main menu...")
             return
         comment = "Incompatible AWAC Fix" if awac_dict.get("valid") else "RTC Fake" if not rtc_dict.get("valid") else "RTC Range Fix" if rtc_range_needed else "RTC Enable Fix"
         suffix  = []
@@ -1076,19 +1201,22 @@ DefinitionBlock ("", "SSDT", 2, "CORP", "HPET", 0x00000000)
         # 1. Change STAS if needed
         # 2. Setup _STA with _OSI and call XSTA if needed
         # 3. Fake RTC if needed
-
+        #oc = {"Comment":comment,"Enabled":True,"Path":"SSDT-RTCAWAC.aml"}
+        #self.make_plist(oc, "SSDT-RTCAWAC.aml", awac_dict.get("patches",[])+rtc_dict.get("patches",[]), replace=True)
+        #print("Creating SSDT-RTCAWAC...")
         ssdt_name = "SSDT-RTCAWAC"
-        ssdt_content = """//
+        ssdt = """//
 // Original sources from Acidanthera:
 //  - https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/SSDT-AWAC.dsl
 //  - https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/SSDT-RTC0.dsl
 //
+// Uses the ZPSS name to denote where this was created for troubleshooting purposes.
 //
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
 {
 """
         if any(x.get("has_var") for x in (awac_dict,rtc_dict)):
-            ssdt_content += """    External (STAS, IntObj)
+            ssdt += """    External (STAS, IntObj)
     Scope (\\)
     {
         Method (_INI, 0, NotSerialized)  // _INI: Initialize
@@ -1106,7 +1234,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
             # have an _STA (which would be renamed)
             macos,original = ("Zero","0x0F") if x.get("dev_hid") == "ACPI000E" else ("0x0F","Zero")
             if x.get("sta"):
-                ssdt_content += """    External ([[DevPath]], DeviceObj)
+                ssdt += """    External ([[DevPath]], DeviceObj)
     External ([[DevPath]].XSTA, [[sta_type]])
     Scope ([[DevPath]])
     {
@@ -1128,7 +1256,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
 """.replace("[[DevPath]]",x["device"][0]).replace("[[Original]]",original).replace("[[macOS]]",macos).replace("[[sta_type]]",x["sta_type"]).replace("[[called]]"," ()" if x["sta_type"]=="MethodObj" else "")
             elif x.get("dev_hid") == "ACPI000E":
                 # AWAC device with no STAS, and no _STA - let's just add one
-                ssdt_content += """    External ([[DevPath]], DeviceObj)
+                ssdt += """    External ([[DevPath]], DeviceObj)
     Scope ([[DevPath]])
     {
         Method (_STA, 0, NotSerialized)  // _STA: Status
@@ -1146,7 +1274,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
 """.replace("[[DevPath]]",x["device"][0])
         # Check if we need to setup an RTC range correction
         if rtc_range_needed and rtc_crs_type.lower() == "buffobj" and crs_lines and rtc_dict.get("valid"):
-            ssdt_content += """    External ([[DevPath]], DeviceObj)
+            ssdt += """    External ([[DevPath]], DeviceObj)
     External ([[DevPath]].XCRS, [[type]])
     Scope ([[DevPath]])
     {
@@ -1173,7 +1301,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
     .replace("[[NewCRS]]","\n".join([(" "*8)+x for x in crs_lines]))
         # Check if we do not have an RTC device at all
         if not rtc_dict.get("valid") and lpc_name:
-            ssdt_content += """    External ([[LPCName]], DeviceObj)    // (from opcode)
+            ssdt += """    External ([[LPCName]], DeviceObj)    // (from opcode)
     Scope ([[LPCName]])
     {
         Device (RTC0)
@@ -1204,26 +1332,44 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
         }
     }
 """.replace("[[LPCName]]",lpc_name)
-        ssdt_content += "}"
+        ssdt += "}"
+        #self.write_ssdt("SSDT-RTCAWAC",ssdt)
+        #print("")
+        #print("Done.")
+        # See if we just generated a failsafe - and encourage manual checking
+        # Would require only an RTC device (no AWAC) that has an _STA with no STAS var
+        #if rtc_dict.get("valid") and not awac_dict.get("valid") and rtc_dict.get("sta") and not rtc_dict.get("has_var") and not rtc_range_needed:
+        #    print("\n   {}!! NOTE !!{}  Only RTC (no AWAC) detected with an _STA method and no STAS".format(self.yel,self.rst))
+        #    print("               variable! Patch(es) and SSDT-RTCAWAC created as a failsafe,")
+        #    print("               but verify you need them by checking the RTC._STA conditions!")
+        #self.patch_warn()
+        #self.u.grab("Press [enter] to return...")
         
-        if self.write_ssdt(ssdt_name, ssdt_content):
+        if self.write_ssdt(ssdt_name, ssdt):
             return {
                 "Add": [
                     {
                         "Comment": comment,
-                        "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                        "Enabled": self.write_ssdt(ssdt_name, ssdt),
                         "Path": ssdt_name + ".aml"
                     }
                 ],
-                "Patch": rtc_dict["patches"]
+                "Patch": awac_dict.get("patches",[])+rtc_dict.get("patches",[])
             }
 
     def fake_embedded_controller(self):
         comment = "Add a fake EC to ensure macOS compatibility"
         ssdt_name = "SSDT-EC"
-
         laptop = "Laptop" in self.hardware_report.get("Motherboard").get("Platform")
         
+        #if not self.ensure_dsdt():
+        #    return
+        #self.u.head("Fake EC")
+        #print("")
+        #print("Locating PNP0C09 (EC) devices...")
+        # Set up a helper method to determine
+        # if an _STA needs patching based on
+        # the type and returns.
         def sta_needs_patching(sta):
             if not isinstance(sta,dict) or not sta.get("sta"):
                 return False
@@ -1261,55 +1407,57 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
         patches = []
         lpc_name = None
         ec_located = False
-        ec_list = self.acpi.get_device_paths_with_hid("PNP0C09", table=self.dsdt)
-        if len(ec_list):
-            lpc_name = ".".join(ec_list[0][0].split(".")[:-1])
-            #print(" - Got {:,} in {}".format(len(ec_list), table=self.dsdt))
-            #print(" - Validating...")
-            for x in ec_list:
-                device = orig_device = x[0]
-                #print(" --> {}".format(device))
-                if device.split(".")[-1] == "EC":
-                    named_ec = True
-                    if not laptop:
-                        # Only rename if we're trying to replace it
-                        #print(" ----> PNP0C09 (EC) called EC. Renaming")
-                        device = ".".join(device.split(".")[:-1]+["EC0"])
-                        rename = True
-                scope = "\n".join(self.acpi.get_scope(x[1],strip_comments=True, table=self.dsdt))
-                # We need to check for _HID, _CRS, and _GPE
-                if all(y in scope for y in ["_HID","_CRS","_GPE"]):
-                    #print(" ----> Valid PNP0C09 (EC) Device")
-                    ec_located = True
-                    sta = self.get_sta_var(
-                        var=None,
-                        device=orig_device,
-                        dev_hid="PNP0C09",
-                        dev_name=orig_device.split(".")[-1],
-                        log_locate=False,
-                        table=self.dsdt
-                    )
-                    if not laptop:
-                        ec_to_patch.append(device)
-                        # Only unconditionally override _STA methods
-                        # if not building for a laptop
-                        if sta.get("patches"):
-                            patches.extend(sta.get("patches",[]))
-                            ec_sta[device] = sta
-                    elif sta.get("patches"):
-                        if sta_needs_patching(sta):
-                            # Retain the info as we need to override it
-                            ec_to_enable.append(device)
-                            ec_enable_sta[device] = sta
-                            # Disable the patches by default and add to the list
-                            for patch in sta.get("patches",[]):
-                                patch["Enabled"] = False
-                                patch["Disabled"] = True
-                                patches.append(patch)
-                        #else:
-                            #print(" --> _STA properly enabled - skipping rename")
-                #else:
-                    #print(" ----> NOT Valid PNP0C09 (EC) Device")
+        for table_name in self.sorted_nicely(list(self.acpi.acpi_tables)):
+            table = self.acpi.acpi_tables[table_name]
+            ec_list = self.acpi.get_device_paths_with_hid("PNP0C09",table=table)
+            if len(ec_list):
+                lpc_name = ".".join(ec_list[0][0].split(".")[:-1])
+                #print(" - Got {:,} in {}".format(len(ec_list),table_name))
+                #print(" - Validating...")
+                for x in ec_list:
+                    device = orig_device = x[0]
+                    #print(" --> {}".format(device))
+                    if device.split(".")[-1] == "EC":
+                        named_ec = True
+                        if not laptop:
+                            # Only rename if we're trying to replace it
+                            #print(" ----> PNP0C09 (EC) called EC. Renaming")
+                            device = ".".join(device.split(".")[:-1]+["EC0"])
+                            rename = True
+                    scope = "\n".join(self.acpi.get_scope(x[1],strip_comments=True,table=table))
+                    # We need to check for _HID, _CRS, and _GPE
+                    if all(y in scope for y in ["_HID","_CRS","_GPE"]):
+                        #print(" ----> Valid PNP0C09 (EC) Device")
+                        ec_located = True
+                        sta = self.get_sta_var(
+                            var=None,
+                            device=orig_device,
+                            dev_hid="PNP0C09",
+                            dev_name=orig_device.split(".")[-1],
+                            log_locate=False,
+                            table=table
+                        )
+                        if not laptop:
+                            ec_to_patch.append(device)
+                            # Only unconditionally override _STA methods
+                            # if not building for a laptop
+                            if sta.get("patches"):
+                                patches.extend(sta.get("patches",[]))
+                                ec_sta[device] = sta
+                        elif sta.get("patches"):
+                            if sta_needs_patching(sta):
+                                # Retain the info as we need to override it
+                                ec_to_enable.append(device)
+                                ec_enable_sta[device] = sta
+                                # Disable the patches by default and add to the list
+                                for patch in sta.get("patches",[]):
+                                    patch["Enabled"] = False
+                                    patch["Disabled"] = True
+                                    patches.append(patch)
+                            #else:
+                            #    print(" --> _STA properly enabled - skipping rename")
+                    #else:
+                    #    print(" ----> NOT Valid PNP0C09 (EC) Device")
         #if not ec_located:
             #print(" - No valid PNP0C09 (EC) devices found - only needs a Fake EC device")
         if laptop and named_ec and not patches:
@@ -1318,8 +1466,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
             #self.u.grab("Press [enter] to return to main menu...")
             return
         if lpc_name is None:
-            #lpc_name = self.get_lpc_name(skip_ec=True,skip_common_names=True)
-            lpc_name = self.lpc_bus_device
+            lpc_name = self.get_lpc_name(skip_ec=True,skip_common_names=True)
         if lpc_name is None:
             #self.u.grab("Press [enter] to return to main menu...")
             return
@@ -1330,11 +1477,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
                 "Find":"45435f5f",
                 "Replace":"4543305f"
             })
-            #comment += " - Needs EC to EC0 {}".format(
-            #    "and EC _STA to XSTA renames" if ec_sta else "rename"
-            #)
-        #elif ec_sta:
-            #comment += " - Needs EC _STA to XSTA renames"
+            comment += " - Needs EC to EC0 {}".format(
+                "and EC _STA to XSTA renames" if ec_sta else "rename"
+            )
+        elif ec_sta:
+            comment += " - Needs EC _STA to XSTA renames"
         #oc = {"Comment":comment,"Enabled":True,"Path":"SSDT-EC.aml"}
         #self.make_plist(oc, "SSDT-EC.aml", patches, replace=True)
         #print("Creating SSDT-EC...")
@@ -1418,6 +1565,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "EC", 0x00001000)
         # Close the SSDT scope
         ssdt += """
 }"""
+        #self.write_ssdt("SSDT-EC",ssdt)
+        #print("")
+        #print("Done.")
+        #self.patch_warn()
+        #self.u.grab("Press [enter] to return...")
 
         return {
             "Add": [
@@ -1474,14 +1626,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "EC", 0x00001000)
 
         return sorted(acpi_patches, key=lambda x: x["Comment"])
 
-    def get_low_pin_count_bus_device(self):
-        for lpc_bus_name in ("LPCB", "LPC0", "LPC", "SBRG", "PX40"):
-            try:
-                self.lpc_bus_device = self.acpi.get_device_paths(lpc_bus_name, self.dsdt)[0][0]
-                break
-            except: 
-                pass
-
     def add_intel_management_engine(self):
         comment = "Creates a fake IMEI device to ensure Intel iGPUs acceleration functions properly"
         ssdt_name = "SSDT-IMEI"
@@ -1524,6 +1668,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "IMEI", 0x00000000)
             }
 
     def add_memory_controller_device(self):
+        if not self.lpc_bus_device:
+            return
+        
         comment = "Add a Memory Controller Hub Controller device to fix AppleSMBus"
         ssdt_name = "SSDT-MCHC"
         ssdt_content = """
@@ -1570,6 +1717,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
         }
 
     def add_system_management_bus_device(self):
+        if not self.lpc_bus_device:
+            return
+        
         try:
             smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=26) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
         except:
