@@ -3196,7 +3196,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
             selected_patches.append("PLUG")
 
         ethernet_pci = None
-        for network_name, network_props in hardware_report.get("Network").items():
+        for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
             if self.utils.contains_any(pci_data.NetworkIDs, device_id, start=108, end=219):
