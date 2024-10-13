@@ -3023,7 +3023,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
 
         selected_patches.append("FakeEC")
 
-        if "HP" in hardware_report.get("Motherboard").get("Name"):
+        if "HP " in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("CMOS")
 
         if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=26) or \

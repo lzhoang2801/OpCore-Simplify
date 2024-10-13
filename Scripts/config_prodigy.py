@@ -497,8 +497,8 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["AppleXcpmExtraMsrs"] = "-E" in hardware_report.get("CPU").get("Codename") and not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=26) is None
         config["Kernel"]["Quirks"]["CustomSMBIOSGuid"] = True
         config["Kernel"]["Quirks"]["DisableIoMapper"] = not "AMD" in hardware_report.get("CPU").get("Manufacturer")
-        config["Kernel"]["Quirks"]["DisableRtcChecksum"] = "ASUS" in hardware_report.get("Motherboard").get("Name") or "HP" in hardware_report.get("Motherboard").get("Name")
-        config["Kernel"]["Quirks"]["LapicKernelPanic"] = "HP" in hardware_report.get("Motherboard").get("Name")
+        config["Kernel"]["Quirks"]["DisableRtcChecksum"] = "ASUS" in hardware_report.get("Motherboard").get("Name") or "HP " in hardware_report.get("Motherboard").get("Name")
+        config["Kernel"]["Quirks"]["LapicKernelPanic"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["Kernel"]["Quirks"]["PanicNoKextDump"] = config["Kernel"]["Quirks"]["PowerTimeoutKernelPanic"] = True
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or \
             not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=2) is None
@@ -532,7 +532,7 @@ class ConfigProdigy:
         config["UEFI"]["Drivers"] = self.load_drivers()
         config["UEFI"]["Quirks"]["IgnoreInvalidFlexRatio"] = not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=26) is None
         config["UEFI"]["Quirks"]["ReleaseUsbOwnership"] = True
-        config["UEFI"]["Quirks"]["UnblockFsConnect"] = "HP" in hardware_report.get("Motherboard").get("Name")
+        config["UEFI"]["Quirks"]["UnblockFsConnect"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["UEFI"]["ReservedMemory"] = []
 
         for kext in kexts:
