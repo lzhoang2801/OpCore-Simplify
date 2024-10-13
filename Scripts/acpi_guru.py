@@ -238,8 +238,8 @@ class ACPIGuru:
                         print("\nDisassembled successfully!\n")
                         #self.make_plist(None, None, patches)
                         # Save to the local file
-                        with open(os.path.join(res,target_name),"wb") as f:
-                            f.write(d)
+                        #with open(os.path.join(res,target_name),"wb") as f:
+                        #    f.write(d)
                         #print("\n!! Patches applied to modified file in Results folder:\n   {}".format(target_name))
                         #self.patch_warn()
                         break
@@ -551,7 +551,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
 
     def enable_cpu_power_management(self):
         comment = "Sets plugin-type to 1 on the first Processor object to enable CPU power management"
-        ssdt_name = "SSDT-PLUG"
 
         #if not self.ensure_dsdt(allow_any=True):
         #    return
@@ -559,7 +558,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         #print("")
         #print("Determining CPU name scheme...")
         for table_name in self.sorted_nicely(list(self.acpi.acpi_tables)):
-            #ssdt_name = "SSDT-PLUG"
+            ssdt_name = "SSDT-PLUG"
             table = self.acpi.acpi_tables[table_name]
             if not table.get("signature","").lower() in ("dsdt","ssdt"):
                 continue # We're not checking data tables
@@ -685,22 +684,22 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
             #print("Done.")
             #self.patch_warn()
             #self.u.grab("Press [enter] to return...")
-            return
+            #return
         # If we got here - we reached the end
         #print("No valid processor devices found!")
         #print("")
         #self.u.grab("Press [enter] to return...")
         #return
 
-        return {
-            "Add": [
-                {
-                    "Comment": comment,
-                    "Enabled": self.write_ssdt(ssdt_name, ssdt),
-                    "Path": ssdt_name + ".aml"
-                }
-            ]
-        }
+            return {
+                "Add": [
+                    {
+                        "Comment": comment,
+                        "Enabled": self.write_ssdt(ssdt_name, ssdt),
+                        "Path": ssdt_name + ".aml"
+                    }
+                ]
+            }
 
     def list_irqs(self):
         # Walks the DSDT keeping track of the current device and
