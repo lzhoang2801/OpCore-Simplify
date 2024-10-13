@@ -410,8 +410,10 @@ class ConfigProdigy:
                     boot_args.append("-vi2c-force-polling")
                     break
 
-        if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
-            boot_args.append("-lilubetaall")
+        for kext in kexts:
+            if kext.checked and "Lilu" in kext.requires_kexts and not self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(kext.max_darwin_version):
+                boot_args.append("-lilubetaall")
+                break
 
         if list(hardware_report.get("GPU").items())[0][-1].get("Device ID") in pci_data.SpoofGPUIDs:
             boot_args.append("-radcodec")

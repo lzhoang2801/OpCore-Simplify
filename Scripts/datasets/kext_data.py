@@ -30,6 +30,7 @@ kexts = [
         description = "Advanced Apple SMC emulator in the kernel",
         category = "Required",
         required = True,
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "VirtualSMC"
@@ -39,32 +40,32 @@ kexts = [
         name = "SMCBatteryManager", 
         description = "Manages, monitors, and reports on battery status",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"]
     ),
     KextInfo(
         name = "SMCDellSensors", 
         description = "Enables fan monitoring and control on Dell computers",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"]
     ),
     KextInfo(
         name = "SMCLightSensor", 
         description = "Allows system utilize ambient light sensor device",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"]
     ),
     KextInfo(
         name = "SMCProcessor", 
         description = "Manages Intel CPU temperature sensors",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"]
     ),
     KextInfo(
         name = "SMCRadeonSensors", 
         description = "Provides temperature readings for AMD GPUs",
         category = "VirtualSMC Plugins",
         min_darwin_version = "18.0.0",
-        requires_kexts = ["VirtualSMC"],
+        requires_kexts = ["Lilu", "VirtualSMC"],
         github_repo = {
             "owner": "ChefKissInc",
             "repo": "SMCRadeonSensors"
@@ -74,13 +75,14 @@ kexts = [
         name = "SMCSuperIO", 
         description = "Monitoring hardware sensors and controlling fan speeds",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"]
     ),
     KextInfo(
         name = "NootRX", 
         description = "The rDNA 2 dGPU support patch kext",
         category = "Graphics",
         min_darwin_version = "20.5.0",
+        requires_kexts = ["Lilu"],
         conflict_group_id = "GPU",
         github_repo = {
             "owner": "ChefKissInc",
@@ -92,6 +94,7 @@ kexts = [
         description = "The AMD Vega iGPU support kext",
         category = "Graphics",
         min_darwin_version = "19.0.0",
+        requires_kexts = ["Lilu"],
         conflict_group_id = "GPU",
         github_repo = {
             "owner": "ChefKissInc",
@@ -102,6 +105,7 @@ kexts = [
         name = "WhateverGreen", 
         description = "Various patches necessary for GPUs are pre-supported",
         category = "Graphics",
+        requires_kexts = ["Lilu"],
         conflict_group_id = "GPU",
         github_repo = {
             "owner": "acidanthera",
@@ -112,6 +116,7 @@ kexts = [
         name = "AppleALC", 
         description = "Native macOS HD audio for not officially supported codecs",
         category = "Audio",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "AppleALC"
@@ -125,6 +130,7 @@ kexts = [
         name = "AirportBrcmFixup", 
         description = "Patches required for non-native Broadcom Wi-Fi cards",
         category = "Wi-Fi",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "AirportBrcmFixup"
@@ -178,6 +184,7 @@ kexts = [
         description = "Patches Bluetooth stack to support third-party cards",
         category = "Bluetooth",
         min_darwin_version = "21.0.0",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "BrcmPatchRAM"
@@ -240,7 +247,7 @@ kexts = [
         name = "IntelBTPatcher", 
         description = "Fixes Intel Bluetooth bugs for better connectivity",
         category = "Bluetooth",
-        requires_kexts = ["BlueToolFixup", "IntelBluetoothFirmware", "IntelBluetoothInjector"]
+        requires_kexts = ["Lilu", "BlueToolFixup", "IntelBluetoothFirmware", "IntelBluetoothInjector"]
     ),
     KextInfo(
         name = "IntelBluetoothInjector", 
@@ -460,6 +467,7 @@ kexts = [
         description = "Supports ALS, keyboard backlight, and Fn keys on ASUS laptops",
         category = "Brand Specific",
         max_darwin_version = "23.99.99",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "hieplpvip",
             "repo": "AsusSMC"
@@ -469,6 +477,7 @@ kexts = [
         name = "BigSurface", 
         description = "A fully intergrated kext for all Surface related hardwares",
         category = "Brand Specific",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "Xiashangning",
             "repo": "BigSurface"
@@ -489,6 +498,7 @@ kexts = [
         category = "Storage",
         max_darwin_version = "23.99.99",
         min_darwin_version = "18.0.0",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "NVMeFix"
@@ -513,7 +523,7 @@ kexts = [
         category = "Card Reader",
         min_darwin_version = "18.0.0",
         max_darwin_version = "22.99.99",
-        requires_kexts = ["RealtekCardReader"],
+        requires_kexts = ["Lilu", "RealtekCardReader"],
         github_repo = {
             "owner": "0xFireWolf",
             "repo": "RealtekCardReaderFriend"
@@ -533,7 +543,8 @@ kexts = [
         name = "AMFIPass", 
         description = "A replacement for amfi=0x80 boot argument",
         category = "Extras",
-        min_darwin_version = "20.0.0", 
+        min_darwin_version = "20.0.0",
+        requires_kexts = ["Lilu"],
         download_info = {
             "id": 926491527, 
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Acidanthera/AMFIPass-v1.4.1-RELEASE.zip"
@@ -552,6 +563,7 @@ kexts = [
         name = "BrightnessKeys", 
         description = "Handler for brightness keys without DSDT patches",
         category = "Extras",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "BrightnessKeys"
@@ -561,6 +573,7 @@ kexts = [
         name = "CpuTopologyRebuild", 
         description = "Optimizes the core configuration of Intel Alder Lake CPUs+",
         category = "Extras",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "b00t0x",
             "repo": "CpuTopologyRebuild"
@@ -571,6 +584,7 @@ kexts = [
         description = "Various patches to install Rosetta cryptex",
         category = "Extras",
         min_darwin_version = "22.0.0",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "CryptexFixup"
@@ -580,6 +594,7 @@ kexts = [
         name = "ECEnabler", 
         description = "Allows reading Embedded Controller fields over 1 byte long",
         category = "Extras",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "1Revenger1",
             "repo": "ECEnabler"
@@ -589,6 +604,7 @@ kexts = [
         name = "FeatureUnlock", 
         description = "Enable additional features on unsupported hardware",
         category = "Extras",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "FeatureUnlock"
@@ -598,6 +614,7 @@ kexts = [
         name = "ForgedInvariant", 
         description = "The plug & play kext for syncing the TSC on AMD & Intel",
         category = "Extras",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "ChefKissInc",
             "repo": "ForgedInvariant"
@@ -607,6 +624,7 @@ kexts = [
         name = "HibernationFixup", 
         description = "Fixes hibernation compatibility issues",
         category = "Extras",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "HibernationFixup"
@@ -616,6 +634,7 @@ kexts = [
         name = "RestrictEvents", 
         description = "Blocking unwanted processes and unlocking features",
         category = "Extras",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "RestrictEvents"
@@ -625,6 +644,7 @@ kexts = [
         name = "RTCMemoryFixup", 
         description = "Emulate some offsets in your CMOS (RTC) memory",
         category = "Extras",
+        requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "RTCMemoryFixup"

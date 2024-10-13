@@ -1,6 +1,7 @@
 
 from Scripts.datasets import cpu_data
 from Scripts.datasets import kext_data
+from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts import codec_layouts
 from Scripts import utils
@@ -78,10 +79,10 @@ class KextMaestro:
                 return index
         return None
 
-    def check_kext(self, index, target_darwin_version):
+    def check_kext(self, index, target_darwin_version, allow_unsupported_kexts=False):
         kext = self.kexts[index]
 
-        if kext.checked or not self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(target_darwin_version) <= self.utils.parse_darwin_version(kext.max_darwin_version):
+        if kext.checked or not (allow_unsupported_kexts or self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(target_darwin_version) <= self.utils.parse_darwin_version(kext.max_darwin_version)):
             return
 
         kext.checked = True
@@ -89,7 +90,7 @@ class KextMaestro:
         for requires_kext_name in kext.requires_kexts:
             requires_kext_index = self.get_kext_index(requires_kext_name)
             if requires_kext_index:
-                self.check_kext(requires_kext_index, target_darwin_version)
+                self.check_kext(requires_kext_index, target_darwin_version, allow_unsupported_kexts)
 
         if kext.conflict_group_id:
             for other_kext in self.kexts:
@@ -241,7 +242,7 @@ class KextMaestro:
                     selected_kexts.append("XHCI-unsupported")
 
         for name in selected_kexts:
-            self.check_kext(self.get_kext_index(name), macos_version)
+            self.check_kext(self.get_kext_index(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
 
     def install_kexts_to_efi(self, macos_version, kexts_directory):
         for kext in self.kexts:
@@ -376,6 +377,38 @@ class KextMaestro:
             if other_kext.name in kext.requires_kexts and not other_kext.required:
                 other_kext.checked = False
 
+    def verify_kext_compatibility(self, selected_kexts, target_darwin_version):
+        incompatible_kexts = [
+            (self.kexts[index].name, "Lilu" in self.kexts[index].requires_kexts)
+            for index in selected_kexts
+            if not self.utils.parse_darwin_version(self.kexts[index].min_darwin_version)
+            <= self.utils.parse_darwin_version(target_darwin_version)
+            <= self.utils.parse_darwin_version(self.kexts[index].max_darwin_version)
+        ]
+
+        if not incompatible_kexts:
+            return False
+        
+        while True:
+            self.utils.head("Kext Compatibility Check")
+            print("\nIncompatible kexts for the current macOS version ({}):\n".format(target_darwin_version))
+            
+            for index, (kext_name, is_lilu_dependent) in enumerate(incompatible_kexts, start=1):
+                print("{:2}. {:25}{}".format(index, kext_name, " - Lilu Plugin" if is_lilu_dependent else ""))
+            
+            print("\n\033[1;36m")
+            print("Note:")
+            print("- With Lilu plugins, using the \"-lilubetaall\" boot argument will force them to load.")
+            print("- Forcing unsupported kexts can cause system instability. \033[0;31mProceed with caution.\033[0m")
+            print("\033[0m")
+            
+            option = self.utils.request_input("Do you want to force load {} on the unsupported macOS version? (Y/n): ".format("these kexts" if len(incompatible_kexts) > 1 else "this kext"))
+            
+            if option.lower() == "y":
+                return True
+            elif option.lower() == "n":
+                return False
+
     def kext_configuration_menu(self, hardware_report, smbios_model, macos_version, acpi_patches):
         current_category = None
 
@@ -391,10 +424,10 @@ class KextMaestro:
                 checkbox = "[*]" if kext.checked else "[ ]"
                 
                 line = "{} {:2}. {:25} - {:60}".format(checkbox, index, kext.name, kext.description)
-                if not self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(kext.max_darwin_version):
-                    line = "\033[90m{}\033[0m".format(line)
-                elif kext.checked:
+                if kext.checked:
                     line = "\033[1;32m{}\033[0m".format(line)
+                elif not self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(kext.max_darwin_version):
+                    line = "\033[90m{}\033[0m".format(line)
                 contents.append(line)
             contents.append("\033[1;36m")
             contents.append("Note:")
@@ -420,6 +453,8 @@ class KextMaestro:
             if option.lower() == "q":
                 self.utils.exit_program()
             indices = [int(i.strip()) -1 for i in option.split(",") if i.strip().isdigit()]
+
+            allow_unsupported_kexts = "Beta" in os_data.get_macos_name_by_darwin(macos_version) or self.verify_kext_compatibility(indices, macos_version)
     
             for index in indices:
                 if index >= 0 and index < len(self.kexts):
@@ -427,4 +462,4 @@ class KextMaestro:
                     if kext.checked and not kext.required:
                         self.uncheck_kext(index)
                     else:
-                        self.check_kext(index, macos_version)
+                        self.check_kext(index, macos_version, allow_unsupported_kexts)
