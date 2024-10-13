@@ -231,7 +231,7 @@ class ConfigProdigy:
 
         return dict(sorted(igpu_properties.items(), key=lambda item: item[0]))
   
-    def deviceproperties(self, hardware_report, macos_version):
+    def deviceproperties(self, hardware_report, macos_version, kexts):
         deviceproperties_add = {}
 
         discrete_gpu = None
@@ -264,10 +264,14 @@ class ConfigProdigy:
                 if not discrete_gpu.get("PCI Path") or not discrete_gpu.get("Device ID") in pci_data.SpoofGPUIDs:
                     continue
 
-                deviceproperties_add[discrete_gpu.get("PCI Path")] = {
-                    "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(discrete_gpu.get("Device ID")).split("-")[-1]),
-                    "model": gpu_name
-                }
+                for kext in kexts:
+                    if kext.checked:
+                        if kext.name == "WhateverGreen":
+                            deviceproperties_add[discrete_gpu.get("PCI Path")] = {
+                                "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(discrete_gpu.get("Device ID")).split("-")[-1]),
+                                "model": gpu_name
+                            }
+                            break
 
         for key, value in deviceproperties_add.items():
             for key_child, value_child in value.items():
@@ -474,7 +478,7 @@ class ConfigProdigy:
             "ASUS" in hardware_report.get("Motherboard").get("Name") and self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")) and config["Booter"]["Quirks"]["DevirtualiseMmio"])
         config["Booter"]["Quirks"]["SyncRuntimePermissions"] = config["Booter"]["Quirks"]["RebuildAppleMemoryMap"]
 
-        config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, macos_version)
+        config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, macos_version, kexts)
 
         config["Kernel"]["Add"] = []
         config["Kernel"]["Block"] = self.block_kext_bundle(kexts)
