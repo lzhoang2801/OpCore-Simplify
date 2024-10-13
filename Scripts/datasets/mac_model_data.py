@@ -75,14 +75,14 @@ mac_devices = [
     MacDevice("MacBookPro16,2", "i5-1038NG7", "Ice Lake", None, "19.4.0"),
     MacDevice("MacBookPro16,3", "i5-8257U", "Coffee Lake", None, "19.4.0"),
     MacDevice("MacBookPro16,4", "i7-9750H", "Coffee Lake", "AMD Radeon Pro 5600M", "19.0.0"),
-    # MacMini Models
-    MacDevice("MacMini5,1", "i5-2415M", "Sandy Bridge", None, "11.0.0", "17.99.99"),
-    MacDevice("MacMini5,2", "i5-2520M", "Sandy Bridge", None, "11.0.0", "17.99.99"),
-    MacDevice("MacMini5,3", "i7-2635QM", "Sandy Bridge", None, "11.0.0", "17.99.99"),
-    MacDevice("MacMini6,1", "i5-3210M", "Ivy Bridge", None, "10.8.1", "19.99.99"),
-    MacDevice("MacMini6,2", "i7-3615QM", "Ivy Bridge", None, "10.8.1", "19.99.99"),
-    MacDevice("MacMini7,1", "i5-4260U", "Haswell", None, "14.0.0", "21.99.99"),
-    MacDevice("MacMini8,1", "i7-8700B", "Coffee Lake", None, "18.0.0"),
+    # Macmini Models
+    MacDevice("Macmini5,1", "i5-2415M", "Sandy Bridge", None, "11.0.0", "17.99.99"),
+    MacDevice("Macmini5,2", "i5-2520M", "Sandy Bridge", None, "11.0.0", "17.99.99"),
+    MacDevice("Macmini5,3", "i7-2635QM", "Sandy Bridge", None, "11.0.0", "17.99.99"),
+    MacDevice("Macmini6,1", "i5-3210M", "Ivy Bridge", None, "10.8.1", "19.99.99"),
+    MacDevice("Macmini6,2", "i7-3615QM", "Ivy Bridge", None, "10.8.1", "19.99.99"),
+    MacDevice("Macmini7,1", "i5-4260U", "Haswell", None, "14.0.0", "21.99.99"),
+    MacDevice("Macmini8,1", "i7-8700B", "Coffee Lake", None, "18.0.0"),
     # iMacPro Models
     MacDevice("iMacPro1,1", "W-2140B", "Skylake-W", "AMD Radeon RX Vega 56", "17.3.0"),
     # MacPro Models
