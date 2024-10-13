@@ -9,9 +9,6 @@ import time
 class CompatibilityChecker:
     def __init__(self):
         self.utils = utils.Utils()
-        self.hardware_report = None
-        self.max_supported_macos_version = os_data.get_latest_darwin_version()
-        self.min_supported_macos_version = os_data.get_lowest_darwin_version()
 
     def show_macos_compatibility(self, device_compatibility):
         if not device_compatibility:
@@ -44,17 +41,26 @@ class CompatibilityChecker:
         return any(cpu_branding in processor_name for cpu_branding in ("Celeron", "Pentium"))
 
     def check_cpu_compatibility(self):
-        if "SSE4" not in self.hardware_report.get("CPU").get("SIMD Features"):
-            self.max_supported_macos_version = self.min_supported_macos_version = None
-            return
-        
-        if "SSE4.2" not in self.hardware_report.get("CPU").get("SIMD Features"):
-            self.min_supported_macos_version = "18.0.0"
-            if "SSE4.1" in self.hardware_report.get("CPU").get("SIMD Features"):
-                self.max_supported_macos_version = "21.99.99"
+        max_version = os_data.get_latest_darwin_version()
+        min_version = os_data.get_lowest_darwin_version()
 
-        self.hardware_report["CPU"]["Compatibility"] = (self.max_supported_macos_version, self.min_supported_macos_version)
+        if "SSE4" not in self.hardware_report.get("CPU").get("SIMD Features"):
+            max_version = min_version = None
+        else:
+            if "SSE4.2" not in self.hardware_report.get("CPU").get("SIMD Features"):
+                min_version = "18.0.0"
+                if "SSE4.1" in self.hardware_report.get("CPU").get("SIMD Features"):
+                    max_version = "21.99.99"
+
+        self.hardware_report["CPU"]["Compatibility"] = (max_version, min_version)
         print("{}- {}: {}".format(" "*3, self.hardware_report.get("CPU").get("Processor Name"), self.show_macos_compatibility(self.hardware_report["CPU"].get("Compatibility"))))
+
+        if max_version == min_version and max_version == None:
+            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
+            self.utils.exit_program()
+
+        self.max_supported_macos_version = max_version
+        self.min_supported_macos_version = min_version
 
     def check_gpu_compatibility(self):
         gpu_compatibility = []
@@ -120,13 +126,17 @@ class CompatibilityChecker:
                 else:
                     max_version = min_version = None
 
-            if max_version == min_version and max_version == None:
+            if (max_version == min_version and max_version == None) or \
+                not any(monitor_info.get("Connected GPU", gpu_name) == gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items()):
                 gpu_props["Compatibility"] = (None, None)
             else:
                 gpu_props["Compatibility"] = (max_version, min_version)
-                max_supported_gpu_version = max_version if not max_supported_gpu_version else max_version if self.utils.parse_darwin_version(max_version) < self.utils.parse_darwin_version(max_supported_gpu_version) else max_supported_gpu_version
-                min_supported_gpu_version = min_version if not min_supported_gpu_version else min_version if self.utils.parse_darwin_version(min_version) > self.utils.parse_darwin_version(min_supported_gpu_version) else min_supported_gpu_version
-            print("{}- {}: {}".format(" "*3, gpu_name, self.show_macos_compatibility(gpu_props.get("Compatibility"))))
+                max_supported_gpu_version = max_version if not max_supported_gpu_version else max_version if self.utils.parse_darwin_version(max_version) > self.utils.parse_darwin_version(max_supported_gpu_version) else max_supported_gpu_version
+                min_supported_gpu_version = min_version if not min_supported_gpu_version else min_version if self.utils.parse_darwin_version(min_version) < self.utils.parse_darwin_version(min_supported_gpu_version) else min_supported_gpu_version
+            print("{}- {}: {}".format(" "*3, gpu_name, "\033[1;36mSupported (requires monitor)\033[0m" if max_version != gpu_props.get("Compatibility")[0] else self.show_macos_compatibility(gpu_props.get("Compatibility"))))
+            connected_monitors = list("{} ({})".format(monitor_name, monitor_info.get("Connector Type")) for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items() if monitor_info.get("Connected GPU") == gpu_name)
+            if connected_monitors:
+                print("{}- Connected Monitor{}: {}".format(" "*6, "s" if len(connected_monitors) > 1 else "", ", ".join(connected_monitors)))
 
         if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
             self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
