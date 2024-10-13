@@ -362,67 +362,68 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, hardware_report, macos_version, kexts):
+    def boot_args(self, hardware_report, macos_version, kexts, resize_bar):
         boot_args = [
             "-v",
             "debug=0x100",
             "keepsyms=1"
         ]
 
-        if hardware_report.get("Sound"):
-            codec_id = list(hardware_report.get("Sound").items())[0][-1].get("Device ID")
-            if codec_id in codec_layouts.data:
-                boot_args.append("alcid={}".format(random.choice(codec_layouts.data.get(codec_id))))
-
-        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
+        if not resize_bar and ("AMD" in hardware_report.get("CPU").get("Manufacturer") or self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename"))):
             boot_args.append("npci=0x2000")
 
-        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-            boot_args.append("revpatch=sbvmm{}".format(",cpuname" if not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-            self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)) else ""))
-
-        if any(kext.checked for kext in kexts if kext.name == "CpuTopologyRebuild"):
-            boot_args.append("-ctrsmt")
-
-        if  any(tuple(map(int, "3840x2160".split("x"))) <= tuple(map(int, monitor_info.get("Resolution").split("x"))) for monitor_name, monitor_info in hardware_report.get("Monitor", {}).items()) and \
-            self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0"):
-            boot_args.append("-cdfon")
-
-        if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
-            intergrated_gpu = list(hardware_report.get("GPU").items())[-1][-1]
-            if  intergrated_gpu.get("Device ID")[5:].startswith(("3E", "87", "9B")) and \
-                self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.4.0"):
-                boot_args.append("igfxonln=1")
-
-            if "Ice Lake" in list(hardware_report.get("GPU").items())[-1][-1].get("Codename"):
-                boot_args.extend(("-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"))
-
-            if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
-                if intergrated_gpu.get("Device ID")[5:].startswith(("09", "19", "59", "8C", "3E", "87", "9B", "8A")) and not intergrated_gpu.get("Device ID").endswith("5917"):
-                    boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else "r"))
-
-        if "Navi 1" in list(hardware_report.get("GPU").items())[0][-1].get("Codename"):
-            boot_args.append("agdpmod=pikera")
-
-        if not "SURFACE" in hardware_report.get("Motherboard").get("Name"):
-            for device_name, device_info in hardware_report.get("Input").items():
-                if "I2C" in device_info.get("Device Type", "None"):
-                    boot_args.append("-vi2c-force-polling")
-                    break
-
         for kext in kexts:
-            if kext.checked and "Lilu" in kext.requires_kexts and not self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(kext.max_darwin_version):
-                boot_args.append("-lilubetaall")
-                break
+            if not kext.checked:
+                continue
 
-        if list(hardware_report.get("GPU").items())[0][-1].get("Device ID") in pci_data.SpoofGPUIDs:
-            boot_args.append("-radcodec")
+            if "Lilu" in kext.requires_kexts and not self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(kext.max_darwin_version):
+                if not "-lilubetaall" in boot_args:
+                    boot_args.append("-lilubetaall")
 
-        if list(hardware_report.get("GPU").items())[0][-1].get("Device ID") in ("1002-6610", "1002-682B", "1002-6837", "1002-683D", "1002-683F"):
-            boot_args.append("radpg=15")
+            if kext.name == "WhateverGreen":
+                if  any(tuple(map(int, "3840x2160".split("x"))) <= tuple(map(int, monitor_info.get("Resolution").split("x"))) for monitor_name, monitor_info in hardware_report.get("Monitor", {}).items()) and \
+                    self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0"):
+                    boot_args.append("-cdfon")
 
-        if list(hardware_report.get("GPU").items())[0][-1].get("Device ID") in ("1002-67B0", "1002-67B1", "1002-67B8", "1002-6810", "1002-6811"):
-            boot_args.append("-raddvi")
+                if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
+                    intergrated_gpu = list(hardware_report.get("GPU").items())[-1][-1]
+                    if  intergrated_gpu.get("Device ID")[5:].startswith(("3E", "87", "9B")) and \
+                        self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.4.0"):
+                        boot_args.append("igfxonln=1")
+
+                    if "Ice Lake" in intergrated_gpu.get("Codename"):
+                        boot_args.extend(("-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"))
+
+                    if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
+                        if intergrated_gpu.get("Device ID")[5:].startswith(("09", "19", "59", "8C", "3E", "87", "9B", "8A")) and not intergrated_gpu.get("Device ID").endswith("5917"):
+                            boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else "r"))
+
+                discrete_gpu = list(hardware_report.get("GPU").items())[0][-1]
+                if discrete_gpu.get("Device Type") == "Discrete GPU":
+                    if "Navi" in discrete_gpu.get("Codename"):
+                        boot_args.append("agdpmod=pikera")
+
+                    if discrete_gpu.get("Device ID") in pci_data.SpoofGPUIDs:
+                        boot_args.append("-radcodec")
+
+                    if discrete_gpu.get("Device ID") in ("1002-6610", "1002-682B", "1002-6837", "1002-683D", "1002-683F"):
+                        boot_args.append("radpg=15")
+
+                    if discrete_gpu.get("Device ID") in ("1002-67B0", "1002-67B1", "1002-67B8", "1002-6810", "1002-6811"):
+                        boot_args.append("-raddvi")
+            elif kext.name == "AppleALC":
+                if hardware_report.get("Sound"):
+                    codec_id = list(hardware_report.get("Sound").items())[0][-1].get("Device ID")
+                    if codec_id in codec_layouts.data:
+                        boot_args.append("alcid={}".format(random.choice(codec_layouts.data.get(codec_id))))
+            elif kext.name == "VoodooI2C":
+                boot_args.append("-vi2c-force-polling")
+            elif kext.name == "CpuTopologyRebuild":
+                boot_args.append("-ctrsmt")
+            elif kext.name == "RestrictEvents":
+                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
+                    boot_args.append("revpatch=sbvmm{}".format(",cpuname" if not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
+                    self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)) else ""))
 
         return " ".join(boot_args)
     
@@ -521,7 +522,7 @@ class ConfigProdigy:
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
-        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts)
+        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts, config["Booter"]["Quirks"]["ResizeAppleGpuBars"] == 0)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = "en:252"
         config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].append("csr-active-config")
