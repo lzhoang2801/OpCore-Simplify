@@ -207,14 +207,14 @@ class KextMaestro:
                         selected_kexts.append("VoodooPS2Controller")
                         if device_id.startswith("SYN"):
                             selected_kexts.append("VoodooRMI")
-                        elif idx and 76 < idx < 80:
+                        elif idx and 75 < idx < 79:
                             selected_kexts.append("VoodooSMBus")
                     if "I2C" in device_props.get("Device Type", "None"):
                         selected_kexts.append("VoodooI2CHID")
                         if idx:
-                            if idx < 77:
+                            if idx < 76:
                                 selected_kexts.append("AlpsHID")
-                            elif 79 < idx:
+                            elif 78 < idx:
                                 selected_kexts.append("VoodooRMI")
 
         if any(patch.checked for patch in acpi_patches if patch.name == "BATP"):
