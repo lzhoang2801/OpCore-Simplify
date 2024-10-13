@@ -324,7 +324,6 @@ class KextMaestro:
                 "BundleLibraries": {
                     bundle_identifier: bundle_version
                     for bundle_identifier, bundle_version in bundle_info.get("OSBundleLibraries", {}).items() 
-                    if not bundle_identifier.startswith("com.apple")
                 }
             })
 
