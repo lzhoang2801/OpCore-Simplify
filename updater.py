@@ -46,6 +46,7 @@ class Updater:
         for path, type in file_paths:
             source = os.path.join(target_dir, path)
             destination = source.replace(target_dir, os.path.dirname(os.path.realpath(__file__)))
+            self.utils.create_folder(os.path.dirname(destination))
             shutil.move(source, destination)
             if ".command" in os.path.splitext(path)[-1] and os.name != "nt":
                 self.run({
