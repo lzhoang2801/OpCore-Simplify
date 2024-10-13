@@ -234,44 +234,44 @@ class ConfigProdigy:
     def deviceproperties(self, hardware_report, macos_version, kexts):
         deviceproperties_add = {}
 
-        discrete_gpu = None
-        for gpu_name, gpu_info in hardware_report.get("GPU", {}).items():
-            if gpu_info.get("Device Type") == "Integrated GPU":
-                if "Intel" in gpu_info.get("Manufacturer"):
-                    igpu_properties = self.igpu_properties(
-                        "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform"), 
-                        gpu_info,
-                        discrete_gpu,
-                        hardware_report.get("Monitor", {}),
-                        macos_version
-                    )
-                    if igpu_properties:
-                        deviceproperties_add[gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")] = igpu_properties
-                        if gpu_info.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
-                            intel_mei = next((device_props for device_name, device_props in hardware_report.get("System Devices").items() if "HECI" in device_name or "Management Engine Interface" in device_name), None)
-                            if intel_mei:
-                                if "Sandy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1E3A":
-                                    deviceproperties_add[intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)")] = {
-                                        "device-id": "3A1C0000"
-                                    }
-                                elif "Ivy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1C3A":
-                                    deviceproperties_add[intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)")] = {
-                                        "device-id": "3A1E0000"
-                                    }
-            elif gpu_info.get("Device Type") == "Discrete GPU":
-                discrete_gpu = gpu_info
+        for kext in kexts:
+            if kext.checked:
+                if kext.name == "WhateverGreen":
+                    discrete_gpu = None
+                    for gpu_name, gpu_info in hardware_report.get("GPU", {}).items():
+                        if gpu_info.get("Device Type") == "Integrated GPU":
+                            if "Intel" in gpu_info.get("Manufacturer"):
+                                igpu_properties = self.igpu_properties(
+                                    "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform"), 
+                                    gpu_info,
+                                    discrete_gpu,
+                                    hardware_report.get("Monitor", {}),
+                                    macos_version
+                                )
+                                if igpu_properties:
+                                    deviceproperties_add[gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")] = igpu_properties
+                                    if gpu_info.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
+                                        intel_mei = next((device_props for device_name, device_props in hardware_report.get("System Devices").items() if "HECI" in device_name or "Management Engine Interface" in device_name), None)
+                                        if intel_mei:
+                                            if "Sandy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1E3A":
+                                                deviceproperties_add[intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)")] = {
+                                                    "device-id": "3A1C0000"
+                                                }
+                                            elif "Ivy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1C3A":
+                                                deviceproperties_add[intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)")] = {
+                                                    "device-id": "3A1E0000"
+                                                }
+                        elif gpu_info.get("Device Type") == "Discrete GPU":
+                            discrete_gpu = gpu_info
 
-                if not discrete_gpu.get("PCI Path") or not discrete_gpu.get("Device ID") in pci_data.SpoofGPUIDs:
-                    continue
+                            if not discrete_gpu.get("PCI Path") or not discrete_gpu.get("Device ID") in pci_data.SpoofGPUIDs:
+                                continue
 
-                for kext in kexts:
-                    if kext.checked:
-                        if kext.name == "WhateverGreen":
                             deviceproperties_add[discrete_gpu.get("PCI Path")] = {
                                 "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(discrete_gpu.get("Device ID")).split("-")[-1]),
                                 "model": gpu_name
                             }
-                            break
+                    break
 
         for key, value in deviceproperties_add.items():
             for key_child, value_child in value.items():
