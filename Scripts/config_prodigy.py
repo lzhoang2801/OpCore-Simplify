@@ -464,6 +464,7 @@ class ConfigProdigy:
         config["Booter"]["Quirks"]["DevirtualiseMmio"] = self.check_mats_support(hardware_report.get("CPU").get("Manufacturer"), hardware_report.get("Motherboard").get("Chipset"))
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") and not "TRX40" in hardware_report.get("Motherboard").get("Chipset"):
             config["Booter"]["Quirks"]["DevirtualiseMmio"] = False
+        config["Booter"]["Quirks"]["DevirtualiseMmio"] = len(config["Booter"]["MmioWhitelist"]) != 0 or config["Booter"]["Quirks"]["DevirtualiseMmio"]
         config["Booter"]["Quirks"]["EnableWriteUnprotector"] = False if "AMD" in hardware_report.get("CPU").get("Manufacturer") else not config["Booter"]["Quirks"]["DevirtualiseMmio"]
         config["Booter"]["Quirks"]["ProtectUefiServices"] = "Z390" in hardware_report.get("Motherboard").get("Chipset") or \
             not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=14) is None
