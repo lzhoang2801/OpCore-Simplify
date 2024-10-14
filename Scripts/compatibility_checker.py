@@ -127,13 +127,21 @@ class CompatibilityChecker:
                     max_version = min_version = None
 
             if (max_version == min_version and max_version == None) or \
-                not any(monitor_info.get("Connected GPU", gpu_name) == gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items()):
+                any(monitor_info.get("Connected GPU", gpu_name) != gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items() if monitor_info.get("Connector Type") == "Internal"):
                 gpu_props["Compatibility"] = (None, None)
             else:
                 gpu_props["Compatibility"] = (max_version, min_version)
                 max_supported_gpu_version = max_version if not max_supported_gpu_version else max_version if self.utils.parse_darwin_version(max_version) > self.utils.parse_darwin_version(max_supported_gpu_version) else max_supported_gpu_version
                 min_supported_gpu_version = min_version if not min_supported_gpu_version else min_version if self.utils.parse_darwin_version(min_version) < self.utils.parse_darwin_version(min_supported_gpu_version) else min_supported_gpu_version
-            print("{}- {}: {}".format(" "*3, gpu_name, "\033[1;36mSupported (requires monitor)\033[0m" if max_version != gpu_props.get("Compatibility")[0] else self.show_macos_compatibility(gpu_props.get("Compatibility"))))
+            print("{}- {}: {}{}".format(
+                " "*3, 
+                gpu_name, 
+                self.show_macos_compatibility(gpu_props.get("Compatibility")),
+                " \033[1;36m(requires monitor)\033[0m" 
+                if  max_version and \
+                    not "Intel" in gpu_manufacturer and \
+                    not any(monitor_info.get("Connected GPU", gpu_name) == gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items()) else ""
+            ))
             connected_monitors = list("{} ({})".format(monitor_name, monitor_info.get("Connector Type")) for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items() if monitor_info.get("Connected GPU") == gpu_name)
             if connected_monitors:
                 print("{}- Connected Monitor{}: {}".format(" "*6, "s" if len(connected_monitors) > 1 else "", ", ".join(connected_monitors)))
