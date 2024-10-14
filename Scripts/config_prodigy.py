@@ -69,10 +69,10 @@ class ConfigProdigy:
     def is_low_end_intel_cpu(self, processor_name):
         return any(cpu_branding in processor_name for cpu_branding in ("Celeron", "Pentium"))
     
-    def igpu_properties(self, platform, integrated_gpu, discrete_gpu, monitor, macos_version):
+    def igpu_properties(self, platform, integrated_gpu, monitor, macos_version):
         igpu_properties = {}
 
-        device_id = integrated_gpu.get("Device ID")[5:]
+        device_id = integrated_gpu[1].get("Device ID")[5:]
 
         if device_id.startswith("01") and not device_id[-2] in ("5", "6"):
             native_supported_ids = ("0106", "1106", "1601", "0116", "0126", "0102")
@@ -80,7 +80,7 @@ class ConfigProdigy:
                 igpu_properties["device-id"] = "26010000"
             igpu_properties["AAPL,snb-platform-id"] = "10000300"
             if platform == "Desktop":
-                if discrete_gpu:
+                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items()):
                     igpu_properties["AAPL,snb-platform-id"] = "00000500"
                     igpu_properties["device-id"] = "02010000"
             elif platform == "Laptop":
@@ -92,7 +92,7 @@ class ConfigProdigy:
             if not device_id in native_supported_ids:
                 igpu_properties["device-id"] = "62010000"
             if platform == "Desktop":
-                if discrete_gpu:
+                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items()):
                     igpu_properties["AAPL,ig-platform-id"] = "07006201"
                 igpu_properties["AAPL,ig-platform-id"] = "0A006601"
             elif platform == "NUC":
@@ -112,7 +112,7 @@ class ConfigProdigy:
             if not device_id in native_supported_ids:
                 igpu_properties["device-id"] = "12040000"
             if platform == "Desktop":
-                if discrete_gpu:
+                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items()):
                     igpu_properties["AAPL,ig-platform-id"] = "04001204"
                     return igpu_properties
                 igpu_properties["AAPL,ig-platform-id"] = "0300220D"
@@ -147,7 +147,7 @@ class ConfigProdigy:
             if device_id.startswith("191E"):
                 igpu_properties["AAPL,ig-platform-id"] = "00001E19"
             if platform == "Desktop":
-                if discrete_gpu:
+                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items()):
                     igpu_properties["AAPL,ig-platform-id"] = "01001219"
                     return igpu_properties
                 igpu_properties["AAPL,ig-platform-id"] = "00001219"
@@ -170,7 +170,7 @@ class ConfigProdigy:
             if device_id.startswith(("5917", "5916", "5921")):
                 igpu_properties["AAPL,ig-platform-id"] = "00001659"
             if platform == "Desktop":
-                if discrete_gpu:
+                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items()):
                     igpu_properties["AAPL,ig-platform-id"] = "03001259"
                     return igpu_properties
                 igpu_properties["AAPL,ig-platform-id"] = "00001259"
@@ -196,7 +196,7 @@ class ConfigProdigy:
             if not device_id in native_supported_ids:
                 igpu_properties["device-id"] = "9B3E0000"
             if platform == "Desktop":
-                if discrete_gpu:
+                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items()):
                     igpu_properties["AAPL,ig-platform-id"] = "0300913E" if not device_id.startswith("9B") else "0300C89B"
                     return igpu_properties
                 igpu_properties["AAPL,ig-platform-id"] = "07009B3E" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.5.0") else "00009B3E"
@@ -243,8 +243,7 @@ class ConfigProdigy:
                             if "Intel" in gpu_info.get("Manufacturer"):
                                 igpu_properties = self.igpu_properties(
                                     "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform"), 
-                                    gpu_info,
-                                    discrete_gpu,
+                                    (gpu_name, gpu_info),
                                     hardware_report.get("Monitor", {}),
                                     macos_version
                                 )
