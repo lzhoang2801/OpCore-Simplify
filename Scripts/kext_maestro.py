@@ -70,8 +70,7 @@ class KextMaestro:
         return pci_ids
 
     def is_intel_hedt_cpu(self, cpu_codename):
-        return "-E" in cpu_codename and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=4) is None or \
-            ("-X" in cpu_codename or "-W" in cpu_codename) and not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=4, end=6) is None
+        return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=21) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
     
     def get_kext_index(self, name):
         for index, kext in enumerate(self.kexts):
