@@ -17,10 +17,10 @@ class CompatibilityChecker:
         if not device_compatibility[0]:
             return "\033[0;31mUnsupported\033[0m"
         
-        max_compatibility = self.utils.parse_darwin_version(device_compatibility[0])
-        min_compatibility = self.utils.parse_darwin_version(device_compatibility[-1])
-        max_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())
-        min_version = self.utils.parse_darwin_version(os_data.get_lowest_darwin_version())
+        max_compatibility = self.utils.parse_darwin_version(device_compatibility[0])[0]
+        min_compatibility = self.utils.parse_darwin_version(device_compatibility[-1])[0]
+        max_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())[0]
+        min_version = self.utils.parse_darwin_version(os_data.get_lowest_darwin_version())[0]
 
         if min_version < min_compatibility and max_compatibility < max_version:
             return "\033[1;32m{} - {}\033[0m".format(
