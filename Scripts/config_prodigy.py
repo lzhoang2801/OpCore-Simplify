@@ -389,16 +389,19 @@ class ConfigProdigy:
                     boot_args.append("-cdfon")
 
                 if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
-                    intergrated_gpu = list(hardware_report.get("GPU").items())[-1][-1]
-                    if  intergrated_gpu.get("Device ID")[5:].startswith(("3E", "87", "9B")) and \
+                    intergrated_gpu = list(hardware_report.get("GPU").items())[-1]
+                    if  intergrated_gpu[-1].get("Device ID")[5:].startswith(("3E", "87", "9B")) and \
                         self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.4.0"):
                         boot_args.append("igfxonln=1")
 
-                    if "Ice Lake" in intergrated_gpu.get("Codename"):
+                    if "Ice Lake" in intergrated_gpu[-1].get("Codename"):
                         boot_args.extend(("-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"))
 
-                    if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
-                        if intergrated_gpu.get("Device ID")[5:].startswith(("09", "19", "59", "8C", "3E", "87", "9B", "8A")) and not intergrated_gpu.get("Device ID").endswith("5917"):
+                    if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
+                        if any(monitor_info.get("Connector Type") in ("DVI", "HDMI") for monitor_name, monitor_info in hardware_report.get("Monitor", {}).items() if monitor_info.get("Connected GPU") == intergrated_gpu[0]):
+                            boot_args.append("-igfxvesa")
+                    elif "Laptop" in hardware_report.get("Motherboard").get("Platform"):
+                        if intergrated_gpu[-1].get("Device ID")[5:].startswith(("09", "19", "59", "8C", "3E", "87", "9B", "8A")) and not intergrated_gpu[-1].get("Device ID").endswith("5917"):
                             boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else "r"))
 
                 discrete_gpu = list(hardware_report.get("GPU").items())[0][-1]
