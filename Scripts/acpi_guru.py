@@ -1982,7 +1982,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
             comment = "Disable {}".format(device_name.split(": ")[-1])
             ssdt_name = None
             if "GPU" in device_name:
-                ssdt_name = "SSDT-Disable_GPU_{}".format(device_props.get("ACPI Path").split(".")[-2])
+                ssdt_name = "SSDT-Disable_GPU_{}".format(device_props.get("ACPI Path").split(".")[2])
                 target_device = device_props.get("ACPI Path")
                 target_off_method = target_ps3_method = None
                 for table_name, table_data in self.acpi.acpi_tables.items():
@@ -2011,7 +2011,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
                         ssdt_content = """
 // Resource: https://github.com/dortania/Getting-Started-With-ACPI/blob/master/extra-files/decompiled/SSDT-GPU-DISABLE.dsl
 
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "DisGPU", 0x00000000)
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
 {
     External ([[DevicePath]], DeviceObj)
 
@@ -2126,6 +2126,55 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
         
                         ssdt_content += """
         }
+    }
+}
+"""
+            elif "Network" in device_name and device_props.get("Bus Type") == "PCI" and \
+                (not device_props.get("Device ID") in pci_data.NetworkIDs or 20 < pci_data.NetworkIDs.index(device_props.get("Device ID")) < 108 ):
+                ssdt_name = "SSDT-Disable_WiFi_{}".format(device_props.get("ACPI Path").split(".")[2])
+                ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "DWIFI", 0x00000000)
+{
+    External ([[DevicePath]], DeviceObj)
+
+    Method ([[DevicePath]]._DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
+    {
+        If ((!Arg2 || (_OSI ("Darwin") == Zero)))
+        {
+            Return (Buffer (One)
+            {
+                 0x03                                             // .
+            })
+        }
+
+        Return (Package (0x0A)
+        {
+            "name", 
+            Buffer (0x09)
+            {
+                "#network"
+            }, 
+
+            "IOName", 
+            "#display", 
+            "class-code", 
+            Buffer (0x04)
+            {
+                 0xFF, 0xFF, 0xFF, 0xFF                           // ....
+            }, 
+
+            "vendor-id", 
+            Buffer (0x04)
+            {
+                 0xFF, 0xFF, 0x00, 0x00                           // ....
+            }, 
+
+            "device-id", 
+            Buffer (0x04)
+            {
+                 0xFF, 0xFF, 0x00, 0x00                           // ....
+            }
+        })
     }
 }
 """
