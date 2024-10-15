@@ -253,6 +253,7 @@ class gatheringFiles:
             else:
                 download_history[history_index]["id"] = hardware_sniffer_cli.get("id")
             
+            self.utils.create_folder(os.path.dirname(self.download_history_file))
             self.utils.write_file(self.download_history_file, download_history)
 
             return hardware_sniffer_path

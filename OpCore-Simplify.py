@@ -55,7 +55,7 @@ class OCPE:
             print("Q. Quit")
             print("")
         
-            user_input = self.u.request_input("Drag and drop your hardware report here (.JSON) or type 'E' to export: ")
+            user_input = self.u.request_input("Drag and drop your hardware report here (.JSON){}: ".format(" or type \"E\" to export" if self.hardware_sniffer else ""))
             if user_input.lower() == "q":
                 self.u.exit_program()
             if self.hardware_sniffer and user_input.lower() == "e":
