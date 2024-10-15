@@ -127,7 +127,9 @@ class CompatibilityChecker:
                     max_version = min_version = None
 
             if (max_version == min_version and max_version == None) or \
-                any(monitor_info.get("Connected GPU", gpu_name) != gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items() if monitor_info.get("Connector Type") == "Internal"):
+                any(monitor_info.get("Connected GPU", gpu_name) != gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items() if monitor_info.get("Connector Type") == "Internal") or \
+                ( "Intel" in gpu_manufacturer and device_id.startswith(("01", "04", "0A", "0C", "0D")) and \
+                  all(monitor_info.get("Connector Type") == "VGA" and monitor_info.get("Connected GPU", gpu_name) == gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items())):
                 gpu_props["Compatibility"] = (None, None)
             else:
                 gpu_props["Compatibility"] = (max_version, min_version)
@@ -142,7 +144,13 @@ class CompatibilityChecker:
                     not "Intel" in gpu_manufacturer and \
                     not any(monitor_info.get("Connected GPU", gpu_name) == gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items()) else ""
             ))
-            connected_monitors = list("{} ({})".format(monitor_name, monitor_info.get("Connector Type")) for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items() if monitor_info.get("Connected GPU") == gpu_name)
+            connected_monitors = []
+            for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items(): 
+                if monitor_info.get("Connected GPU") == gpu_name:
+                    connected_monitors.append("{} ({})".format(monitor_name, monitor_info.get("Connector Type")))
+                    if "Intel" in gpu_manufacturer and device_id.startswith(("01", "04", "0A", "0C", "0D")):
+                        if monitor_info.get("Connector Type") == "VGA":
+                            connected_monitors[-1] = "\033[0;31m{}{}\033[0m".format(connected_monitors[-1][:-1], ", unsupported)")
             if connected_monitors:
                 print("{}- Connected Monitor{}: {}".format(" "*6, "s" if len(connected_monitors) > 1 else "", ", ".join(connected_monitors)))
 

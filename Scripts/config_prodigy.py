@@ -80,7 +80,7 @@ class ConfigProdigy:
                 igpu_properties["device-id"] = "26010000"
             igpu_properties["AAPL,snb-platform-id"] = "10000300"
             if platform == "Desktop":
-                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items()):
+                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items() if monitor_info.get("Connector Type") != "VGA"):
                     igpu_properties["AAPL,snb-platform-id"] = "00000500"
                     igpu_properties["device-id"] = "02010000"
             elif platform == "Laptop":
@@ -92,7 +92,7 @@ class ConfigProdigy:
             if not device_id in native_supported_ids:
                 igpu_properties["device-id"] = "62010000"
             if platform == "Desktop":
-                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items()):
+                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items() if monitor_info.get("Connector Type") != "VGA"):
                     igpu_properties["AAPL,ig-platform-id"] = "07006201"
                 igpu_properties["AAPL,ig-platform-id"] = "0A006601"
             elif platform == "NUC":
@@ -112,7 +112,7 @@ class ConfigProdigy:
             if not device_id in native_supported_ids:
                 igpu_properties["device-id"] = "12040000"
             if platform == "Desktop":
-                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items()):
+                if not any(monitor_info.get("Connected GPU") == integrated_gpu[0] for monitor_name, monitor_info in monitor.items() if monitor_info.get("Connector Type") != "VGA"):
                     igpu_properties["AAPL,ig-platform-id"] = "04001204"
                     return igpu_properties
                 igpu_properties["AAPL,ig-platform-id"] = "0300220D"
