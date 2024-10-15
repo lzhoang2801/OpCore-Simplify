@@ -188,6 +188,10 @@ class CompatibilityChecker:
             print("{}- {}: {}".format(" "*3, biometric_device, self.show_macos_compatibility(biometric_props.get("Compatibility"))))
 
     def check_network_compatibility(self):
+        primary_wifi_device = next((device_props.get("Device ID") for device_name, device_props in self.hardware_report.get("Network", {}).items() if device_props.get("Device ID") in pci_data.NetworkIDs and pci_data.NetworkIDs.index(device_props.get("Device ID")) < 21), None)
+        if not primary_wifi_device:
+            primary_wifi_device = next((device_props.get("Device ID") for device_name, device_props in self.hardware_report.get("Network", {}).items() if device_props.get("Device ID") in pci_data.NetworkIDs and pci_data.NetworkIDs.index(device_props.get("Device ID")) < 108), None)
+
         for device_name, device_props in self.hardware_report.get("Network", {}).items():
             bus_type = device_props.get("Bus Type")
             device_id = device_props.get("Device ID")
@@ -205,7 +209,14 @@ class CompatibilityChecker:
             if not is_device_supported:
                 device_props["Compatibility"] = (None, None)
             else:
-                device_props["Compatibility"] = (max_version, min_version)
+                if pci_data.NetworkIDs.index(device_id) < 108:
+                    if device_id == primary_wifi_device:
+                        device_props["Compatibility"] = (max_version, min_version)
+                        primary_wifi_device = None
+                    else:
+                        device_props["Compatibility"] = (None, None)
+                else:
+                    device_props["Compatibility"] = (max_version, min_version)
             print("{}- {}: {}".format(" "*3, device_name, self.show_macos_compatibility(device_props.get("Compatibility"))))
 
     def check_storage_compatibility(self):
