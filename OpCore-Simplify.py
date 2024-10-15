@@ -26,7 +26,6 @@ class OCPE:
         self.s = smbios.SMBIOS()
         self.r = run.Run()
         self.u = utils.Utils()
-        self.hardware_sniffer = self.o.gather_hardware_sniffer()
         self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
 
     def gathering_files(self, macos_version):
@@ -39,6 +38,7 @@ class OCPE:
         self.o.gather_bootloader_kexts(self.k.kexts, macos_version)
 
     def select_hardware_report(self):
+        self.hardware_sniffer = self.o.gather_hardware_sniffer()
         self.ac.dsdt = self.ac.acpi.acpi_tables = None
 
         while True:
