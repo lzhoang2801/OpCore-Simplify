@@ -76,6 +76,8 @@ class Github:
                 end_idx = end_idx - 1
         asset_name = file_name[:end_idx]
 
+        if "Sniffer" in file_name:
+            asset_name = file_name.split(".")[0]
         if "unsupported" in file_name:
             asset_name += "-unsupported"
         elif "rtsx" in file_name:

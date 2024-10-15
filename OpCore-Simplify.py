@@ -4,6 +4,7 @@ from Scripts import compatibility_checker
 from Scripts import config_prodigy
 from Scripts import gathering_files
 from Scripts import kext_maestro
+from Scripts import run
 from Scripts import smbios
 from Scripts import utils
 import updater
@@ -23,7 +24,9 @@ class OCPE:
         self.co = config_prodigy.ConfigProdigy()
         self.k = kext_maestro.KextMaestro()
         self.s = smbios.SMBIOS()
+        self.r = run.Run()
         self.u = utils.Utils()
+        self.hardware_sniffer = self.o.gather_hardware_sniffer()
         self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
 
     def gathering_files(self, macos_version):
@@ -36,23 +39,55 @@ class OCPE:
         self.o.gather_bootloader_kexts(self.k.kexts, macos_version)
 
     def select_hardware_report(self):
+        self.ac.dsdt = self.ac.acpi.acpi_tables = None
+
         while True:
             self.u.head("Select hardware report")
             print("")
-            print("To ensure the best results, please follow these instructions before generating the hardware report:")
+            print("Before generating the hardware report, please follow these steps:")
             print("")
-            print("  1. Install all available drivers if possible (skip this step when using Windows PE)")
-            print("  2. Use the latest version of Hardware Sniffer")
+            print("  1. Install all available drivers if possible (skip if using Windows PE)")
+            print("  2. Use the latest version of Hardware Sniffer for manual export (if applicable)")
+            if self.hardware_sniffer:
+                print("")
+                print("E. Export hardware report (Recommended) - This ensures the best results!")
             print("")
             print("Q. Quit")
             print("")
-            user_input = self.u.request_input("Please drag and drop your hardware report here: (.JSON) ")
+        
+            user_input = self.u.request_input("Drag and drop your hardware report here (.JSON) or type 'E' to export: ")
             if user_input.lower() == "q":
                 self.u.exit_program()
+            if self.hardware_sniffer and user_input.lower() == "e":
+                output = self.r.run({
+                    "args":[self.hardware_sniffer, "-e"]
+                })
+                
+                if output[-1] != 0:
+                    print("")
+                    print("Could not export the hardware report. Please export it manually using Hardware Sniffer.")
+                    print("")
+                    self.u.request_input()
+                    return
+                else:
+                    report_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "Report.json")
+                    acpitables_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "ACPITables")
+
+                    report_data = self.u.read_file(report_path)
+                    self.ac.read_acpi_tables(acpitables_dir)
+                    
+                    return report_path, report_data
+                
             path = self.u.normalize_path(user_input)
             data = self.u.read_file(path)
-            if not path or os.path.splitext(path)[1].lower() != ".json" or not isinstance(data, dict): 
+            
+            if not path or os.path.splitext(path)[1].lower() != ".json" or not isinstance(data, dict):
+                print("")
+                print("Invalid file. Please ensure it is a valid \"Report.json\" file.")
+                print("")
+                self.u.request_input()
                 continue
+            
             return path, data
 
     def select_macos_version(self, supported_macos_version):
@@ -265,7 +300,8 @@ class OCPE:
                 if int(macos_version[:2]) == os_data.macos_versions[-1].darwin_version and os_data.macos_versions[-1].release_status == "beta":
                     macos_version = str(int(macos_version[:2]) - 1) + macos_version[2:]
                 smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
-                self.ac.select_acpi_tables()
+                if not self.ac.ensure_dsdt():
+                    self.ac.select_acpi_tables()
                 self.ac.select_acpi_patches(hardware_report, unsupported_devices, smbios_model)
                 self.k.select_required_kexts(hardware_report, smbios_model, macos_version, self.ac.patches)
             elif option < 7:

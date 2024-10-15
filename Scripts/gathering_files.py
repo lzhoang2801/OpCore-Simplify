@@ -214,3 +214,54 @@ class gatheringFiles:
             print("")
             self.utils.request_input()
             return []
+        
+    def gather_hardware_sniffer(self):
+        if os.name != "nt":
+            return
+        
+        self.utils.head("Gathering Files")
+        print("")
+        print("Please wait for download Hardware Sniffer")
+        print("")
+
+        hardware_sniffer_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Hardware-Sniffer-CLI.exe")
+
+        hardware_sniffer_cli = None
+
+        try:            
+            download_history = self.utils.read_file(self.download_history_file)
+
+            if not isinstance(download_history, list):
+                download_history = []
+
+            for product in self.github.get_latest_release("lzhoang2801", "Hardware-Sniffer"):
+                if product.get("product_name") == "Hardware-Sniffer-CLI":
+                    hardware_sniffer_cli = product
+
+            history_index = self.get_product_index(download_history, "Hardware-Sniffer-CLI")
+            if history_index is not None and hardware_sniffer_cli.get("id") == download_history[history_index].get("id"):
+                if os.path.exists(hardware_sniffer_path):
+                    return hardware_sniffer_path
+
+            self.fetcher.download_and_save_file(hardware_sniffer_cli.get("url"), hardware_sniffer_path)
+
+            if not os.path.exists(hardware_sniffer_path):
+                return
+            
+            if history_index is None:
+                download_history.append({"product_name": "Hardware-Sniffer-CLI", "id": hardware_sniffer_cli.get("id")})
+            else:
+                download_history[history_index]["id"] = hardware_sniffer_cli.get("id")
+            
+            self.utils.write_file(self.download_history_file, download_history)
+
+            return hardware_sniffer_path
+        except:
+            print("Could not complete download Hardware Sniffer.")
+            print("Please download Hardware Sniffer CLI manually and place it in \"Scripts\" folder.")
+            if hardware_sniffer_cli:
+                print("You can manually download \"Hardware-Sniffer-CLI.exe\" from:\n   {}\n".format(hardware_sniffer_cli.get("url")))
+            print("Alternatively, export the hardware report manually to continue.")
+            print("")
+            self.utils.request_input()
+            return
