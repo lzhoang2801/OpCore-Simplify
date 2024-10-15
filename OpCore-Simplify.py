@@ -313,8 +313,8 @@ class OCPE:
 
                 if option == 2:
                     macos_version = self.select_macos_version(supported_macos_version)
-                    smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
                     hardware_report, unsupported_devices = self.c.get_unsupported_devices(macos_version)
+                    smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
                     self.k.select_required_kexts(hardware_report, smbios_model, macos_version, self.ac.patches)
                 elif option == 3:
                     self.ac.customize_patch_selection(hardware_report, unsupported_devices, smbios_model)
