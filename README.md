@@ -3,91 +3,118 @@
   <h3 align="center">OpCore Simplify</h3>
 
   <p align="center">
-    A tool designed to simplify the creation of <a href="https://github.com/acidanthera/OpenCorePkg">OpenCore</a> EFI. It streamlines the Hackintosh installation process by automating tasks such as auto-patching DSDT, adding suitable kexts, and customizing the config.plist. Whether you're a beginner or experienced user, OpCore Simplify takes away much of the complexity associated with Hackintosh setups.
+    A tool designed to simplify the creation of <a href="https://github.com/acidanthera/OpenCorePkg">OpenCore</a> EFI. Whether you're a beginner or experienced user, OpCore Simplify takes away much of the complexity associated with Hackintosh setups.
     <br />
     <br />
-    <a href="https://github.com/lzhoang2601/OpCore-Simplify/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/lzhoang2601/OpCore-Simplify/issues">Request Feature</a>
+    <a href="#-features">Features</a> •
+    <a href="#-how-to-use">How To Use</a> •
+    <a href="#-contributing">Contributing</a> •
+    <a href="#-license">License</a> •
+    <a href="#-credits">Credits</a> •
+    <a href="#-contact">Contact</a>
   </p>
 </div>
 
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li><a href="#-features">Features</a></li>
-    <li><a href="#-support-the-project">Support the Project</a></li>
-    <li><a href="#-usage-guide">Usage Guide</a></li>
-    <li><a href="#-contributing">Contributing</a></li>
-    <li><a href="#-license">License</a></li>
-    <li><a href="#-acknowledgments--credits">Acknowledgments & Credits</a></li>
-    <li><a href="#-contact">Contact</a></li>
-  </ol>
-</details>
-
----
-
 ## ✨ **Features**
 
-1. **Automatic Updates**: Automatically check and update OpenCorePkg, kexts and AMD Vanilla Patches.
+1. **Comprehensive Hardware and macOS Support**  
+   Fully supports modern hardware. Use `Compatibility Checker` to check supported/unsupported devices and macOS version supported.
+
+   | **Component**  | **Supported**                                                                                       |
+   |----------------|-----------------------------------------------------------------------------------------------------|
+   | **CPU**        | Intel: Sandy Bridge (2nd Gen) → Raptor Lake (14th Gen) <br> AMD: Ryzen and Threadripper with [AMD Vanilla](https://github.com/AMD-OSX/AMD_Vanilla) |
+   | **GPU**        | Intel iGPU: Sandy Bridge (2nd Gen) → Ice Lake (10th Gen) <br> AMD APU: The entire Vega Raven ASIC family (Ryzen 1xxx → 5xxx, 7x30 series) <br> AMD dGPU: Navi 23, Navi 22, Navi 21 generations, and older series <br> NVIDIA: Kepler, Pascal, Maxwell, Fermi, Tesla generations |
+   | **macOS**      | macOS High Sierra → macOS Sequoia |
+
+2. **ACPI Patches and Kexts**  
+   Automatically detects and adds ACPI patches and kexts based on hardware configuration.
    
-2. **Hardware Information Gathering**: Leverages the [Hardware Sniffer](https://github.com/lzhoang2801/Hardware-Sniffer) tool to gather detailed hardware information. It uses USB ID and PCI ID databases to ensure precise hardware compatibility checks.
-   
-3. **Comprehensive Hardware Support**: Fully supports most modern hardware (excluding legacy devices). Use the Compatibility Checker to view supported/unsupported devices.
+   - Integrated with [SSDTTime](https://github.com/corpnewt/SSDTTime) for common patches (e.g., FakeEC, FixHPET, PLUG, RTCAWAC, USB Reset).
+   - Includes custom patches:
+      - Prevent kernel panics by directing the first CPU entry to an active CPU, disabling the UNC0 device, and creating a new RTC device for HEDT systems.
+      - Disable unsupported or unused PCI devices, such as the GPU (using Optimus, Bumblebee, and spoof methods), Wi-Fi card, and NVMe storage controller.
+      - Fix sleep state values in _PRW methods (GPRW, UPRW, HP special) to prevent immediate wake.
+      - Add devices including ALS0, BUS0, MCHC, PMCR, PNLF, RMNE, IMEI, USBX, XOSI, along with a Surface Patch.
+      - Enable ALSD and GPI0 devices.
 
-4. **Enhanced ACPI Patching**: Add and customize various ACPI patches with integrated support from [SSDTTime](https://github.com/corpnewt/SSDTTime).
-   
-5. **Device-Specific Kexts**: Automatically identifies and adds kexts for devices like WiFi, ethernet, sound codec, Bluetooth, keyboard, mouse, touchpad, USB controller, and SATA controller based on their hardware IDs.
-   
-6. **Custom Tweaks**: Apply additional customization based on both widely used sources and personal experience.
+3. **Automatic Updates**  
+    Automatically checks for and updates OpenCorePkg and kexts from [Dortania Builds](https://dortania.github.io/builds/) and GitHub releases before each EFI build.
 
----
+   - All download links are stored in `bootloader_kexts_data.json`.
+            
+4. **EFI Configuration**  
+   Apply additional customization based on both widely used sources and personal experience.
 
-### ☕ **Support the Project**:
+   - Spoof GPU IDs for certain AMD GPUs not recognized in macOS.
+   - Use CpuTopologyRebuild kext for Intel CPUs with P-cores and E-cores to enhance performance.
+   - Disable System Integrity Protection (SIP).
+   - Spoof CPU IDs for Intel Pentium, Celeron, Core, and Xeon processors.
+   - Add custom CPU names for AMD CPUs, as well as Intel Pentium, Celeron, Xeon, and Core lines from the Rocket Lake (11th) generation and newer.
+   - Include the necessary kexts to enable modern Broadcom Wi-Fi since macOS Sonoma 14.
+   - Add a patch to allow booting macOS with unsupported SMBIOS.
+   - Add NVRAM entries to bypass checking the internal Bluetooth controller.
+   - Properly configure ResizeAppleGpuBars based on specific Resizable BAR information.
+   - Allow flexible iGPU configuration between headless and driving a display when a supported discrete GPU is present.
+   - Force Intel GPUs into VESA mode with HDMI and DVI connectors to simplify installation process.
+   - Use random layout IDs have comment based on author or motherboard brand for better sound quality.
 
-If you love what I'm building, consider buying me a coffee! Your support fuels new features and improvements. ☕✨
+   and more...
 
-<p align="center">
-  <a href="https://www.buymeacoffee.com/lzhoang2801">
-    <img src="https://img.buymeacoffee.com/button-api/?text=Donate with Buy Me a Coffee&emoji=☕&slug=lzhoang2801&button_colour=FFDD00&font_colour=000000&font_family=Bree&outline_colour=000000&coffee_colour=ffffff" />
-  </a>
-<p>
+5. **Easy Customization**  
+   In addition to the default settings applied, users can easily make further customizations if desired.
 
-Thank you for your support! Every little bit helps! 😊
+   - Custom ACPI patches, kexts, and SMBIOS adjustments (**not recommended**).
+   - Force load kexts on unsupported macOS versions.
+   - Use AMD GPUs Navi 23 and Navi 21 with WhateverGreen (default will use NootRX).
 
----
-
-## 🚀 **Usage Guide**
+## 🚀 **How To Use**
 
 1. **Running OpCore Simplify**:
    - On **Windows**, run `OpCore-Simplify.bat`.
    - On **macOS**, run `OpCore-Simplify.command`.
 
-2. **Selecting a Hardware Report**:
-   - Use [**Hardware Sniffer**](https://github.com/lzhoang2801/Hardware-Sniffer) to generate a hardware report and an ACPI dump.
-   - Select your hardware report (`Report.json`) and ACPI folder to proceed with configuration.
+   ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
 
-3. **Selecting macOS Version and Customizing EFI**:
+2. **Selecting hardware report**:
+   - On Windows, there will be an option for `E. Export hardware report`. It's recommended to use this for the best results with your hardware configuration and BIOS at the time of building.
+   - Alternatively, use [**Hardware Sniffer**](https://github.com/lzhoang2801/Hardware-Sniffer) to create a `Report.json` and ACPI dump for configuration manully.
+
+   ![Selecting hardware report](https://i.imgur.com/MbRmIGJ.png)
+
+   ![Loading ACPI Tables](https://i.imgur.com/SbL6N6v.png)
+
+   ![Compatibility Checker](https://i.imgur.com/kuDGMmp.png)
+
+3. **Selecting macOS Version and Customizing OpenCore EFI**:
    - By default, the latest compatible macOS version will be selected for your hardware.
    - OpCore Simplify will automatically apply essential ACPI patches and kexts. 
    - You can manually review and customize these settings as needed.
+
+   ![OpCore Simplify Menu](https://i.imgur.com/TSk9ejy.png)
 
 4. **Building OpenCore EFI**:
    - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
    - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
 
+   ![Building OpenCore EFI](https://i.imgur.com/deyj5de.png)
+
 5. **USB Mapping**:
    - After building your EFI, follow the steps for mapping USB ports.
 
-6. **Create USB and Install macOS**: Follow the guide at [OpenCore Install Guide](https://dortania.github.io/OpenCore-Install-Guide/installer-guide/) and use the generated OpenCore EFI.
+   ![Results](https://i.imgur.com/MIPigPF.png)
+
+6. **Create USB and Install macOS**: 
+   - Use [**UnPlugged**](https://github.com/corpnewt/UnPlugged) on Windows to create a USB macOS installer, or follow [this guide](https://dortania.github.io/OpenCore-Install-Guide/installer-guide/mac-install.html) for macOS.
    - For troubleshooting, refer to the [OpenCore Troubleshooting Guide](https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html).
 
-#### Reference Resources
-
-- [OpenCore Install Guide](https://dortania.github.io/OpenCore-Install-Guide) (some parts may be outdated)
-- [ChefKiss](https://chefkissinc.github.io/guides/hackintosh/) (dedicated to AMD CPU systems)
-
----
+> [!NOTE]
+> 1. For desktops using AMD GPUs from the 6000 series, if you encounter a black screen after booting, please remove the boot arguments `-v debug=0x100 keepsyms=1`.
+>
+> 2. For desktops with Resizable BAR support, if the only options available are Auto/Disabled in the settings, select **Disabled**.
+>
+> 3. If you use Intel WiFi card with macOS Sonoma and later, it will default to using the itlwm kext. Once the installation is complete, you need to use the Helipor app to connect to Wi-Fi.
+>
+> 4. With the configuration using a modern Broadcom WiFi, after the installation is complete, you just need to use OpenCore Legacy Patcher to run 'Post Install Root Patch' for Wi-Fi, AirDrop, and other related functions to work fully
 
 ## 🤝 **Contributing**
 
@@ -95,15 +122,11 @@ Contributions are **highly appreciated**! If you have ideas to improve this proj
 
 Don't forget to ⭐ star the project! Thank you for your support! 🌟
 
----
-
 ## 📜 **License**
 
 Distributed under the BSD 3-Clause License. See `LICENSE` for more information.
 
----
-
-## 🙌 **Acknowledgments & Credits**
+## 🙌 **Credits**
 
 - [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg) and [kexts](https://github.com/lzhoang2801/OpCore-Simplify/blob/main/Scripts/datasets/kext_data.py) – The backbone of this project.
 - [SSDTTime](https://github.com/corpnewt/SSDTTime) – SSDT patching utilities.
@@ -111,11 +134,9 @@ Distributed under the BSD 3-Clause License. See `LICENSE` for more information.
 - [USBToolBox](https://github.com/USBToolBox/tool) – A USB mapping tool.
 - [ProperTree](https://github.com/corpnewt/ProperTree) – For editing `config.plist` files.
 
----
-
 ## 📞 **Contact**
 
-**Hoang Hong Quan**  
-- Facebook: [@macforce2601](https://facebook.com/macforce2601)  
-- Telegram: [@lzhoang2601](https://t.me/lzhoang2601)  
-- Email: lzhoang2601@gmail.com
+> **Hoang Hong Quan** &nbsp;&middot;&nbsp; 
+> Facebook [@macforce2601](https://facebook.com/macforce2601) &nbsp;&middot;&nbsp;
+> Telegram [@lzhoang2601](https://t.me/lzhoang2601) &nbsp;&middot;&nbsp;
+> Email: lzhoang2601@gmail.com
