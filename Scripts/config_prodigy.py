@@ -421,7 +421,9 @@ class ConfigProdigy:
                 if hardware_report.get("Sound"):
                     codec_id = list(hardware_report.get("Sound").items())[0][-1].get("Device ID")
                     if codec_id in codec_layouts.data:
-                        boot_args.append("alcid={}".format(random.choice(codec_layouts.data.get(codec_id))))
+                        recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
+                        recommended_layouts = [layout for layout in codec_layouts.data.get(codec_id) if self.utils.contains_any(recommended_authors, layout.comment) or hardware_report.get("Motherboard").get("Name").split(" ")[0].lower() in layout.comment.lower()]
+                        boot_args.append("alcid={}".format(random.choice((recommended_layouts or codec_layouts.data.get(codec_id))).id))
             elif kext.name == "VoodooI2C":
                 boot_args.append("-vi2c-force-polling")
             elif kext.name == "CpuTopologyRebuild":
