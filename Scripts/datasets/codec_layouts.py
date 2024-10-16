@@ -1,40 +1,7 @@
-import utils
-import os
-
-u = utils.Utils()
-
 class Layout:
     def __init__(self, id, comment):
         self.id = id
         self.comment = comment
-
-def get_layout_ids(applealc_path):
-    if not os.path.exists(applealc_path):
-        return {}
-
-    plist_path = os.path.join(applealc_path, "Contents", "Info.plist")
-    plist_data = u.read_file(plist_path)
-
-    if not plist_data:
-        return {}
-
-    codec_layouts = {}
-
-    hda_config_defaults = plist_data.get("IOKitPersonalities", {}).get("as.vit9696.AppleALC", {}).get("HDAConfigDefault", [])
-    for layout in hda_config_defaults:
-        codec_id_hex = u.int_to_hex(layout.get("CodecID", 0)).zfill(8)
-        formatted_codec_id = "{}-{}".format(codec_id_hex[:4], codec_id_hex[-4:])
-        id = layout.get("LayoutID")
-        comment = layout.get("Codec") or layout.get("Comment") or layout.get("CodecName")
-        if id is not None:
-            if formatted_codec_id not in codec_layouts:
-                codec_layouts[formatted_codec_id] = []
-            codec_layouts[formatted_codec_id].append(Layout(id, comment))
-    
-    for codec_id in codec_layouts:
-        codec_layouts[codec_id] = sorted(codec_layouts[codec_id], key=lambda layout:layout.id)
-
-    return codec_layouts
 
 data = {
     "10EC-0295": [
@@ -2822,8 +2789,3 @@ data = {
         )
     ]
 }
-
-for codec_name, codec_data in data.items():
-    recommend_author = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
-    recommend_layouts = list(layout for layout in codec_data if u.contains_any(recommend_author, layout.comment))
-    print("{}: {}".format(codec_name, recommend_layouts or codec_data))

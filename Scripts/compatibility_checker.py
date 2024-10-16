@@ -2,7 +2,7 @@ from Scripts.datasets import chipset_data
 from Scripts.datasets import gpu_data
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
-from Scripts import codec_layouts
+from Scripts.datasets import codec_layouts
 from Scripts import utils
 import time
 

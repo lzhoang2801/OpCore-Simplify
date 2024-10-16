@@ -3,7 +3,7 @@ from Scripts.datasets import cpu_data
 from Scripts.datasets import mac_model_data
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
-from Scripts import codec_layouts
+from Scripts.datasets import codec_layouts
 from Scripts import gathering_files
 from Scripts import smbios
 from Scripts import utils
