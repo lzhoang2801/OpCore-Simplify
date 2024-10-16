@@ -230,6 +230,10 @@ class CompatibilityChecker:
                 elif device_id in pci_data.UnsupportedNVMeSSDIDs:
                     controller_props["Compatibility"] = (None, None)
                 print("{}- {}: {}".format(" "*3, controller_name if not device_id in pci_data.UnsupportedNVMeSSDIDs else pci_data.UnsupportedNVMeSSDIDs.get(device_id), self.show_macos_compatibility(controller_props.get("Compatibility"))))
+
+        if all(controller_props.get("Compatibility") == (None, None) for controller_name, controller_props in self.hardware_report.get("Storage Controllers", {}).items()):
+            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
+            self.utils.exit_program()
         
     def check_sd_controller_compatibility(self):
         for controller_name, controller_props in self.hardware_report.get("SD Controller", {}).items():
