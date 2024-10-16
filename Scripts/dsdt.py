@@ -29,7 +29,7 @@ class DSDT:
             exception = "Could not locate or download iasl!"
             if url:
                 exception += "\n\nPlease manually download {} from:\n - {}\n\nAnd place in:\n - {}\n".format(
-                    "and extract iasl.exe and acpidump.exe" if os.name=="nt" else "iasl",
+                    "and extract iasl.exe" if os.name=="nt" else "iasl",
                     url,
                     os.path.dirname(os.path.realpath(__file__))
                 )
@@ -254,18 +254,8 @@ class DSDT:
             #source = self.dl.get_string(self.acpi_binary_tools, headers=self.h)
             source = self.fetcher.fetch_and_parse_content(self.acpi_binary_tools)
             for line in source.split("\n"):
-                # <a href="/content/www/us/en/download/774881/acpi-component-architecture-downloads-windows-binary-tools.html">iASL Compiler and Windows ACPI Tools
-                if "windows-binary-tools" in line and ">iasl compiler and windows acpi tools" in line.lower():
-                    # Try to scrape and load the next page
-                    try:
-                        dl_page_url = "https://www.intel.com" + line.split('<a href="')[1].split('"')[0]
-                        #dl_page_source = self.dl.get_string(dl_page_url, headers=self.h)
-                        dl_page_source = self.fetcher.fetch_and_parse_content(dl_page_url)
-                        for line in dl_page_source.split("\n"):
-                            if '"download-button"' in line: # Should have the right line
-                                return line.split('data-href="')[1].split('"')[0]
-                    except:
-                        return None
+                if "href" in line and ">iasl compiler and windows acpi tools" in line.lower():
+                    return line.split('<a href="')[1].split('"')[0]
         except: pass
         return None
     
