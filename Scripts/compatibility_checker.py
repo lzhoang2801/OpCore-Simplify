@@ -109,7 +109,7 @@ class CompatibilityChecker:
                     min_version = "19.0.0"
                 elif "Vega 20" in gpu_codename:
                     min_version = "18.6.0"
-                elif gpu_codename in ("Vega 10", "Polaris", "Baffin", "Ellesmere") or device_id == "699F":
+                elif gpu_codename in ("Vega 10", "Polaris 22", "Polaris 20", "Baffin", "Ellesmere") or device_id == "699F":
                     min_version = "17.0.0"
                 elif self.utils.contains_any(gpu_data.AMDCodenames, gpu_codename):
                     max_version = "21.99.99"
