@@ -1,6 +1,5 @@
-# Source: https://github.com/corpnewt/SSDTTime/blob/97a3963e40a153a8df5ae61a73e150cd7a119b3c/SSDTTime.bat
-
 @echo off
+REM Source: https://github.com/corpnewt/SSDTTime/blob/97a3963e40a153a8df5ae61a73e150cd7a119b3c/SSDTTime.bat
 REM Get our local path before delayed expansion - allows ! in path
 set "thisDir=%~dp0"
 
