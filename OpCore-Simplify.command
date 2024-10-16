@@ -1,9 +1,11 @@
+# Source: https://github.com/corpnewt/SSDTTime/blob/97a3963e40a153a8df5ae61a73e150cd7a119b3c/SSDTTime.command
+
 #!/usr/bin/env bash
 
 # Get the curent directory, the script name
 # and the script name with "py" substituted for the extension.
 args=( "$@" )
-dir="${0%/*}"
+dir="$(cd -- "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
 script="${0##*/}"
 target="${script%.*}.py"
 
@@ -12,6 +14,10 @@ target="${script%.*}.py"
 #   FALSE = Use py2
 #   FORCE = Use py3
 use_py3="TRUE"
+
+# We'll parse if the first argument passed is
+# --install-python and if so, we'll just install
+just_installing="FALSE"
 
 tempdir=""
 
@@ -55,7 +61,7 @@ set_use_py3_if () {
 get_remote_py_version () {
     local pyurl= py_html= py_vers= py_num="3"
     pyurl="https://www.python.org/downloads/macos/"
-    py_html="$(curl -L $pyurl 2>&1)"
+    py_html="$(curl -L $pyurl --compressed 2>&1)"
     if [ -z "$use_py3" ]; then
         use_py3="TRUE"
     fi
@@ -84,7 +90,7 @@ download_py () {
     echo "Located Version:  $vers"
     echo
     echo "Building download url..."
-    url="$(curl -L https://www.python.org/downloads/release/python-${vers//./}/ 2>&1 | grep -iE "python-$vers-macos.*.pkg\"" | awk -F'"' '{ print $2 }')"
+    url="$(curl -L https://www.python.org/downloads/release/python-${vers//./}/ --compressed 2>&1 | grep -iE "python-$vers-macos.*.pkg\"" | awk -F'"' '{ print $2 }')"
     if [ -z "$url" ]; then
         # Couldn't get the URL - bail
         print_error
@@ -104,6 +110,7 @@ download_py () {
     fi
     echo
     echo "Running python install package..."
+    echo
     sudo installer -pkg "$tempdir/python.pkg" -target /
     if [ "$?" != "0" ]; then
         echo
@@ -111,23 +118,36 @@ download_py () {
         echo
         exit $?
     fi
-    echo
+    # Now we expand the package and look for a shell update script
+    pkgutil --expand "$tempdir/python.pkg" "$tempdir/python"
+    if [ -e "$tempdir/python/Python_Shell_Profile_Updater.pkg/Scripts/postinstall" ]; then
+        # Run the script
+        echo
+        echo "Updating PATH..."
+        echo
+        "$tempdir/python/Python_Shell_Profile_Updater.pkg/Scripts/postinstall"
+    fi
     vers_folder="Python $(echo "$vers" | cut -d'.' -f1 -f2)"
     if [ -f "/Applications/$vers_folder/Install Certificates.command" ]; then
         # Certs script exists - let's execute that to make sure our certificates are updated
+        echo
         echo "Updating Certificates..."
         echo
         "/Applications/$vers_folder/Install Certificates.command"
-        echo 
     fi
+    echo
     echo "Cleaning up..."
     cleanup
     echo
-    # Now we check for py again
-    echo "Rechecking py..."
-    downloaded="TRUE"
-    clear
-    main
+    if [ "$just_installing" == "TRUE" ]; then
+        echo "Done."
+    else
+        # Now we check for py again
+        echo "Rechecking py..."
+        downloaded="TRUE"
+        clear
+        main
+    fi
 }
 
 cleanup () {
@@ -145,8 +165,13 @@ print_error() {
     echo
     echo "Python is not installed or not found in your PATH var."
     echo
-    echo "Please go to https://www.python.org/downloads/macos/"
-    echo "to download and install the latest version."
+    if [ "$kernel" == "Darwin" ]; then
+        echo "Please go to https://www.python.org/downloads/macos/ to"
+        echo "download and install the latest version, then try again."
+    else
+        echo "Please install python through your package manager and"
+        echo "try again."
+    fi
     echo
     exit 1
 }
@@ -228,8 +253,8 @@ get_python_version() {
 }
 
 prompt_and_download() {
-    if [ "$downloaded" != "FALSE" ]; then
-        # We already tried to download - just bail
+    if [ "$downloaded" != "FALSE" ] || [ "$kernel" != "Darwin" ]; then
+        # We already tried to download, or we're not on macOS - just bail
         print_error
     fi
     clear
@@ -289,6 +314,9 @@ main() {
     "$python" "$dir/$target" "${args[@]}"
 }
 
+# Keep track of whether or not we're on macOS to determine if
+# we can download and install python for the user as needed.
+kernel="$(uname -s)"
 # Check to see if we need to force based on
 # macOS version. 10.15 has a dummy python3 version
 # that can trip up some py3 detection in other scripts.
@@ -298,4 +326,9 @@ downloaded="FALSE"
 # our OS version is 10.15 or greater.
 check_py3_stub="$(compare_to_version "3" "10.15")"
 trap cleanup EXIT
-main
+if [ "$1" == "--install-python" ] && [ "$kernel" == "Darwin" ]; then
+    just_installing="TRUE"
+    download_py
+else
+    main
+fi

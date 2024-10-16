@@ -1,3 +1,5 @@
+# Source: https://github.com/corpnewt/SSDTTime/blob/97a3963e40a153a8df5ae61a73e150cd7a119b3c/SSDTTime.bat
+
 @echo off
 REM Get our local path before delayed expansion - allows ! in path
 set "thisDir=%~dp0"
@@ -310,11 +312,12 @@ if "!args!"=="" (
 )
 if /i "!pause_on_error!" == "yes" (
     if not "%ERRORLEVEL%" == "0" (
+        echo.
         echo Script exited with error code: %ERRORLEVEL%
         echo.
+        echo Press [enter] to exit...
+        pause > nul
     )
-    echo Press Enter to exit...
-    pause > nul
 )
 goto :EOF
 

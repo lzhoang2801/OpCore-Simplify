@@ -1,5 +1,4 @@
-# Original source:
-# https://github.com/corpnewt/SSDTTime/blob/7b3fb78112bf320a1bc6a7e50dddb2b375cb70b0/Scripts/run.py
+# Source: https://github.com/corpnewt/SSDTTime/blob/7b3fb78112bf320a1bc6a7e50dddb2b375cb70b0/Scripts/run.py
 
 import sys, subprocess, time, threading, shlex
 try:
