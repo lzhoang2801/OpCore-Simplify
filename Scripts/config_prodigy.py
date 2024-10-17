@@ -435,6 +435,10 @@ class ConfigProdigy:
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                     boot_args.append("revpatch=sbvmm{}".format(",cpuname" if not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
                     self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)) else ""))
+            if kext.name == "Lilu":
+                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
+                    if not "-lilubetaall" in boot_args:
+                        boot_args.append("-lilubetaall")
 
         return " ".join(boot_args)
     
