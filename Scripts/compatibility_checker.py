@@ -2,7 +2,7 @@ from Scripts.datasets import chipset_data
 from Scripts.datasets import gpu_data
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
-from Scripts import codec_layouts
+from Scripts.datasets import codec_layouts
 from Scripts import utils
 import time
 
@@ -56,7 +56,7 @@ class CompatibilityChecker:
         print("{}- {}: {}".format(" "*3, self.hardware_report.get("CPU").get("Processor Name"), self.show_macos_compatibility(self.hardware_report["CPU"].get("Compatibility"))))
 
         if max_version == min_version and max_version == None:
-            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
+            self.utils.request_input("\n\nThis CPU is not compatible with macOS!")
             self.utils.exit_program()
 
         self.max_supported_macos_version = max_version
@@ -99,7 +99,7 @@ class CompatibilityChecker:
                     if not "AVX2" in self.hardware_report.get("CPU").get("SIMD Features"):
                         max_version = "21.99.99"
                     else:
-                        if gpu_codename in ("Navi 23", "Navi 22"):
+                        if gpu_codename in ("Navi 23", "Navi 22", "Navi 21"):
                             min_version = "21.2.0"
                         elif "Navi 21" in gpu_codename:
                             min_version = "20.5.0"
@@ -109,7 +109,7 @@ class CompatibilityChecker:
                     min_version = "19.0.0"
                 elif "Vega 20" in gpu_codename:
                     min_version = "18.6.0"
-                elif gpu_codename in ("Vega 10", "Polaris", "Baffin", "Ellesmere") or device_id == "699F":
+                elif gpu_codename in ("Vega 10", "Polaris 22", "Polaris 20", "Baffin", "Ellesmere") or device_id == "699F":
                     min_version = "17.0.0"
                 elif self.utils.contains_any(gpu_data.AMDCodenames, gpu_codename):
                     max_version = "21.99.99"
@@ -155,7 +155,7 @@ class CompatibilityChecker:
                 print("{}- Connected Monitor{}: {}".format(" "*6, "s" if len(connected_monitors) > 1 else "", ", ".join(connected_monitors)))
 
         if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
-            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
+            self.utils.request_input("\n\nThis GPU is not compatible with macOS!")
             self.utils.exit_program()
 
         self.max_supported_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_supported_macos_version) else self.max_supported_macos_version
@@ -188,6 +188,10 @@ class CompatibilityChecker:
             print("{}- {}: {}".format(" "*3, biometric_device, self.show_macos_compatibility(biometric_props.get("Compatibility"))))
 
     def check_network_compatibility(self):
+        primary_wifi_device = next((device_props.get("Device ID") for device_name, device_props in self.hardware_report.get("Network", {}).items() if device_props.get("Device ID") in pci_data.NetworkIDs and pci_data.NetworkIDs.index(device_props.get("Device ID")) < 21), None)
+        if not primary_wifi_device:
+            primary_wifi_device = next((device_props.get("Device ID") for device_name, device_props in self.hardware_report.get("Network", {}).items() if device_props.get("Device ID") in pci_data.NetworkIDs and pci_data.NetworkIDs.index(device_props.get("Device ID")) < 108), None)
+
         for device_name, device_props in self.hardware_report.get("Network", {}).items():
             bus_type = device_props.get("Bus Type")
             device_id = device_props.get("Device ID")
@@ -205,7 +209,14 @@ class CompatibilityChecker:
             if not is_device_supported:
                 device_props["Compatibility"] = (None, None)
             else:
-                device_props["Compatibility"] = (max_version, min_version)
+                if pci_data.NetworkIDs.index(device_id) < 108:
+                    if device_id == primary_wifi_device:
+                        device_props["Compatibility"] = (max_version, min_version)
+                        primary_wifi_device = None
+                    else:
+                        device_props["Compatibility"] = (None, None)
+                else:
+                    device_props["Compatibility"] = (max_version, min_version)
             print("{}- {}: {}".format(" "*3, device_name, self.show_macos_compatibility(device_props.get("Compatibility"))))
 
     def check_storage_compatibility(self):
@@ -219,6 +230,10 @@ class CompatibilityChecker:
                 elif device_id in pci_data.UnsupportedNVMeSSDIDs:
                     controller_props["Compatibility"] = (None, None)
                 print("{}- {}: {}".format(" "*3, controller_name if not device_id in pci_data.UnsupportedNVMeSSDIDs else pci_data.UnsupportedNVMeSSDIDs.get(device_id), self.show_macos_compatibility(controller_props.get("Compatibility"))))
+
+        if all(controller_props.get("Compatibility") == (None, None) for controller_name, controller_props in self.hardware_report.get("Storage Controllers", {}).items()):
+            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
+            self.utils.exit_program()
         
     def check_sd_controller_compatibility(self):
         for controller_name, controller_props in self.hardware_report.get("SD Controller", {}).items():
@@ -281,5 +296,10 @@ class CompatibilityChecker:
 
         print("")
         self.utils.request_input()
+
+        # To do: Adding ingore section to force OCS adding files or adding it manually:
+
+        # If GPU is not compatible:
+        # etc...
         
         return (self.min_supported_macos_version, self.max_supported_macos_version), *self.get_unsupported_devices(self.max_supported_macos_version)
