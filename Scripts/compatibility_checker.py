@@ -62,9 +62,24 @@ class CompatibilityChecker:
         self.max_supported_macos_version = max_version
         self.min_supported_macos_version = min_version
 
+    def discrete_gpu_settings(self, gpu_name, compatibility):
+        while True:
+            self.utils.head("Discrete GPU Settings")
+            print("")
+            print("Discrete GPU: {} - {}".format(gpu_name, self.show_macos_compatibility(compatibility)))
+            print("")
+            print("Choose GPU Mode: ")
+            print("1. Better Performance")
+            print("2. Power Efficiency (Recommended)")
+            print("")
+            option = self.utils.request_input("Select an option: ")
+            if option == "1":
+                return "performance"
+            if option == "2":
+                return "efficiency"
+
     def check_gpu_compatibility(self):
         gpu_compatibility = []
-        max_supported_gpu_version = min_supported_gpu_version = None
 
         for gpu_name, gpu_props in self.hardware_report.get("GPU").items():
             gpu_manufacturer = gpu_props.get("Manufacturer")
@@ -127,14 +142,12 @@ class CompatibilityChecker:
                     max_version = min_version = None
 
             if (max_version == min_version and max_version == None) or \
-                any(monitor_info.get("Connected GPU", gpu_name) != gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items() if monitor_info.get("Connector Type") == "Internal") or \
                 ( "Intel" in gpu_manufacturer and device_id.startswith(("01", "04", "0A", "0C", "0D")) and \
                   all(monitor_info.get("Connector Type") == "VGA" and monitor_info.get("Connected GPU", gpu_name) == gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items())):
                 gpu_props["Compatibility"] = (None, None)
             else:
                 gpu_props["Compatibility"] = (max_version, min_version)
-                max_supported_gpu_version = max_version if not max_supported_gpu_version else max_version if self.utils.parse_darwin_version(max_version) > self.utils.parse_darwin_version(max_supported_gpu_version) else max_supported_gpu_version
-                min_supported_gpu_version = min_version if not min_supported_gpu_version else min_version if self.utils.parse_darwin_version(min_version) < self.utils.parse_darwin_version(min_supported_gpu_version) else min_supported_gpu_version
+
             print("{}- {}: {}{}".format(
                 " "*3, 
                 gpu_name, 
@@ -153,13 +166,6 @@ class CompatibilityChecker:
                             connected_monitors[-1] = "\033[0;31m{}{}\033[0m".format(connected_monitors[-1][:-1], ", unsupported)")
             if connected_monitors:
                 print("{}- Connected Monitor{}: {}".format(" "*6, "s" if len(connected_monitors) > 1 else "", ", ".join(connected_monitors)))
-
-        if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
-            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
-            self.utils.exit_program()
-
-        self.max_supported_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_supported_macos_version) else self.max_supported_macos_version
-        self.min_supported_macos_version = min_supported_gpu_version if self.utils.parse_darwin_version(min_supported_gpu_version) > self.utils.parse_darwin_version(self.min_supported_macos_version) else self.min_supported_macos_version
 
         return gpu_compatibility
 
@@ -294,7 +300,35 @@ class CompatibilityChecker:
                 time.sleep(1)
                 function()
 
-        print("")
-        self.utils.request_input()
+        max_supported_gpu_version = min_supported_gpu_version = None
+        discrete_gpu_mode = "Unknown"
+
+        for gpu_name, gpu_props in self.hardware_report.get("GPU").items():
+            if gpu_props.get("Compatibility") != (None, None):
+                if all(other_gpu_props.get("Compatibility") == (None, None) for other_gpu_name, other_gpu_props in self.hardware_report.get("GPU").items() if other_gpu_props != gpu_props):
+                    pass
+                elif any(monitor_info.get("Connected GPU", gpu_name) != gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items() if monitor_info.get("Connector Type") == "Internal"):
+                    print("")
+                    self.utils.request_input()
+
+                    discrete_gpu_mode = self.discrete_gpu_settings(gpu_name, gpu_props.get("Compatibility"))
+
+                    if discrete_gpu_mode == "efficiency":
+                        gpu_props["Compatibility"] = (None, None)
+
+                max_version, min_version = gpu_props.get("Compatibility")
+                max_supported_gpu_version = max_version if not max_supported_gpu_version else max_version if self.utils.parse_darwin_version(max_version) > self.utils.parse_darwin_version(max_supported_gpu_version) else max_supported_gpu_version
+                min_supported_gpu_version = min_version if not min_supported_gpu_version else min_version if self.utils.parse_darwin_version(min_version) < self.utils.parse_darwin_version(min_supported_gpu_version) else min_supported_gpu_version
         
+        if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
+            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
+            self.utils.exit_program()
+
+        self.max_supported_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_supported_macos_version) else self.max_supported_macos_version
+        self.min_supported_macos_version = min_supported_gpu_version if self.utils.parse_darwin_version(min_supported_gpu_version) > self.utils.parse_darwin_version(self.min_supported_macos_version) else self.min_supported_macos_version
+
+        if discrete_gpu_mode == "Unknown":
+            print("")
+            self.utils.request_input()
+
         return (self.min_supported_macos_version, self.max_supported_macos_version), *self.get_unsupported_devices(self.max_supported_macos_version)
