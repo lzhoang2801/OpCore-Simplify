@@ -72,6 +72,7 @@
    - Custom ACPI patches, kexts, and SMBIOS adjustments (**not recommended**).
    - Force load kexts on unsupported macOS versions.
    - Use AMD GPUs Navi 23 and Navi 21 with WhateverGreen (default will use NootRX).
+   - Add mode selection for performance and efficiency on supported discrete GPUs for laptops.
 
 ## 🚀 **How To Use**
 
