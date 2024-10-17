@@ -1984,31 +1984,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
             if "GPU" in device_name:
                 ssdt_name = "SSDT-Disable_GPU_{}".format(device_props.get("ACPI Path").split(".")[2])
                 target_device = device_props.get("ACPI Path")
-                target_off_method = target_ps3_method = None
-                for table_name, table_data in self.acpi.acpi_tables.items():
-                    if not "DSDT" in table_data.get("signature", "") and not "SSDT" in table_data.get("signature", ""):
-                        continue
-
-                    off_methods = self.acpi.get_method_paths("_OFF", table_data)
-                    ps3_methods = self.acpi.get_method_paths("_PS3", table_data)
-                    
-                    if not off_methods:
-                        continue
-                    off_method_of_target_device = next((method for method in off_methods if method[0].startswith(target_device)), None)
-                    ps3_method_of_target_device = next((method for method in ps3_methods if method[0].startswith(target_device)), None)
-
-                    if off_method_of_target_device:
-                        if self.is_method_in_power_resource(off_method_of_target_device, table_data.get("lines")):
-                            off_method_of_target_device = None
-                        
-                        if off_method_of_target_device:
-                            target_off_method = off_method_of_target_device[0]
-
-                    if ps3_method_of_target_device:
-                        target_ps3_method = ps3_method_of_target_device[0]
-
-                    if not target_off_method and not target_ps3_method:
-                        ssdt_content = """
+                ssdt_content = """
 // Resource: https://github.com/dortania/Getting-Started-With-ACPI/blob/master/extra-files/decompiled/SSDT-GPU-DISABLE.dsl
 
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
@@ -2056,7 +2032,30 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
     }
 }
 """
-                    else:
+                target_off_method = target_ps3_method = None
+                for table_name, table_data in self.acpi.acpi_tables.items():
+                    if not "DSDT" in table_data.get("signature", "") and not "SSDT" in table_data.get("signature", ""):
+                        continue
+
+                    off_methods = self.acpi.get_method_paths("_OFF", table_data)
+                    ps3_methods = self.acpi.get_method_paths("_PS3", table_data)
+                    
+                    if not off_methods:
+                        continue
+                    off_method_of_target_device = next((method for method in off_methods if method[0].startswith(target_device)), None)
+                    ps3_method_of_target_device = next((method for method in ps3_methods if method[0].startswith(target_device)), None)
+
+                    if off_method_of_target_device:
+                        if self.is_method_in_power_resource(off_method_of_target_device, table_data.get("lines")):
+                            off_method_of_target_device = None
+                        
+                        if off_method_of_target_device:
+                            target_off_method = off_method_of_target_device[0]
+
+                    if ps3_method_of_target_device:
+                        target_ps3_method = ps3_method_of_target_device[0]
+
+                    if target_off_method or target_ps3_method:
                         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
 {"""
