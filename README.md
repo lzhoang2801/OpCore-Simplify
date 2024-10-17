@@ -15,6 +15,12 @@
   </p>
 </div>
 
+> [!IMPORTANT]
+> If the installation process is successful using OpCore Simplify, please confirm it at [Successful Hackintosh Setup with OpCore Simplify](https://github.com/lzhoang2801/OpCore-Simplify/discussions/23). 
+> This will greatly assist others in the community.
+>
+> Whatever the outcome, just enjoy what an automated tool can accomplish!
+
 ## ✨ **Features**
 
 1. **Comprehensive Hardware and macOS Support**  
@@ -112,7 +118,7 @@
 >
 > 2. For desktops with Resizable BAR support, if the only options available are Auto/Disabled in the settings, select **Disabled**.
 >
-> 3. If you use Intel WiFi card with macOS Sonoma and later, it will default to using the itlwm kext. Once the installation is complete, you need to use the Helipor app to connect to Wi-Fi.
+> 3. If you use Intel WiFi card with macOS Sonoma and later, it will default to using the itlwm kext. Once the installation is complete, you need to use the Heliport app to connect to Wi-Fi.
 >
 > 4. With the configuration using a modern Broadcom WiFi, after the installation is complete, you just need to use OpenCore Legacy Patcher to run 'Post Install Root Patch' for Wi-Fi, AirDrop, and other related functions to work fully
 
