@@ -139,7 +139,7 @@ class SMBIOS:
                     else:
                         smbios_model = "MacBookPro16,3" if int(hardware_report.get("CPU").get("Core Count")) < 6 else "MacBookPro16,1"
             elif "Ice Lake" in codename:
-                smbios_model = "MacBookAir9,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro16,2"
+                smbios_model = "MacBookAir9,1"
 
         return smbios_model
     

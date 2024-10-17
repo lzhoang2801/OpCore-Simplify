@@ -214,7 +214,10 @@ class ConfigProdigy:
             native_supported_ids = ("FF05", "8A70", "8A71", "8A51", "8A5C", "8A5D", "8A52", "8A53", "8A5A", "8A5B")
             if not device_id in native_supported_ids:
                 igpu_properties["device-id"] = "528A0000"
-            igpu_properties["AAPL,ig-platform-id"] = "0000528A"
+            igpu_properties["AAPL,ig-platform-id"] = "0200518A"
+            igpu_properties["enable-dbuf-early-optimizer"] = "01000000"
+            igpu_properties["enable-dvmt-calc-fix"] = "01000000"
+            igpu_properties["enable-cdclk-frequency-fix"] = "01000000"
             igpu_properties["framebuffer-stolenmem"] = "00003001"
             igpu_properties["framebuffer-fbmem"] = "00009000"
 
@@ -395,7 +398,7 @@ class ConfigProdigy:
                         boot_args.append("igfxonln=1")
 
                     if "Ice Lake" in intergrated_gpu[-1].get("Codename"):
-                        boot_args.extend(("-noDC9", "-igfxcdc", "-igfxdvmt", "-igfxdbeo"))
+                        boot_args.append("-noDC9")
 
                     if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
                         if any(monitor_info.get("Connector Type") in ("DVI", "HDMI") for monitor_name, monitor_info in hardware_report.get("Monitor", {}).items() if monitor_info.get("Connected GPU") == intergrated_gpu[0]):
