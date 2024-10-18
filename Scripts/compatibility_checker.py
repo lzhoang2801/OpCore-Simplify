@@ -56,7 +56,7 @@ class CompatibilityChecker:
         print("{}- {}: {}".format(" "*3, self.hardware_report.get("CPU").get("Processor Name"), self.show_macos_compatibility(self.hardware_report["CPU"].get("Compatibility"))))
 
         if max_version == min_version and max_version == None:
-            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
+            self.utils.request_input("\n\nThe CPU is not compatible with macOS!")
             self.utils.exit_program()
 
         self.max_supported_macos_version = max_version
@@ -238,7 +238,7 @@ class CompatibilityChecker:
                 print("{}- {}: {}".format(" "*3, controller_name if not device_id in pci_data.UnsupportedNVMeSSDIDs else pci_data.UnsupportedNVMeSSDIDs.get(device_id), self.show_macos_compatibility(controller_props.get("Compatibility"))))
 
         if all(controller_props.get("Compatibility") == (None, None) for controller_name, controller_props in self.hardware_report.get("Storage Controllers", {}).items()):
-            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
+            self.utils.request_input("\n\nNo compatible storage for macOS was found!")
             self.utils.exit_program()
         
     def check_sd_controller_compatibility(self):
@@ -321,7 +321,7 @@ class CompatibilityChecker:
                 min_supported_gpu_version = min_version if not min_supported_gpu_version else min_version if self.utils.parse_darwin_version(min_version) < self.utils.parse_darwin_version(min_supported_gpu_version) else min_supported_gpu_version
         
         if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
-            self.utils.request_input("\n\nYour hardware is not compatible with macOS!")
+            self.utils.request_input("\n\nNo compatible GPU card for macOS was found!")
             self.utils.exit_program()
 
         self.max_supported_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_supported_macos_version) else self.max_supported_macos_version
