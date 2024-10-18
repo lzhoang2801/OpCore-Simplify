@@ -3208,9 +3208,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
             selected_patches.append("ALS")
             selected_patches.append("PNLF")
 
-        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
-            selected_patches.append("APIC")
-
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
             selected_patches.append("BUS0")
 
@@ -3223,8 +3220,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
         if "HP " in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("CMOS")
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=26) or \
-            self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=26):
             selected_patches.append("FixHPET")
 
         if hardware_report.get("Intel MEI"):
