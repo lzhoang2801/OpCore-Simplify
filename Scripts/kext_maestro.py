@@ -96,7 +96,7 @@ class KextMaestro:
                 if other_kext.conflict_group_id == kext.conflict_group_id and other_kext.name != kext.name:
                     other_kext.checked = False
 
-    def select_required_kexts(self, hardware_report, smbios_model, macos_version, acpi_patches):
+    def select_required_kexts(self, hardware_report, smbios_model, macos_version, needs_oclp, acpi_patches):
         for kext in self.kexts:
             kext.checked = kext.required
 
@@ -143,6 +143,9 @@ class KextMaestro:
             self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
             selected_kexts.append("ForgedInvariant")
 
+        if needs_oclp:
+            selected_kexts.extend(("AMFIPass", "RestrictEvents"))
+
         ethernet_pci = None
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
@@ -150,7 +153,7 @@ class KextMaestro:
             if self.utils.contains_any(pci_data.NetworkIDs, device_id, end=21):
                 if device_id in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
                     if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                        selected_kexts.extend(("AirportBrcmFixup", "IOSkywalkFamily", "AMFIPass"))
+                        selected_kexts.extend(("AirportBrcmFixup", "IOSkywalkFamily"))
                 elif device_id in pci_data.NetworkIDs:
                     selected_kexts.append("AirportBrcmFixup")
             elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=21, end=108):

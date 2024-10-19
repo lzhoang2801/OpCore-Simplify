@@ -56,13 +56,13 @@
    - Disable System Integrity Protection (SIP).
    - Spoof CPU IDs for Intel Pentium, Celeron, Core, and Xeon processors.
    - Add custom CPU names for AMD CPUs, as well as Intel Pentium, Celeron, Xeon, and Core lines from the Rocket Lake (11th) generation and newer.
-   - Include the necessary kexts to enable modern Broadcom Wi-Fi since macOS Sonoma 14.
    - Add a patch to allow booting macOS with unsupported SMBIOS.
    - Add NVRAM entries to bypass checking the internal Bluetooth controller.
    - Properly configure ResizeAppleGpuBars based on specific Resizable BAR information.
    - Allow flexible iGPU configuration between headless and driving a display when a supported discrete GPU is present.
    - Force Intel GPUs into VESA mode with HDMI and DVI connectors to simplify installation process.
    - Use random layout IDs have comment based on author or motherboard brand for better sound quality.
+   - Provide configuration required for using OpenCore Legacy Patcher
 
    and more...
 
@@ -121,7 +121,9 @@
 >
 > 3. If you use Intel WiFi card with macOS Sonoma and later, it will default to using the itlwm kext. Once the installation is complete, you need to use the Heliport app to connect to Wi-Fi.
 >
-> 4. With the configuration using a modern Broadcom WiFi, after the installation is complete, you just need to use OpenCore Legacy Patcher to run 'Post Install Root Patch' for Wi-Fi, AirDrop, and other related functions to work fully
+> 4. After a successful installation, if OpenCore Legacy Patcher is required, simply apply root patches to activate the missing features (such as modern Broadcom Wi-Fi card and graphics acceleration).
+> 
+> 5. For AMD GPUs, after applying root patches from OpenCore Legacy Patcher, you need to remove the boot argument `-radvesa` for graphics acceleration to work.
 
 ## 🤝 **Contributing**
 

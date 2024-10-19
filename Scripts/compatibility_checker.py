@@ -59,8 +59,8 @@ class CompatibilityChecker:
             self.utils.request_input("\n\nThe CPU is not compatible with macOS!")
             self.utils.exit_program()
 
-        self.max_supported_macos_version = max_version
-        self.min_supported_macos_version = min_version
+        self.max_native_macos_version = max_version
+        self.min_native_macos_version = min_version
 
     def discrete_gpu_settings(self, gpu_name, compatibility):
         while True:
@@ -88,6 +88,8 @@ class CompatibilityChecker:
 
             max_version = os_data.get_latest_darwin_version()
             min_version = os_data.get_lowest_darwin_version()
+            ocl_patched_max_version = max_version
+            ocl_patched_min_version = "20.0.0"
 
             if "Intel" in gpu_manufacturer:               
                 if device_id.startswith("01") and not device_id[-2] in ("5", "6") and not device_id in ("0102", "0106", "010A"):
@@ -113,6 +115,7 @@ class CompatibilityChecker:
                 if "Navi 2" in gpu_codename:
                     if not "AVX2" in self.hardware_report.get("CPU").get("SIMD Features"):
                         max_version = "21.99.99"
+                        ocl_patched_max_version = max_version
                     else:
                         if gpu_codename in ("Navi 23", "Navi 22"):
                             min_version = "21.2.0"
@@ -121,10 +124,19 @@ class CompatibilityChecker:
                         else:
                             max_version = min_version = None
                 elif "Navi 1" in gpu_codename:
+                    if not "AVX2" in self.hardware_report.get("CPU").get("SIMD Features"):
+                        max_version = "21.99.99"
+                        ocl_patched_min_version = "22.0.0"
                     min_version = "19.0.0"
                 elif "Vega 20" in gpu_codename:
+                    if not "AVX2" in self.hardware_report.get("CPU").get("SIMD Features"):
+                        max_version = "21.99.99"
+                        ocl_patched_min_version = "22.0.0"
                     min_version = "18.6.0"
                 elif gpu_codename in ("Vega 10", "Polaris 22", "Polaris 20", "Baffin", "Ellesmere") or device_id == "699F":
+                    if not "AVX2" in self.hardware_report.get("CPU").get("SIMD Features"):
+                        max_version = "21.99.99"
+                        ocl_patched_min_version = "22.0.0"
                     min_version = "17.0.0"
                 elif self.utils.contains_any(gpu_data.AMDCodenames, gpu_codename):
                     max_version = "21.99.99"
@@ -147,6 +159,9 @@ class CompatibilityChecker:
                 gpu_props["Compatibility"] = (None, None)
             else:
                 gpu_props["Compatibility"] = (max_version, min_version)
+                if max_version != ocl_patched_max_version:
+                    gpu_props["OCLP Compatibility"] = (ocl_patched_max_version, ocl_patched_min_version if self.utils.parse_darwin_version(ocl_patched_min_version) > self.utils.parse_darwin_version("{}.{}.{}".format(int(max_version[:2]) + 1, 0, 0)) else "{}.{}.{}".format(int(max_version[:2]) + 1, 0, 0))
+                    self.ocl_patched_macos_version = (ocl_patched_max_version, self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) < self.utils.parse_darwin_version(gpu_props.get("OCLP Compatibility")[-1]) else gpu_props.get("OCLP Compatibility")[-1])
 
             print("{}- {}: {}{}".format(
                 " "*3, 
@@ -205,6 +220,8 @@ class CompatibilityChecker:
 
             max_version = os_data.get_latest_darwin_version()
             min_version = os_data.get_lowest_darwin_version()
+            ocl_patched_max_version = max_version
+            ocl_patched_min_version = "23.0.0"
 
             if bus_type.startswith("PCI"):
                 if device_id in ("8086-125B", "8086-125C", "8086-125D", "8086-3102"):
@@ -217,6 +234,10 @@ class CompatibilityChecker:
             else:
                 if pci_data.NetworkIDs.index(device_id) < 108:
                     if device_id == primary_wifi_device:
+                        if device_id in ("14E4-43A0", "14E4-43A3", "14E4-43BA"):
+                            max_version = "22.99.99"
+                            device_props["OCLP Compatibility"] = (ocl_patched_max_version, ocl_patched_min_version)
+                            self.ocl_patched_macos_version = (ocl_patched_max_version, self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) < self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[-1]) else device_props.get("OCLP Compatibility")[-1])
                         device_props["Compatibility"] = (max_version, min_version)
                         primary_wifi_device = None
                     else:
@@ -252,6 +273,7 @@ class CompatibilityChecker:
     def get_unsupported_devices(self, macos_verison):
         new_hardware_report = {}
         unsupported_device = {}
+        needs_oclp = False
 
         for device_type, devices in self.hardware_report.items():
             if device_type in ("Motherboard", "CPU", "USB Controllers", "Input", "Bluetooth", "System Devices"):
@@ -261,6 +283,11 @@ class CompatibilityChecker:
             new_hardware_report[device_type] = {}
 
             for device_name, device_props in devices.items():
+                if device_props.get("OCLP Compatibility") and self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[0]) >= self.utils.parse_darwin_version(macos_verison) >= self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[-1]):
+                    new_hardware_report[device_type][device_name] = device_props
+                    needs_oclp = True
+                    continue
+
                 device_compatibility = device_props.get("Compatibility")
 
                 if device_compatibility:
@@ -274,10 +301,11 @@ class CompatibilityChecker:
             if not new_hardware_report[device_type]:
                 del new_hardware_report[device_type]
 
-        return new_hardware_report, unsupported_device
+        return new_hardware_report, unsupported_device, needs_oclp
 
     def check_compatibility(self, hardware_report):
         self.hardware_report = hardware_report
+        self.ocl_patched_macos_version = None
 
         self.utils.head("Compatibility Checker")
         print()
@@ -324,11 +352,11 @@ class CompatibilityChecker:
             self.utils.request_input("\n\nNo compatible GPU card for macOS was found!")
             self.utils.exit_program()
 
-        self.max_supported_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_supported_macos_version) else self.max_supported_macos_version
-        self.min_supported_macos_version = min_supported_gpu_version if self.utils.parse_darwin_version(min_supported_gpu_version) > self.utils.parse_darwin_version(self.min_supported_macos_version) else self.min_supported_macos_version
+        self.max_native_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_native_macos_version) else self.max_native_macos_version
+        self.min_native_macos_version = min_supported_gpu_version if self.utils.parse_darwin_version(min_supported_gpu_version) > self.utils.parse_darwin_version(self.min_native_macos_version) else self.min_native_macos_version
 
         if discrete_gpu_mode == "Unknown":
             print("")
             self.utils.request_input()
 
-        return (self.min_supported_macos_version, self.max_supported_macos_version), *self.get_unsupported_devices(self.max_supported_macos_version)
+        return (self.min_native_macos_version, self.max_native_macos_version), *self.get_unsupported_devices(self.max_native_macos_version), self.ocl_patched_macos_version

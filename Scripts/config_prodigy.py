@@ -368,7 +368,7 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, hardware_report, macos_version, kexts, resize_bar):
+    def boot_args(self, hardware_report, macos_version, needs_oclp, kexts, resize_bar):
         boot_args = [
             "-v",
             "debug=0x100",
@@ -391,8 +391,12 @@ class ConfigProdigy:
                     self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("20.0.0"):
                     boot_args.append("-cdfon")
 
-                if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
+                if  "Intel" in hardware_report.get("CPU").get("Manufacturer") and \
+                    "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
                     intergrated_gpu = list(hardware_report.get("GPU").items())[-1]
+                    if needs_oclp and intergrated_gpu[-1].get("OCLP Compatibility"):
+                        boot_args.append("ipc_control_port_options=0")
+
                     if  intergrated_gpu[-1].get("Device ID")[5:].startswith(("3E", "87", "9B")) and \
                         self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.4.0"):
                         boot_args.append("igfxonln=1")
@@ -420,6 +424,12 @@ class ConfigProdigy:
 
                     if discrete_gpu.get("Device ID") in ("1002-67B0", "1002-67B1", "1002-67B8", "1002-6810", "1002-6811"):
                         boot_args.append("-raddvi")
+
+                    if needs_oclp:
+                        if discrete_gpu.get("Manufacturer") == "AMD":
+                            boot_args.append("-radvesa")
+                        elif discrete_gpu.get("Manufacturer") == "NVIDIA":
+                            boot_args.extend(("nvda_drv_vrl=1", "ngfxcompat=1", "ngfxgl=1"))
             elif kext.name == "AppleALC":
                 if hardware_report.get("Sound"):
                     codec_id = list(hardware_report.get("Sound").items())[0][-1].get("Device ID")
@@ -431,10 +441,6 @@ class ConfigProdigy:
                 boot_args.append("-vi2c-force-polling")
             elif kext.name == "CpuTopologyRebuild":
                 boot_args.append("-ctrsmt")
-            elif kext.name == "RestrictEvents":
-                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                    boot_args.append("revpatch=sbvmm{}".format(",cpuname" if not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-                    self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)) else ""))
 
         return " ".join(boot_args)
     
@@ -460,7 +466,7 @@ class ConfigProdigy:
         
         return uefi_drivers
 
-    def genarate(self, hardware_report, smbios_model, macos_version, kexts, config):
+    def genarate(self, hardware_report, smbios_model, macos_version, needs_oclp, kexts, config):
         del config["#WARNING - 1"]
         del config["#WARNING - 2"]
         del config["#WARNING - 3"]
@@ -529,12 +535,12 @@ class ConfigProdigy:
         config["Misc"]["Entries"] = []
         config["Misc"]["Security"]["AllowSetDefault"] = True
         config["Misc"]["Security"]["ScanPolicy"] = 0
-        config["Misc"]["Security"]["SecureBootModel"] = "Default" if self.utils.parse_darwin_version("20.0.0") <= self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "Disabled"
+        config["Misc"]["Security"]["SecureBootModel"] = "Default" if not needs_oclp and self.utils.parse_darwin_version("20.0.0") <= self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "Disabled"
         config["Misc"]["Security"]["Vault"] = "Optional"
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
-        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts, config["Booter"]["Quirks"]["ResizeAppleGpuBars"] == 0)
+        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, needs_oclp, kexts, config["Booter"]["Quirks"]["ResizeAppleGpuBars"] == 0)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = "en:252"
         config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].append("csr-active-config")
@@ -555,13 +561,37 @@ class ConfigProdigy:
                 if kext.name == "BlueToolFixup":
                     config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothExternalDongleFailed"] = self.utils.hex_to_bytes("00")
                     config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothInternalControllerInfo"] = self.utils.hex_to_bytes("0000000000000000000000000000")
-                    config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].extend(["bluetoothExternalDongleFailed", "bluetoothInternalControllerInfo"])
                 elif kext.name == "RestrictEvents":
+                    revpatch = []
+                    revblock = []
+                    if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("23.0.0") or \
+                        len(config["Booter"]["Patch"]) and self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.4.0"):
+                        revpatch.append("sbvmm")
                     if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
                         self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)):
                         config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpu"] = 1
                         config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpuname"] = hardware_report.get("CPU").get("Processor Name")
-                        config["NVRAM"]["Delete"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"].extend(["revcpu", "revcpuname"])
+                        if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("23.0.0"):
+                            revpatch.append("cpuname")
                         config["PlatformInfo"]["Generic"]["ProcessorType"] = 1537 if int(hardware_report.get("CPU").get("Core Count")) < 8 else 3841
+                    if  "Intel" in hardware_report.get("CPU").get("Manufacturer") and \
+                        "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
+                        intergrated_gpu = list(hardware_report.get("GPU").items())[-1][-1]
+                        if needs_oclp and intergrated_gpu.get("OCLP Compatibility"):
+                            config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Settings"] = "-allow_amfi"
+                            if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.4.0"):
+                                if intergrated_gpu.get("Codename") in ("Broadwell", "Haswell", "Ivy Bridge", "Sandy Bridge"):
+                                    revblock.append("media")
+                                if intergrated_gpu.get("Codename") in ("Kaby Lake", "Skylake", "Broadwell", "Haswell"):
+                                    revpatch.append("asset")
+                                elif intergrated_gpu.get("Codename") in ("Ivy Bridge", "Sandy Bridge"):
+                                    revpatch.append("f16c")
+                    if revpatch:
+                        config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revpatch"] = ",".join(revpatch)
+                    if revblock:
+                        config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revblock"] = ",".join(revblock)
+        
+        config["NVRAM"]["Delete"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"] = list(config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"].keys())
+        config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"] = list(config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].keys())
 
         return config
