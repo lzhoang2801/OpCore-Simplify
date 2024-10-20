@@ -71,7 +71,6 @@
 
    - Custom ACPI patches, kexts, and SMBIOS adjustments (**not recommended**).
    - Force load kexts on unsupported macOS versions.
-   - Use AMD GPUs Navi 23 and Navi 21 with WhateverGreen (default will use NootRX).
    - Add mode selection for performance and efficiency on supported discrete GPUs for laptops.
    - Support AirportItlwm on macOS Sequoia 15 with **temporary workaround**. Manually select AirportItlwm, IOSkywalkFamily and IO80211FamilyLegacy kexts, then apply the root patch from OpenCore Legacy Patcher.
 
