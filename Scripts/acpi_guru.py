@@ -3256,8 +3256,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Chipset"), start=89):
             selected_patches.append("RTCAWAC")
 
-        selected_patches.append("PRW")
-
         if "SURFACE" in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("Surface Patch")
         else:
