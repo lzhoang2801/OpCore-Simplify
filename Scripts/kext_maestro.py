@@ -256,7 +256,9 @@ class KextMaestro:
                     for kext_path, type in kext_paths:
                         if "AirportItlwm" == kext.name:
                             version = macos_version[:2]
-                            if self.utils.parse_darwin_version("23.4.0") <= self.utils.parse_darwin_version(macos_version):
+                            if self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
+                                version = "22"
+                            elif self.utils.parse_darwin_version("23.4.0") <= self.utils.parse_darwin_version(macos_version):
                                 version = "23.4"
                             elif self.utils.parse_darwin_version("23.0.0") <= self.utils.parse_darwin_version(macos_version):
                                 version = "23.0"
@@ -316,6 +318,10 @@ class KextMaestro:
             executable_path = os.path.join("Contents", "MacOS", bundle_info.get("CFBundleExecutable", "None"))
             if not os.path.exists(os.path.join(kexts_directory, kext_path, executable_path)):
                 executable_path = ""
+
+            if bundle_info.get("CFBundleExecutable", "None") == "AirportItlwm" and self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
+                bundle_info["IOKitPersonalities"]["itlwm"]["IOPCIMatch"] += " 0x43A014E4"
+                self.utils.write_file(os.path.join(kexts_directory, kext_path, plist_path), bundle_info)
             
             bundle_list.append({
                 "BundlePath": kext_path.replace("\\", "/").lstrip("/"),

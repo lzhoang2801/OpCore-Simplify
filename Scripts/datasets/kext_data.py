@@ -140,7 +140,7 @@ kexts = [
         name = "AirportItlwm", 
         description = "Intel Wi-Fi drivers support the native macOS Wi-Fi interface",
         category = "Wi-Fi",
-        max_darwin_version = "23.99.99",
+        max_darwin_version = "24.99.99",
         conflict_group_id = "IntelWiFi",
         github_repo = {
             "owner": "OpenIntelWireless",

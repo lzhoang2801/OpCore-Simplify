@@ -239,7 +239,21 @@ class ConfigProdigy:
 
         for kext in kexts:
             if kext.checked:
-                if kext.name == "WhateverGreen":
+                if kext.name == "AirportItlwm" and self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
+                    for network_name, network_props in hardware_report.get("Network", {}).items():
+                        device_id = network_props.get("Device ID")
+
+                        if self.utils.contains_any(pci_data.NetworkIDs, device_id, start=21, end=108) and network_props.get("PCI Path"):
+                            deviceproperties_add[network_props.get("PCI Path")] = {
+                                "IOName": "pci14e4,43a0",
+                                "compatible": "pci106b,117",
+                                "device-id": self.utils.hex_to_bytes("A0430000"),
+                                "name": "pci14e4,43a0",
+                                "subsystem-id": self.utils.hex_to_bytes("17010000"),
+                                "subsystem-vendor-id": self.utils.hex_to_bytes("6B100000"),
+                                "vendor-id": self.utils.hex_to_bytes("E4140000")
+                            }
+                elif kext.name == "WhateverGreen":
                     discrete_gpu = None
                     for gpu_name, gpu_info in hardware_report.get("GPU", {}).items():
                         if gpu_info.get("Device Type") == "Integrated GPU":
@@ -273,7 +287,6 @@ class ConfigProdigy:
                                 "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(discrete_gpu.get("Device ID")).split("-")[-1]),
                                 "model": gpu_name
                             }
-                    break
 
         for key, value in deviceproperties_add.items():
             for key_child, value_child in value.items():
