@@ -313,7 +313,6 @@ kexts = [
         name = "LucyRTL8125Ethernet", 
         description = "Provides support for Realtek RTL8125 family", 
         category = "Ethernet",
-        max_darwin_version = "23.99.99",
         github_repo = {
             "owner": "Mieze",
             "repo": "LucyRTL8125Ethernet"

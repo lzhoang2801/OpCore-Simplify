@@ -226,8 +226,6 @@ class CompatibilityChecker:
             if bus_type.startswith("PCI"):
                 if device_id in ("8086-125B", "8086-125C", "8086-125D", "8086-3102"):
                     min_version = "19.0.0"
-                elif device_id in ("10EC-3000", "10EC-8125", "1186-8125"):
-                    max_version = "23.99.99"
 
             if not is_device_supported:
                 device_props["Compatibility"] = (None, None)
