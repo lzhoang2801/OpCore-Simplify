@@ -330,7 +330,7 @@ class OCPE:
                     self.k.kext_configuration_menu(hardware_report, smbios_model, macos_version, self.ac.patches)
                 elif option == 5:
                     smbios_model = self.s.customize_smbios_model(hardware_report, smbios_model, macos_version)
-                    self.k.select_required_kexts(hardware_report, smbios_model, macos_version, self.ac.patches)
+                    self.k.select_required_kexts(hardware_report, smbios_model, macos_version, needs_oclp, self.ac.patches)
                 elif option == 6:
                     self.gathering_files(macos_version)
                     self.build_opencore_efi(hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp)
