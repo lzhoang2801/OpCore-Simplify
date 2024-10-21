@@ -150,7 +150,7 @@ class OCPE:
             self.ac.unsupported_devices = unsupported_devices
             self.ac.acpi_directory = os.path.join(self.result_dir, "EFI", "OC", "ACPI")
             self.ac.smbios_model = smbios_model
-            self.lpc_bus_device = self.ac.get_lpc_name(skip_ec=True,skip_common_names=True)
+            self.ac.lpc_bus_device = self.ac.get_lpc_name()
 
             for patch in self.ac.patches:
                 if patch.checked:
