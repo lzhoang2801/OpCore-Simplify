@@ -113,8 +113,8 @@ patches = [
     ),
     PatchInfo(
         name = "USB Reset",
-        description = "Reset USB controllers to allow hardware mapping (by CorpNewt)",
-        function_name = "disable_rhub_devices"
+        description = "Disable USB Hub devices to manually rebuild the ports",
+        function_name = "disable_usb_hub_devices"
     ),
     PatchInfo(
         name = "USBX",

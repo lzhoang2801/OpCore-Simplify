@@ -402,153 +402,6 @@ class ACPIGuru:
         except:
             return None
 
-    def disable_rhub_devices(self):
-        comment = "Disable RHUB/HUBN/URTH devices and rename PXSX, XHC1, EHC1, and EHC2 devices"
-        ssdt_name = "SSDT-USB-Reset"
-
-        #if not self.ensure_dsdt():
-        #    return
-        #self.u.head("USB Reset")
-        #print("")
-        #print("Gathering RHUB/HUBN/URTH devices...")
-        rhubs = self.acpi.get_device_paths("RHUB")
-        rhubs.extend(self.acpi.get_device_paths("HUBN"))
-        rhubs.extend(self.acpi.get_device_paths("URTH"))
-        if not len(rhubs):
-            #print(" - None found!  Aborting...")
-            #print("")
-            #self.u.grab("Press [enter] to return to main menu...")
-            return
-        #print(" - Found {:,}".format(len(rhubs)))
-        # Gather some info
-        patches = []
-        tasks = []
-        used_names = []
-        xhc_num = 2
-        ehc_num = 1
-        for x in rhubs:
-            task = {"device":x[0]}
-            #print(" --> {}".format(".".join(x[0].split(".")[:-1])))
-            name = x[0].split(".")[-2]
-            if name in self.illegal_names or name in used_names:
-                #print(" ----> Needs rename!")
-                # Get the new name, and the path to the device and its parent
-                task["device"] = ".".join(task["device"].split(".")[:-1])
-                task["parent"] = ".".join(task["device"].split(".")[:-1])
-                if name.startswith("EHC"):
-                    task["rename"],ehc_num = self.get_unique_device(task["parent"],"EH01",ehc_num,used_names)
-                    ehc_num += 1 # Increment the name number
-                else:
-                    task["rename"],xhc_num = self.get_unique_device(task["parent"],"XHCI",xhc_num,used_names)
-                    xhc_num += 1 # Increment the name number
-                used_names.append(task["rename"])
-            else:
-                used_names.append(name)
-            sta_method = self.acpi.get_method_paths(task["device"]+"._STA")
-            # Let's find out of we need a unique patch for _STA -> XSTA
-            if len(sta_method):
-                #print(" ----> Generating _STA to XSTA patch")
-                sta_index = self.acpi.find_next_hex(sta_method[0][1])[1]
-                #print(" ------> Found at index {}".format(sta_index))
-                sta_hex  = "5F535441"
-                xsta_hex = "58535441"
-                padl,padr = self.acpi.get_shortest_unique_pad(sta_hex, sta_index)
-                patches.append({"Comment":"{} _STA to XSTA Rename".format(task["device"].split(".")[-1]),"Find":padl+sta_hex+padr,"Replace":padl+xsta_hex+padr})
-            # Let's try to get the _ADR
-            scope_adr = self.acpi.get_name_paths(task["device"]+"._ADR")
-            task["address"] = self.acpi.get_dsdt_or_only()["lines"][scope_adr[0][1]].strip() if len(scope_adr) else "Name (_ADR, Zero)  // _ADR: Address"
-            tasks.append(task)
-        #oc = {"Comment":"SSDT to disable USB RHUB/HUBN/URTH and rename devices","Enabled":True,"Path":"SSDT-USB-Reset.aml"}
-        #self.make_plist(oc, "SSDT-USB-Reset.aml", patches)
-        ssdt = """//
-// SSDT to disable RHUB/HUBN/URTH devices and rename PXSX, XHC1, EHC1, and EHC2 devices
-//
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
-{
-"""
-        # Iterate the USB controllers and add external references
-        # Gather the parents first - ensure they're unique, and put them in order
-        parents = sorted(list(set([x["parent"] for x in tasks if x.get("parent",None)])))
-        for x in parents:
-            ssdt += "    External ({}, DeviceObj)\n".format(x)
-        for x in tasks:
-            ssdt += "    External ({}, DeviceObj)\n".format(x["device"])
-        # Let's walk them again and disable RHUBs and rename
-        for x in tasks:
-            if x.get("rename",None):
-                # Disable the old controller
-                ssdt += """
-    Scope ([[device]])
-    {
-        Method (_STA, 0, NotSerialized)  // _STA: Status
-        {
-            If (_OSI ("Darwin"))
-            {
-                Return (Zero)
-            }
-            Else
-            {
-                Return (0x0F)
-            }
-        }
-    }
-
-    Scope ([[parent]])
-    {
-        Device ([[new_device]])
-        {
-            [[address]]
-            Method (_STA, 0, NotSerialized)  // _STA: Status
-            {
-                If (_OSI ("Darwin"))
-                {
-                    Return (0x0F)
-                }
-                Else
-                {
-                    Return (Zero)
-                }
-            }
-        }
-    }
-""".replace("[[device]]",x["device"]).replace("[[parent]]",x["parent"]).replace("[[address]]",x.get("address","Name (_ADR, Zero)  // _ADR: Address")).replace("[[new_device]]",x["rename"])
-            else:
-                # Only disabling the RHUB
-                ssdt += """
-    Scope ([[device]])
-    {
-        Method (_STA, 0, NotSerialized)  // _STA: Status
-        {
-            If (_OSI ("Darwin"))
-            {
-                Return (Zero)
-            }
-            Else
-            {
-                Return (0x0F)
-            }
-        }
-    }
-    """.replace("[[device]]",x["device"])
-        ssdt += "\n}"
-        #self.write_ssdt("SSDT-USB-Reset",ssdt)
-        #print("")
-        #print("Done.")
-        #self.patch_warn()
-        #self.u.grab("Press [enter] to return...")
-        #return
-
-        return {
-            "Add": [
-                {
-                    "Comment": comment,
-                    "Enabled": self.write_ssdt(ssdt_name, ssdt),
-                    "Path": ssdt_name + ".aml"
-                }
-            ],
-            "Patch": patches
-        }
-
     def enable_cpu_power_management(self):
         comment = "Sets plugin-type to 1 on the first Processor object to enable CPU power management"
 
@@ -3166,6 +3019,59 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
                     ]
                 }
 
+    def disable_usb_hub_devices(self):
+        comment = "Disable USB Hub devices to manually rebuild the ports"
+        ssdt_name = "SSDT-USB-Reset"
+        patches = []
+        ssdt_content = """
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
+{"""
+
+        rhub_devices = self.acpi.get_device_paths("RHUB")
+        rhub_devices.extend(self.acpi.get_device_paths("HUBN"))
+        rhub_devices.extend(self.acpi.get_device_paths("URTH"))
+
+        if not rhub_devices:
+            return
+        
+        for device in rhub_devices:
+            device_path = device[0]
+
+            sta = self.get_sta_var(var=None, device=device_path, dev_hid=None, dev_name=device_path.split(".")[-1], table=self.dsdt)
+            patches.extend(sta.get("patches", []))
+
+            ssdt_content += """
+    External ([[device_path]], DeviceObj)
+
+    Scope ([[device_path]])
+    {
+        Method (_STA, 0, NotSerialized)  // _STA: Status
+        {
+            If (_OSI ("Darwin"))
+            {
+                Return (Zero)
+            }
+            Else
+            {
+                Return (0x0F)
+            }
+        }
+    }
+""".replace("[[device_path]]", device_path)
+            
+        ssdt_content += "\n}"
+
+        return {
+            "Add": [
+                {
+                    "Comment": comment,
+                    "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                    "Path": ssdt_name + ".aml"
+                }
+            ],
+            "Patch": patches
+        }
+
     def drop_cpu_tables(self):
         deletes = []
 
@@ -3266,8 +3172,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
 
         if hardware_report.get("Motherboard").get("Chipset") in ("C600/X79", "C610/X99", "Wellsburg"):
             selected_patches.append("UNC")
-            
-        selected_patches.append("USB Reset")
+        
+        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Chipset"), start=101):
+            selected_patches.append("USB Reset")
 
         selected_patches.append("USBX")
         
