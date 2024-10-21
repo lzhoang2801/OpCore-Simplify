@@ -626,6 +626,18 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "NoTouchID", 
+        description = "Avoid lag in authentication dialogs for board IDs with Touch ID sensors",
+        category = "Extras",
+        min_darwin_version = "17.5.0",
+        max_darwin_version = "19.6.0",
+        requires_kexts = ["Lilu"],
+        github_repo = {
+            "owner": "al3xtjames",
+            "repo": "NoTouchID"
+        }
+    ),
+    KextInfo(
         name = "RestrictEvents", 
         description = "Blocking unwanted processes and unlocking features",
         category = "Extras",

@@ -1,6 +1,7 @@
 
 from Scripts.datasets import cpu_data
 from Scripts.datasets import kext_data
+from Scripts.datasets import mac_model_data
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts.datasets import codec_layouts
@@ -242,6 +243,9 @@ class KextMaestro:
                     selected_kexts.append("GenericUSBXHCI")
                 else:
                     selected_kexts.append("XHCI-unsupported")
+
+        if smbios_model in (device.name for device in mac_model_data.mac_devices[31:34] + mac_model_data.mac_devices[48:50] + mac_model_data.mac_devices[51:61]):
+            selected_kexts.append("NoTouchID")
 
         for name in selected_kexts:
             self.check_kext(self.get_kext_index(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
