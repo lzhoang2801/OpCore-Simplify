@@ -2944,31 +2944,50 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
 
     def fix_apic_processor_id(self):
         self.apic = self.acpi.get_table_with_signature("APIC")
-        processors = [line for line in self.dsdt.get("lines") if line.strip().startswith("Processor")]
+        new_apic = ""
 
-        if not self.apic or not processors:
+        if not self.apic:
             return
 
-        processor_index = -1
-        for index, line in enumerate(self.apic.get("lines")):
-            if "Subtable Type" in line and "[Processor Local APIC]" in line:
-                processor_index += 1
-                apic_processor_id = self.apic["lines"][index + 2][-2:]
-                try:
-                    dsdt_processor_id = processors[processor_index].split("0x")[1].split(",")[0]
-                except:
-                    return
-                if processor_index == 0 and apic_processor_id == dsdt_processor_id:
-                    break
-                self.apic["lines"][index + 2] = self.apic["lines"][index + 2][:-2] + dsdt_processor_id
+        for table_name in self.sorted_nicely(list(self.acpi.acpi_tables)):
+            table = self.acpi.acpi_tables[table_name]
+            processors = self.acpi.get_processor_paths(table=table)
 
-        if processor_index != -1:
-            if self.write_ssdt("APIC", "\n".join(self.apic.get("lines"))):
+            if not processors:
+                continue
+
+            processor_index = -1
+            apic_length = len(self.apic.get("lines"))
+            skip_unknown_subtable = False
+            for index in range(apic_length):
+                line = self.apic.get("lines")[index]
+
+                if "Unknown" in line:
+                    skip_unknown_subtable = not skip_unknown_subtable
+                    continue
+
+                if skip_unknown_subtable:
+                    continue
+
+                if "Subtable Type" in line and "[Processor Local APIC]" in line:
+                    processor_index += 1
+                    apic_processor_id = self.apic["lines"][index + 2][-2:]
+                    try:
+                        processor_id = table.get("lines")[processors[processor_index][1]].split(", ")[1][2:]
+                    except:
+                        return
+                    if processor_index == 0 and apic_processor_id == processor_id:
+                        return
+                    self.apic["lines"][index + 2] = self.apic["lines"][index + 2][:-2] + processor_id
+
+                new_apic += line + "\n"
+
+            if processor_index != -1:
                 return {
                     "Add": [
                         {
                             "Comment": "Avoid kernel panic by pointing the first CPU entry to an active CPU on HEDT systems",
-                            "Enabled": True,
+                            "Enabled": self.write_ssdt("APIC", new_apic),
                             "Path": "APIC.aml"
                         }
                     ],
@@ -3071,6 +3090,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             not "SURFACE" in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("ALS")
             selected_patches.append("PNLF")
+
+        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
+            selected_patches.append("APIC")
 
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
             selected_patches.append("BUS0")
