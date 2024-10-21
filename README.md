@@ -35,7 +35,7 @@
 2. **ACPI Patches and Kexts**  
    Automatically detects and adds ACPI patches and kexts based on hardware configuration.
    
-   - Integrated with [SSDTTime](https://github.com/corpnewt/SSDTTime) for common patches (e.g., FakeEC, FixHPET, PLUG, RTCAWAC, USB Reset).
+   - Integrated with [SSDTTime](https://github.com/corpnewt/SSDTTime) for common patches (e.g., FakeEC, FixHPET, PLUG, RTCAWAC).
    - Includes custom patches:
       - Prevent kernel panics by directing the first CPU entry to an active CPU, disabling the UNC0 device, and creating a new RTC device for HEDT systems.
       - Disable unsupported or unused PCI devices, such as the GPU (using Optimus, Bumblebee, and spoof methods), Wi-Fi card, and NVMe storage controller.
