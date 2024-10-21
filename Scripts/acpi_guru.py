@@ -2451,124 +2451,81 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
         return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=21) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
 
     def fix_system_clock_hedt(self):
-        if not self.lpc_bus_device:
-            return
-
         awac_device = self.acpi.get_device_paths_with_hid("ACPI000E", self.dsdt)
-        rtc_device_name = self.acpi.get_device_paths_with_hid("PNP0B00", self.dsdt)[0][0].split(".")[-1]
+        try:
+            rtc_device = self.acpi.get_device_paths_with_hid("PNP0B00", self.dsdt)[0][0]
+            if rtc_device.endswith("RTC"):
+                rtc_device += "_"
+        except:
+            if not self.lpc_bus_device:
+                return
+            rtc_device = self.lpc_bus_device + ".RTC0"
+        new_rtc_device = ".".join(rtc_device.split(".")[:-1] + [self.get_unique_device(rtc_device, rtc_device.split(".")[-1])[0]])
 
+        patches = []
         comment = "Creates a new RTC device to resolve PCI Configuration issues in macOS Big Sur 11+"
         ssdt_name = "SSDT-RTC0-RANGE"
         ssdt_content = """
-// Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-RTC0-RANGE.dsl
-
-/*
- * On certain motherboards(mainly Asus X299 boards), not all ports are
- * mapped in the RTC device. For the majority of the time, users will not notice 
- * this issue though in extreme circumstances macOS may halt in early booting.
- * Most prominently seen around the PCI Configuration stage with macOS 11 Big Sur.
- * 
- * To resolve this, we'll want to create a new RTC device(PNP0B00) with the correct
- * range.
- * 
- * Note that due to AWAC systems having an _STA method already defined, attempting
- * to set another _STA method in your RTC device will conflict. To resolve this,
- * SSDT-AWAC should be removed and instead opt for this SSDT instead.
- */
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
-{
-    External ([[LPCPath]], DeviceObj)"""
+{"""
         if not awac_device:
-            ssdt_content += """
-    External ([[LPCPath]].[[RTCName]], DeviceObj)"""
-        ssdt_content += """
-    Scope ([[LPCPath]])
-    {"""
-        if not awac_device:
-            ssdt_content += """
-        Scope ([[RTCName]])
-        {
-            Method (_STA, 0, NotSerialized)  // _STA: Status
-            {
-                If (_OSI ("Darwin"))
-                {
-                    Return (Zero)
-                }
-                Else
-                {
-                    Return (0x0F)
-                }
-            }
-        }""" 
+            sta = self.get_sta_var(var=None, device=rtc_device, dev_hid=None, dev_name=rtc_device.split(".")[-1], table=self.dsdt)
+            patches.extend(sta.get("patches", []))
 
-        ssdt_content += """
-        Device (RTC0)
+            ssdt_content += """
+    External ([[device_path]], DeviceObj)
+    
+    Scope ([[device_path]])
+    {
+        Method (_STA, 0, NotSerialized)  // _STA: Status
         {
-            /*
-            * Change the below _CSR range to match your hardware.
-            *
-            * For this example, we'll use the Asus Strix X299-E Gaming's ACPI, and show how to correct it.
-            * Within the original RTC device, we see that sections 0x70 through 0x77 are mapped:
-            *
-            *    Name (_CRS, ResourceTemplate ()  // _CRS: Current Resource Settings
-            *    {
-            *        IO (Decode16,
-            *            0x0070,             // Range Minimum 1
-            *            0x0070,             // Range Maximum 1
-            *            0x01,               // Alignment 1
-            *            0x02,               // Length 1
-            *           )
-            *        IO (Decode16,
-            *            0x0074,             // Range Minimum 2
-            *            0x0074,             // Range Maximum 2
-            *            0x01,               // Alignment 2
-            *            0x04,               // Length 2
-            *           )
-            *        IRQNoFlags ()
-            *            {8}
-            *    })
-            *
-            * Though Asus seems to have forgotten to map sections 0x72 and 0x73 in the first bank, so
-            * we'll want to expand the range to include them under Length 1.
-            * Note that not all boards will be the same, verify with your ACPI tables for both the range and 
-            * missing regions.
-            */
-            
-            Name (_HID, EisaId ("PNP0B00"))  // _HID: Hardware ID
-            Name (_CRS, ResourceTemplate ()  // _CRS: Current Resource Settings
+            If (_OSI ("Darwin"))
             {
-                IO (Decode16,
-                    0x0070,             // Range Minimum 1
-                    0x0070,             // Range Maximum 1
-                    0x01,               // Alignment 1
-                    0x04,               // Length 1      (Expanded to include 0x72 and 0x73)
-                    )
-                IO (Decode16,
-                    0x0074,             // Range Minimum 2
-                    0x0074,             // Range Maximum 2
-                    0x01,               // Alignment 2
-                    0x04,               // Length 2
-                    )
-                IRQNoFlags ()
-                    {8}
-            })
-            Method (_STA, 0, NotSerialized)  // _STA: Status
+                Return (Zero)
+            }
+            Else
             {
-                If (_OSI ("Darwin"))
-                {
-                    Return (0x0F)
-                }
-                Else
-                {
-                    Return (Zero)
-                }
+                Return (0x0F)
+            }
+        }
+    }""".replace("[[device_path]]", rtc_device)
+        ssdt_content += """
+    External ([[parent_path]], DeviceObj)
+
+    Device ([[device_path]])
+    {
+        Name (_HID, EisaId ("PNP0B00") /* AT Real-Time Clock */)  // _HID: Hardware ID
+        Name (_CRS, ResourceTemplate ()  // _CRS: Current Resource Settings
+        {
+            IO (Decode16,
+                0x0070,             // Range Minimum
+                0x0070,             // Range Maximum
+                0x01,               // Alignment
+                0x04,               // Length
+                )
+            IO (Decode16,
+                0x0074,             // Range Minimum
+                0x0074,             // Range Maximum
+                0x01,               // Alignment
+                0x04,               // Length
+                )
+            IRQNoFlags ()
+                {8}
+        })
+        Method (_STA, 0, NotSerialized)  // _STA: Status
+        {
+            If (_OSI ("Darwin"))
+            {
+                Return (0x0F)
+            }
+            Else
+            {
+                Return (Zero)
             }
         }
     }
-}"""
-        
-        ssdt_content = ssdt_content.replace("[[LPCPath]]", self.lpc_bus_device).replace("[[RTCName]]", rtc_device_name)
-        
+}""".replace("[[parent_path]]", ".".join(rtc_device.split(".")[:-1])).replace("[[device_path]]", new_rtc_device)
+                
         return {
             "Add": [
                 {
@@ -2576,7 +2533,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
-            ]
+            ],
+            "Patch": patches
         }
 
     def instant_wake_fix(self):
