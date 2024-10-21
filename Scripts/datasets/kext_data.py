@@ -120,10 +120,6 @@ kexts = [
         github_repo = {
             "owner": "acidanthera",
             "repo": "AppleALC"
-        },
-        download_info = {
-            "id": 223994507, 
-            "url": "https://github.com/lzhoang2801/lzhoang2801.github.io/raw/main/public/extra-files/AppleALC-1.9.2-RELEASE.zip"
         }
     ),
     KextInfo(
