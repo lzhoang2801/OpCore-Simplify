@@ -157,7 +157,7 @@ class gatheringFiles:
                 product_name = "VoodooPS2"
             elif product_name == "BlueToolFixup" or product_name.startswith("Brcm"):
                 product_name = "BrcmPatchRAM"
-            elif product_name.startswith("Intel"):
+            elif product_name.startswith("IntelB"):
                 product_name = "IntelBluetoothFirmware"
             elif product_name.startswith("VoodooI2C"):
                 product_name = "VoodooI2C"
