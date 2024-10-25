@@ -441,7 +441,7 @@ class ConfigProdigy:
                     if needs_oclp:
                         if discrete_gpu.get("Manufacturer") == "AMD":
                             boot_args.append("-radvesa")
-                        elif discrete_gpu.get("Manufacturer") == "NVIDIA":
+                        elif discrete_gpu.get("Manufacturer") == "NVIDIA" and not "Kepler" in discrete_gpu.get("Codename"):
                             boot_args.extend(("nvda_drv_vrl=1", "ngfxcompat=1", "ngfxgl=1"))
             elif kext.name == "AppleALC":
                 if hardware_report.get("Sound"):
