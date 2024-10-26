@@ -24,12 +24,23 @@ class Github:
 
         response = self.fetcher.fetch_and_parse_content(url, "json")
 
-        return response[0]
+        try:
+            latest_commit = response[0].get("commit")
+        except:
+            return
+
+        if not isinstance(latest_commit, dict) or not latest_commit.get("tree"):
+            return
+
+        return {
+            "message": latest_commit.get("message").split("\n")[0],
+            "sha": latest_commit.get("tree").get("sha")
+        }
         
     def get_latest_artifact(self, owner, repo):
         results = []
 
-        url = "https://api.github.com/repos/{}/{}/actions/artifacts?per_page=1".format(owner, repo)
+        url = "https://api.github.com/repos/{}/{}/actions/artifacts".format(owner, repo)
 
         response = self.fetcher.fetch_and_parse_content(url, "json")
 
@@ -44,11 +55,19 @@ class Github:
         return results
 
     def get_latest_release(self, owner, repo):
-        results = []
-
-        url = "https://api.github.com/repos/{}/{}/releases?per_page=1".format(owner, repo)
+        url = "https://api.github.com/repos/{}/{}/releases".format(owner, repo)
 
         response = self.fetcher.fetch_and_parse_content(url, "json")
+        
+        try:
+            latest_release = response[0]
+        except:
+            return
+        
+        if not isinstance(latest_release, dict):
+            return
+        
+        assets = []
 
         for asset in response[0].get("assets"):
             asset_id = asset.get("id")
@@ -56,13 +75,16 @@ class Github:
             asset_name = self.extract_asset_name(asset.get("name"))
 
             if "tlwm" in download_url or ("tlwm" not in download_url and "DEBUG" not in download_url.upper()):
-                results.append({
+                assets.append({
                     "product_name": asset_name, 
                     "id": asset_id, 
                     "url": download_url
                 })
 
-        return results
+        return {
+            "describe": latest_release.get("body"),
+            "assets": assets
+        }
     
     def extract_asset_name(self, file_name):
         end_idx = len(file_name)

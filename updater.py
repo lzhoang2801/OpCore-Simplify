@@ -29,7 +29,7 @@ class Updater:
         return current_sha_version.decode()
 
     def get_latest_sha_version(self):
-        latest_commit = self.github.get_latest_commit("lzhoang2801", "OpCore-Simplify")
+        latest_commit = self.github.get_latest_commit("lzhoang2801", "OpCore-Simplify") or {}
 
         return latest_commit.get("sha") or "0506fb67111d5c5230bf59b826c318ea4251dfc4"
 

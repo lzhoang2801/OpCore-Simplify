@@ -63,7 +63,9 @@ class gatheringFiles:
                     })
                 else:
                     if self.github.check_ratelimit():
-                        add_product_to_download_urls(self.github.get_latest_release(kext.github_repo.get("owner"), kext.github_repo.get("repo")))
+                        latest_release = self.github.get_latest_release(kext.github_repo.get("owner"), kext.github_repo.get("repo")) or {}
+
+                        add_product_to_download_urls(latest_release.get("assets"))
 
         add_product_to_download_urls({
             "product_name": "OpenCorePkg",
@@ -234,7 +236,9 @@ class gatheringFiles:
             if not isinstance(download_history, list):
                 download_history = []
 
-            for product in self.github.get_latest_release("lzhoang2801", "Hardware-Sniffer"):
+            latest_release = self.github.get_latest_release("lzhoang2801", "Hardware-Sniffer") or {}
+
+            for product in latest_release.get("assets"):
                 if product.get("product_name") == "Hardware-Sniffer-CLI":
                     hardware_sniffer_cli = product
 
