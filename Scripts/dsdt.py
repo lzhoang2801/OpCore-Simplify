@@ -1,6 +1,7 @@
 # Original source: https://github.com/corpnewt/SSDTTime/blob/64446d553fcbc14a4e6ebf3d8d16e3357b5cbf50/Scripts/dsdt.py
 
 import os, errno, tempfile, shutil, plistlib, sys, binascii, zipfile, getpass, re
+from Scripts import github
 from Scripts import resource_fetcher
 from Scripts import run
 from Scripts import utils
@@ -8,6 +9,7 @@ from Scripts import utils
 class DSDT:
     def __init__(self, **kwargs):
         #self.dl = downloader.Downloader()
+        self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher()
         self.r  = run.Run()
         #self.u  = utils.Utils("SSDT Time")
@@ -16,7 +18,7 @@ class DSDT:
         self.iasl_url_macOS_legacy = "https://raw.githubusercontent.com/acidanthera/MaciASL/master/Dist/iasl-legacy"
         self.iasl_url_linux = "https://raw.githubusercontent.com/corpnewt/linux_iasl/main/iasl.zip"
         self.iasl_url_linux_legacy = "https://raw.githubusercontent.com/corpnewt/iasl-legacy/main/iasl-legacy-linux.zip"
-        self.acpi_binary_tools = "https://www.intel.com/content/www/us/en/developer/topic-technology/open/acpica/download.html"
+        self.acpi_binary_tools = "https://github.com/acpica/acpica/releases"
         self.iasl_url_windows_legacy = "https://raw.githubusercontent.com/corpnewt/iasl-legacy/main/iasl-legacy-windows.zip"
         self.h = {} # {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         self.iasl = self.check_iasl()
@@ -28,7 +30,7 @@ class DSDT:
             exception = "Could not locate or download iasl!"
             if url:
                 exception += "\n\nPlease manually download {} from:\n - {}\n\nAnd place in:\n - {}\n".format(
-                    "and extract iasl.exe" if os.name=="nt" else "iasl",
+                    "\"iasl-win-YYYYMMDD.zip\" and extract iasl.exe" if os.name=="nt" else "iasl",
                     url,
                     os.path.dirname(os.path.realpath(__file__))
                 )
@@ -247,36 +249,12 @@ class DSDT:
         return (target_files, failed,)
 
     def get_latest_iasl(self):
-        # Helper to scrape https://www.intel.com/content/www/us/en/developer/topic-technology/open/acpica/download.html for the latest
-        # download binaries link - then scrape the contents of that page for the actual download
-        try:
-            #source = self.dl.get_string(self.acpi_binary_tools, headers=self.h)
-            source = self.fetcher.fetch_and_parse_content(self.acpi_binary_tools)
-            for line in source.split("\n"):
-                if '<a href="' in line and ">iasl compiler and windows acpi tools" in line.lower():
-                    # Check if we have a direct download link - i.e. ends with .zip - or if we're
-                    # redirected to a different download page - i.e. ends with .html
-                    dl_link = line.split('<a href="')[1].split('"')[0]
-                    if dl_link.lower().endswith(".zip"):
-                        # Direct download - return as-is
-                        return dl_link
-                    elif dl_link.lower().endswith((".html",".htm")):
-                        # Redirect - try to scrape for a download link
-                        try:
-                            if dl_link.lower().startswith(("http:","https:")):
-                                # The existing link is likely complete - use it as-is
-                                dl_page_url = dl_link
-                            else:
-                                # <a href="/content/www/us/en/download/774881/acpi-component-architecture-downloads-windows-binary-tools.html">iASL Compiler and Windows ACPI Tools
-                                # Only a suffix - prepend to it
-                                dl_page_url = "https://www.intel.com" + line.split('<a href="')[1].split('"')[0]
-                            dl_page_source = self.dl.get_string(dl_page_url, progress=False, headers=self.h)
-                            for line in dl_page_source.split("\n"):
-                                if 'data-href="' in line and '"download-button"' in line:
-                                    # Should have the right line
-                                    return line.split('data-href="')[1].split('"')[0]
-                        except: pass
-        except: pass
+        latest_release = self.github.get_latest_release("acpica", "acpica") or {}
+        
+        for line in latest_release.get("describe", "").splitlines():
+            if "iasl" in line:
+                return line.split("(")[-1].split(")")[0]
+            
         return None
     
     def check_iasl(self, legacy=False, try_downloading=True):
