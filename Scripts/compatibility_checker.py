@@ -341,6 +341,8 @@ class CompatibilityChecker:
 
                     if discrete_gpu_mode == "efficiency":
                         gpu_props["Compatibility"] = (None, None)
+                        if gpu_props.get("OCLP Compatibility"):
+                            del gpu_props["OCLP Compatibility"]
 
                 max_version, min_version = gpu_props.get("Compatibility")
                 max_supported_gpu_version = max_version if not max_supported_gpu_version else max_version if self.utils.parse_darwin_version(max_version) > self.utils.parse_darwin_version(max_supported_gpu_version) else max_supported_gpu_version
