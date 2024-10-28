@@ -288,7 +288,6 @@ class ConfigProdigy:
                                 "model": gpu_name
                             }
 
-
         network_items = hardware_report.get("Network", {}).items()
         storage_controllers_items = hardware_report.get("Storage Controllers", {}).items()
 
@@ -425,14 +424,14 @@ class ConfigProdigy:
                         boot_args.append("igfxonln=1")
 
                     if "Ice Lake" in intergrated_gpu[-1].get("Codename"):
-                        boot_args.append("-noDC9")
+                        boot_args.extend(("-noDC9", "-igfxblr"))
 
                     if "Desktop" in hardware_report.get("Motherboard").get("Platform"):
                         if any(monitor_info.get("Connector Type") in ("DVI", "HDMI") for monitor_name, monitor_info in hardware_report.get("Monitor", {}).items() if monitor_info.get("Connected GPU") == intergrated_gpu[0]):
                             boot_args.append("-igfxvesa")
                     elif "Laptop" in hardware_report.get("Motherboard").get("Platform"):
-                        if intergrated_gpu[-1].get("Device ID")[5:].startswith(("09", "19", "59", "8C", "3E", "87", "9B", "8A")) and not intergrated_gpu[-1].get("Device ID").endswith("5917"):
-                            boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else "r"))
+                        if intergrated_gpu[-1].get("Device ID")[5:].startswith(("09", "19", "59", "8C", "3E", "87", "9B")) and not intergrated_gpu[-1].get("Device ID").endswith("5917"):
+                            boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("22.5.0") else "r"))
 
                 discrete_gpu = list(hardware_report.get("GPU").items())[0][-1]
                 if discrete_gpu.get("Device Type") == "Discrete GPU":
