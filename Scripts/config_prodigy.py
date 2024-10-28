@@ -288,6 +288,16 @@ class ConfigProdigy:
                                 "model": gpu_name
                             }
 
+
+        network_items = hardware_report.get("Network", {}).items()
+        storage_controllers_items = hardware_report.get("Storage Controllers", {}).items()
+
+        for device_name, device_props in list(network_items) + list(storage_controllers_items):
+            if device_props.get("PCI Path") and not device_props.get("ACPI Path"):
+                deviceproperties_add[device_props.get("PCI Path")] = {
+                    "built-in": self.utils.hex_to_bytes("01")
+                }
+
         for key, value in deviceproperties_add.items():
             for key_child, value_child in value.items():
                 if isinstance(value_child, str):
