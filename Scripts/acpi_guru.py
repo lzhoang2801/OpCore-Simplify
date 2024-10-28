@@ -2104,10 +2104,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
 {"""
-        if uid_value == 14 and integrated_gpu.get("ACPI Path"):
-            ssdt_content += """\n    External ([[igpu_path]], DeviceObj)\n"""
+        if integrated_gpu.get("ACPI Path"):
+            ssdt_content += """\n    External ([[DevicePath]], DeviceObj)\n    Device ([[DevicePath]].PNLF)"""
+        else:
+            ssdt_content += """\n    Device (PNLF)"""
         ssdt_content += """
-    Device (PNLF)
     {
         Name (_HID, EisaId ("APP0002"))  // _HID: Hardware ID
         Name (_CID, "backlight")  // _CID: Compatible ID
@@ -2124,14 +2125,14 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
                 Return (Zero)
             }
         }"""
-        if uid_value == 14 and integrated_gpu.get("ACPI Path"):
+        if integrated_gpu.get("ACPI Path") and uid_value == 14:
             ssdt_content += """
         Method (_INI, 0, Serialized)
         {
-            If (LAnd (_OSI ("Darwin"), CondRefOf ([[igpu_path]])))
+            If (_OSI ("Darwin"))
             {
-                OperationRegion ([[igpu_path]].RMP3, PCI_Config, Zero, 0x14)
-                Field ([[igpu_path]].RMP3, AnyAcc, NoLock, Preserve)
+                OperationRegion ([[DevicePath]].RMP3, PCI_Config, Zero, 0x14)
+                Field ([[DevicePath]].RMP3, AnyAcc, NoLock, Preserve)
                 {
                     Offset (0x02), GDID,16,
                     Offset (0x10), BAR1,32,
@@ -2226,8 +2227,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
 }"""
 
         ssdt_content = ssdt_content.replace("[[uid_value]]", str(uid_value))
-        if "[[igpu_path]]" in ssdt_content:
-            ssdt_content = ssdt_content.replace("[[igpu_path]]", integrated_gpu.get("ACPI Path"))       
+        if integrated_gpu.get("ACPI Path"):
+            ssdt_content = ssdt_content.replace("[[DevicePath]]", integrated_gpu.get("ACPI Path"))   
         
         return {
             "Add": [
