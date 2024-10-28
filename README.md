@@ -63,7 +63,7 @@
    - Force Intel GPUs into VESA mode with HDMI and DVI connectors to simplify installation process.
    - Use random layout IDs have comment based on author or motherboard brand for better sound quality.
    - Provide configuration required for using OpenCore Legacy Patcher.
-   - Add built-in device properties for network devices (fix 'Could not communicate with the server' when using iServices) and storage controllers (fix internal drives shown as external).
+   - Add built-in device property for network devices (fix 'Could not communicate with the server' when using iServices) and storage controllers (fix internal drives shown as external).
 
    and more...
 
