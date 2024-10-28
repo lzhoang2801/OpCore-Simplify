@@ -1892,9 +1892,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
 
                     off_methods = self.acpi.get_method_paths("_OFF", table_data)
                     ps3_methods = self.acpi.get_method_paths("_PS3", table_data)
-                    
-                    if not off_methods:
-                        continue
+
                     off_method_of_target_device = next((method for method in off_methods if method[0].startswith(target_device)), None)
                     ps3_method_of_target_device = next((method for method in ps3_methods if method[0].startswith(target_device)), None)
 
