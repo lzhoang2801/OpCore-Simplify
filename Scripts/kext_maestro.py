@@ -239,7 +239,7 @@ class KextMaestro:
             device_id = controller_props.get("Device ID")
             if device_id in pci_data.UnsupportedUSBControllerIDs:
                 idx = pci_data.UnsupportedUSBControllerIDs.index(device_id)
-                if idx == 0:
+                if idx == 0 and "Laptop" in hardware_report.get("Motherboard").get("Platform"):
                     selected_kexts.append("GenericUSBXHCI")
                 else:
                     selected_kexts.append("XHCI-unsupported")
