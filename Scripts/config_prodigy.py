@@ -509,7 +509,7 @@ class ConfigProdigy:
             not self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=14) is None
         config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"]
         config["Booter"]["Quirks"]["ResizeAppleGpuBars"] = 0 if any(gpu_props.get("Resizable BAR", "Disabled") == "Enabled" for gpu_name, gpu_props in hardware_report.get("GPU", {}).items()) else -1
-        config["Booter"]["Quirks"]["SetupVirtualMap"] = not (not self.utils.contains_any(chipset_data.AMDChipsets, hardware_report.get("Motherboard").get("Chipset"), start=11, end=17) is None or \
+        config["Booter"]["Quirks"]["SetupVirtualMap"] = not (chipset_data.AMDChipsets, hardware_report.get("Motherboard").get("Chipset") == "TRX40" or \
             "ASUS" in hardware_report.get("Motherboard").get("Name") and self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")) and config["Booter"]["Quirks"]["DevirtualiseMmio"])
         config["Booter"]["Quirks"]["SyncRuntimePermissions"] = config["Booter"]["Quirks"]["RebuildAppleMemoryMap"]
 
