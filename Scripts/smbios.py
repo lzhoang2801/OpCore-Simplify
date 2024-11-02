@@ -147,10 +147,10 @@ class SMBIOS:
                 checkbox = "[*]" if device.name == selected_smbios_model else "[ ]"
                 
                 line = "{} {:2}. {:15} - {:10} {:20}{}".format(checkbox, index, device.name, device.cpu, "({})".format(device.cpu_generation), "" if not device.discrete_gpu else " - {}".format(device.discrete_gpu))
-                if not self.utils.parse_darwin_version(device.initial_support) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(device.last_supported_version):
-                    line = "\033[90m{}\033[0m".format(line)
-                elif device.name == selected_smbios_model:
+                if device.name == selected_smbios_model:
                     line = "\033[1;32m{}\033[0m".format(line)
+                elif not self.utils.parse_darwin_version(device.initial_support) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(device.last_supported_version):
+                    line = "\033[90m{}\033[0m".format(line)
                 contents.append(line)
             contents.append("\033[1;36m")
             contents.append("Note:")
