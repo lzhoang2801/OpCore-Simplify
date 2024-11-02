@@ -430,7 +430,7 @@ class ConfigProdigy:
                         if any(monitor_info.get("Connector Type") in ("DVI", "HDMI") for monitor_name, monitor_info in hardware_report.get("Monitor", {}).items() if monitor_info.get("Connected GPU") == intergrated_gpu[0]):
                             boot_args.append("-igfxvesa")
                     elif "Laptop" in hardware_report.get("Motherboard").get("Platform"):
-                        if intergrated_gpu[-1].get("Device ID")[5:].startswith(("09", "19", "59", "8C", "3E", "87", "9B")) and not intergrated_gpu[-1].get("Device ID").endswith("5917"):
+                        if intergrated_gpu[-1].get("Device ID")[5:].startswith(("59", "8C", "3E", "87", "9B")) and not intergrated_gpu[-1].get("Device ID").endswith("5917"):
                             boot_args.append("-igfxbl{}".format("t" if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("22.5.0") else "r"))
 
                 discrete_gpu = list(hardware_report.get("GPU").items())[0][-1]
