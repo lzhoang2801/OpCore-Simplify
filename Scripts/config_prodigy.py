@@ -449,7 +449,7 @@ class ConfigProdigy:
 
                     if needs_oclp:
                         if discrete_gpu.get("Manufacturer") == "AMD":
-                            boot_args.append("-radvesa")
+                            boot_args.append("-radvesa" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "-amd_no_dgpu_accel")
                         elif discrete_gpu.get("Manufacturer") == "NVIDIA" and not "Kepler" in discrete_gpu.get("Codename"):
                             boot_args.extend(("nvda_drv_vrl=1", "ngfxcompat=1", "ngfxgl=1"))
             elif kext.name == "AppleALC":
