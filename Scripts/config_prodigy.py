@@ -35,7 +35,7 @@ class ConfigProdigy:
             booter_mmiowhitelist.append({
                 "Address": 4244635648,
                 "Comment": "MMIO 0xFD000000",
-                "Enabled  ": True
+                "Enabled": True
             })
         
         return booter_mmiowhitelist
