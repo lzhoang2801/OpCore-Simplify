@@ -29,13 +29,13 @@ class ConfigProdigy:
             booter_mmiowhitelist.append({
                 "Address": 4284481536,
                 "Comment": "MMIO 0xFF600000",
-                "Enable": True
+                "Enabled": True
             })
         elif "B650" in motherboard_chipset or "X670" in motherboard_chipset:
             booter_mmiowhitelist.append({
                 "Address": 4244635648,
                 "Comment": "MMIO 0xFD000000",
-                "Enable": True
+                "Enabled  ": True
             })
         
         return booter_mmiowhitelist
