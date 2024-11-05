@@ -1038,8 +1038,7 @@ UnsupportedNVMeSSDIDs = [
     ("2646-2263", ("22632646")), # Kingston A2000
     ("1C5C-174A", ("174A1C5C")), # SK hynix BC711/PC711
     ("1C5C-1639", ("16391C5C")), # SK hynix PC611
-    ("1C5C-1627", ("16271C5C")), # SK hynix PC601
-    ("8086-F1A6", ("390B8086")) # Intel 760P
+    ("1C5C-1627", ("16271C5C")) # SK hynix PC601
 ]
 
 # Resource: https://pci-ids.ucw.cz/
