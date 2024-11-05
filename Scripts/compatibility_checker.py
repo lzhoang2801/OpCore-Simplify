@@ -323,7 +323,7 @@ class CompatibilityChecker:
             if self.hardware_report.get(device_type):
                 index += 1
                 print("{}. {}:".format(index, device_type))
-                time.sleep(1)
+                time.sleep(0.5)
                 function()
 
         max_supported_gpu_version = min_supported_gpu_version = None
