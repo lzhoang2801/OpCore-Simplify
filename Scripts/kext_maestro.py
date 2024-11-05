@@ -247,6 +247,12 @@ class KextMaestro:
         if smbios_model in (device.name for device in mac_model_data.mac_devices[31:34] + mac_model_data.mac_devices[48:50] + mac_model_data.mac_devices[51:61]):
             selected_kexts.append("NoTouchID")
 
+        if "Sandy Bridge" in hardware_report.get("CPU").get("Codename"):
+            selected_kexts.append("ASPP-Override")
+
+        if "Sandy Bridge" in hardware_report.get("CPU").get("Codename") or "Ivy Bridge" in hardware_report.get("CPU").get("Codename"):
+            selected_kexts.extend(("AppleIntelCPUPowerManagement", "AppleIntelCPUPowerManagementClient"))
+
         for name in selected_kexts:
             self.check_kext(self.get_kext_index(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
 
@@ -435,7 +441,7 @@ class KextMaestro:
                     contents.append(f"\n{category_header}\n" + "=" * len(category_header))
                 checkbox = "[*]" if kext.checked else "[ ]"
                 
-                line = "{} {:2}. {:25} - {:60}".format(checkbox, index, kext.name, kext.description)
+                line = "{} {:2}. {:35} - {:60}".format(checkbox, index, kext.name, kext.description)
                 if kext.checked:
                     line = "\033[1;32m{}\033[0m".format(line)
                 elif not self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(kext.max_darwin_version):

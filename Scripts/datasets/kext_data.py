@@ -546,6 +546,36 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "ASPP-Override", 
+        description = "Re-enable CPU power management for Intel Sandy Bridge CPUs",
+        category = "Extras",
+        min_darwin_version = "21.4.0",
+        download_info = {
+            "id": 913826421,
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Misc/ASPP-Override-v1.0.1.zip"
+        }
+    ),
+    KextInfo(
+        name = "AppleIntelCPUPowerManagement", 
+        description = "Re-enable CPU power management on legacy Intel CPUs", 
+        category = "Extras",
+        min_darwin_version = "22.0.0",
+        download_info = {
+            "id": 736296452, 
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Misc/AppleIntelCPUPowerManagement-v1.0.0.zip"
+        }
+    ),
+    KextInfo(
+        name = "AppleIntelCPUPowerManagementClient", 
+        description = "Re-enable CPU power management on legacy Intel CPUs", 
+        category = "Extras",
+        min_darwin_version = "22.0.0",
+        download_info = {
+            "id": 932639706, 
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Misc/AppleIntelCPUPowerManagementClient-v1.0.0.zip"
+        }
+    ),
+    KextInfo(
         name = "AppleMCEReporterDisabler", 
         description = "Disables AppleMCEReporter.kext to prevent kernel panics", 
         category = "Extras",
