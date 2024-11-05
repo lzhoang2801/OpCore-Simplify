@@ -241,15 +241,20 @@ class CompatibilityChecker:
 
     def check_storage_compatibility(self):
         for controller_name, controller_props in self.hardware_report.get("Storage Controllers", {}).items():
-            if "PCI" in controller_props.get("Bus Type"):
-                device_id = controller_props.get("Device ID")
+            if "PCI" not in controller_props.get("Bus Type"):
+                continue
 
-                if device_id in pci_data.IntelVMDIDs:
-                    self.utils.request_input("\n\nDisable Intel RST VMD in the BIOS before exporting the hardware report and try again with the new report")
-                    self.utils.exit_program()
-                elif device_id in pci_data.UnsupportedNVMeSSDIDs:
-                    controller_props["Compatibility"] = (None, None)
-                print("{}- {}: {}".format(" "*3, controller_name if not device_id in pci_data.UnsupportedNVMeSSDIDs else pci_data.UnsupportedNVMeSSDIDs.get(device_id), self.show_macos_compatibility(controller_props.get("Compatibility"))))
+            device_id = controller_props.get("Device ID")
+            subsystem_id = controller_props.get("Subsystem ID", "0"*8)
+
+            if device_id in pci_data.IntelVMDIDs:
+                self.utils.request_input("\n\nDisable Intel RST VMD in the BIOS before exporting the hardware report and try again with the new report")
+                self.utils.exit_program()
+
+            if next((device for device in pci_data.UnsupportedNVMeSSDIDs if device_id == device[0] and subsystem_id in device[1]), None):
+                controller_props["Compatibility"] = (None, None)
+                
+            print("{}- {}: {}".format(" "*3, controller_name, self.show_macos_compatibility(controller_props.get("Compatibility"))))
 
         if all(controller_props.get("Compatibility") == (None, None) for controller_name, controller_props in self.hardware_report.get("Storage Controllers", {}).items()):
             self.utils.request_input("\n\nNo compatible storage for macOS was found!")
@@ -285,7 +290,7 @@ class CompatibilityChecker:
 
                 if device_compatibility:
                     if device_compatibility[0] is None or not self.utils.parse_darwin_version(device_compatibility[0]) >= self.utils.parse_darwin_version(macos_verison) >= self.utils.parse_darwin_version(device_compatibility[-1]):
-                        unsupported_device["{}: {}".format(device_props.get("Device Type") or device_type, device_name if not device_props.get("Device ID") in pci_data.UnsupportedNVMeSSDIDs else pci_data.UnsupportedNVMeSSDIDs.get(device_props.get("Device ID")))] = device_props
+                        unsupported_device["{}: {}".format(device_props.get("Device Type") or device_type, device_name)] = device_props
                     else:
                         new_hardware_report[device_type][device_name] = device_props
                 else:

@@ -1032,16 +1032,15 @@ IntelVMDIDs = [
 ]
 
 # Resource: https://pci-ids.ucw.cz/
-UnsupportedNVMeSSDIDs = {
-    "1344-5410": "Micron 2200S",
-    "144D-A808": "Samsung SM981/PM981/PM983",
-    "2646-2263": "Kingston A2000 NVMe SSD SM2263EN",
-    "1C5C-174A": "SK hynix BC711/PC711",
-    "1C5C-1639": "SK hynix PC611",
-    "1C5C-1627": "SK hynix PC601",
-    "8086-390B": "Intel 760p",
-    "2646-2263": "Kingston A2000"
-}
+UnsupportedNVMeSSDIDs = [
+    ("144D-A808", ("A811144D")), # Samsung SM981/PM981/PM983"
+    ("1344-5410", ("01001344")), # Micron 2200S
+    ("2646-2263", ("22632646")), # Kingston A2000
+    ("1C5C-174A", ("174A1C5C")), # SK hynix BC711/PC711
+    ("1C5C-1639", ("16391C5C")), # SK hynix PC611
+    ("1C5C-1627", ("16271C5C")), # SK hynix PC601
+    ("8086-F1A6", ("390B8086")) # Intel 760P
+]
 
 # Resource: https://pci-ids.ucw.cz/
 SpoofGPUIDs = {
