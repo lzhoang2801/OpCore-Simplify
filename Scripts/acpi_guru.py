@@ -3138,7 +3138,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if hardware_report.get("Motherboard").get("Chipset") in ("C610/X99", "Wellsburg", "X299"):
             selected_patches.append("RTC0")
 
-        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Chipset"), start=89):
+        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=16):
             selected_patches.append("RTCAWAC")
 
         if "SURFACE" in hardware_report.get("Motherboard").get("Name"):
