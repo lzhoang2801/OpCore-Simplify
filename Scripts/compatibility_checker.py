@@ -280,7 +280,8 @@ class CompatibilityChecker:
 
             new_hardware_report[device_type] = {}
 
-            for device_name, device_props in devices.items():
+            for device_name in devices:
+                device_props = devices[device_name].copy()
                 if device_props.get("OCLP Compatibility") and self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[0]) >= self.utils.parse_darwin_version(macos_verison) >= self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[-1]):
                     new_hardware_report[device_type][device_name] = device_props
                     needs_oclp = True
@@ -295,6 +296,9 @@ class CompatibilityChecker:
                         new_hardware_report[device_type][device_name] = device_props
                 else:
                     new_hardware_report[device_type][device_name] = device_props
+
+                if new_hardware_report[device_type].get(device_name) and new_hardware_report[device_type][device_name].get("OCLP Compatibility"):
+                    del new_hardware_report[device_type][device_name]["OCLP Compatibility"]
 
             if not new_hardware_report[device_type]:
                 del new_hardware_report[device_type]

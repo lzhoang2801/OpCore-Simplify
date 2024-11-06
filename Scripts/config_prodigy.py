@@ -390,7 +390,7 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, hardware_report, macos_version, needs_oclp, kexts, resize_bar):
+    def boot_args(self, hardware_report, macos_version, kexts, resize_bar):
         boot_args = [
             "-v",
             "debug=0x100",
@@ -416,7 +416,7 @@ class ConfigProdigy:
                 if  "Intel" in hardware_report.get("CPU").get("Manufacturer") and \
                     "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
                     intergrated_gpu = list(hardware_report.get("GPU").items())[-1]
-                    if needs_oclp and intergrated_gpu[-1].get("OCLP Compatibility"):
+                    if intergrated_gpu[-1].get("OCLP Compatibility"):
                         boot_args.append("ipc_control_port_options=0")
 
                     if  intergrated_gpu[-1].get("Device ID")[5:].startswith(("3E", "87", "9B")) and \
@@ -447,7 +447,7 @@ class ConfigProdigy:
                     if discrete_gpu.get("Device ID") in ("1002-67B0", "1002-67B1", "1002-67B8", "1002-6810", "1002-6811"):
                         boot_args.append("-raddvi")
 
-                    if needs_oclp:
+                    if discrete_gpu.get("OCLP Compatibility"):
                         if discrete_gpu.get("Manufacturer") == "AMD":
                             boot_args.append("-radvesa" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "-amd_no_dgpu_accel")
                         elif discrete_gpu.get("Manufacturer") == "NVIDIA" and not "Kepler" in discrete_gpu.get("Codename"):
@@ -562,7 +562,7 @@ class ConfigProdigy:
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
-        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, needs_oclp, kexts, config["Booter"]["Quirks"]["ResizeAppleGpuBars"] == 0)
+        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts, config["Booter"]["Quirks"]["ResizeAppleGpuBars"] == 0)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = "en:252"
         config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].append("csr-active-config")
@@ -599,7 +599,7 @@ class ConfigProdigy:
                     if  "Intel" in hardware_report.get("CPU").get("Manufacturer") and \
                         "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
                         intergrated_gpu = list(hardware_report.get("GPU").items())[-1][-1]
-                        if needs_oclp and intergrated_gpu.get("OCLP Compatibility"):
+                        if intergrated_gpu.get("OCLP Compatibility"):
                             config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Settings"] = "-allow_amfi"
                             if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.4.0"):
                                 if intergrated_gpu.get("Codename") in ("Broadwell", "Haswell", "Ivy Bridge", "Sandy Bridge"):
