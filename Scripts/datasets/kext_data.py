@@ -148,7 +148,7 @@ kexts = [
         description = "Enable legacy native Apple Wireless adapters",
         category = "Wi-Fi",
         min_darwin_version = "23.0.0",
-        requires_kexts = ["IOSkywalkFamily"],
+        requires_kexts = ["AMFIPass", "IOSkywalkFamily"],
         download_info = {
             "id": 817294638, 
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IO80211FamilyLegacy-v1.0.0.zip"
@@ -159,7 +159,7 @@ kexts = [
         description = "Enable legacy native Apple Wireless adapters",
         category = "Wi-Fi",
         min_darwin_version = "23.0.0",
-        requires_kexts = ["IO80211FamilyLegacy"],
+        requires_kexts = ["AMFIPass", "IO80211FamilyLegacy"],
         download_info = {
             "id": 926584761, 
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IOSkywalkFamily-v1.2.0.zip"
