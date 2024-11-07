@@ -200,6 +200,7 @@ class ConfigProdigy:
                     igpu_properties["AAPL,ig-platform-id"] = "0300913E" if not device_id.startswith("9B") else "0300C89B"
                     return igpu_properties
                 igpu_properties["AAPL,ig-platform-id"] = "07009B3E" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.5.0") else "00009B3E"
+                igpu_properties["framebuffer-stolenmem"] = "00003001"
             elif platform == "NUC":
                 igpu_properties["AAPL,ig-platform-id"] = "07009B3E"
                 if device_id.startswith(("3EA5", "3EA8")):
@@ -208,8 +209,8 @@ class ConfigProdigy:
                 igpu_properties["AAPL,ig-platform-id"] = "0900A53E"
                 if device_id.startswith(("3EA9", "3EA0")):
                     igpu_properties["AAPL,ig-platform-id"] = "00009B3E"
-            igpu_properties["framebuffer-stolenmem"] = "00003001"
-            igpu_properties["framebuffer-fbmem"] = "00009000"
+                igpu_properties["framebuffer-stolenmem"] = "00003001"
+                igpu_properties["framebuffer-fbmem"] = "00009000"
         elif device_id.startswith("8A"):
             native_supported_ids = ("FF05", "8A70", "8A71", "8A51", "8A5C", "8A5D", "8A52", "8A53", "8A5A", "8A5B")
             if not device_id in native_supported_ids:
@@ -224,8 +225,10 @@ class ConfigProdigy:
         if any(tuple(map(int, "3840x2160".split("x"))) <= tuple(map(int, monitor_info.get("Resolution").split("x"))) for monitor_name, monitor_info in monitor.items()):
             if platform == "Laptop":
                 igpu_properties["enable-max-pixel-clock-override"] = "01000000"
-            del igpu_properties["framebuffer-stolenmem"]
-            del igpu_properties["framebuffer-fbmem"]
+            if igpu_properties.get("framebuffer-stolenmem"):
+                del igpu_properties["framebuffer-stolenmem"]
+            if igpu_properties.get("framebuffer-fbmem"):
+                del igpu_properties["framebuffer-fbmem"]
 
         for key in igpu_properties.keys():
             if key not in ("AAPL,ig-platform-id", "device-id"):
