@@ -656,6 +656,10 @@ kexts = [
         github_repo = {
             "owner": "ChefKissInc",
             "repo": "ForgedInvariant"
+        },
+        download_info = {
+            "id": "".join(random.choices('0123456789', k=9)), 
+            "url": "https://nightly.link/ChefKissInc/ForgedInvariant/workflows/main/master/Artifacts.zip"
         }
     ),
     KextInfo(
