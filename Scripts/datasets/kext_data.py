@@ -1,4 +1,5 @@
 from Scripts.datasets import os_data
+import random
 
 class KextInfo:
     def __init__(self, name, description, category, required = False, min_darwin_version = (), max_darwin_version = (), requires_kexts = [], conflict_group_id = None, github_repo = {}, download_info = {}):
@@ -69,6 +70,10 @@ kexts = [
         github_repo = {
             "owner": "ChefKissInc",
             "repo": "SMCRadeonSensors"
+        },
+        download_info = {
+            "id": "".join(random.choices('0123456789', k=9)), 
+            "url": "https://nightly.link/ChefKissInc/SMCRadeonSensors/workflows/main/master/Artifacts.zip"
         }
     ),
     KextInfo(
@@ -87,6 +92,10 @@ kexts = [
         github_repo = {
             "owner": "ChefKissInc",
             "repo": "NootRX"
+        },
+        download_info = {
+            "id": "".join(random.choices('0123456789', k=9)), 
+            "url": "https://nightly.link/ChefKissInc/NootRX/workflows/main/master/Artifacts.zip"
         }
     ),
     KextInfo(
@@ -99,6 +108,10 @@ kexts = [
         github_repo = {
             "owner": "ChefKissInc",
             "repo": "NootedRed"
+        },
+        download_info = {
+            "id": "".join(random.choices('0123456789', k=9)), 
+            "url": "https://nightly.link/ChefKissInc/NootedRed/workflows/main/master/Artifacts.zip"
         }
     ),
     KextInfo(
