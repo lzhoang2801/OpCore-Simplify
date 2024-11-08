@@ -179,7 +179,9 @@ class CompatibilityChecker:
 
         return gpu_compatibility
 
-    def check_sound_compatibility(self):        
+    def check_sound_compatibility(self):
+        sound_info = {}
+
         for audio_device, audio_props in self.hardware_report.get("Sound", {}).items():
             codec_id = audio_props.get("Device ID")
             if "USB" in audio_props.get("Bus Type") or \
@@ -187,15 +189,18 @@ class CompatibilityChecker:
                 codec_id in codec_layouts.data:
                 audio_props["Compatibility"] = (os_data.get_latest_darwin_version(), os_data.get_lowest_darwin_version())
                 if codec_id in codec_layouts.data:
-                    supported_audio = {**{audio_device: audio_props}, **supported_audio}
+                    sound_info = {**{audio_device: audio_props}, **sound_info}
                 else:
-                    supported_audio[audio_device] = audio_props
+                    sound_info[audio_device] = audio_props
             else:
                 audio_props["Compatibility"] = (None, None)
+                sound_info[audio_device] = audio_props
             print("{}- {}: {}".format(" "*3, audio_device, self.show_macos_compatibility(audio_props.get("Compatibility"))))
-            audio_endpoint = audio_props.get("Audio Endpoint")
-            if audio_endpoint:
-                print("{}- Audio Endpoint{}: {}".format(" "*6, "s" if len(audio_endpoint) > 1 else "", ", ".join(audio_endpoint)))
+            audio_endpoints = audio_props.get("Audio Endpoints")
+            if audio_endpoints:
+                print("{}- Audio Endpoint{}: {}".format(" "*6, "s" if len(audio_endpoints) > 1 else "", ", ".join(audio_endpoints)))
+
+        self.hardware_report["Sound"] = sound_info
         
     def check_biometric_compatibility(self):
         for biometric_device, biometric_props in self.hardware_report.get("Biometric", {}).items():
@@ -290,7 +295,7 @@ class CompatibilityChecker:
 
                 if device_compatibility:
                     if device_compatibility[0] is None or not self.utils.parse_darwin_version(device_compatibility[0]) >= self.utils.parse_darwin_version(macos_verison) >= self.utils.parse_darwin_version(device_compatibility[-1]):
-                        unsupported_device["{}: {}{}".format(device_props.get("Device Type") or device_type, device_name, "" if not device_props.get("Audio Endpoint") else " ({})".format(", ".join(device_props.get("Audio Endpoint"))))] = device_props
+                        unsupported_device["{}: {}{}".format(device_props.get("Device Type") or device_type, device_name, "" if not device_props.get("Audio Endpoints") else " ({})".format(", ".join(device_props.get("Audio Endpoints"))))] = device_props
                     else:
                         new_hardware_report[device_type][device_name] = device_props
                 else:
