@@ -182,6 +182,7 @@ class gatheringFiles:
 
             zip_path = os.path.join(self.temporary_dir, product_name) + ".zip"
             self.fetcher.download_and_save_file(product_download_url, zip_path)
+            self.utils.extract_zip_file(zip_path)
             
             while True:
                 zip_files = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), extension_filter=".zip")
