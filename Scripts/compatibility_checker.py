@@ -227,7 +227,8 @@ class CompatibilityChecker:
                     min_version = "19.0.0"
 
             if not is_device_supported:
-                device_props["Compatibility"] = (None, None)
+                if bus_type.startswith("PCI"):
+                    device_props["Compatibility"] = (None, None)
             else:
                 if pci_data.NetworkIDs.index(device_id) < 108:
                     if device_id == primary_wifi_device:
