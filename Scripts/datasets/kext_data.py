@@ -673,6 +673,16 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "IntelMKLFixup", 
+        description = "Dead-simple Intel(tm) Math Kernel Library patcher for AMD CPU systems",
+        category = "Extras",
+        requires_kexts = ["Lilu"],
+        github_repo = {
+            "owner": "Carnations-Botanica",
+            "repo": "IntelMKLFixup"
+        }
+    ),
+    KextInfo(
         name = "NoTouchID", 
         description = "Avoid lag in authentication dialogs for board IDs with Touch ID sensors",
         category = "Extras",

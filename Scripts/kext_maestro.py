@@ -106,6 +106,9 @@ class KextMaestro:
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
             selected_kexts.extend(("SMCProcessor", "SMCSuperIO"))
 
+        if "AMD" in hardware_report.get("CPU").get("Manufacturer"):
+            selected_kexts.append("IntelMKLFixup")
+
         if "Laptop" in hardware_report.get("Motherboard").get("Platform") and not "SURFACE" in hardware_report.get("Motherboard").get("Name"):
             selected_kexts.append("SMCBatteryManager")
             if "DELL" in hardware_report.get("Motherboard").get("Name"):
