@@ -186,6 +186,7 @@ class CompatibilityChecker:
             codec_id = audio_props.get("Device ID")
             if "USB" in audio_props.get("Bus Type") or \
                 codec_id.startswith("1002") or \
+                codec_id.startswith("8086") and not codec_id in pci_data.IntelSSTIDs or \
                 codec_id in codec_layouts.data:
                 audio_props["Compatibility"] = (os_data.get_latest_darwin_version(), os_data.get_lowest_darwin_version())
                 if codec_id in codec_layouts.data:
