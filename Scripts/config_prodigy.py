@@ -503,6 +503,7 @@ class ConfigProdigy:
             hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[93:101] and ("Desktop" in hardware_report.get("Motherboard").get("Platform") or not "-8" in hardware_report.get("CPU").get("Processor Name")) or \
             hardware_report.get("Motherboard").get("Chipset") == chipset_data.AMDChipsets[16]
         config["Booter"]["Quirks"]["EnableWriteUnprotector"] = not ("AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[79:89] + chipset_data.IntelChipsets[101:])
+        config["Booter"]["Quirks"]["ProtectMemoryRegions"] = "GOOGLE" in hardware_report.get("Motherboard").get("Name") or any(device_props.get("Device ID") in pci_data.ChromebookIDs and device_props.get("Subsystem ID") in pci_data.ChromebookIDs[device_props.get("Device ID")] for device_props in hardware_report.get("System Devices", {}).values())
         config["Booter"]["Quirks"]["ProtectUefiServices"] = hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[101:] or \
             hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[93:101] and (not "-8" in hardware_report.get("CPU").get("Processor Name") or hardware_report.get("Motherboard").get("Chipset") == chipset_data.IntelChipsets[98])
         config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"]
