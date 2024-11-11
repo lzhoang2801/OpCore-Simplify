@@ -232,7 +232,7 @@ class ConfigProdigy:
 
         return dict(sorted(igpu_properties.items(), key=lambda item: item[0]))
   
-    def deviceproperties(self, hardware_report, macos_version, kexts):
+    def deviceproperties(self, hardware_report, unsupported_devices, macos_version, kexts):
         deviceproperties_add = {}
 
         for kext in kexts:
@@ -293,6 +293,12 @@ class ConfigProdigy:
             if device_props.get("PCI Path") and not device_props.get("ACPI Path"):
                 deviceproperties_add[device_props.get("PCI Path")] = {
                     "built-in": self.utils.hex_to_bytes("01")
+                }
+
+        for device_name, device_props in unsupported_devices.items():
+            if "GPU" in device_name and not device_props.get("Disabled", False):
+                deviceproperties_add[device_props.get("PCI Path")] = {
+                    "disable-gpu": True
                 }
 
         for key, value in deviceproperties_add.items():
@@ -486,15 +492,11 @@ class ConfigProdigy:
         
         return uefi_drivers
 
-    def genarate(self, hardware_report, smbios_model, macos_version, needs_oclp, kexts, config):
+    def genarate(self, hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp, kexts, config):
         del config["#WARNING - 1"]
         del config["#WARNING - 2"]
         del config["#WARNING - 3"]
         del config["#WARNING - 4"]
-
-        config["ACPI"]["Add"] = []
-        config["ACPI"]["Delete"] = []
-        config["ACPI"]["Patch"] = []
 
         config["Booter"]["MmioWhitelist"] = self.mmio_whitelist(hardware_report.get("Motherboard").get("Chipset"))
         config["Booter"]["Patch"] = self.add_booter_patch(smbios_model, macos_version)
@@ -511,9 +513,8 @@ class ConfigProdigy:
         config["Booter"]["Quirks"]["SetupVirtualMap"] = not hardware_report.get("Motherboard").get("Chipset") in chipset_data.AMDChipsets[11:17] + chipset_data.IntelChipsets[79:89]
         config["Booter"]["Quirks"]["SyncRuntimePermissions"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[79:89] + chipset_data.IntelChipsets[93:]
 
-        config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, macos_version, kexts)
+        config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, unsupported_devices, macos_version, kexts)
 
-        config["Kernel"]["Add"] = []
         config["Kernel"]["Block"] = self.block_kext_bundle(kexts)
         spoof_cpuid = self.spoof_cpuid(
             hardware_report.get("CPU").get("Processor Name"), 

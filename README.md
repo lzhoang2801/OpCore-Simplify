@@ -38,7 +38,7 @@
    - Integrated with [SSDTTime](https://github.com/corpnewt/SSDTTime) for common patches (e.g., FakeEC, FixHPET, PLUG, RTCAWAC).
    - Includes custom patches:
       - Prevent kernel panics by directing the first CPU entry to an active CPU, disabling the UNC0 device, and creating a new RTC device for HEDT systems.
-      - Disable unsupported or unused PCI devices, such as the GPU (using Optimus, Bumblebee, and spoof methods), Wi-Fi card, and NVMe storage controller.
+      - Disable unsupported or unused PCI devices, such as the GPU (using Optimus and Bumblebee methods or adding the disable-gpu property), Wi-Fi card, and NVMe storage controller.
       - Fix sleep state values in _PRW methods (GPRW, UPRW, HP special) to prevent immediate wake.
       - Add devices including ALS0, BUS0, MCHC, PMCR, PNLF, RMNE, IMEI, USBX, XOSI, along with a Surface Patch.
       - Enable ALSD and GPI0 devices.

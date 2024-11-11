@@ -134,17 +134,17 @@ class OCPE:
         
         source_efi_dir = os.path.join(self.k.ock_files_dir, "OpenCorePkg")
         shutil.copytree(source_efi_dir, self.result_dir, dirs_exist_ok=True)
-        print("Done")
-        print("2. Generate config.plist...", end=" ")
+
         config_file = os.path.join(self.result_dir, "EFI", "OC", "config.plist")
         config_data = self.u.read_file(config_file)
         
         if not config_data:
             raise Exception("Error: The file {} does not exist.".format(config_file))
-        
-        self.co.genarate(hardware_report, smbios_model, macos_version, needs_oclp, self.k.kexts, config_data)
         print("Done")
-        print("3. Apply ACPI patches...", end=" ")
+        print("2. Apply ACPI patches...", end=" ")
+        config_data["ACPI"]["Add"] = []
+        config_data["ACPI"]["Delete"] = []
+        config_data["ACPI"]["Patch"] = []
         if self.ac.ensure_dsdt():
             self.ac.hardware_report = hardware_report
             self.ac.unsupported_devices = unsupported_devices
@@ -171,11 +171,13 @@ class OCPE:
         config_data["ACPI"]["Patch"].extend(self.ac.dsdt_patches)
         config_data["ACPI"]["Patch"] = self.ac.apply_acpi_patches(config_data["ACPI"]["Patch"])
         print("Done")
-        print("4. Copy kexts and snapshot to config.plist...", end=" ")
+        print("3. Copy kexts and snapshot to config.plist...", end=" ")
         kexts_directory = os.path.join(self.result_dir, "EFI", "OC", "Kexts")
         self.k.install_kexts_to_efi(macos_version, kexts_directory)
         config_data["Kernel"]["Add"] = self.k.load_kexts(macos_version, kexts_directory)
-
+        print("Done")
+        print("4. Generate config.plist...", end=" ")      
+        self.co.genarate(hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp, self.k.kexts, config_data)
         self.u.write_file(config_file, config_data)
         print("Done")
         print("5. Clean up unused drivers, resources, and tools...", end=" ")

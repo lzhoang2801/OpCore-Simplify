@@ -1837,90 +1837,34 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
             if "GPU" in device_name:
                 ssdt_name = "SSDT-Disable_GPU_{}".format(device_props.get("ACPI Path").split(".")[2])
                 target_device = device_props.get("ACPI Path")
-                ssdt_content = """
-// Resource: https://github.com/dortania/Getting-Started-With-ACPI/blob/master/extra-files/decompiled/SSDT-GPU-DISABLE.dsl
 
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
-{
-    External ([[DevicePath]], DeviceObj)
-
-    Method ([[DevicePath]]._DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
-    {
-        If ((!Arg2 || (_OSI ("Darwin") == Zero)))
-        {
-            Return (Buffer (One)
-            {
-                 0x03                                             // .
-            })
-        }
-
-        Return (Package (0x0A)
-        {
-            "name", 
-            Buffer (0x09)
-            {
-                "#display"
-            }, 
-
-            "IOName", 
-            "#display", 
-            "class-code", 
-            Buffer (0x04)
-            {
-                 0xFF, 0xFF, 0xFF, 0xFF                           // ....
-            }, 
-
-            "vendor-id", 
-            Buffer (0x04)
-            {
-                 0xFF, 0xFF, 0x00, 0x00                           // ....
-            }, 
-
-            "device-id", 
-            Buffer (0x04)
-            {
-                 0xFF, 0xFF, 0x00, 0x00                           // ....
-            }
-        })
-    }
-}
-"""
-                target_off_method = target_ps3_method = None
+                off_method_found = ps3_method_found = False
                 for table_name, table_data in self.acpi.acpi_tables.items():
-                    if not "DSDT" in table_data.get("signature", "") and not "SSDT" in table_data.get("signature", ""):
-                        continue
-
                     off_methods = self.acpi.get_method_paths("_OFF", table_data)
                     ps3_methods = self.acpi.get_method_paths("_PS3", table_data)
 
-                    off_method_of_target_device = next((method for method in off_methods if method[0].startswith(target_device)), None)
-                    ps3_method_of_target_device = next((method for method in ps3_methods if method[0].startswith(target_device)), None)
+                    off_method_found = off_method_found or any(method[0].startswith(target_device) and not self.is_method_in_power_resource(method, table_data.get("lines")) for method in off_methods)
+                    ps3_method_found = ps3_method_found or any(method[0].startswith(target_device) for method in ps3_methods)
+                
+                if not off_method_found and not ps3_method_found:
+                    continue
 
-                    if off_method_of_target_device:
-                        if self.is_method_in_power_resource(off_method_of_target_device, table_data.get("lines")):
-                            off_method_of_target_device = None
-                        
-                        if off_method_of_target_device:
-                            target_off_method = off_method_of_target_device[0]
-
-                    if ps3_method_of_target_device:
-                        target_ps3_method = ps3_method_of_target_device[0]
-
-                    if target_off_method or target_ps3_method:
-                        ssdt_content = """
+                device_props["Disabled"] = True
+                
+                ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
 {"""
-                        if target_off_method:
-                            ssdt_content += """
+                if off_method_found:
+                    ssdt_content += """
     External ([[DevicePath]]._OFF, MethodObj)
     External ([[DevicePath]]._ON_, MethodObj)"""
-                        if target_ps3_method:
-                            ssdt_content += """
+                if ps3_method_found:
+                    ssdt_content += """
     External ([[DevicePath]]._PS0, MethodObj)
     External ([[DevicePath]]._PS3, MethodObj)
     External ([[DevicePath]]._DSM, MethodObj)
 """
-                        ssdt_content += """
+                ssdt_content += """
     Device (DGPU)
     {
         Name (_HID, "DGPU1000")
@@ -1944,29 +1888,29 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
         Method (_ON, 0, NotSerialized)
         {
 """
-                        if target_off_method:
-                            ssdt_content += """
+                if off_method_found:
+                    ssdt_content += """
             [[DevicePath]]._ON ()
             """
 
-                        if target_ps3_method:
-                            ssdt_content += """
+                if ps3_method_found:
+                    ssdt_content += """
             [[DevicePath]]._PS0 ()
             """
         
-                        ssdt_content += """
+                ssdt_content += """
         }
 
         Method (_OFF, 0, NotSerialized)
         {
 """
-                        if target_off_method:
-                            ssdt_content += """
+                if off_method_found:
+                    ssdt_content += """
             [[DevicePath]]._OFF ()
             """
 
-                        if target_ps3_method:
-                            ssdt_content += """
+                if ps3_method_found:
+                    ssdt_content += """
             [[DevicePath]]._DSM (ToUUID ("a486d8f8-0bda-471b-a72b-6042a6b5bee0") /* Unknown UUID */, 0x0100, 0x1A, Buffer (0x04)
             {
                     0x01, 0x00, 0x00, 0x03                           // ....
@@ -1974,11 +1918,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
             [[DevicePath]]._PS3 ()
             """
         
-                        ssdt_content += """
-        }
-    }
-}
-"""
+                ssdt_content += """\n        }\n    }\n}"""
+
             elif "Network" in device_name and device_props.get("Bus Type") == "PCI" and \
                 (not device_props.get("Device ID") in pci_data.NetworkIDs or 20 < pci_data.NetworkIDs.index(device_props.get("Device ID")) < 108 ):
                 ssdt_name = "SSDT-Disable_WiFi_{}".format(device_props.get("ACPI Path").split(".")[2])
