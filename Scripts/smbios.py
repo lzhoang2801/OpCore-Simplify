@@ -106,11 +106,11 @@ class SMBIOS:
             smbios_model = "iMac17,1"
             if "Laptop" in platform:
                 smbios_model = "MacBookPro13,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro13,3"
-        elif "Amber Lake" in codename or "Kaby Lake" in codename or "Whiskey Lake" in codename:
+        elif "Amber Lake" in codename or "Kaby Lake" in codename:
             smbios_model = "iMac18,1" if "Integrated GPU" in list(hardware_report.get("GPU").items())[0][-1].get("Device Type") else "iMac18,3"
             if "Laptop" in platform:
                 smbios_model = "MacBookPro14,1" if int(hardware_report.get("CPU").get("Core Count")) < 4 else "MacBookPro14,3"
-        elif "Cannon Lake" in codename or "Coffee Lake" in codename or "Comet Lake" in codename:
+        elif "Cannon Lake" in codename or "Whiskey Lake" in codename or "Coffee Lake" in codename or "Comet Lake" in codename:
             smbios_model = "Macmini8,1"
             if "Desktop" in platform:
                 smbios_model = "iMac18,3" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("18.0.0") else "iMac19,1"
