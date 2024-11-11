@@ -608,6 +608,16 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "CPUFriend", 
+        description = "Dynamic power management data injection (requires CPUFriendDataProvider)",
+        category = "Extras",
+        requires_kexts = ["Lilu"],
+        github_repo = {
+            "owner": "acidanthera",
+            "repo": "CPUFriend"
+        }
+    ),
+    KextInfo(
         name = "CpuTopologyRebuild", 
         description = "Optimizes the core configuration of Intel Alder Lake CPUs+",
         category = "Extras",
