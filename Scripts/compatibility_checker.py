@@ -62,22 +62,6 @@ class CompatibilityChecker:
         self.max_native_macos_version = max_version
         self.min_native_macos_version = min_version
 
-    def discrete_gpu_settings(self, gpu_name, compatibility):
-        while True:
-            self.utils.head("Discrete GPU Settings")
-            print("")
-            print("Discrete GPU: {} - {}".format(gpu_name, self.show_macos_compatibility(compatibility)))
-            print("")
-            print("Choose GPU Mode: ")
-            print("1. Better Performance")
-            print("2. Power Efficiency (Recommended)")
-            print("")
-            option = self.utils.request_input("Select an option: ")
-            if option == "1":
-                return "performance"
-            if option == "2":
-                return "efficiency"
-
     def check_gpu_compatibility(self):
         gpu_compatibility = []
 
@@ -176,6 +160,31 @@ class CompatibilityChecker:
                             connected_monitors[-1] = "\033[0;31m{}{}\033[0m".format(connected_monitors[-1][:-1], ", unsupported)")
             if connected_monitors:
                 print("{}- Connected Monitor{}: {}".format(" "*6, "s" if len(connected_monitors) > 1 else "", ", ".join(connected_monitors)))
+
+        max_supported_gpu_version = min_supported_gpu_version = None
+
+        for gpu_name, gpu_props in self.hardware_report.get("GPU").items():
+            if gpu_props.get("Compatibility") != (None, None):
+                if all(other_gpu_props.get("Compatibility") == (None, None) for other_gpu_props in self.hardware_report.get("GPU").values() if other_gpu_props != gpu_props):
+                    pass
+                elif any(monitor_info.get("Connected GPU", gpu_name) != gpu_name for monitor_info in self.hardware_report.get("Monitor", {}).values() if monitor_info.get("Connector Type") == "Internal"):
+                    gpu_props["Compatibility"] = (None, None)
+                    if gpu_props.get("OCLP Compatibility"):
+                        del gpu_props["OCLP Compatibility"]
+
+                max_version, min_version = gpu_props.get("Compatibility")
+                max_supported_gpu_version = max_version if not max_supported_gpu_version else max_version if self.utils.parse_darwin_version(max_version) > self.utils.parse_darwin_version(max_supported_gpu_version) else max_supported_gpu_version
+                min_supported_gpu_version = min_version if not min_supported_gpu_version else min_version if self.utils.parse_darwin_version(min_version) < self.utils.parse_darwin_version(min_supported_gpu_version) else min_supported_gpu_version
+
+            if gpu_props.get("OCLP Compatibility"):
+                self.ocl_patched_macos_version = (gpu_props.get("OCLP Compatibility")[0], self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) < self.utils.parse_darwin_version(gpu_props.get("OCLP Compatibility")[-1]) else gpu_props.get("OCLP Compatibility")[-1])
+        
+        if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
+            self.utils.request_input("\n\nNo compatible GPU card for macOS was found!")
+            self.utils.exit_program()
+
+        self.max_native_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_native_macos_version) else self.max_native_macos_version
+        self.min_native_macos_version = min_supported_gpu_version if self.utils.parse_darwin_version(min_supported_gpu_version) > self.utils.parse_darwin_version(self.min_native_macos_version) else self.min_native_macos_version
 
         return gpu_compatibility
 
@@ -336,40 +345,7 @@ class CompatibilityChecker:
                 time.sleep(0.5)
                 function()
 
-        max_supported_gpu_version = min_supported_gpu_version = None
-        discrete_gpu_mode = "Unknown"
-
-        for gpu_name, gpu_props in self.hardware_report.get("GPU").items():
-            if gpu_props.get("Compatibility") != (None, None):
-                if all(other_gpu_props.get("Compatibility") == (None, None) for other_gpu_name, other_gpu_props in self.hardware_report.get("GPU").items() if other_gpu_props != gpu_props):
-                    pass
-                elif any(monitor_info.get("Connected GPU", gpu_name) != gpu_name for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items() if monitor_info.get("Connector Type") == "Internal"):
-                    print("")
-                    self.utils.request_input()
-
-                    discrete_gpu_mode = self.discrete_gpu_settings(gpu_name, gpu_props.get("Compatibility"))
-
-                    if discrete_gpu_mode == "efficiency":
-                        gpu_props["Compatibility"] = (None, None)
-                        if gpu_props.get("OCLP Compatibility"):
-                            del gpu_props["OCLP Compatibility"]
-
-                max_version, min_version = gpu_props.get("Compatibility")
-                max_supported_gpu_version = max_version if not max_supported_gpu_version else max_version if self.utils.parse_darwin_version(max_version) > self.utils.parse_darwin_version(max_supported_gpu_version) else max_supported_gpu_version
-                min_supported_gpu_version = min_version if not min_supported_gpu_version else min_version if self.utils.parse_darwin_version(min_version) < self.utils.parse_darwin_version(min_supported_gpu_version) else min_supported_gpu_version
-
-            if gpu_props.get("OCLP Compatibility"):
-                self.ocl_patched_macos_version = (gpu_props.get("OCLP Compatibility")[0], self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) < self.utils.parse_darwin_version(gpu_props.get("OCLP Compatibility")[-1]) else gpu_props.get("OCLP Compatibility")[-1])
-        
-        if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
-            self.utils.request_input("\n\nNo compatible GPU card for macOS was found!")
-            self.utils.exit_program()
-
-        self.max_native_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_native_macos_version) else self.max_native_macos_version
-        self.min_native_macos_version = min_supported_gpu_version if self.utils.parse_darwin_version(min_supported_gpu_version) > self.utils.parse_darwin_version(self.min_native_macos_version) else self.min_native_macos_version
-
-        if discrete_gpu_mode == "Unknown":
-            print("")
-            self.utils.request_input()
+        print("")
+        self.utils.request_input()
 
         return (self.min_native_macos_version, self.max_native_macos_version), *self.get_unsupported_devices(self.max_native_macos_version), self.ocl_patched_macos_version
