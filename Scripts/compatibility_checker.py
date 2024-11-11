@@ -113,7 +113,7 @@ class CompatibilityChecker:
                         max_version = "21.99.99"
                         ocl_patched_min_version = "22.0.0"
                     min_version = "18.6.0"
-                elif gpu_codename in ("Vega 10", "Polaris 22", "Polaris 20", "Baffin", "Ellesmere") or device_id == "699F":
+                elif gpu_codename in ("Vega 10", "Polaris 22", "Polaris 20", "Baffin", "Ellesmere") or device_id in ("6995", "699F"):
                     if not "AVX2" in self.hardware_report.get("CPU").get("SIMD Features"):
                         max_version = "21.99.99"
                         ocl_patched_min_version = "22.0.0"

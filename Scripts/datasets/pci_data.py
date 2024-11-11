@@ -1063,6 +1063,7 @@ SpoofGPUIDs = {
     "1002-6930": "1002-6938", # AMD Radeon R9 380
     "1002-6939": "1002-6938", # AMD Radeon R9 285/380
     "1002-699F": "1002-67FF", # AMD Radeon RX 550 (Lexa core)
+    "1002-6995": "1002-67FF", # AMD Radeon PRO WX 2100
     "1002-73EF": "1002-73FF", # AMD Radeon RX 6800S / 6650 XT / 6650M / 6650M XT
     "1002-73E1": "1002-73E3", # AMD Radeon Pro W6600M
     "1002-73AF": "1002-73BF", # AMD Radeon RX 6900 XT (XTX/XTXH variant)
