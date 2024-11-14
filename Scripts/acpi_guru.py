@@ -403,8 +403,6 @@ class ACPIGuru:
             return None
 
     def enable_cpu_power_management(self):
-        comment = "Sets plugin-type to 1 on the first Processor object to enable CPU power management"
-
         #if not self.ensure_dsdt(allow_any=True):
         #    return
         #self.u.head("Plugin Type")
@@ -547,7 +545,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
             return {
                 "Add": [
                     {
-                        "Comment": comment,
+                        "Comment": ssdt_name + ".aml",
                         "Enabled": self.write_ssdt(ssdt_name, ssdt),
                         "Path": ssdt_name + ".aml"
                     }
@@ -829,7 +827,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
         # Restore the original DSDT in memory
         self.dsdt["raw"] = saved_dsdt
 
-        comment = "HPET Device Fake" if hpet_fake else "{} _CRS (Needs _CRS to XCRS Rename)".format(name.split(".")[-1].lstrip("\\"))
         ssdt_name = "SSDT-HPET"
 
         if hpet_fake:
@@ -938,7 +935,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "HPET", 0x00000000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -1037,7 +1034,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "HPET", 0x00000000)
             #print("")
             #self.u.grab("Press [enter] to return to main menu...")
             return
-        comment = "Incompatible AWAC Fix" if awac_dict.get("valid") else "RTC Fake" if not rtc_dict.get("valid") else "RTC Range Fix" if rtc_range_needed else "RTC Enable Fix"
         suffix  = []
         for x in (awac_dict,rtc_dict):
             if not x.get("valid"): continue
@@ -1201,7 +1197,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
             return {
                 "Add": [
                     {
-                        "Comment": comment,
+                        "Comment": ssdt_name + ".aml",
                         "Enabled": self.write_ssdt(ssdt_name, ssdt),
                         "Path": ssdt_name + ".aml"
                     }
@@ -1210,7 +1206,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
             }
 
     def fake_embedded_controller(self):
-        comment = "Add a fake EC to ensure macOS compatibility"
         ssdt_name = "SSDT-EC"
         laptop = "Laptop" in self.hardware_report.get("Motherboard").get("Platform")
         
@@ -1329,11 +1324,11 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
                 "Find":"45435f5f",
                 "Replace":"4543305f"
             })
-            comment += " - Needs EC to EC0 {}".format(
-                "and EC _STA to XSTA renames" if ec_sta else "rename"
-            )
-        elif ec_sta:
-            comment += " - Needs EC _STA to XSTA renames"
+        #    comment += " - Needs EC to EC0 {}".format(
+        #        "and EC _STA to XSTA renames" if ec_sta else "rename"
+        #    )
+        #elif ec_sta:
+        #    comment += " - Needs EC _STA to XSTA renames"
         #oc = {"Comment":comment,"Enabled":True,"Path":"SSDT-EC.aml"}
         #self.make_plist(oc, "SSDT-EC.aml", patches, replace=True)
         #print("Creating SSDT-EC...")
@@ -1426,7 +1421,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "EC", 0x00001000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt),
                     "Path": ssdt_name + ".aml"
                 }
@@ -1479,7 +1474,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "EC", 0x00001000)
         return sorted(acpi_patches, key=lambda x: x["Comment"])
 
     def add_intel_management_engine(self):
-        comment = "Creates a fake IMEI device to ensure Intel iGPUs acceleration functions properly"
         ssdt_name = "SSDT-IMEI"
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "IMEI", 0x00000000)
@@ -1512,7 +1506,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "IMEI", 0x00000000)
             return {
                 "Add": [
                     {
-                        "Comment": comment,
+                        "Comment": ssdt_name + ".aml",
                         "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                         "Path": ssdt_name + ".aml"
                     }
@@ -1523,7 +1517,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "IMEI", 0x00000000)
         if not self.lpc_bus_device:
             return
         
-        comment = "Add a Memory Controller Hub Controller device to fix AppleSMBus"
         ssdt_name = "SSDT-MCHC"
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
@@ -1561,7 +1554,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -1580,7 +1573,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
         pci_bus_device = ".".join(self.lpc_bus_device.split(".")[:2])
         smbus_device_path = "{}.{}".format(pci_bus_device, smbus_device_name)
 
-        comment = "Add a System Management Bus device to fix AppleSMBus issues"
         ssdt_name = "SSDT-{}".format(smbus_device_name)
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[SMBUSName]]", 0)
@@ -1611,7 +1603,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[SMBUSName]]", 0)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -1619,7 +1611,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[SMBUSName]]", 0)
         }
 
     def add_usb_power_properties(self):
-        comment = "Creates an USBX device to inject USB power properties"
         ssdt_name = "SSDT-USBX"
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "USBX", 0x00001000)
@@ -1691,7 +1682,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "USBX", 0x00001000)
             return {
                 "Add": [
                     {
-                        "Comment": comment,
+                        "Comment": ssdt_name + ".aml",
                         "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                         "Path": ssdt_name + ".aml"
                     }
@@ -1780,11 +1771,10 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
     .replace("[[STAType]]", sta.get("sta_type","MethodObj")) \
     .replace("[[XSTA]]", "{}.XSTA{}".format(als_device," ()" if sta.get("sta_type","MethodObj") == "MethodObj" else "") if sta else "0x0F")
 
-        comment = "{} Ambient Light Sensor device for storing the current brightness/auto-brightness level".format("Fake" if not als_device else "Enable")
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -1832,7 +1822,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
             if not device_props.get("Bus Type", "PCI") == "PCI" or not device_props.get("ACPI Path"):
                 continue
 
-            comment = "Disable {}".format(device_name.split(": ")[-1])
             ssdt_name = None
             if "GPU" in device_name:
                 ssdt_name = "SSDT-Disable_GPU_{}".format(device_props.get("ACPI Path").split(".")[2])
@@ -2006,7 +1995,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
                 
                 results["Add"].append(
                     {
-                        "Comment": comment,
+                        "Comment": ssdt_name + ".aml",
                         "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                         "Path": ssdt_name + ".aml"
                     }
@@ -2040,7 +2029,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
                 "Replace": "084E42434601"
             })
 
-        comment = "Defines a PNLF device to enable backlight controls on laptops"
         ssdt_name = "SSDT-PNLF"
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
@@ -2174,7 +2162,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -2190,7 +2178,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
         
         sta = self.get_sta_var(var=None, device=gpio_device, dev_hid=None, dev_name=gpio_device.split(".")[-1], table=self.dsdt)
         
-        comment = "Enable GPIO device for a I2C TouchPads to function properly"
         ssdt_name = "SSDT-GPI0"
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPI0", 0x00000000)
@@ -2219,7 +2206,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPI0", 0x00000000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -2231,7 +2218,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "GPI0", 0x00000000)
         if not self.lpc_bus_device:
             return
               
-        comment = "Add a PMCR device to enable NVRAM support for 300-series mainboards"
         ssdt_name = "SSDT-PMC"
         ssdt_content = """
 // Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-PMC.dsl
@@ -2294,7 +2280,7 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "PMCR", 0x00001000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -2317,7 +2303,6 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "PMCR", 0x00001000)
         random_mac_address = self.smbios.generate_random_mac()
         mac_address_byte = ", ".join([f'0x{random_mac_address[i:i+2]}' for i in range(0, len(random_mac_address), 2)])
         
-        comment = "Creates a Null Ethernet to allow macOS system access to iServices"
         ssdt_name = "SSDT-RMNE"
         ssdt_content = """
 // Resource: https://github.com/RehabMan/OS-X-Null-Ethernet/blob/master/SSDT-RMNE.dsl
@@ -2380,7 +2365,7 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -2403,7 +2388,6 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
         new_rtc_device = ".".join(rtc_device.split(".")[:-1] + [self.get_unique_device(rtc_device, rtc_device.split(".")[-1])[0]])
 
         patches = []
-        comment = "Creates a new RTC device to resolve PCI Configuration issues in macOS Big Sur 11+"
         ssdt_name = "SSDT-RTC0-RANGE"
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
@@ -2469,7 +2453,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -2478,7 +2462,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RtcRange", 0x00000000)
         }
 
     def instant_wake_fix(self):
-        comment = "Fix sleep state values in _PRW methods to prevent immediate wake in macOS"
         ssdt_name = "SSDT-PRW"
 
         uswe_object = "9355535745"
@@ -2591,7 +2574,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
             return {
                 "Add": [
                     {
-                        "Comment": comment,
+                        "Comment": ssdt_name + ".aml",
                         "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                         "Path": ssdt_name + ".aml"
                     }
@@ -2605,7 +2588,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "_PRW", 0x00000000)
         if not unc0_device:
             return
         
-        comment = "Disables unused uncore bridges to prevent kenel panic in macOS Big Sur 11+"
         ssdt_name = "SSDT-UNC"
         ssdt_content = """
 // Resource: https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/AcpiSamples/Source/SSDT-UNC.dsl
@@ -2646,7 +2628,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UNC", 0x00000000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -2654,7 +2636,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UNC", 0x00000000)
         }
 
     def operating_system_patch(self):
-        comment = "Spoofs the operating system to Windows, enabling devices locked behind non-Windows systems on macOS"
         ssdt_name = "SSDT-XOSI"
         ssdt_content = """
 // Resource: https://github.com/dortania/Getting-Started-With-ACPI/blob/master/extra-files/decompiled/SSDT-XOSI.dsl
@@ -2709,7 +2690,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "XOSI", 0x00001000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -2718,7 +2699,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "XOSI", 0x00001000)
         }
 
     def surface_laptop_special_patch(self):
-        comment = "Special Patch for all Surface Pro / Book / Laptop hardwares"
         ssdt_name = "SSDT-SURFACE"
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
@@ -2841,7 +2821,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
@@ -2937,7 +2917,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
                 }
 
     def disable_usb_hub_devices(self):
-        comment = "Disable USB Hub devices to manually rebuild the ports"
         ssdt_name = "SSDT-USB-Reset"
         patches = []
         ssdt_content = """
@@ -2981,7 +2960,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         return {
             "Add": [
                 {
-                    "Comment": comment,
+                    "Comment": ssdt_name + ".aml",
                     "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
                     "Path": ssdt_name + ".aml"
                 }
