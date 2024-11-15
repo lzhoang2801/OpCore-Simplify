@@ -298,9 +298,6 @@ class KextMaestro:
         kernel_add = []
         unload_kext = []
 
-        if self.kexts[self.get_kext_index("AirportBrcmFixup")].checked and self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.0.0"):
-            unload_kext.append("AirPortBrcm4360_Injector")
-
         if self.kexts[self.get_kext_index("VoodooSMBus")].checked:
             unload_kext.append("VoodooPS2Mouse")
         elif self.kexts[self.get_kext_index("VoodooRMI")].checked:
@@ -359,10 +356,28 @@ class KextMaestro:
         def visit(bundle):
             if os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0] in unload_kext or (bundle.get("BundlePath"), bundle.get("BundleIdentifier")) in visited:
                 return
+                        
+            bundle["MaxKernel"] = os_data.get_latest_darwin_version()
+            bundle["MinKernel"] = os_data.get_lowest_darwin_version()
+            
+            kext_index = self.get_kext_index(os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0])
+
+            if kext_index:
+                bundle["MaxKernel"] = self.kexts[kext_index].max_darwin_version
+                bundle["MinKernel"] = self.kexts[kext_index].min_darwin_version
             
             for dep_identifier in bundle.get("BundleLibraries"):
                 if dep_identifier in bundle_dict:
                     visit(bundle_dict[dep_identifier])
+                    
+                    bundle["MaxKernel"] = bundle["MaxKernel"] if self.utils.parse_darwin_version(bundle["MaxKernel"]) < self.utils.parse_darwin_version(bundle_dict[dep_identifier]["MaxKernel"]) else bundle_dict[dep_identifier]["MaxKernel"]
+                    bundle["MinKernel"] = bundle["MinKernel"] if self.utils.parse_darwin_version(bundle["MinKernel"]) > self.utils.parse_darwin_version(bundle_dict[dep_identifier]["MinKernel"]) else bundle_dict[dep_identifier]["MinKernel"]
+
+            if os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0] == "AirPortBrcm4360_Injector":
+                bundle["MaxKernel"] = "19.99.99"
+            elif os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0] == "AirportItlwm":
+                bundle["MaxKernel"] = macos_version[:2] + bundle["MaxKernel"][2:]
+                bundle["MinKernel"] = macos_version[:2] + bundle["MinKernel"][2:]
 
             visited.add((bundle.get("BundlePath"), bundle.get("BundleIdentifier")))
 
@@ -383,8 +398,8 @@ class KextMaestro:
                 "Comment": "",
                 "Enabled": bundle.get("Enabled"),
                 "ExecutablePath": bundle.get("ExecutablePath"),
-                "MaxKernel": "",
-                "MinKernel": "",
+                "MaxKernel": "" if bundle.get("MaxKernel") == os_data.get_latest_darwin_version() else bundle.get("MaxKernel"),
+                "MinKernel": "" if bundle.get("MinKernel") == os_data.get_lowest_darwin_version() else bundle.get("MinKernel"),
                 "PlistPath": bundle.get("PlistPath")
             })
 

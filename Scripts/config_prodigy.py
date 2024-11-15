@@ -320,7 +320,7 @@ class ConfigProdigy:
                         "Enabled": True,
                         "Identifier": "com.apple.iokit.IOSkywalkFamily",
                         "MaxKernel": "",
-                        "MinKernel": "",
+                        "MinKernel": "23.0.0",
                         "Strategy": "Exclude"
                     })
         
