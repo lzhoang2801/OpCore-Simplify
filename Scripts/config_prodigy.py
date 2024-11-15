@@ -481,7 +481,7 @@ class ConfigProdigy:
     def load_drivers(self):
         uefi_drivers = []
 
-        for driver_path in ("OpenCanopy.efi", "OpenHfsPlus.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"):
+        for driver_path in ("HfsPlus.efi", "OpenCanopy.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"):
             uefi_drivers.append({
                 "Arguments": "",
                 "Comment": "",
