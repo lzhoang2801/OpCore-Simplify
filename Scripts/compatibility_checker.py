@@ -232,9 +232,8 @@ class CompatibilityChecker:
             ocl_patched_max_version = max_version
             ocl_patched_min_version = "23.0.0"
 
-            if bus_type.startswith("PCI"):
-                if device_id in ("8086-125B", "8086-125C", "8086-125D", "8086-3102"):
-                    min_version = "19.0.0"
+            if device_id in ("8086-15F2", "8086-15F3", "8086-15F8", "8086-125B", "8086-125C", "8086-125D", "8086-3102"):
+                min_version = "19.0.0"
 
             if not is_device_supported:
                 if bus_type.startswith("PCI"):
