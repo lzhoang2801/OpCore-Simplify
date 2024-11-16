@@ -78,13 +78,19 @@
 
 ## 🚀 **How To Use**
 
-1. **Running OpCore Simplify**:
+1. **Download OpCore Simplify**:
+   - Click **Code** → **Download ZIP**, or download directly via this [link](https://github.com/lzhoang2801/OpCore-Simplify/archive/refs/heads/main.zip).  
+   - Extract the downloaded ZIP file to your desired location.
+
+   ![Download OpCore Simplify](https://i.imgur.com/mcE7OSX.png)
+
+2. **Running OpCore Simplify**:
    - On **Windows**, run `OpCore-Simplify.bat`.
    - On **macOS**, run `OpCore-Simplify.command`.
 
    ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
 
-2. **Selecting hardware report**:
+3. **Selecting hardware report**:
    - On Windows, there will be an option for `E. Export hardware report`. It's recommended to use this for the best results with your hardware configuration and BIOS at the time of building.
    - Alternatively, use [**Hardware Sniffer**](https://github.com/lzhoang2801/Hardware-Sniffer) to create a `Report.json` and ACPI dump for configuration manully.
 
@@ -94,25 +100,25 @@
 
    ![Compatibility Checker](https://i.imgur.com/kuDGMmp.png)
 
-3. **Selecting macOS Version and Customizing OpenCore EFI**:
+4. **Selecting macOS Version and Customizing OpenCore EFI**:
    - By default, the latest compatible macOS version will be selected for your hardware.
    - OpCore Simplify will automatically apply essential ACPI patches and kexts. 
    - You can manually review and customize these settings as needed.
 
    ![OpCore Simplify Menu](https://i.imgur.com/TSk9ejy.png)
 
-4. **Building OpenCore EFI**:
+5. **Building OpenCore EFI**:
    - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
    - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
 
    ![Building OpenCore EFI](https://i.imgur.com/deyj5de.png)
 
-5. **USB Mapping**:
+6. **USB Mapping**:
    - After building your EFI, follow the steps for mapping USB ports.
 
    ![Results](https://i.imgur.com/MIPigPF.png)
 
-6. **Create USB and Install macOS**: 
+7. **Create USB and Install macOS**: 
    - Use [**UnPlugged**](https://github.com/corpnewt/UnPlugged) on Windows to create a USB macOS installer, or follow [this guide](https://dortania.github.io/OpenCore-Install-Guide/installer-guide/mac-install.html) for macOS.
    - For troubleshooting, refer to the [OpenCore Troubleshooting Guide](https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html).
 
