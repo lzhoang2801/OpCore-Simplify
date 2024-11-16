@@ -74,7 +74,6 @@
 
    - Custom ACPI patches, kexts, and SMBIOS adjustments (**not recommended**).
    - Force load kexts on unsupported macOS versions.
-   - Add mode selection for performance and efficiency on supported discrete GPUs for laptops.
    - Support AirportItlwm on macOS Sequoia 15 with **temporary workaround**. Manually select AirportItlwm, IOSkywalkFamily IO80211FamilyLegacy and AMFIPass kexts, then apply the root patch from OpenCore Legacy Patcher.
 
 ## 🚀 **How To Use**
