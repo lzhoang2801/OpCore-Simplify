@@ -152,3 +152,7 @@ Distributed under the BSD 3-Clause License. See `LICENSE` for more information.
 > Facebook [@macforce2601](https://facebook.com/macforce2601) &nbsp;&middot;&nbsp;
 > Telegram [@lzhoang2601](https://t.me/lzhoang2601) &nbsp;&middot;&nbsp;
 > Email: lzhoang2601@gmail.com
+
+## 🌟 **Star History**
+
+[![Star History Chart](https://api.star-history.com/svg?repos=lzhoang2801/OpCore-Simplify&type=Date)](https://star-history.com/#lzhoang2801/OpCore-Simplify&Date)
