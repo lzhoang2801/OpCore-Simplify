@@ -1043,8 +1043,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "HPET", 0x00000000)
             if x.get("crs"):
                 val += "{} _CRS to XCRS".format(" and " if val else x["dev_name"])
             if val: suffix.append(val)
-        if suffix:
-            comment += " - Requires {} Rename".format(", ".join(suffix))
+        #if suffix:
+        #    comment += " - Requires {} Rename".format(", ".join(suffix))
         # At this point - we need to do the following:
         # 1. Change STAS if needed
         # 2. Setup _STA with _OSI and call XSTA if needed
