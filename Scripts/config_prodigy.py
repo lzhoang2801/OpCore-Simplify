@@ -472,7 +472,7 @@ class ConfigProdigy:
     
     def csr_active_config(self, macos_version):
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
-            return "0A080000"
+            return "030A0000"
         elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("18.0.0"):
             return "FF070000"
         else:
