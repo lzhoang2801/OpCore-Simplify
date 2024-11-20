@@ -1094,9 +1094,7 @@ IntelVMDIDs = [
 # Resource: https://pci-ids.ucw.cz/
 UnsupportedNVMeSSDIDs = [
     ("144D-A808", ("A811144D")), # Samsung SM981/PM981/PM983"
-    ("144D-A809", ("A801144D")), # Samsung 980
     ("1344-5410", ("01001344")), # Micron 2200S
-    ("2646-2263", ("22632646")), # Kingston A2000
     ("1C5C-174A", ("174A1C5C")), # SK hynix BC711/PC711
     ("1C5C-1639", ("16391C5C")), # SK hynix PC611
     ("1C5C-1627", ("16271C5C")), # SK hynix PC601

@@ -261,9 +261,17 @@ class CompatibilityChecker:
             device_id = controller_props.get("Device ID")
             subsystem_id = controller_props.get("Subsystem ID", "0"*8)
 
+            max_version = os_data.get_latest_darwin_version()
+            min_version = os_data.get_lowest_darwin_version()
+
             if device_id in pci_data.IntelVMDIDs:
                 self.utils.request_input("\n\nDisable Intel RST VMD in the BIOS before exporting the hardware report and try again with the new report")
                 self.utils.exit_program()
+
+            if device_id in ("144D-A809", "2646-2263"):
+                max_version = "23.99.99"
+
+            controller_props["Compatibility"] = (max_version, min_version)
 
             if next((device for device in pci_data.UnsupportedNVMeSSDIDs if device_id == device[0] and subsystem_id in device[1]), None):
                 controller_props["Compatibility"] = (None, None)
