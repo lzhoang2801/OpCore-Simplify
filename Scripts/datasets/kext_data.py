@@ -297,6 +297,16 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "AppleBCM57XXEthernet", 
+        description = "Provides support for Broadcom BCM57XX Ethernet series",
+        category = "Ethernet",
+        min_darwin_version = "20.0.0",
+        download_info = {
+            "id": 821327912,
+            "url": "https://i.applelife.ru/2021/03/486734_AppleBCM57XXEthernet.kext.zip"
+        }
+    ),
+    KextInfo(
         name = "HoRNDIS", 
         description = "Use the USB tethering mode of the Android phone to access the Internet",
         category = "Ethernet",

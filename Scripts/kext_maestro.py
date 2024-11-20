@@ -178,6 +178,8 @@ class KextMaestro:
                     selected_kexts.append("RealtekRTL8111")
                 elif 180 < ethernet_pci < 219:
                     selected_kexts.append("AppleIGB")
+                elif 218 < ethernet_pci < 248:
+                    selected_kexts.append("AppleBCM57XXEthernet")
 
         if not ethernet_pci:
             selected_kexts.append("NullEthernet")

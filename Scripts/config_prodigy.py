@@ -241,7 +241,7 @@ class ConfigProdigy:
                     for network_name, network_props in hardware_report.get("Network", {}).items():
                         device_id = network_props.get("Device ID")
 
-                        if self.utils.contains_any(pci_data.NetworkIDs, device_id, start=21, end=108) and network_props.get("PCI Path"):
+                        if device_id in pci_data.NetworkIDs[21:108] and network_props.get("PCI Path"):
                             deviceproperties_add[network_props.get("PCI Path")] = {
                                 "IOName": "pci14e4,43a0",
                                 "compatible": "pci106b,117",
@@ -285,6 +285,15 @@ class ConfigProdigy:
                                 "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(discrete_gpu.get("Device ID")).split("-")[-1]),
                                 "model": gpu_name
                             }
+
+        for network_name, network_props in hardware_report.get("Network", {}).items():
+            device_id = network_props.get("Device ID")
+
+            if device_id in pci_data.NetworkIDs[219:248] and network_props.get("PCI Path"):
+                deviceproperties_add[network_props.get("PCI Path")] = {
+                    "IOName": "pci14e4,16b4",
+                    "device-id": self.utils.hex_to_bytes("B4160000")
+                }
 
         network_items = hardware_report.get("Network", {}).items()
         storage_controllers_items = hardware_report.get("Storage Controllers", {}).items()
