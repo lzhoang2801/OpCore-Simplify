@@ -82,7 +82,6 @@ class Updater:
             print("\n")
             print("The program needs to restart to complete the update process.")
             print("\n")
-            self.utils.request_input()
         else:
             print("You are already using the latest version")
         
