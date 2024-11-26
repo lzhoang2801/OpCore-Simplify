@@ -142,8 +142,7 @@ class KextMaestro:
         else:
             selected_kexts.append("NootRX" if "Navi 22" in list(hardware_report.get("GPU").items())[0][-1].get("Codename") else "WhateverGreen")
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and "ASUS" in hardware_report.get("Motherboard").get("Name") or \
-            "NootedRed" in selected_kexts or \
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and ("ASUS" in hardware_report.get("Motherboard").get("Name") or "NootedRed" in selected_kexts) or \
             self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
             selected_kexts.append("ForgedInvariant")
 
