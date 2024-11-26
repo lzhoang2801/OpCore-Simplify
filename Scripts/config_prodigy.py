@@ -285,6 +285,27 @@ class ConfigProdigy:
                                 "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(discrete_gpu.get("Device ID")).split("-")[-1]),
                                 "model": gpu_name
                             }
+                elif kext.name == "AppleALC":
+                    if not hardware_report.get("Sound"):
+                        continue
+
+                    for codec_props in hardware_report.get("Sound").values():
+                        codec_id = codec_props.get("Device ID")
+                        controller_id = codec_props.get("Controller Device ID", "Unknown")
+
+                        controller_props = next((props for props in hardware_report.get("System Devices", {}).values() if props.get("Device ID") == controller_id), {})
+                        pci_path = controller_props.get("PCI Path")
+
+                        if not pci_path:
+                            continue
+
+                        deviceproperties_add.setdefault(pci_path, {})
+
+                        if codec_id in codec_layouts.data:
+                            recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
+                            recommended_layouts = [layout for layout in codec_layouts.data.get(codec_id) if self.utils.contains_any(recommended_authors, layout.comment) or hardware_report.get("Motherboard").get("Name").split(" ")[0].lower() in layout.comment.lower()]
+
+                            deviceproperties_add[pci_path]["layout-id"] = random.choice((recommended_layouts or codec_layouts.data.get(codec_id))).id
 
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
@@ -466,12 +487,23 @@ class ConfigProdigy:
                         elif discrete_gpu.get("Manufacturer") == "NVIDIA" and not "Kepler" in discrete_gpu.get("Codename"):
                             boot_args.extend(("nvda_drv_vrl=1", "ngfxcompat=1", "ngfxgl=1"))
             elif kext.name == "AppleALC":
-                if hardware_report.get("Sound"):
-                    codec_id = list(hardware_report.get("Sound").items())[0][-1].get("Device ID")
-                    if codec_id in codec_layouts.data:
-                        recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
-                        recommended_layouts = [layout for layout in codec_layouts.data.get(codec_id) if self.utils.contains_any(recommended_authors, layout.comment) or hardware_report.get("Motherboard").get("Name").split(" ")[0].lower() in layout.comment.lower()]
-                        boot_args.append("alcid={}".format(random.choice((recommended_layouts or codec_layouts.data.get(codec_id))).id))
+                if not hardware_report.get("Sound"):
+                    continue
+
+                codec_props = list(hardware_report.get("Sound").items())[0][-1]
+                codec_id = codec_props.get("Device ID")
+                controller_id = codec_props.get("Controller Device ID", "Unknown")
+
+                controller_props = next((props for props in hardware_report.get("System Devices", {}).values() if props.get("Device ID") == controller_id), {})
+                pci_path = controller_props.get("PCI Path")
+
+                if pci_path:
+                    continue
+
+                if codec_id in codec_layouts.data:
+                    recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
+                    recommended_layouts = [layout for layout in codec_layouts.data.get(codec_id) if self.utils.contains_any(recommended_authors, layout.comment) or hardware_report.get("Motherboard").get("Name").split(" ")[0].lower() in layout.comment.lower()]
+                    boot_args.append("alcid={}".format(random.choice((recommended_layouts or codec_layouts.data.get(codec_id))).id))
             elif kext.name == "VoodooI2C":
                 boot_args.append("-vi2c-force-polling")
             elif kext.name == "CpuTopologyRebuild":
