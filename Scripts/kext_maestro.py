@@ -289,7 +289,6 @@ class KextMaestro:
                                 if os.path.splitext(os.path.basename(kext_path))[0] in kext.name:
                                     source_kext_path = os.path.join(self.ock_files_dir, kext_path)
                                     destination_kext_path = os.path.join(kexts_directory, os.path.basename(kext_path))
-                                    break
                     
                     if os.path.exists(source_kext_path):
                         shutil.copytree(source_kext_path, destination_kext_path, dirs_exist_ok=True)
