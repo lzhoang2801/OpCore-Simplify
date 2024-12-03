@@ -514,7 +514,6 @@ kexts = [
         name = "NVMeFix", 
         description = "Addresses compatibility and performance issues with NVMe SSDs", 
         category = "Storage",
-        max_darwin_version = "23.99.99",
         min_darwin_version = "18.0.0",
         requires_kexts = ["Lilu"],
         github_repo = {
