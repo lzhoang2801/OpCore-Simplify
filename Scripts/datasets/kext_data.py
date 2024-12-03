@@ -320,12 +320,12 @@ kexts = [
         }
     ),
     KextInfo(
-        name = "IntelMausi", 
+        name = "IntelMausiEthernet", 
         description = "Intel Ethernet LAN driver for macOS",
         category = "Ethernet",
         github_repo = {
-            "owner": "acidanthera",
-            "repo": "IntelMausi"
+            "owner": "CloverHackyColor",
+            "repo": "IntelMausiEthernet"
         }
     ),
     KextInfo(

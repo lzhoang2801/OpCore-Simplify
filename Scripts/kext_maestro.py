@@ -167,17 +167,17 @@ class KextMaestro:
                     selected_kexts.append("AppleIGC")
                 elif 114 < ethernet_pci < 122:
                     selected_kexts.append("AtherosE2200Ethernet")
-                elif 121 < ethernet_pci < 173:
-                    selected_kexts.append("IntelMausi")
-                elif 172 < ethernet_pci < 176:
+                elif 121 < ethernet_pci < 183:
+                    selected_kexts.append("IntelMausiEthernet")
+                elif 182 < ethernet_pci < 186:
                     selected_kexts.append("LucyRTL8125Ethernet")
-                elif 175 < ethernet_pci < 177:
+                elif 185 < ethernet_pci < 187:
                     selected_kexts.append("RealtekRTL8100")
-                elif 176 < ethernet_pci < 181:
+                elif 186 < ethernet_pci < 191:
                     selected_kexts.append("RealtekRTL8111")
-                elif 180 < ethernet_pci < 219:
+                elif 190 < ethernet_pci < 229:
                     selected_kexts.append("AppleIGB")
-                elif 218 < ethernet_pci < 248:
+                elif 228 < ethernet_pci < 258:
                     selected_kexts.append("AppleBCM57XXEthernet")
 
         if not ethernet_pci:
