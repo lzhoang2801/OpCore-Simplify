@@ -3065,7 +3065,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             selected_patches.append("Surface Patch")
         else:
             if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
-                for device_name, device_info in hardware_report.get("Input").items():
+                for device_name, device_info in hardware_report.get("Input", {}).items():
                     if "I2C" in device_info.get("Device Type", "None"):
                         selected_patches.append("GPI0")
 
