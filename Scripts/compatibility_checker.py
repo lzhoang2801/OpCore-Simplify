@@ -82,7 +82,7 @@ class CompatibilityChecker:
                     max_version = "20.99.99"
                 elif device_id.startswith(("04", "0A", "0C", "0D", "0B", "16")):
                     max_version = "21.99.99"
-                elif device_id.startswith(("09", "19", "59", "59", "3E", "87", "9B")):
+                elif device_id.startswith(("09", "19", "59", "59", "3E", "87", "9B")) and not device_id in ("3E90", "3E93", "3E99", "3E9C", "3EA1", "3EA4", "9B21", "9BA0", "9BA2", "9BA4", "9BA5", "9BA8", "9BAA", "9BAB", "9BAC"):
                     pass
                 elif device_id.startswith("8A"):
                     min_version = "19.4.0"
