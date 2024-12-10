@@ -1,4 +1,5 @@
 from Scripts import github
+from Scripts import kext_maestro
 from Scripts import resource_fetcher
 from Scripts import utils
 import os
@@ -10,6 +11,7 @@ class gatheringFiles:
     def __init__(self):
         self.utils = utils.Utils()
         self.github = github.Github()
+        self.kext = kext_maestro.KextMaestro()
         self.fetcher = resource_fetcher.ResourceFetcher()
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
         self.ocbinarydata_url = "https://github.com/acidanthera/OcBinaryData/archive/refs/heads/master.zip"
@@ -90,7 +92,7 @@ class gatheringFiles:
                 source_kext_path = os.path.join(self.temporary_dir, product_name, kext_path)
                 destination_kext_path = os.path.join(self.ock_files_dir, product_name, os.path.basename(kext_path))
                 
-                if "Contents" in kext_path or "Debug".lower() in kext_path.lower():
+                if "debug" in kext_path.lower() or "Contents" in kext_path or not self.kext.process_kext(os.path.join(self.temporary_dir, product_name), kext_path):
                     continue
                 
                 shutil.move(source_kext_path, destination_kext_path)
@@ -124,8 +126,6 @@ class gatheringFiles:
                     shutil.move(source_macserial_path, destination_macserial_path)
                     if os.name != "nt":
                         subprocess.run(["chmod", "+x", destination_macserial_path])
-            else:
-                raise FileNotFoundError("No bootloader or kexts files found in the product directory.")
         
         return True
     

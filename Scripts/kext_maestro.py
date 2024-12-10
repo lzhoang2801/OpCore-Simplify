@@ -293,6 +293,33 @@ class KextMaestro:
                         shutil.copytree(source_kext_path, destination_kext_path, dirs_exist_ok=True)
                 except:
                     continue
+
+    def process_kext(self, kexts_directory, kext_path):
+        try:
+            plist_path = self.utils.find_matching_paths(os.path.join(kexts_directory, kext_path), extension_filter=".plist", name_filter="Info")[0][0]
+            bundle_info = self.utils.read_file(os.path.join(kexts_directory, kext_path, plist_path))
+
+            if isinstance(bundle_info.get("CFBundleIdentifier", None), (str, unicode)):
+                pass
+        except:
+            return None
+
+        executable_path = os.path.join("Contents", "MacOS", bundle_info.get("CFBundleExecutable", "None"))
+        if not os.path.exists(os.path.join(kexts_directory, kext_path, executable_path)):
+            executable_path = ""
+        
+        return {
+            "BundlePath": kext_path.replace("\\", "/").lstrip("/"),
+            "Enabled": True,
+            "ExecutablePath": executable_path.replace("\\", "/").lstrip("/"),
+            "PlistPath": plist_path.replace("\\", "/").lstrip("/"),
+            "BundleIdentifier": bundle_info.get("CFBundleIdentifier"),
+            "BundleVersion": bundle_info.get("CFBundleVersion"),
+            "BundleLibraries": {
+                bundle_identifier: bundle_version
+                for bundle_identifier, bundle_version in bundle_info.get("OSBundleLibraries", {}).items() 
+            }
+        }
         
     def load_kexts(self, macos_version, kexts_directory):
         kernel_add = []
@@ -315,36 +342,11 @@ class KextMaestro:
         kext_paths = self.utils.find_matching_paths(kexts_directory, extension_filter=".kext")
         bundle_list = []
 
-        for kext_path, type in kext_paths:        
-            try:
-                plist_path = self.utils.find_matching_paths(os.path.join(kexts_directory, kext_path), extension_filter=".plist", name_filter="Info")[0][0]
-                bundle_info = self.utils.read_file(os.path.join(kexts_directory, kext_path, plist_path))
-            except:
-                bundle_info = {}
+        for kext_path, type in kext_paths:
+            bundle_info = self.process_kext(kexts_directory, kext_path)
 
-            if not isinstance(bundle_info.get("CFBundleIdentifier", None), (str, unicode)):
-                continue
-
-            executable_path = os.path.join("Contents", "MacOS", bundle_info.get("CFBundleExecutable", "None"))
-            if not os.path.exists(os.path.join(kexts_directory, kext_path, executable_path)):
-                executable_path = ""
-
-            if bundle_info.get("CFBundleExecutable", "None") == "AirportItlwm" and self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
-                bundle_info["IOKitPersonalities"]["itlwm"]["IOPCIMatch"] += " 0x43A014E4"
-                self.utils.write_file(os.path.join(kexts_directory, kext_path, plist_path), bundle_info)
-            
-            bundle_list.append({
-                "BundlePath": kext_path.replace("\\", "/").lstrip("/"),
-                "Enabled": True,
-                "ExecutablePath": executable_path.replace("\\", "/").lstrip("/"),
-                "PlistPath": plist_path.replace("\\", "/").lstrip("/"),
-                "BundleIdentifier": bundle_info.get("CFBundleIdentifier"),
-                "BundleVersion": bundle_info.get("CFBundleVersion"),
-                "BundleLibraries": {
-                    bundle_identifier: bundle_version
-                    for bundle_identifier, bundle_version in bundle_info.get("OSBundleLibraries", {}).items() 
-                }
-            })
+            if bundle_info:
+                bundle_list.append(bundle_info)
 
         bundle_dict = {bundle["BundleIdentifier"]: bundle for bundle in bundle_list}
 
