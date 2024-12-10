@@ -243,13 +243,7 @@ class ConfigProdigy:
 
                         if device_id in pci_data.NetworkIDs[21:108] and network_props.get("PCI Path"):
                             deviceproperties_add[network_props.get("PCI Path")] = {
-                                "IOName": "pci14e4,43a0",
-                                "compatible": "pci106b,117",
-                                "device-id": self.utils.hex_to_bytes("A0430000"),
-                                "name": "pci14e4,43a0",
-                                "subsystem-id": self.utils.hex_to_bytes("17010000"),
-                                "subsystem-vendor-id": self.utils.hex_to_bytes("6B100000"),
-                                "vendor-id": self.utils.hex_to_bytes("E4140000")
+                                "IOName": "pci14e4,43a0"
                             }
                 elif kext.name == "WhateverGreen":
                     discrete_gpu = None
