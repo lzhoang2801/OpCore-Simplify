@@ -251,8 +251,8 @@ class DSDT:
     def get_latest_iasl(self):
         latest_release = self.github.get_latest_release("acpica", "acpica") or {}
         
-        for line in latest_release.get("describe", "").splitlines():
-            if "iasl" in line:
+        for line in latest_release.get("body", "").splitlines():
+            if "iasl" in line and ".zip" in line:
                 return line.split("(")[-1].split(")")[0]
             
         return None

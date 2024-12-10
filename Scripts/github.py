@@ -39,10 +39,10 @@ class Github:
         assets = []
         
         for line in response.splitlines():
-            if "<div" in line and "body-content" in line:
-                body = response.split(line.split(">", 1)[1], 1)[-1].split("</div>", 1)[0]
-            elif "<a" in line and "href=\"" in line and "/releases/tag/" in line and not tag_name:
+            if "<a" in line and "href=\"" in line and "/releases/tag/" in line and not tag_name:
                 tag_name = line.split("/releases/tag/")[1].split("\"")[0]
+            elif "<div" in line and "body-content" in line:
+                body = response.split(line.split(">", 1)[0], 1)[1].split("</div>", 1)[0][1:]
                 break
 
         release_tag_url = "https://github.com/{}/{}/releases/expanded_assets/{}".format(owner, repo, tag_name)
