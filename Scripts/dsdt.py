@@ -253,7 +253,7 @@ class DSDT:
         
         for line in latest_release.get("body", "").splitlines():
             if "iasl" in line and ".zip" in line:
-                return line.split("(")[-1].split(")")[0]
+                return line.split("\"")[1]
             
         return None
     
