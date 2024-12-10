@@ -64,10 +64,8 @@ class gatheringFiles:
                         "url": dortania_builds_data[name]["versions"][0]["links"]["release"]
                     })
                 else:
-                    if self.github.check_ratelimit():
-                        latest_release = self.github.get_latest_release(kext.github_repo.get("owner"), kext.github_repo.get("repo")) or {}
-
-                        add_product_to_download_urls(latest_release.get("assets"))
+                    latest_release = self.github.get_latest_release(kext.github_repo.get("owner"), kext.github_repo.get("repo")) or {}
+                    add_product_to_download_urls(latest_release.get("assets"))
 
         add_product_to_download_urls({
             "product_name": "OpenCorePkg",

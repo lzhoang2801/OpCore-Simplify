@@ -1,88 +1,73 @@
 from Scripts import resource_fetcher
 from Scripts import utils
+import random
 
 class Github:
     def __init__(self):
         self.utils = utils.Utils()
-        # Set the headers for GitHub API requests
         self.headers = {
-            "Accept": "application/vnd.github+json",
-            "#Authorization": "token GITHUB_TOKEN",
-            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         self.fetcher = resource_fetcher.ResourceFetcher(self.headers)
-
-    def check_ratelimit(self):
-        url = "https://api.github.com/rate_limit"
-
-        response = self.fetcher.fetch_and_parse_content(url, "json")
-
-        return response.get("rate").get("remaining") != 0
         
-    def get_latest_commit(self, owner, repo):
-        url = "https://api.github.com/repos/{}/{}/commits".format(owner, repo)
+    def get_latest_commit(self, owner, repo, branch="main"):
+        url = "https://github.com/{}/{}/commits/{}".format(owner, repo, branch)
 
-        response = self.fetcher.fetch_and_parse_content(url, "json")
+        response = self.fetcher.fetch_and_parse_content(url)
 
-        try:
-            latest_commit = response[0].get("commit")
-        except:
-            return
+        for line in response.splitlines():
+            if "href=\"" in line and "/commit/" in line and "title=\"" in line:
+                sha = line.split("href=\"", 1)[1].split("\"", 1)[0].split("/commit/")[-1]
+                try:
+                    message = line.split("title=\"", 1)[1].split("\"", 1)[0]
+                except:
+                    message = line.split(sha)[1].split(">", 1)[1].split("<")[0]
 
-        if not isinstance(latest_commit, dict) or not latest_commit.get("tree"):
-            return
-
-        return {
-            "message": latest_commit.get("message").split("\n")[0],
-            "sha": latest_commit.get("tree").get("sha")
-        }
-        
-    def get_latest_artifact(self, owner, repo):
-        results = []
-
-        url = "https://api.github.com/repos/{}/{}/actions/artifacts".format(owner, repo)
-
-        response = self.fetcher.fetch_and_parse_content(url, "json")
-
-        latest_artifact_id = response.get("artifacts")[0].get("id")
-        
-        results.append({
-            "product_name": repo,
-            "id": latest_artifact_id,
-            "url": "https://api.github.com/repos/{}/{}/actions/artifacts/{}/{}".format(owner, repo, latest_artifact_id, "zip")
-        })
-
-        return results
+                return {
+                    "message": message,
+                    "sha": sha
+                }
+                
+        return None
 
     def get_latest_release(self, owner, repo):
-        url = "https://api.github.com/repos/{}/{}/releases".format(owner, repo)
+        url = "https://github.com/{}/{}/releases".format(owner, repo)
+        response = self.fetcher.fetch_and_parse_content(url)
 
-        response = self.fetcher.fetch_and_parse_content(url, "json")
-        
-        try:
-            latest_release = response[0]
-        except:
-            return
-        
-        if not isinstance(latest_release, dict):
-            return
-        
+        body = ""
+        tag_name = None
         assets = []
+        
+        for line in response.splitlines():
+            if "<div" in line and "body-content" in line:
+                body = response.split(line.split(">", 1)[1], 1)[-1].split("</div>", 1)[0]
+            elif "<a" in line and "href=\"" in line and "/releases/tag/" in line and not tag_name:
+                tag_name = line.split("/releases/tag/")[1].split("\"")[0]
+                break
 
-        for asset in response[0].get("assets"):
-            asset_id = asset.get("id")
-            download_url = asset.get("browser_download_url")
-            asset_name = self.extract_asset_name(asset.get("name"))
+        release_tag_url = "https://github.com/{}/{}/releases/expanded_assets/{}".format(owner, repo, tag_name)
+        response = self.fetcher.fetch_and_parse_content(release_tag_url)
 
-            if "tlwm" in download_url or ("tlwm" not in download_url and "DEBUG" not in download_url.upper()):
-                assets.append({
-                    "product_name": asset_name, 
-                    "id": asset_id, 
-                    "url": download_url
-                })
+        for line in response.splitlines():
+            if "<a" in line and "href=\"" in line and "/releases/download" in line:
+                download_link = line.split("href=\"", 1)[1].split("\"", 1)[0]
+
+                if "tlwm" in download_link or ("tlwm" not in download_link and "DEBUG" not in download_link.upper()):
+                    asset_data = response.split(line)[1].split("</div>", 2)[1]
+
+                    try:
+                        asset_id = "".join(char for char in asset_data.split("datetime=\"")[-1].split("\"")[0][::-1] if char.isdigit())[:9]
+                    except:
+                        asset_id = "".join(random.choices('0123456789', k=9))
+
+                    assets.append({
+                        "product_name": self.extract_asset_name(download_link.split("/")[-1]), 
+                        "id": int(asset_id), 
+                        "url": "https://github.com" + download_link
+                    })
 
         return {
-            "describe": latest_release.get("body"),
+            "body": body,
             "assets": assets
         }
     

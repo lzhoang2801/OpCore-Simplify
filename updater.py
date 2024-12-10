@@ -61,14 +61,6 @@ class Updater:
         self.utils.head("Check for Updates")
         print("")
         current_sha_version = self.get_current_sha_version()
-
-        if not self.github.check_ratelimit():
-            print("GitHub REST API request quota has been exhausted. Automatic update check is unavailable now.")
-            print("Please check for updates manually if needed.")
-            print("")
-            self.utils.request_input()
-            return False
-
         latest_sha_version = self.get_latest_sha_version()
         print("Current script SHA version: {}".format(current_sha_version))
         print("Latest script SHA version: {}".format(latest_sha_version))
