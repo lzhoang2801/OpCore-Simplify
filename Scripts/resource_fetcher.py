@@ -18,17 +18,29 @@ class ResourceFetcher:
     def is_connected(self, timeout=5):
         socket.create_connection(("github.com", 443), timeout=timeout)
 
-    def fetch_and_parse_content(self, resource_url, content_type=None):
+    def _make_request(self, resource_url):
         self.is_connected()
 
-        with urlopen(resource_url) as response:
-            content = response.read()
-            if content_type == 'json':
-                return json.loads(content)
-            elif content_type == 'plist':
-                return plistlib.loads(content)
-            else:
-                return content.decode('utf-8')
+        try:
+            return urlopen(Request(resource_url, headers=self.request_headers))
+        except Exception as e:
+            pass
+
+        return None
+
+    def fetch_and_parse_content(self, resource_url, content_type=None):
+        response = self._make_request(resource_url)
+
+        if not response:
+            return None
+        
+        content = response.read()
+        if content_type == 'json':
+            return json.loads(content)
+        elif content_type == 'plist':
+            return plistlib.loads(content)
+        else:
+            return content.decode('utf-8')
 
     def _download_with_progress(self, response, local_file):
         total_size = response.getheader('Content-Length')
@@ -53,8 +65,11 @@ class ResourceFetcher:
         print()
 
     def download_and_save_file(self, resource_url, destination_path):
-        self.is_connected()
+        response = self._make_request(resource_url)
 
-        with urlopen(resource_url) as response, open(destination_path, 'wb') as local_file:
+        if not response:
+            return None
+
+        with open(destination_path, 'wb') as local_file:
             print(f"Downloading from {resource_url}")
             self._download_with_progress(response, local_file)
