@@ -123,15 +123,9 @@
    - For troubleshooting, refer to the [OpenCore Troubleshooting Guide](https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html).
 
 > [!NOTE]
-> 1. For desktops using AMD GPUs from the 6000 series, if you encounter a black screen after booting, please remove the boot arguments `-v debug=0x100 keepsyms=1`.
->
-> 2. For desktops with Resizable BAR support, if the only options available are Auto/Disabled in the settings, select **Disabled**.
->
-> 3. If you use Intel WiFi card with macOS Sonoma and later, it will default to using the itlwm kext. Once the installation is complete, you need to use the Heliport app to connect to Wi-Fi.
->
-> 4. After a successful installation, if OpenCore Legacy Patcher is required, simply apply root patches to activate the missing features (such as modern Broadcom Wi-Fi card and graphics acceleration).
+> 1. After a successful installation, if OpenCore Legacy Patcher is required, simply apply root patches to activate the missing features (such as modern Broadcom Wi-Fi card and graphics acceleration).
 > 
-> 5. For AMD GPUs, after applying root patches from OpenCore Legacy Patcher, you need to remove the boot argument `-radvesa`/`-amd_no_dgpu_accel` for graphics acceleration to work.
+> 2. For AMD GPUs, after applying root patches from OpenCore Legacy Patcher, you need to remove the boot argument `-radvesa`/`-amd_no_dgpu_accel` for graphics acceleration to work.
 
 ## 🤝 **Contributing**
 
@@ -147,13 +141,10 @@ Distributed under the BSD 3-Clause License. See `LICENSE` for more information.
 
 - [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg) and [kexts](https://github.com/lzhoang2801/OpCore-Simplify/blob/main/Scripts/datasets/kext_data.py) – The backbone of this project.
 - [SSDTTime](https://github.com/corpnewt/SSDTTime) – SSDT patching utilities.
-- [Hardware Sniffer](https://github.com/lzhoang2801/Hardware-Sniffer) – For hardware information gathering.
-- [USBToolBox](https://github.com/USBToolBox/tool) – A USB mapping tool.
-- [ProperTree](https://github.com/corpnewt/ProperTree) – For editing `config.plist` files.
 
 ## 📞 **Contact**
 
-> **Hoang Hong Quan** &nbsp;&middot;&nbsp; 
+**Hoang Hong Quan**
 > Facebook [@macforce2601](https://facebook.com/macforce2601) &nbsp;&middot;&nbsp;
 > Telegram [@lzhoang2601](https://t.me/lzhoang2601) &nbsp;&middot;&nbsp;
 > Email: lzhoang2601@gmail.com
