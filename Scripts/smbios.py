@@ -1,4 +1,3 @@
-from Scripts.datasets import cpu_data
 from Scripts.datasets.mac_model_data import mac_devices
 from Scripts import gathering_files
 from Scripts import run
@@ -28,11 +27,8 @@ class SMBIOS:
                     download_history.pop(product_index)
                     self.utils.write_file(self.g.download_history_file, download_history)
 
-            print("\n")
-            print("{} not found. Please reopen the program to download it".format(macserial_name))
-            print("")
-            self.utils.request_input()
-            self.utils.exit_program()
+            self.g.gather_bootloader_kexts([], "")
+            return self.check_macserial()
         
         return macserial_path
 
