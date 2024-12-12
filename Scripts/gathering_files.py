@@ -211,21 +211,18 @@ class gatheringFiles:
         shutil.rmtree(self.temporary_dir, ignore_errors=True)
     
     def get_amd_kernel_patches(self):
-        self.utils.head("Gathering Files")
-        print("")
-        print("Please wait for download AMD Vanilla Patches")
-        print("from " + self.amd_vanilla_patches_url)
-        print("")
-        
         try:
             response = self.fetcher.fetch_and_parse_content(self.amd_vanilla_patches_url, "plist")
 
             return response["Kernel"]["Patch"]
         except: 
-            print("Unable to download AMD Vanilla Patches at this time.")
-            print("Please try again later or apply them manually.")
+            print("\n")
+            print("Unable to download AMD Vanilla Patches at this time")
+            print("from " + self.amd_vanilla_patches_url)
             print("")
+            print("Please try again later or apply them manually. ", end="")
             self.utils.request_input()
+            print("")
             return []
         
     def gather_hardware_sniffer(self):
