@@ -297,13 +297,13 @@ kexts = [
         }
     ),
     KextInfo(
-        name = "AppleBCM57XXEthernet", 
+        name = "CatalinaBCM5701Ethernet", 
         description = "Provides support for Broadcom BCM57XX Ethernet series",
         category = "Ethernet",
         min_darwin_version = "20.0.0",
         download_info = {
             "id": 821327912,
-            "url": "https://i.applelife.ru/2021/03/486734_AppleBCM57XXEthernet.kext.zip"
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Ethernet/CatalinaBCM5701Ethernet-v1.0.2.zip"
         }
     ),
     KextInfo(

@@ -304,7 +304,7 @@ class ConfigProdigy:
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
-            if device_id in pci_data.NetworkIDs[219:248] and network_props.get("PCI Path"):
+            if device_id in pci_data.NetworkIDs[219:258] and network_props.get("PCI Path"):
                 deviceproperties_add[network_props.get("PCI Path")] = {
                     "IOName": "pci14e4,16b4",
                     "device-id": self.utils.hex_to_bytes("B4160000")
@@ -399,6 +399,23 @@ class ConfigProdigy:
                 elif kext.name == "ForgedInvariant":
                     if not "AMD" in cpu_manufacturer:
                         kernel_patch.extend(self.g.get_amd_kernel_patches()[-6:-4])
+                elif kext.name == "CatalinaBCM5701Ethernet":
+                    kernel_patch.append({
+                        "Arch": "Any",
+                        "Base": "",
+                        "Comment": "Broadcom BCM577XX Patch",
+                        "Count": 1,
+                        "Enabled": True,
+                        "Find": self.utils.hex_to_bytes("E8CA9EFFFF66898300050000"),
+                        "Identifier": "com.apple.iokit.CatalinaBCM5701Ethernet",
+                        "Limit": 0,
+                        "Mask": self.utils.hex_to_bytes(""),
+                        "MaxKernel": "",
+                        "MinKernel": "20.0.0",
+                        "Replace": self.utils.hex_to_bytes("B8B416000066898300050000"),
+                        "ReplaceMask": self.utils.hex_to_bytes(""),
+                        "Skip": 0
+                    })
 
         for patch in kernel_patch:
             if "cpuid_cores_per_package" in patch["Comment"]:
