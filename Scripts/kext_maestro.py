@@ -97,7 +97,7 @@ class KextMaestro:
                 if other_kext.conflict_group_id == kext.conflict_group_id and other_kext.name != kext.name:
                     other_kext.checked = False
 
-    def select_required_kexts(self, hardware_report, smbios_model, macos_version, needs_oclp, acpi_patches):
+    def select_required_kexts(self, hardware_report, macos_version, needs_oclp, acpi_patches):
         for kext in self.kexts:
             kext.checked = kext.required
 
@@ -117,7 +117,7 @@ class KextMaestro:
 
         if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
                  self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)) or \
-            self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") or "MacPro7,1" in smbios_model:
+            self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
             selected_kexts.append("RestrictEvents")
 
         if hardware_report.get("Sound"):
@@ -247,9 +247,6 @@ class KextMaestro:
                     selected_kexts.append("GenericUSBXHCI")
                 else:
                     selected_kexts.append("XHCI-unsupported")
-
-        if smbios_model in (device.name for device in mac_model_data.mac_devices[31:34] + mac_model_data.mac_devices[48:50] + mac_model_data.mac_devices[51:61]):
-            selected_kexts.append("NoTouchID")
 
         if "Sandy Bridge" in hardware_report.get("CPU").get("Codename"):
             selected_kexts.append("ASPP-Override")

@@ -1,4 +1,5 @@
 from Scripts.datasets.mac_model_data import mac_devices
+from Scripts.datasets import os_data
 from Scripts import gathering_files
 from Scripts import run
 from Scripts import utils
@@ -57,6 +58,22 @@ class SMBIOS:
             "SystemSerialNumber": "A" + "0"*10 + "9" if not serial else serial[0],
             "SystemUUID": str(uuid.uuid4()).upper(),
         }
+    
+    def smbios_specific_options(self, hardware_report, smbios_model, macos_version, acpi_patches, kext_maestro):
+        for patch in acpi_patches:
+            if patch.name == "MCHC":
+                patch.checked = "Intel" in hardware_report.get("CPU").get("Manufacturer") and not "MacPro" in smbios_model
+
+        selected_kexts = []
+
+        if "MacPro7,1" in smbios_model:
+            selected_kexts.append("RestrictEvents")
+
+        if smbios_model in (device.name for device in mac_devices[31:34] + mac_devices[48:50] + mac_devices[51:61]):
+            selected_kexts.append("NoTouchID")
+
+        for name in selected_kexts:
+            kext_maestro.check_kext(kext_maestro.get_kext_index(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
     
     def select_smbios_model(self, hardware_report, macos_version):
         platform = "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform")

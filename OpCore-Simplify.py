@@ -312,8 +312,9 @@ class OCPE:
                 smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
                 if not self.ac.ensure_dsdt():
                     self.ac.select_acpi_tables()
-                self.ac.select_acpi_patches(hardware_report, unsupported_devices, smbios_model)
-                self.k.select_required_kexts(hardware_report, smbios_model, macos_version, needs_oclp, self.ac.patches)
+                self.ac.select_acpi_patches(hardware_report, unsupported_devices)
+                self.k.select_required_kexts(hardware_report, macos_version, needs_oclp, self.ac.patches)
+                self.s.smbios_specific_options(hardware_report, smbios_model, macos_version, self.ac.patches, self.k)
             elif option < 7:
                 try:
                     hardware_report
@@ -325,14 +326,15 @@ class OCPE:
                     macos_version = self.select_macos_version(native_macos_version, ocl_patched_macos_version)
                     hardware_report, unsupported_devices, needs_oclp = self.c.get_unsupported_devices(macos_version)
                     smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
-                    self.k.select_required_kexts(hardware_report, smbios_model, macos_version, needs_oclp, self.ac.patches)
+                    self.k.select_required_kexts(hardware_report, macos_version, needs_oclp, self.ac.patches)
+                    self.s.smbios_specific_options(hardware_report, smbios_model, macos_version, self.ac.patches, self.k)
                 elif option == 3:
-                    self.ac.customize_patch_selection(hardware_report, unsupported_devices, smbios_model)
+                    self.ac.customize_patch_selection(hardware_report, unsupported_devices)
                 elif option == 4:
                     self.k.kext_configuration_menu(hardware_report, smbios_model, macos_version, self.ac.patches)
                 elif option == 5:
                     smbios_model = self.s.customize_smbios_model(hardware_report, smbios_model, macos_version)
-                    self.k.select_required_kexts(hardware_report, smbios_model, macos_version, needs_oclp, self.ac.patches)
+                    self.s.smbios_specific_options(hardware_report, smbios_model, macos_version, self.ac.patches, self.k)
                 elif option == 6:
                     self.gathering_files(macos_version)
                     self.build_opencore_efi(hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp)

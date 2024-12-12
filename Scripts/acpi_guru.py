@@ -3001,7 +3001,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
                 return index
         return None
 
-    def select_acpi_patches(self, hardware_report, unsupported_devices, smbios_model):
+    def select_acpi_patches(self, hardware_report, unsupported_devices):
         selected_patches = []
 
         if  "Laptop" in hardware_report.get("Motherboard").get("Platform") and \
@@ -3032,9 +3032,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             if  "Sandy Bridge" in hardware_report.get("CPU").get("Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1E3A" or \
                 "Ivy Bridge" in hardware_report.get("CPU").get("Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1C3A":
                 selected_patches.append("IMEI")
-
-        if "Intel" in hardware_report.get("CPU").get("Manufacturer") or not "MacPro" in smbios_model:
-            selected_patches.append("MCHC")
 
         if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Chipset"), start=89, end=101):
             selected_patches.append("PMC")
@@ -3084,7 +3081,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         for patch in self.patches:
             patch.checked = patch.name in selected_patches
     
-    def customize_patch_selection(self, hardware_report, unsupported_devices, smbios_model):
+    def customize_patch_selection(self, hardware_report, unsupported_devices):
         while True:
             contents = []
             contents.append("")
@@ -3117,7 +3114,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
                 return
 
             if option.lower() == "r":
-                self.select_acpi_patches(hardware_report, unsupported_devices, smbios_model)
+                self.select_acpi_patches(hardware_report, unsupported_devices)
             else:
                 indices = [int(i.strip()) -1 for i in option.split(",") if i.strip().isdigit()]
         
