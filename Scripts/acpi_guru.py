@@ -3081,7 +3081,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         for patch in self.patches:
             patch.checked = patch.name in selected_patches
     
-    def customize_patch_selection(self, hardware_report, unsupported_devices):
+    def customize_patch_selection(self):
         while True:
             contents = []
             contents.append("")
@@ -3097,8 +3097,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             contents.append("\033[1;36m")
             contents.append("Note: You can select multiple kexts by entering their indices separated by commas (e.g., '1, 2, 3').")
             contents.append("\033[0m")
-            contents.append("R. Restore defaults")
-            contents.append("")
             contents.append("B. Back")
             contents.append("Q. Quit")
             contents.append("")
@@ -3113,12 +3111,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             if option.lower() == "b":
                 return
 
-            if option.lower() == "r":
-                self.select_acpi_patches(hardware_report, unsupported_devices)
-            else:
-                indices = [int(i.strip()) -1 for i in option.split(",") if i.strip().isdigit()]
-        
-                for index in indices:
-                    if index >= 0 and index < len(self.patches):
-                        patch = self.patches[index]
-                        patch.checked = not patch.checked
+            indices = [int(i.strip()) -1 for i in option.split(",") if i.strip().isdigit()]
+    
+            for index in indices:
+                if index >= 0 and index < len(self.patches):
+                    patch = self.patches[index]
+                    patch.checked = not patch.checked

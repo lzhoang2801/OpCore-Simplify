@@ -329,9 +329,9 @@ class OCPE:
                     self.k.select_required_kexts(hardware_report, macos_version, needs_oclp, self.ac.patches)
                     self.s.smbios_specific_options(hardware_report, smbios_model, macos_version, self.ac.patches, self.k)
                 elif option == 3:
-                    self.ac.customize_patch_selection(hardware_report, unsupported_devices)
+                    self.ac.customize_patch_selection()
                 elif option == 4:
-                    self.k.kext_configuration_menu(hardware_report, smbios_model, macos_version, self.ac.patches)
+                    self.k.kext_configuration_menu(macos_version)
                 elif option == 5:
                     smbios_model = self.s.customize_smbios_model(hardware_report, smbios_model, macos_version)
                     self.s.smbios_specific_options(hardware_report, smbios_model, macos_version, self.ac.patches, self.k)

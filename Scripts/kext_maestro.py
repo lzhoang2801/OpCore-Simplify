@@ -444,7 +444,7 @@ class KextMaestro:
             elif option.lower() == "n":
                 return False
 
-    def kext_configuration_menu(self, hardware_report, smbios_model, macos_version, acpi_patches):
+    def kext_configuration_menu(self, macos_version):
         current_category = None
 
         while True:
@@ -470,8 +470,6 @@ class KextMaestro:
             contents.append("- When a plugin of a kext is selected, the entire kext will be automatically selected.")
             contents.append("- You can select multiple kexts by entering their indices separated by commas (e.g., '1, 2, 3').")
             contents.append("\033[0m")
-            contents.append("R. Restore defaults")
-            contents.append("")
             contents.append("B. Back")
             contents.append("Q. Quit")
             contents.append("")
@@ -481,8 +479,6 @@ class KextMaestro:
             self.utils.head("Configure Kernel Extensions", resize=False)
             print(content)
             option = self.utils.request_input("Select your option: ")
-            if option.lower() == "r":
-                self.select_required_kexts(hardware_report, smbios_model, macos_version, acpi_patches)
             if option.lower() == "b":
                 return
             if option.lower() == "q":
