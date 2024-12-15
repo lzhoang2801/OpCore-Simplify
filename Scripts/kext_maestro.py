@@ -142,9 +142,11 @@ class KextMaestro:
         else:
             selected_kexts.append("NootRX" if "Navi 2" in list(hardware_report.get("GPU").items())[0][-1].get("Codename") else "WhateverGreen")
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and ("ASUS" in hardware_report.get("Motherboard").get("Name") or "NootedRed" in selected_kexts) or \
-            self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and ("ASUS" in hardware_report.get("Motherboard").get("Name") or "NootedRed" in selected_kexts):
             selected_kexts.append("ForgedInvariant")
+
+        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
+            selected_kexts.append("CpuTscSync")
 
         if needs_oclp:
             selected_kexts.extend(("AMFIPass", "RestrictEvents"))
@@ -317,8 +319,23 @@ class KextMaestro:
                 for bundle_identifier, bundle_version in bundle_info.get("OSBundleLibraries", {}).items() 
             }
         }
+    
+    def modify_kexts(self, plist_path, hardware_report, macos_version):
+        try:
+            bundle_info = self.utils.read_file(plist_path)
+
+            if bundle_info.get("IOKitPersonalities").get("VoodooTSCSync"):
+                bundle_info["IOKitPersonalities"]["VoodooTSCSync"]["IOPropertyMatch"]["IOCPUNumber"] = 0 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.0.0") else int(hardware_report["CPU"]["Core Count"]) - 1
+            elif bundle_info.get("IOKitPersonalities").get("AmdTscSync"):
+                bundle_info["IOKitPersonalities"]["AmdTscSync"]["IOPropertyMatch"]["IOCPUNumber"] = 0 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.0.0") else int(hardware_report["CPU"]["Core Count"]) - 1
+            else:
+                return
+            
+            self.utils.write_file(plist_path, bundle_info)
+        except:
+            return            
         
-    def load_kexts(self, macos_version, kexts_directory):
+    def load_kexts(self, hardware_report, macos_version, kexts_directory):
         kernel_add = []
         unload_kext = []
 
@@ -343,6 +360,8 @@ class KextMaestro:
             bundle_info = self.process_kext(kexts_directory, kext_path)
 
             if bundle_info:
+                self.modify_kexts(os.path.join(kexts_directory, kext_path, bundle_info.get("PlistPath")), hardware_report, macos_version)
+
                 bundle_list.append(bundle_info)
 
         bundle_dict = {bundle["BundleIdentifier"]: bundle for bundle in bundle_list}

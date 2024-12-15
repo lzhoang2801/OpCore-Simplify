@@ -557,6 +557,56 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "AmdTscSync", 
+        description = "A modified version of VoodooTSCSync for AMD CPUs",
+        category = "TSC Synchronization",
+        conflict_group_id = "TSC",
+        github_repo = {
+            "owner": "naveenkrdy",
+            "repo": "AmdTscSync"
+        }
+    ),
+    KextInfo(
+        name = "VoodooTSCSync", 
+        description = "A kernel extension which will synchronize the TSC on Intel CPUs",
+        category = "TSC Synchronization",
+        conflict_group_id = "TSC",
+        github_repo = {
+            "owner": "RehabMan",
+            "repo": "VoodooTSCSync"
+        },
+        download_info = {
+            "id": 823728912, 
+            "url": "https://github.com/lzhoang2801/lzhoang2801.github.io/raw/refs/heads/main/public/extra-files/VoodooTSCSync-v1.1.zip"
+        }
+    ),
+    KextInfo(
+        name = "CpuTscSync", 
+        description = "Lilu plugin for TSC sync and disabling xcpm_urgency on Intel CPUs",
+        category = "TSC Synchronization",
+        requires_kexts = ["Lilu"],
+        conflict_group_id = "TSC",
+        github_repo = {
+            "owner": "acidanthera",
+            "repo": "CpuTscSync"
+        }
+    ),
+    KextInfo(
+        name = "ForgedInvariant", 
+        description = "The plug & play kext for syncing the TSC on AMD & Intel",
+        category = "TSC Synchronization",
+        requires_kexts = ["Lilu"],
+        conflict_group_id = "TSC",
+        github_repo = {
+            "owner": "ChefKissInc",
+            "repo": "ForgedInvariant"
+        },
+        download_info = {
+            "id": "".join(random.choices('0123456789', k=9)), 
+            "url": "https://nightly.link/ChefKissInc/ForgedInvariant/workflows/main/master/Artifacts.zip"
+        }
+    ),
+    KextInfo(
         name = "AMFIPass", 
         description = "A replacement for amfi=0x80 boot argument",
         category = "Extras",
@@ -665,20 +715,6 @@ kexts = [
         github_repo = {
             "owner": "acidanthera",
             "repo": "FeatureUnlock"
-        }
-    ),
-    KextInfo(
-        name = "ForgedInvariant", 
-        description = "The plug & play kext for syncing the TSC on AMD & Intel",
-        category = "Extras",
-        requires_kexts = ["Lilu"],
-        github_repo = {
-            "owner": "ChefKissInc",
-            "repo": "ForgedInvariant"
-        },
-        download_info = {
-            "id": "".join(random.choices('0123456789', k=9)), 
-            "url": "https://nightly.link/ChefKissInc/ForgedInvariant/workflows/main/master/Artifacts.zip"
         }
     ),
     KextInfo(

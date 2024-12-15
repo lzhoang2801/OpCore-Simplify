@@ -174,7 +174,7 @@ class OCPE:
         print("3. Copy kexts and snapshot to config.plist...", end=" ")
         kexts_directory = os.path.join(self.result_dir, "EFI", "OC", "Kexts")
         self.k.install_kexts_to_efi(macos_version, kexts_directory)
-        config_data["Kernel"]["Add"] = self.k.load_kexts(macos_version, kexts_directory)
+        config_data["Kernel"]["Add"] = self.k.load_kexts(hardware_report, macos_version, kexts_directory)
         print("Done")
         print("4. Generate config.plist...", end=" ")      
         self.co.genarate(hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp, self.k.kexts, config_data)
