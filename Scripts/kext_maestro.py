@@ -150,38 +150,45 @@ class KextMaestro:
         if needs_oclp:
             selected_kexts.extend(("AMFIPass", "RestrictEvents"))
 
-        ethernet_pci = None
+        ethernet_device = None
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
-            if self.utils.contains_any(pci_data.NetworkIDs, device_id, end=21):
-                if device_id in ["14E4-43A0", "14E4-43A3", "14E4-43BA"]:
-                    if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                        selected_kexts.extend(("AirportBrcmFixup", "IOSkywalkFamily"))
-                elif device_id in pci_data.NetworkIDs:
-                    selected_kexts.append("AirportBrcmFixup")
-            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=21, end=108):
-                selected_kexts.append("AirportItlwm" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "itlwm")
-            elif self.utils.contains_any(pci_data.NetworkIDs, device_id, start=108, end=219):
-                ethernet_pci = pci_data.NetworkIDs.index(device_id)
-                if 107 < ethernet_pci < 115:
-                    selected_kexts.append("AppleIGC")
-                elif 114 < ethernet_pci < 122:
-                    selected_kexts.append("AtherosE2200Ethernet")
-                elif 121 < ethernet_pci < 183:
-                    selected_kexts.append("IntelMausiEthernet")
-                elif 182 < ethernet_pci < 186:
-                    selected_kexts.append("LucyRTL8125Ethernet")
-                elif 185 < ethernet_pci < 187:
-                    selected_kexts.append("RealtekRTL8100")
-                elif 186 < ethernet_pci < 191:
-                    selected_kexts.append("RealtekRTL8111")
-                elif 190 < ethernet_pci < 229:
-                    selected_kexts.append("AppleIGB")
-                elif 228 < ethernet_pci < 258:
-                    selected_kexts.append("AppleBCM57XXEthernet")
+            try:
+                device_index = pci_data.NetworkIDs.index(device_id)
+            except:
+                continue
 
-        if not ethernet_pci:
+            ethernet_device = 108 < device_index < 264
+
+            if device_index < 16:
+                selected_kexts.append("AirportBrcmFixup")
+            elif device_index == 16 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
+                selected_kexts.append("AirportBrcmFixup")
+            elif 16 < device_index < 19 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
+                selected_kexts.append("AirportBrcmFixup")
+            elif 18 < device_index < 22 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
+                selected_kexts.extend("IOSkywalkFamily")
+            elif 21 < device_index < 109:
+                selected_kexts.append("AirportItlwm" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "itlwm")
+            elif 108 < device_index < 116:
+                selected_kexts.append("AppleIGC")
+            elif 115 < device_index < 123:
+                selected_kexts.append("AtherosE2200Ethernet")
+            elif 122 < device_index < 184:
+                selected_kexts.append("IntelMausiEthernet")
+            elif 183 < device_index < 187:
+                selected_kexts.append("LucyRTL8125Ethernet")
+            elif device_index == 187:
+                selected_kexts.append("RealtekRTL8100")
+            elif 187 < device_index < 192:
+                selected_kexts.append("RealtekRTL8111")
+            elif 191 < device_index < 230:
+                selected_kexts.append("AppleIGB")
+            elif 229 < device_index < 264:
+                selected_kexts.append("CatalinaBCM5701Ethernet")
+
+        if not ethernet_device:
             selected_kexts.append("NullEthernet")
 
         for bluetooth_name, bluetooth_props in hardware_report.get("Bluetooth", {}).items():
