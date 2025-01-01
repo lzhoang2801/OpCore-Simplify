@@ -159,33 +159,34 @@ class KextMaestro:
             except:
                 continue
 
-            ethernet_device = 108 < device_index < 264
+            ethernet_device = 107 < device_index < 263
 
-            if device_index < 16:
+            if device_index < 21 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
+                selected_kexts.append("IOSkywalkFamily")
+
+            if device_index < 15:
                 selected_kexts.append("AirportBrcmFixup")
-            elif device_index == 16 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
+            elif device_index == 15 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
                 selected_kexts.append("AirportBrcmFixup")
-            elif 16 < device_index < 19 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
+            elif 15 < device_index < 18 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
                 selected_kexts.append("AirportBrcmFixup")
-            elif 18 < device_index < 22 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                selected_kexts.extend("IOSkywalkFamily")
-            elif 21 < device_index < 109:
+            elif 20 < device_index < 108:
                 selected_kexts.append("AirportItlwm" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "itlwm")
-            elif 108 < device_index < 116:
+            elif 109 < device_index < 115:
                 selected_kexts.append("AppleIGC")
-            elif 115 < device_index < 123:
+            elif 114 < device_index < 122:
                 selected_kexts.append("AtherosE2200Ethernet")
-            elif 122 < device_index < 184:
+            elif 121 < device_index < 183:
                 selected_kexts.append("IntelMausiEthernet")
-            elif 183 < device_index < 187:
+            elif 182 < device_index < 186:
                 selected_kexts.append("LucyRTL8125Ethernet")
-            elif device_index == 187:
+            elif device_index == 186:
                 selected_kexts.append("RealtekRTL8100")
-            elif 187 < device_index < 192:
+            elif 186 < device_index < 191:
                 selected_kexts.append("RealtekRTL8111")
-            elif 191 < device_index < 230:
+            elif 190 < device_index < 229:
                 selected_kexts.append("AppleIGB")
-            elif 229 < device_index < 264:
+            elif 228 < device_index < 263:
                 selected_kexts.append("CatalinaBCM5701Ethernet")
 
         if not ethernet_device:

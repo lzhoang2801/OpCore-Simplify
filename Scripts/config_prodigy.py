@@ -241,7 +241,7 @@ class ConfigProdigy:
                     for network_name, network_props in hardware_report.get("Network", {}).items():
                         device_id = network_props.get("Device ID")
 
-                        if device_id in pci_data.NetworkIDs[22:109] and network_props.get("PCI Path"):
+                        if device_id in pci_data.NetworkIDs[21:108] and network_props.get("PCI Path"):
                             deviceproperties_add[network_props.get("PCI Path")] = {
                                 "IOName": "pci14e4,43a0"
                             }
@@ -310,11 +310,11 @@ class ConfigProdigy:
                 continue
 
             if network_props.get("PCI Path"):
-                if device_index < 19 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
+                if device_index < 18:
                     deviceproperties_add[network_props.get("PCI Path")] = {
                         "IOName": "pci14e4,43a0"
                     }
-                elif 229 < device_index < 259:
+                elif 228 < device_index < 258:
                     deviceproperties_add[network_props.get("PCI Path")] = {
                         "IOName": "pci14e4,16b4",
                         "device-id": self.utils.hex_to_bytes("B4160000")
