@@ -356,8 +356,6 @@ class KextMaestro:
                 unload_kext.extend((
                     "VoodooSMBus",
                     "RMISMBus",
-                    "VoodooI2CServices",
-                    "VoodooGPIO",
                     "VoodooI2CHID"
                 ))
 
