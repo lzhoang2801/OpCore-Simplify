@@ -9,10 +9,7 @@ import shutil
 class Updater:
     def __init__(self):
         self.github = github.Github()
-        self.fetcher = resource_fetcher.ResourceFetcher({
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        })
+        self.fetcher = resource_fetcher.ResourceFetcher()
         self.run = run.Run().run
         self.utils = utils.Utils()
         self.sha_version = os.path.join(os.path.dirname(os.path.realpath(__file__)), "sha_version.txt")

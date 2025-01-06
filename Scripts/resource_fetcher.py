@@ -11,8 +11,10 @@ else:
     from urllib2 import urlopen, Request
 
 class ResourceFetcher:
-    def __init__(self, headers={}):
-        self.request_headers = headers
+    def __init__(self, headers=None):
+        self.request_headers = headers or {
+            "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
         self.buffer_size = 16 * 1024
 
     def is_connected(self, timeout=5):
