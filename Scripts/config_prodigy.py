@@ -606,7 +606,6 @@ class ConfigProdigy:
 
         config["Misc"]["BlessOverride"] = []
         config["Misc"]["Boot"]["HideAuxiliary"] = False
-        config["Misc"]["Boot"]["LauncherOption"] = "Full"
         config["Misc"]["Boot"]["PickerMode"] = "External"
         config["Misc"]["Boot"]["Timeout"] = 10
         config["Misc"]["Debug"]["AppleDebug"] = config["Misc"]["Debug"]["ApplePanic"] = False
