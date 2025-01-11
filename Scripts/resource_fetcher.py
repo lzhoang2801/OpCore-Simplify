@@ -1,3 +1,4 @@
+import ssl
 import os
 import json
 import plistlib
@@ -16,6 +17,19 @@ class ResourceFetcher:
             "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
         }
         self.buffer_size = 16 * 1024
+        self.ssl_context = self.create_ssl_context()
+
+    def create_ssl_context(self):
+        try:
+            cafile = ssl.get_default_verify_paths().openssl_cafile
+            if not os.path.exists(cafile):
+                import certifi
+                cafile = certifi.where()
+            ssl_context = ssl.create_default_context(cafile=cafile)
+        except Exception as e:
+            print("SSL Context Creation Error: {}".format(e))
+            ssl_context = ssl._create_unverified_context()
+        return ssl_context
 
     def is_connected(self, timeout=5):
         socket.create_connection(("github.com", 443), timeout=timeout)
@@ -24,7 +38,7 @@ class ResourceFetcher:
         self.is_connected()
 
         try:
-            return urlopen(Request(resource_url, headers=self.request_headers))
+            return urlopen(Request(resource_url, headers=self.request_headers), context=self.ssl_context)
         except Exception as e:
             pass
 
