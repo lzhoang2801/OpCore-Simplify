@@ -381,7 +381,7 @@ class ConfigProdigy:
             
         return None
     
-    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_cores, gpu_manufacturer, kexts):
+    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_codename, cpu_cores, gpu_manufacturer, kexts):
         kernel_patch = []
 
         if "AMD" in cpu_manufacturer:
@@ -432,7 +432,7 @@ class ConfigProdigy:
                 patch["Replace"] = patch["Replace"].hex()
                 patch["Replace"] = self.utils.hex_to_bytes(patch["Replace"][:2] + self.utils.int_to_hex(int(cpu_cores)) + patch["Replace"][4:])
             elif "IOPCIIsHotplugPort" in patch["Comment"]:
-                if self.utils.contains_any(chipset_data.AMDChipsets, motherboard_chipset, start=17):
+                if motherboard_chipset in chipset_data.AMDChipsets[17:] or cpu_codename in ("Raphael", "Storm Peak", "Phoenix", "Granite Ridge"):
                     patch["Enabled"] = True
             if "_mtrr_update_action" in patch["Comment"]:
                 if "TRX" in motherboard_chipset.upper():
@@ -589,7 +589,8 @@ class ConfigProdigy:
         config["Kernel"]["Force"] = []
         config["Kernel"]["Patch"] = self.load_kernel_patch(
             hardware_report.get("Motherboard").get("Chipset"),
-            hardware_report.get("CPU").get("Manufacturer"), 
+            hardware_report.get("CPU").get("Manufacturer"),
+            hardware_report.get("CPU").get("Codename"), 
             hardware_report.get("CPU").get("Core Count"), 
             list(hardware_report.get("GPU").items())[0][-1].get("Manufacturer"),
             kexts
