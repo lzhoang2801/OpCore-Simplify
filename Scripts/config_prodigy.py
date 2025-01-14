@@ -235,6 +235,15 @@ class ConfigProdigy:
     def deviceproperties(self, hardware_report, unsupported_devices, macos_version, kexts):
         deviceproperties_add = {}
 
+        def add_device_property(pci_path, properties):
+            if not pci_path or not properties:
+                return
+
+            if not deviceproperties_add.get(pci_path):
+                deviceproperties_add[pci_path] = {}
+
+            deviceproperties_add[pci_path].update(properties)
+
         for kext in kexts:
             if kext.checked:
                 if kext.name == "AirportItlwm" and self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
@@ -242,43 +251,36 @@ class ConfigProdigy:
                         device_id = network_props.get("Device ID")
 
                         if device_id in pci_data.NetworkIDs[21:108] and network_props.get("PCI Path"):
-                            deviceproperties_add[network_props.get("PCI Path")] = {
-                                "IOName": "pci14e4,43a0"
-                            }
+                            add_device_property(network_props.get("PCI Path"), {"IOName": "pci14e4,43a0"})
                 elif kext.name == "WhateverGreen":
                     discrete_gpu = None
                     for gpu_name, gpu_info in hardware_report.get("GPU", {}).items():
                         if gpu_info.get("Device Type") == "Integrated GPU":
                             if "Intel" in gpu_info.get("Manufacturer"):
-                                igpu_properties = self.igpu_properties(
+                                add_device_property(gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)"), self.igpu_properties(
                                     "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform"), 
                                     (gpu_name, gpu_info),
                                     hardware_report.get("Monitor", {}),
                                     macos_version
-                                )
-                                if igpu_properties:
-                                    deviceproperties_add[gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")] = igpu_properties
+                                ))
+                                if deviceproperties_add[gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")]:
                                     if gpu_info.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
                                         intel_mei = next((device_props for device_name, device_props in hardware_report.get("System Devices").items() if "HECI" in device_name or "Management Engine Interface" in device_name), None)
                                         if intel_mei:
                                             if "Sandy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1E3A":
-                                                deviceproperties_add[intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)")] = {
-                                                    "device-id": "3A1C0000"
-                                                }
+                                                add_device_property(intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1C0000"})
                                             elif "Ivy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1C3A":
-                                                deviceproperties_add[intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)")] = {
-                                                    "device-id": "3A1E0000"
-                                                }
+                                                add_device_property(intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1E0000"})
                         elif gpu_info.get("Device Type") == "Discrete GPU":
                             discrete_gpu = gpu_info
 
-                            if not discrete_gpu.get("PCI Path") or not discrete_gpu.get("Device ID") in pci_data.SpoofGPUIDs:
+                            if not gpu_info.get("Device ID") in pci_data.SpoofGPUIDs:
                                 continue
 
-                            deviceproperties_add[discrete_gpu.get("PCI Path")] = {
-                                "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(discrete_gpu.get("Device ID")).split("-")[-1]),
+                            add_device_property(gpu_info.get("PCI Path"), {
+                                "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(gpu_info.get("Device ID")).split("-")[-1]),
                                 "model": gpu_name
-                            }
+                            })
                 elif kext.name == "AppleALC":
                     if not hardware_report.get("Sound"):
                         continue
@@ -286,22 +288,17 @@ class ConfigProdigy:
                     for codec_props in hardware_report.get("Sound").values():
                         codec_id = codec_props.get("Device ID")
                         controller_id = codec_props.get("Controller Device ID", "Unknown")
-
                         controller_props = next((props for props in hardware_report.get("System Devices", {}).values() if props.get("Device ID") == controller_id), {})
-                        pci_path = controller_props.get("PCI Path")
-
-                        if not pci_path:
-                            continue
-
-                        deviceproperties_add.setdefault(pci_path, {})
 
                         if codec_id in codec_layouts.data:
                             recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
                             recommended_layouts = [layout for layout in codec_layouts.data.get(codec_id) if self.utils.contains_any(recommended_authors, layout.comment) or hardware_report.get("Motherboard").get("Name").split(" ")[0].lower() in layout.comment.lower()]
 
-                            deviceproperties_add[pci_path]["layout-id"] = random.choice((recommended_layouts or codec_layouts.data.get(codec_id))).id
+                            add_device_property(controller_props.get("PCI Path"), {"layout-id": random.choice((recommended_layouts or codec_layouts.data.get(codec_id))).id})
 
-        for network_name, network_props in hardware_report.get("Network", {}).items():
+        network_items = hardware_report.get("Network", {}).items()
+
+        for network_name, network_props in network_items:
             device_id = network_props.get("Device ID")
 
             try:
@@ -309,31 +306,23 @@ class ConfigProdigy:
             except:
                 continue
 
-            if network_props.get("PCI Path"):
-                if device_index < 18:
-                    deviceproperties_add[network_props.get("PCI Path")] = {
-                        "IOName": "pci14e4,43a0"
-                    }
-                elif 228 < device_index < 258:
-                    deviceproperties_add[network_props.get("PCI Path")] = {
-                        "IOName": "pci14e4,16b4",
-                        "device-id": self.utils.hex_to_bytes("B4160000")
-                    }
+            if device_index < 18:
+                add_device_property(network_props.get("PCI Path"), {"IOName": "pci14e4,43a0"})
+            elif 228 < device_index < 258:
+                add_device_property(network_props.get("PCI Path"), {
+                    "IOName": "pci14e4,16b4",
+                    "device-id": self.utils.hex_to_bytes("B4160000")
+                })
 
-        network_items = hardware_report.get("Network", {}).items()
         storage_controllers_items = hardware_report.get("Storage Controllers", {}).items()
 
         for device_name, device_props in list(network_items) + list(storage_controllers_items):
-            if device_props.get("PCI Path") and not device_props.get("ACPI Path"):
-                deviceproperties_add[device_props.get("PCI Path")] = {
-                    "built-in": self.utils.hex_to_bytes("01")
-                }
+            if not device_props.get("ACPI Path"):
+                add_device_property(device_props.get("PCI Path"), {"built-in": "01"})
 
         for device_name, device_props in unsupported_devices.items():
             if "GPU" in device_name and not device_props.get("Disabled", False):
-                deviceproperties_add[device_props.get("PCI Path")] = {
-                    "disable-gpu": True
-                }
+                add_device_property(device_props.get("PCI Path"), {"disable-gpu": True})
 
         for key, value in deviceproperties_add.items():
             for key_child, value_child in value.items():
