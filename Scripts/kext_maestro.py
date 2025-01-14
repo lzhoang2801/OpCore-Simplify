@@ -159,7 +159,7 @@ class KextMaestro:
             except:
                 continue
 
-            ethernet_device = 107 < device_index < 263
+            ethernet_device = 107 < device_index < 270
 
             if device_index < 21 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                 selected_kexts.append("IOSkywalkFamily")

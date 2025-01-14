@@ -381,11 +381,14 @@ class ConfigProdigy:
             
         return None
     
-    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_codename, cpu_cores, gpu_manufacturer, kexts):
+    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_codename, cpu_cores, gpu_manufacturer, networks, kexts):
         kernel_patch = []
 
         if "AMD" in cpu_manufacturer:
-            kernel_patch.extend(self.g.get_amd_kernel_patches())
+            kernel_patch.extend(self.g.get_kernel_patches("AMD Vanilla Patches", self.g.amd_vanilla_patches_url))
+
+        if any(network_props.get("Device ID") in pci_data.NetworkIDs[263:270] for network_props in networks.values()):
+            kernel_patch.extend(self.g.get_kernel_patches("Aquantia macOS Patches", self.g.aquantia_macos_patches_url))
 
         for kext in kexts:
             if kext.checked:
@@ -408,7 +411,7 @@ class ConfigProdigy:
                     })
                 elif kext.name == "ForgedInvariant":
                     if not "AMD" in cpu_manufacturer:
-                        kernel_patch.extend(self.g.get_amd_kernel_patches()[-6:-4])
+                        kernel_patch.extend(self.g.get_kernel_patches("AMD Vanilla Patches", self.g.amd_vanilla_patches_url)[-6:-4])
                 elif kext.name == "CatalinaBCM5701Ethernet":
                     kernel_patch.append({
                         "Arch": "Any",
@@ -428,13 +431,15 @@ class ConfigProdigy:
                     })
 
         for patch in kernel_patch:
-            if "cpuid_cores_per_package" in patch["Comment"]:
+            if "AppleEthernetAquantiaAqtion" in patch["Identifier"]:
+                patch["Enabled"] = patch["Base"] != ""
+            elif "cpuid_cores_per_package" in patch["Comment"]:
                 patch["Replace"] = patch["Replace"].hex()
                 patch["Replace"] = self.utils.hex_to_bytes(patch["Replace"][:2] + self.utils.int_to_hex(int(cpu_cores)) + patch["Replace"][4:])
             elif "IOPCIIsHotplugPort" in patch["Comment"]:
                 if motherboard_chipset in chipset_data.AMDChipsets[17:] or cpu_codename in ("Raphael", "Storm Peak", "Phoenix", "Granite Ridge"):
                     patch["Enabled"] = True
-            if "_mtrr_update_action" in patch["Comment"]:
+            elif "_mtrr_update_action" in patch["Comment"]:
                 if "TRX" in motherboard_chipset.upper():
                     patch["Enabled"] = False
                 elif "AMD" in gpu_manufacturer:
@@ -593,6 +598,7 @@ class ConfigProdigy:
             hardware_report.get("CPU").get("Codename"), 
             hardware_report.get("CPU").get("Core Count"), 
             list(hardware_report.get("GPU").items())[0][-1].get("Manufacturer"),
+            hardware_report.get("Network", {}),
             kexts
         )
         config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = bool(self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=38))
@@ -601,6 +607,7 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["CustomSMBIOSGuid"] = True
         config["Kernel"]["Quirks"]["DisableIoMapper"] = not "AMD" in hardware_report.get("CPU").get("Manufacturer")
         config["Kernel"]["Quirks"]["DisableRtcChecksum"] = "ASUS" in hardware_report.get("Motherboard").get("Name") or "HP " in hardware_report.get("Motherboard").get("Name")
+        config["Kernel"]["Quirks"]["ForceAquantiaEthernet"] = any(network_props.get("Device ID") in pci_data.NetworkIDs[263:270] for network_props in hardware_report.get("Network", {}).values())
         config["Kernel"]["Quirks"]["LapicKernelPanic"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["Kernel"]["Quirks"]["PanicNoKextDump"] = config["Kernel"]["Quirks"]["PowerTimeoutKernelPanic"] = True
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:2]

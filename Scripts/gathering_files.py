@@ -16,6 +16,7 @@ class gatheringFiles:
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
         self.ocbinarydata_url = "https://github.com/acidanthera/OcBinaryData/archive/refs/heads/master.zip"
         self.amd_vanilla_patches_url = "https://raw.githubusercontent.com/AMD-OSX/AMD_Vanilla/beta/patches.plist"
+        self.aquantia_macos_patches_url = "https://raw.githubusercontent.com/CaseySJ/Aquantia-macOS-Patches/refs/heads/main/CaseySJ-Aquantia-Patch-Sets-1-and-2.plist"
         self.temporary_dir = tempfile.mkdtemp()
         self.ock_files_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "OCK_Files")
         self.bootloader_kexts_data_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "bootloader_kexts_data.json")
@@ -210,15 +211,15 @@ class gatheringFiles:
 
         shutil.rmtree(self.temporary_dir, ignore_errors=True)
     
-    def get_amd_kernel_patches(self):
+    def get_kernel_patches(self, patches_name, patches_url):
         try:
-            response = self.fetcher.fetch_and_parse_content(self.amd_vanilla_patches_url, "plist")
+            response = self.fetcher.fetch_and_parse_content(patches_url, "plist")
 
             return response["Kernel"]["Patch"]
         except: 
             print("\n")
-            print("Unable to download AMD Vanilla Patches at this time")
-            print("from " + self.amd_vanilla_patches_url)
+            print("Unable to download {} at this time".format(patches_name))
+            print("from " + patches_url)
             print("")
             print("Please try again later or apply them manually. ", end="")
             self.utils.request_input()

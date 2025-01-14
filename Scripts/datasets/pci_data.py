@@ -498,6 +498,15 @@ NetworkIDs = [
     "14E4-1686",
     "14E4-16B0",
     "14E4-16B4",
+    # Aquantia AQC107
+    "1D6A-0001",
+    "1D6A-07B1",
+    "1D6A-D107",
+    "1D6A-87B1",
+    # Aquantia AQC113
+    "1D6A-14C0",
+    "1D6A-04C0",
+    "1D6A-94C0",
     # RtWlanU.kext, RtWlanU1827.kext and RT2870USBWirelessDriver.kext 
     "0409-0408",
     "0411-0242",
