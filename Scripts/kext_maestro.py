@@ -159,7 +159,7 @@ class KextMaestro:
             except:
                 continue
 
-            ethernet_device = 107 < device_index < 270
+            ethernet_device = ethernet_device or 107 < device_index < 270
 
             if device_index < 21 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                 selected_kexts.append("IOSkywalkFamily")
@@ -172,7 +172,7 @@ class KextMaestro:
                 selected_kexts.append("AirportBrcmFixup")
             elif 20 < device_index < 108:
                 selected_kexts.append("AirportItlwm" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "itlwm")
-            elif 109 < device_index < 115:
+            elif 107 < device_index < 115:
                 selected_kexts.append("AppleIGC")
             elif 114 < device_index < 122:
                 selected_kexts.append("AtherosE2200Ethernet")
