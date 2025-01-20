@@ -382,22 +382,7 @@ class ConfigProdigy:
         for kext in kexts:
             if kext.checked:
                 if kext.name == "CpuTopologyRebuild":
-                    kernel_patch.append({
-                        "Arch": "Any",
-                        "Base": "_cpu_thread_alloc",
-                        "Comment": "Force enable Hyper Threading for macOS Mojave or later",
-                        "Count": 1,
-                        "Enabled": True,
-                        "Find": self.utils.hex_to_bytes("8B8894010000"),
-                        "Identifier": "kernel",
-                        "Limit": 0,
-                        "Mask": self.utils.hex_to_bytes(""),
-                        "MaxKernel": "",
-                        "MinKernel": "18.0.0",
-                        "Replace": self.utils.hex_to_bytes("B9FF00000090"),
-                        "ReplaceMask": self.utils.hex_to_bytes(""),
-                        "Skip": 0
-                    })
+                    kernel_patch.extend(self.g.get_kernel_patches("Hyper Threading Patches", self.g.hyper_threading_patches_url))
                 elif kext.name == "ForgedInvariant":
                     if not "AMD" in cpu_manufacturer:
                         kernel_patch.extend(self.g.get_kernel_patches("AMD Vanilla Patches", self.g.amd_vanilla_patches_url)[-6:-4])
@@ -520,7 +505,7 @@ class ConfigProdigy:
             elif kext.name == "VoodooI2C":
                 boot_args.append("-vi2c-force-polling")
             elif kext.name == "CpuTopologyRebuild":
-                boot_args.append("-ctrsmt")
+                boot_args.append("ctrsmt=full")
 
         return " ".join(boot_args)
     
