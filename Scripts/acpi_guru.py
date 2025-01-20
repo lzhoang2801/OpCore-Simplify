@@ -2022,13 +2022,24 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
                 "Replace": "584E4C46"
             })
 
-        if binascii.unhexlify("084E42434600") in self.dsdt.get("raw"):
-            patches.append({
-                "Comment": "NBCF Zero to One for BrightnessKeys.kext",
-                "Find": "084E42434600",
-                "Replace": "084E42434601"
-            })
+        for table_name in self.sorted_nicely(list(self.acpi.acpi_tables)):
+            table = self.acpi.acpi_tables[table_name]
 
+            if binascii.unhexlify("084E4243460A00") in table.get("raw"):
+                patches.append({
+                    "Comment": "NBCF 0x00 to 0x01",
+                    "Find": "084E4243460A00",
+                    "Replace": "084E4243460A01"
+                })
+                break
+            elif binascii.unhexlify("084E42434600") in table.get("raw"):
+                patches.append({
+                    "Comment": "NBCF Zero to One",
+                    "Find": "084E42434600",
+                    "Replace": "084E42434601"
+                })
+                break
+            
         ssdt_name = "SSDT-PNLF"
         ssdt_content = """
 DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
