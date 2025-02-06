@@ -320,6 +320,15 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "IntelLucy",
+        description = "Provides support for Intel X500 family",
+        category = "Ethernet",
+        github_repo = {
+            "owner": "Mieze",
+            "repo": "IntelLucy"
+        }
+    ),
+    KextInfo(
         name = "IntelMausiEthernet", 
         description = "Intel Ethernet LAN driver for macOS",
         category = "Ethernet",

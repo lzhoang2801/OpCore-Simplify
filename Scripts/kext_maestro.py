@@ -159,7 +159,7 @@ class KextMaestro:
             except:
                 continue
 
-            ethernet_device = ethernet_device or 107 < device_index < 280
+            ethernet_device = ethernet_device or 107 < device_index < 326
 
             if device_index < 21 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                 selected_kexts.append("IOSkywalkFamily")
@@ -188,6 +188,8 @@ class KextMaestro:
                 selected_kexts.append("AppleIGB")
             elif 228 < device_index < 263:
                 selected_kexts.append("CatalinaBCM5701Ethernet")
+            elif 279 < device_index < 326:
+                selected_kexts.append("IntelLucy")
 
         if not ethernet_device:
             selected_kexts.append("NullEthernet")
