@@ -3052,7 +3052,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         else:
             selected_patches.append("PLUG")
 
-        if not any(network_props.get("Device ID") in pci_data.NetworkIDs[108:270] for network_props in hardware_report.get("Network", {}).values()):
+        if not any(network_props.get("Device ID") in pci_data.NetworkIDs[108:280] for network_props in hardware_report.get("Network", {}).values()):
             selected_patches.append("RMNE")
 
         if hardware_report.get("Motherboard").get("Chipset") in ("C610/X99", "Wellsburg", "X299"):

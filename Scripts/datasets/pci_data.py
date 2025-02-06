@@ -502,11 +502,22 @@ NetworkIDs = [
     "1D6A-0001",
     "1D6A-07B1",
     "1D6A-D107",
+    "1D6A-80B1",
     "1D6A-87B1",
+    "1D6A-88B1",
+    "1D6A-89B1",
+    "1D6A-91B1",
+    "1D6A-92B1",
     # Aquantia AQC113
-    "1D6A-14C0",
+    "1D6A-00C0",
     "1D6A-04C0",
+    "1D6A-14C0",
+    "1D6A-34C0",
+    "1D6A-93C0",
     "1D6A-94C0",
+    # Aquantia AQC100
+    "1D6A-00B1",
+    "1D6A-80B1",
     # RtWlanU.kext, RtWlanU1827.kext and RT2870USBWirelessDriver.kext 
     "0409-0408",
     "0411-0242",

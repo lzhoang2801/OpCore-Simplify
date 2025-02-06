@@ -237,7 +237,7 @@ class CompatibilityChecker:
                 if 109 < device_index < 115:
                     min_version = "19.0.0"
 
-                if 262 < device_index < 270:
+                if 262 < device_index < 280:
                     min_version = "21.0.0"
 
                 if pci_data.NetworkIDs.index(device_id) < 108:

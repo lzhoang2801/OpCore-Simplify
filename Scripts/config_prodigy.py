@@ -313,6 +313,10 @@ class ConfigProdigy:
                     "IOName": "pci14e4,16b4",
                     "device-id": self.utils.hex_to_bytes("B4160000")
                 })
+            elif 277 < device_index < 280:
+                add_device_property(network_props.get("PCI Path"), {
+                    "IOName": "1D6A-91B1"
+                })
 
         storage_controllers_items = hardware_report.get("Storage Controllers", {}).items()
 
@@ -376,7 +380,7 @@ class ConfigProdigy:
         if "AMD" in cpu_manufacturer:
             kernel_patch.extend(self.g.get_kernel_patches("AMD Vanilla Patches", self.g.amd_vanilla_patches_url))
 
-        if any(network_props.get("Device ID") in pci_data.NetworkIDs[263:270] for network_props in networks.values()):
+        if any(network_props.get("Device ID") in pci_data.NetworkIDs[263:280] for network_props in networks.values()):
             kernel_patch.extend(self.g.get_kernel_patches("Aquantia macOS Patches", self.g.aquantia_macos_patches_url))
 
         for kext in kexts:
@@ -581,7 +585,7 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["CustomSMBIOSGuid"] = True
         config["Kernel"]["Quirks"]["DisableIoMapper"] = not "AMD" in hardware_report.get("CPU").get("Manufacturer")
         config["Kernel"]["Quirks"]["DisableRtcChecksum"] = "ASUS" in hardware_report.get("Motherboard").get("Name") or "HP " in hardware_report.get("Motherboard").get("Name")
-        config["Kernel"]["Quirks"]["ForceAquantiaEthernet"] = any(network_props.get("Device ID") in pci_data.NetworkIDs[263:270] for network_props in hardware_report.get("Network", {}).values())
+        config["Kernel"]["Quirks"]["ForceAquantiaEthernet"] = any(network_props.get("Device ID") in pci_data.NetworkIDs[263:280] for network_props in hardware_report.get("Network", {}).values())
         config["Kernel"]["Quirks"]["LapicKernelPanic"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["Kernel"]["Quirks"]["PanicNoKextDump"] = config["Kernel"]["Quirks"]["PowerTimeoutKernelPanic"] = True
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:2]
