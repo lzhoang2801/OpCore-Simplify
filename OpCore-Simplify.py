@@ -44,14 +44,16 @@ class OCPE:
         while True:
             self.u.head("Select hardware report")
             print("")
-            print("Before generating the hardware report, please follow these steps:")
-            print("")
-            print("  1. Install all available drivers if possible (skip if using Windows PE)")
-            print("  2. Use the latest version of Hardware Sniffer for manual export (if applicable)")
-            if self.hardware_sniffer:
+            if os.name == "nt":
+                print("\033[1;36m", end="")
+                print("Note:")
+                print("- Ensure you are using the latest version of Hardware Sniffer before generating the hardware report.")
+                print("- Hardware Sniffer will not collect information related to Resizable BAR option of GPU (disabled by default) and monitor connections in Windows PE.")
+                print("\033[0m", end="")
+                if self.hardware_sniffer:
+                    print("")
+                    print("E. Export hardware report (Recommended)")
                 print("")
-                print("E. Export hardware report (Recommended) - This ensures the best results!")
-            print("")
             print("Q. Quit")
             print("")
         
