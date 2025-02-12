@@ -1566,7 +1566,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
             return
         
         try:
-            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=26) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
+            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=27) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
         except:
             smbus_device_name = "SBUS"
             
@@ -2297,6 +2297,20 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "PMCR", 0x00001000)
                 }
             ],
         }
+    
+    def remove_conditional_scope(self):
+        return {
+            "Patch": [
+                {
+                    "Comment": "Remove conditional ACPI scope declaration",
+                    "Find": "A000000092935043484100",
+                    "Replace": "A3A3A3A3A3A3A3A3A3A3A3",
+                    "Mask": "FF000000FFFFFFFFFFFFFF",
+                    "Count": 1,
+                    "TableSignature": "44534454"
+                }
+            ]
+        }
 
     def fix_hp_005_post_error(self):
         if binascii.unhexlify("4701700070000108") in self.dsdt.get("raw"):
@@ -2384,7 +2398,7 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
         }
 
     def is_intel_hedt_cpu(self, cpu_codename):
-        return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=21) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
+        return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=22) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
 
     def fix_system_clock_hedt(self):
         awac_device = self.acpi.get_device_paths_with_hid("ACPI000E", self.dsdt)
@@ -2917,7 +2931,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
                 return {
                     "Add": [
                         {
-                            "Comment": "Avoid kernel panic by pointing the first CPU entry to an active CPU on HEDT systems",
+                            "Comment": "APIC.aml",
                             "Enabled": self.write_ssdt("APIC", new_apic),
                             "Path": "APIC.aml"
                         }
@@ -3036,7 +3050,10 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if "HP " in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("CMOS")
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=26):
+        if hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[-7:]:
+            selected_patches.append("RCSP")
+
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=27):
             selected_patches.append("FixHPET")
 
         if hardware_report.get("Intel MEI"):
@@ -3058,7 +3075,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if hardware_report.get("Motherboard").get("Chipset") in ("C610/X99", "Wellsburg", "X299"):
             selected_patches.append("RTC0")
 
-        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=16):
+        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=17):
             selected_patches.append("RTCAWAC")
 
         if "SURFACE" in hardware_report.get("Motherboard").get("Name"):

@@ -70,7 +70,7 @@ class KextMaestro:
         return pci_ids
 
     def is_intel_hedt_cpu(self, cpu_codename):
-        return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=21) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
+        return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=22) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
     
     def get_kext_index(self, name):
         for index, kext in enumerate(self.kexts):
@@ -115,7 +115,7 @@ class KextMaestro:
             selected_kexts.append("SMCLightSensor")
 
         if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-                 self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)) or \
+                 self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=5)) or \
             self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
             selected_kexts.append("RestrictEvents")
 
@@ -130,7 +130,7 @@ class KextMaestro:
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("22.0.0") and not "AVX2" in hardware_report.get("CPU").get("SIMD Features"):
             selected_kexts.append("CryptexFixup")
 
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=2) and \
+        if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=3) and \
             int(hardware_report.get("CPU").get("Core Count")) > 6:
             selected_kexts.append("CpuTopologyRebuild")
 

@@ -33,6 +33,7 @@ AMDCPUGenerations = [
 ]
 
 IntelCPUGenerations = [
+    "Arrow Lake-S",
     "Raptor Lake-S",
     "Alder Lake-S",
     "Rocket Lake-S",

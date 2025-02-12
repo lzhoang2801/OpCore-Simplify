@@ -157,7 +157,14 @@ IntelChipsets = [
     "C262",
     "W790",
     "Meteor Lake-P",
-    "Lunar Lake-M"
+    "Lunar Lake-M",
+    "Q870",
+    "Z890",
+    "B860",
+    "H810",
+    "W880",
+    "HM870",
+    "WM880"
 ]
 
 AMDChipsets = [

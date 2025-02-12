@@ -37,6 +37,11 @@ patches = [
         function_name = "fake_embedded_controller"
     ),
     PatchInfo(
+        name = "RCSP",
+        description = "Remove conditional ACPI scope declaration",
+        function_name = "remove_conditional_scope"
+    ),
+    PatchInfo(
         name = "CMOS",
         description = "Fix HP Real-Time Clock Power Loss (005) Post Error",
         function_name = "fix_hp_005_post_error"

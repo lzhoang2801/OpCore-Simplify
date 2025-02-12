@@ -354,10 +354,10 @@ class ConfigProdigy:
         return kernel_block
 
     def is_low_end_haswell_plus(self, processor_name, cpu_codename):
-        return self.is_low_end_intel_cpu(processor_name) and cpu_codename in cpu_data.IntelCPUGenerations[:38]
+        return self.is_low_end_intel_cpu(processor_name) and cpu_codename in cpu_data.IntelCPUGenerations[:39]
 
     def is_intel_hedt_cpu(self, cpu_codename):
-        return cpu_codename in cpu_data.IntelCPUGenerations[21:] and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
+        return cpu_codename in cpu_data.IntelCPUGenerations[22:] and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
             
     def spoof_cpuid(self, processor_name, cpu_codename, macos_version):
         if self.is_low_end_haswell_plus(processor_name, cpu_codename):
@@ -366,7 +366,7 @@ class ConfigProdigy:
             return self.cpuids.get("Haswell")
         elif "Broadwell" in cpu_codename and self.is_intel_hedt_cpu(cpu_codename):
             return self.cpuids.get("Broadwell")
-        elif "Ice Lake" not in cpu_codename and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=10):
+        elif "Ice Lake" not in cpu_codename and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=11):
             if not "Comet Lake" in cpu_codename:
                 return self.cpuids.get("Comet Lake")
             if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.0.0"):
@@ -579,16 +579,17 @@ class ConfigProdigy:
             hardware_report.get("Network", {}),
             kexts
         )
-        config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = bool(self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=38))
+        config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = bool(self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=39))
         config["Kernel"]["Quirks"]["AppleXcpmCfgLock"] = False if "AMD" in hardware_report.get("CPU").get("Manufacturer") else not config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"]
-        config["Kernel"]["Quirks"]["AppleXcpmExtraMsrs"] = "-E" in hardware_report.get("CPU").get("Codename") and hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[26:]
+        config["Kernel"]["Quirks"]["AppleXcpmExtraMsrs"] = "-E" in hardware_report.get("CPU").get("Codename") and hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[27:]
+        config["Kernel"]["Quirks"]["AppleXcpmForceBoost"] = hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:1]
         config["Kernel"]["Quirks"]["CustomSMBIOSGuid"] = True
         config["Kernel"]["Quirks"]["DisableIoMapper"] = not "AMD" in hardware_report.get("CPU").get("Manufacturer")
         config["Kernel"]["Quirks"]["DisableRtcChecksum"] = "ASUS" in hardware_report.get("Motherboard").get("Name") or "HP " in hardware_report.get("Motherboard").get("Name")
         config["Kernel"]["Quirks"]["ForceAquantiaEthernet"] = any(network_props.get("Device ID") in pci_data.NetworkIDs[263:280] for network_props in hardware_report.get("Network", {}).values())
         config["Kernel"]["Quirks"]["LapicKernelPanic"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["Kernel"]["Quirks"]["PanicNoKextDump"] = config["Kernel"]["Quirks"]["PowerTimeoutKernelPanic"] = True
-        config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:2]
+        config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[1:3]
 
         config["Misc"]["BlessOverride"] = []
         config["Misc"]["Boot"]["HideAuxiliary"] = False
@@ -617,7 +618,8 @@ class ConfigProdigy:
         config["UEFI"]["APFS"]["MinDate"] = config["UEFI"]["APFS"]["MinVersion"] = -1
         config["UEFI"]["Drivers"] = self.load_drivers()
         config["UEFI"]["Quirks"]["ForceOcWriteFlash"] = any(device_props.get("Device ID") in pci_data.ThinkPadTWX30IDs and device_props.get("Subsystem ID") in pci_data.ThinkPadTWX30IDs[device_props.get("Device ID")] for device_props in hardware_report.get("System Devices", {}).values())
-        config["UEFI"]["Quirks"]["IgnoreInvalidFlexRatio"] = hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[26:]
+        config["UEFI"]["Quirks"]["EnableVectorAcceleration"] = not hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:3]
+        config["UEFI"]["Quirks"]["IgnoreInvalidFlexRatio"] = hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[27:]
         config["UEFI"]["Quirks"]["ReleaseUsbOwnership"] = True
         config["UEFI"]["Quirks"]["UnblockFsConnect"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["UEFI"]["ReservedMemory"] = []
@@ -634,7 +636,7 @@ class ConfigProdigy:
                         len(config["Booter"]["Patch"]) and self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.4.0"):
                         revpatch.append("sbvmm")
                     if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-                        self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=4)):
+                        self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=5)):
                         config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpu"] = 1
                         config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpuname"] = hardware_report.get("CPU").get("Processor Name")
                         if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("23.0.0"):
