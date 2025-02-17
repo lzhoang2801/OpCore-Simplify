@@ -294,7 +294,7 @@ class CompatibilityChecker:
             if controller_props.get("Device ID") not in pci_data.RealtekCardReaderIDs:
                 controller_props["Compatibility"] = (None, None)
             else:
-                controller_props["Compatibility"] = (os_data.get_latest_darwin_version(), os_data.get_lowest_darwin_version())
+                controller_props["Compatibility"] = (os_data.get_latest_darwin_version() if controller_props.get("Device ID") in pci_data.RealtekCardReaderIDs[5:] else "23.99.99", os_data.get_lowest_darwin_version())
             print("{}- {}: {}".format(" "*3, controller_name, self.show_macos_compatibility(controller_props.get("Compatibility"))))
 
     def get_unsupported_devices(self, macos_verison):

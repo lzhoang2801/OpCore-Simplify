@@ -241,7 +241,10 @@ class KextMaestro:
 
         for controller_name, controller_props in hardware_report.get("SD Controller", {}).items():
             if controller_props.get("Device ID") in pci_data.RealtekCardReaderIDs:
-                selected_kexts.append("RealtekCardReader")
+                if controller_props.get("Device ID") in pci_data.RealtekCardReaderIDs[5:]:
+                    selected_kexts.append("Sinetek-rtsx")
+                else:
+                    selected_kexts.append("RealtekCardReader")
         
         for controller_name, controller_props in hardware_report.get("Storage Controllers", {}).items():
             if "NVMe" in controller_name or "NVM Express" in controller_name:
