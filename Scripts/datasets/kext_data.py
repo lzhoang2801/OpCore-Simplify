@@ -391,6 +391,15 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "USBInjectAll", 
+        description = "Inject all USB ports for the installed Intel EHCI/XHCI chipset automatically",
+        category = "USB",
+        github_repo = {
+            "owner": "daliansky",
+            "repo": "OS-X-USB-Inject-All"
+        }
+    ),
+    KextInfo(
         name = "XHCI-unsupported", 
         description = "Enables USB 3.0 support for unsupported xHCI controllers",
         category = "USB",

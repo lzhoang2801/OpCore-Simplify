@@ -609,7 +609,6 @@ class ConfigProdigy:
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts, config["Booter"]["Quirks"]["ResizeAppleGpuBars"] == 0)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = "en:252"
-        config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].append("csr-active-config")
 
         config["PlatformInfo"]["Generic"].update(self.smbios.generate_smbios(smbios_model))
         config["PlatformInfo"]["Generic"]["ROM"] = self.utils.hex_to_bytes(config["PlatformInfo"]["Generic"]["ROM"])
@@ -629,6 +628,8 @@ class ConfigProdigy:
                 if kext.name == "BlueToolFixup":
                     config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothExternalDongleFailed"] = self.utils.hex_to_bytes("00")
                     config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothInternalControllerInfo"] = self.utils.hex_to_bytes("0000000000000000000000000000")
+                elif kext.name == "USBInjectAll":
+                    config["Kernel"]["Quirks"]["XhciPortLimit"] = True
                 elif kext.name == "RestrictEvents":
                     revpatch = []
                     revblock = []

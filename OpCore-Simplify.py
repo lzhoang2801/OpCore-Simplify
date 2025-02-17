@@ -237,24 +237,33 @@ class OCPE:
         print("OpenCore EFI build complete.")
         time.sleep(2)
         
-    def results(self, hardware_report, smbios_model):
+    def results(self, hardware_report, smbios_model, kexts):
         self.u.head("Results")
         print("")
         print("Your OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Name")))
         print("\t{}".format(self.result_dir))
+        for kext in kexts:
+            if kext.name == "USBInjectAll":
+                if kext.checked:
+                    print("\033[0;31mNote: USBInjectAll is not recommended. Please use USBMap.kext instead.\033[0m")
+                    print("")
+                    print("To use USBMap.kext:")
+                    print("")
+                    print("* Remove USBInjectAll.kext from the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+                else:
+                    print("")
+                    print("Before using EFI, please complete the following steps:")
         print("")
-        print("Before using EFI, please complete the following steps:")
-        print("")
-        print("1. Use USBToolBox:")
+        print("* Use USBToolBox:")
         print("   - Mapping USB with the option 'Use Native Class' enabled.")
         print("   - Use the model identifier '{}'.".format(smbios_model))
         print("")
-        print("2. Add USBMap.kext:")
-        print("   - Place the created USBMap.kext file into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+        print("* Add created USBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
         print("")
-        print("3. Edit config.plist:")
+        print("* Edit config.plist:")
         print("   - Use ProperTree to open your config.plist.")
         print("   - Run OC Snapshot by pressing Command/Ctrl + R.")
+        print("   - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.")
         print("   - Save the file when finished.")
         print("")
         self.u.open_folder(self.result_dir)
@@ -340,7 +349,7 @@ class OCPE:
                 elif option == 6:
                     self.gathering_files(macos_version)
                     self.build_opencore_efi(hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp)
-                    self.results(hardware_report, smbios_model)
+                    self.results(hardware_report, smbios_model, self.k.kexts)
 
 if __name__ == '__main__':
     update_flag = updater.Updater().run_update()
