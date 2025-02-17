@@ -73,7 +73,7 @@ class OCPE:
                     return
                 else:
                     report_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "Report.json")
-                    acpitables_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "ACPITables")
+                    acpitables_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "ACPI")
 
                     report_data = self.u.read_file(report_path)
                     self.ac.read_acpi_tables(acpitables_dir)
