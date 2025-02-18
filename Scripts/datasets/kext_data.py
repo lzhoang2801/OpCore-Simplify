@@ -379,6 +379,10 @@ kexts = [
         github_repo = {
             "owner": "Mieze",
             "repo": "RTL8111_driver_for_OS_X"
+        },
+        download_info = {
+            "id": 130015132, 
+            "url": "https://github.com/Mieze/RTL8111_driver_for_OS_X/releases/download/2.4.2/RealtekRTL8111-V2.4.2.zip"
         }
     ),
     KextInfo(
