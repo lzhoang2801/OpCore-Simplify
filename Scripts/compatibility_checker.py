@@ -303,7 +303,7 @@ class CompatibilityChecker:
         needs_oclp = False
 
         for device_type, devices in self.hardware_report.items():
-            if device_type in ("Motherboard", "CPU", "USB Controllers", "Input", "Bluetooth", "System Devices"):
+            if device_type in ("Motherboard", "BIOS", "CPU", "USB Controllers", "Input", "Bluetooth", "System Devices"):
                 new_hardware_report[device_type] = devices
                 continue
 
