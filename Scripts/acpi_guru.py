@@ -2008,7 +2008,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNVMe", 0x00000000)
 
         integrated_gpu = list(self.hardware_report.get("GPU").items())[-1][-1]
         uid_value = 19
-        if integrated_gpu.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
+        if integrated_gpu.get("Codename") in ("Iron Lake", "Sandy Bridge", "Ivy Bridge"):
             uid_value = 14
         elif integrated_gpu.get("Codename") in ("Haswell", "Broadwell"):
             uid_value = 15
@@ -2397,9 +2397,9 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
             ]
         }
 
-    def is_intel_hedt_cpu(self, cpu_codename):
-        return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=22) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
-
+    def is_intel_hedt_cpu(self, processor_name, cpu_codename):
+        return cpu_codename in cpu_data.IntelCPUGenerations[22:] and (cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX")) or not (cpu_codename in ("Arrandale", "Clarksfield", "Lynnfield", "Clarkdale") and "Xeon" not in processor_name))
+     
     def fix_system_clock_hedt(self):
         awac_device = self.acpi.get_device_paths_with_hid("ACPI000E", self.dsdt)
         try:
@@ -3035,7 +3035,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             selected_patches.append("ALS")
             selected_patches.append("PNLF")
 
-        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
+        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")):
             selected_patches.append("APIC")
 
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):

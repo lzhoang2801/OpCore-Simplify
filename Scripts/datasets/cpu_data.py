@@ -75,5 +75,16 @@ IntelCPUGenerations = [
     "Ivy Bridge",
     "Ivy Bridge-E",
     "Sandy Bridge",
-    "Sandy Bridge-E"
+    "Sandy Bridge-E",
+    "Beckton",
+    "Westmere-EX",
+    "Gulftown",
+    "Westmere-EP",
+    "Clarkdale",
+    "Arrandale",
+    "Lynnfield",
+    "Jasper Forest",
+    "Clarksfield",
+    "Gainestown",
+    "Bloomfield"
 ]

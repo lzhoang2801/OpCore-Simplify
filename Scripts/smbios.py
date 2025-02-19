@@ -81,13 +81,19 @@ class SMBIOS:
 
         smbios_model = "MacBookPro16,3" if "Laptop" in platform else "iMacPro1,1"
 
-        if ("Sandy Bridge" in codename or "Ivy Bridge" in codename) and self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("22.0.0"):
+        if codename in ("Lynnfield", "Clarkdale") and "Xeon" not in hardware_report.get("CPU").get("Processor Name") and self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.0.0"):
+            smbios_model = "iMac11,1" if codename in "Lynnfield" else "iMac11,2"
+        elif codename in ("Beckton", "Westmere-EX", "Gulftown", "Westmere-EP", "Clarkdale", "Lynnfield", "Jasper Forest", "Gainestown", "Bloomfield"):
+            smbios_model = "MacPro5,1" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.0.0") else "MacPro6,1"
+        elif ("Sandy Bridge" in codename or "Ivy Bridge" in codename) and self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("22.0.0"):
             smbios_model = "MacPro6,1"
 
         if platform != "Laptop" and list(hardware_report.get("GPU").items())[-1][-1].get("Device Type") != "Integrated GPU":
             return smbios_model
-
-        if "Sandy Bridge" in codename:
+        
+        if codename in ("Arrandale", "Clarksfield"):
+            smbios_model = "MacBookPro6,1"
+        elif "Sandy Bridge" in codename:
             if "Desktop" in platform:
                 smbios_model = "iMac12,2"
             elif "NUC" in platform:

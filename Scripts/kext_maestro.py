@@ -69,8 +69,8 @@ class KextMaestro:
 
         return pci_ids
 
-    def is_intel_hedt_cpu(self, cpu_codename):
-        return not self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, start=22) is None and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
+    def is_intel_hedt_cpu(self, processor_name, cpu_codename):
+        return cpu_codename in cpu_data.IntelCPUGenerations[22:] and (cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX")) or not (cpu_codename in ("Arrandale", "Clarksfield", "Lynnfield", "Clarkdale") and "Xeon" not in processor_name))
     
     def get_kext_index(self, name):
         for index, kext in enumerate(self.kexts):
@@ -144,7 +144,7 @@ class KextMaestro:
         if "Laptop" in hardware_report.get("Motherboard").get("Platform") and ("ASUS" in hardware_report.get("Motherboard").get("Name") or "NootedRed" in selected_kexts):
             selected_kexts.append("ForgedInvariant")
 
-        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename")):
+        if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")):
             selected_kexts.append("CpuTscSync")
 
         if needs_oclp:

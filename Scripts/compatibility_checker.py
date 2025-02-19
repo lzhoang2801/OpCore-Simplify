@@ -75,8 +75,10 @@ class CompatibilityChecker:
             ocl_patched_max_version = max_version
             ocl_patched_min_version = "20.0.0"
 
-            if "Intel" in gpu_manufacturer:               
-                if device_id.startswith("01") and not device_id[-2] in ("5", "6") and not device_id in ("0102", "0106", "010A"):
+            if "Intel" in gpu_manufacturer:
+                if device_id.startswith(("0042", "0046")) and self.hardware_report.get("Motherboard").get("Platform") != "Desktop":
+                    max_version = "17.99.99"
+                elif device_id.startswith("01") and not device_id[-2] in ("5", "6") and not device_id in ("0102", "0106", "010A"):
                     max_version = "17.99.99"
                 elif device_id.startswith("01") and not device_id in ("0152", "0156"):
                     max_version = "20.99.99"

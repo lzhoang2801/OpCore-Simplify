@@ -69,7 +69,10 @@ class ConfigProdigy:
 
         device_id = integrated_gpu[1].get("Device ID")[5:]
 
-        if device_id.startswith("01") and not device_id[-2] in ("5", "6"):
+        if device_id.startswith(("0042", "0046")):
+            igpu_properties["framebuffer-patch-enable"] = "01000000"
+            igpu_properties["framebuffer-singlelink"] = "01000000"
+        elif device_id.startswith("01") and not device_id[-2] in ("5", "6"):
             native_supported_ids = ("0106", "1106", "1601", "0116", "0126", "0102")
             if not device_id in native_supported_ids:
                 igpu_properties["device-id"] = "26010000"
@@ -356,15 +359,15 @@ class ConfigProdigy:
     def is_low_end_haswell_plus(self, processor_name, cpu_codename):
         return self.is_low_end_intel_cpu(processor_name) and cpu_codename in cpu_data.IntelCPUGenerations[:39]
 
-    def is_intel_hedt_cpu(self, cpu_codename):
-        return cpu_codename in cpu_data.IntelCPUGenerations[22:] and cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
+    def is_intel_hedt_cpu(self, processor_name, cpu_codename):
+        return cpu_codename in cpu_data.IntelCPUGenerations[22:] and (cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX")) or not (cpu_codename in ("Arrandale", "Clarksfield", "Lynnfield", "Clarkdale") and "Xeon" not in processor_name))
             
     def spoof_cpuid(self, processor_name, cpu_codename, macos_version):
         if self.is_low_end_haswell_plus(processor_name, cpu_codename):
             return self.cpuids.get("Ivy Bridge")
-        elif "Haswell" in cpu_codename and self.is_intel_hedt_cpu(cpu_codename):
+        elif "Haswell" in cpu_codename and self.is_intel_hedt_cpu(processor_name, cpu_codename):
             return self.cpuids.get("Haswell")
-        elif "Broadwell" in cpu_codename and self.is_intel_hedt_cpu(cpu_codename):
+        elif "Broadwell" in cpu_codename and self.is_intel_hedt_cpu(processor_name, cpu_codename):
             return self.cpuids.get("Broadwell")
         elif "Ice Lake" not in cpu_codename and self.utils.contains_any(cpu_data.IntelCPUGenerations, cpu_codename, end=11):
             if not "Comet Lake" in cpu_codename:
@@ -435,7 +438,7 @@ class ConfigProdigy:
             "keepsyms=1"
         ]
 
-        if not resize_bar and ("AMD" in hardware_report.get("CPU").get("Manufacturer") or self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Codename"))):
+        if not resize_bar and ("AMD" in hardware_report.get("CPU").get("Manufacturer") or self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename"))):
             boot_args.append("npci=0x2000")
 
         for kext in kexts:
@@ -521,16 +524,20 @@ class ConfigProdigy:
         else:
             return "FF030000"
         
-    def load_drivers(self):
+    def load_drivers(self, firmware_type, cpu_codename):
         uefi_drivers = []
+        required_drivers = ["HfsPlus.efi" if not cpu_codename in cpu_data.IntelCPUGenerations[41:] else "HfsPlusLegacy.efi", "OpenCanopy.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"]
+        
+        if firmware_type == "Legacy":
+            required_drivers.append("OpenUsbKbDxe.efi")
 
-        for driver_path in ("HfsPlus.efi", "OpenCanopy.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"):
+        for driver in required_drivers:
             uefi_drivers.append({
                 "Arguments": "",
                 "Comment": "",
                 "Enabled": True,
                 "LoadEarly": False,
-                "Path": driver_path
+                "Path": driver
             })
         
         return uefi_drivers
@@ -543,17 +550,21 @@ class ConfigProdigy:
 
         config["Booter"]["MmioWhitelist"] = self.mmio_whitelist(hardware_report.get("Motherboard").get("Chipset"))
         config["Booter"]["Patch"] = self.add_booter_patch(smbios_model, macos_version)
+        config["Booter"]["Quirks"]["AvoidRuntimeDefrag"] = not (hardware_report.get("BIOS").get("Firmware Type") == "Legacy" and self.utils.parse_darwin_version(macos_version) != self.utils.parse_darwin_version("20.0.0"))
         config["Booter"]["Quirks"]["DevirtualiseMmio"] = len(config["Booter"]["MmioWhitelist"]) != 0 or \
             hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[101:] + chipset_data.IntelChipsets[79:89] or \
             hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[93:101] and ("Desktop" in hardware_report.get("Motherboard").get("Platform") or not "-8" in hardware_report.get("CPU").get("Processor Name")) or \
             hardware_report.get("Motherboard").get("Chipset") == chipset_data.AMDChipsets[16]
-        config["Booter"]["Quirks"]["EnableWriteUnprotector"] = not ("AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[79:89] + chipset_data.IntelChipsets[101:])
+        config["Booter"]["Quirks"]["EnableSafeModeSlide"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI"
+        config["Booter"]["Quirks"]["EnableWriteUnprotector"] = not (hardware_report.get("BIOS").get("Firmware Type") == "Legacy" or "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[79:89] + chipset_data.IntelChipsets[101:])
         config["Booter"]["Quirks"]["ProtectMemoryRegions"] = "GOOGLE" in hardware_report.get("Motherboard").get("Name") or any(device_props.get("Device ID") in pci_data.ChromebookIDs and device_props.get("Subsystem ID") in pci_data.ChromebookIDs[device_props.get("Device ID")] for device_props in hardware_report.get("System Devices", {}).values())
+        config["Booter"]["Quirks"]["FixupAppleEfiImages"] = not (hardware_report.get("BIOS").get("Firmware Type") == "Legacy" and self.utils.parse_darwin_version("17.0.0") < self.utils.parse_darwin_version(macos_version))
         config["Booter"]["Quirks"]["ProtectUefiServices"] = hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[101:] or \
             hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[93:101] and (not "-8" in hardware_report.get("CPU").get("Processor Name") or hardware_report.get("Motherboard").get("Chipset") == chipset_data.IntelChipsets[98])
-        config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"]
+        config["Booter"]["Quirks"]["ProvideCustomSlide"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI"
+        config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"] if hardware_report.get("CPU").get("Codename") not in cpu_data.IntelCPUGenerations[-11:] else self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("10.0.0")
         config["Booter"]["Quirks"]["ResizeAppleGpuBars"] = 0 if any(gpu_props.get("Resizable BAR", "Disabled") == "Enabled" for gpu_name, gpu_props in hardware_report.get("GPU", {}).items()) else -1
-        config["Booter"]["Quirks"]["SetupVirtualMap"] = not hardware_report.get("Motherboard").get("Chipset") in chipset_data.AMDChipsets[11:17] + chipset_data.IntelChipsets[79:89]
+        config["Booter"]["Quirks"]["SetupVirtualMap"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI" and not hardware_report.get("Motherboard").get("Chipset") in chipset_data.AMDChipsets[11:17] + chipset_data.IntelChipsets[79:89]
         config["Booter"]["Quirks"]["SyncRuntimePermissions"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[79:89] + chipset_data.IntelChipsets[93:]
 
         config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, unsupported_devices, macos_version, kexts)
@@ -579,9 +590,9 @@ class ConfigProdigy:
             hardware_report.get("Network", {}),
             kexts
         )
-        config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = bool(self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=39))
+        config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[39:]
         config["Kernel"]["Quirks"]["AppleXcpmCfgLock"] = False if "AMD" in hardware_report.get("CPU").get("Manufacturer") else not config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"]
-        config["Kernel"]["Quirks"]["AppleXcpmExtraMsrs"] = "-E" in hardware_report.get("CPU").get("Codename") and hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[27:]
+        config["Kernel"]["Quirks"]["AppleXcpmExtraMsrs"] = self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")) and hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[27:]
         config["Kernel"]["Quirks"]["AppleXcpmForceBoost"] = hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:1]
         config["Kernel"]["Quirks"]["CustomSMBIOSGuid"] = True
         config["Kernel"]["Quirks"]["DisableIoMapper"] = not "AMD" in hardware_report.get("CPU").get("Manufacturer")
@@ -615,7 +626,8 @@ class ConfigProdigy:
         config["PlatformInfo"]["UpdateSMBIOSMode"] = "Custom"
 
         config["UEFI"]["APFS"]["MinDate"] = config["UEFI"]["APFS"]["MinVersion"] = -1
-        config["UEFI"]["Drivers"] = self.load_drivers()
+        config["UEFI"]["Drivers"] = self.load_drivers(hardware_report.get("BIOS").get("Firmware Type"), hardware_report.get("CPU").get("Codename"))
+        config["UEFI"]["Input"]["KeySupport"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI"
         config["UEFI"]["Quirks"]["ForceOcWriteFlash"] = any(device_props.get("Device ID") in pci_data.ThinkPadTWX30IDs and device_props.get("Subsystem ID") in pci_data.ThinkPadTWX30IDs[device_props.get("Device ID")] for device_props in hardware_report.get("System Devices", {}).values())
         config["UEFI"]["Quirks"]["EnableVectorAcceleration"] = not hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:3]
         config["UEFI"]["Quirks"]["IgnoreInvalidFlexRatio"] = hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[27:]

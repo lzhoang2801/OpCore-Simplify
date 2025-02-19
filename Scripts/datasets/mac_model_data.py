@@ -11,6 +11,9 @@ class MacDevice:
 
 mac_devices = [
     # iMac Models
+    MacDevice("iMac11,1", "i7-860", "Lynnfield", "ATI Radeon HD 4850", "10.2.0", "17.99.99"),
+    MacDevice("iMac11,2", "i5-680", "Clarkdale", "ATI Radeon HD 4670", "10.3.0", "17.99.99"),
+    MacDevice("iMac11,3", "i7-870", "Clarkdale", "ATI Radeon HD 5670", "10.3.0", "17.99.99"),
     MacDevice("iMac12,1", "i5-2400S", "Sandy Bridge", "AMD Radeon HD 6750M", "10.6.0", "17.99.99"),
     MacDevice("iMac12,2", "i7-2600", "Sandy Bridge", "AMD Radeon HD 6770M", "10.6.0", "17.99.99"),
     MacDevice("iMac13,1", "i7-3770S", "Ivy Bridge", "NVIDIA GeForce GT 640M", "12.2.0", "19.99.99"),
@@ -48,6 +51,8 @@ mac_devices = [
     MacDevice("MacBookAir8,2", "i5-8210Y", "Amber Lake", None, "18.6.0"),
     MacDevice("MacBookAir9,1", "i3-1000NG4", "Ice Lake", None, "19.4.0"),
     # MacBookPro Models
+    MacDevice("MacBookPro6,1", "i7-640M", "Arrandale", "NVIDIA GeForce GT 330M", "10.3.0", "17.99.99"),
+    MacDevice("MacBookPro6,2", "i7-640M", "Arrandale", "NVIDIA GeForce GT 330M", "10.3.0", "17.99.99"),
     MacDevice("MacBookPro8,1", "i5-2415M", "Sandy Bridge", None, "10.6.0", "17.99.99"),
     MacDevice("MacBookPro8,2", "i7-2675QM", "Sandy Bridge", "AMD Radeon HD 6490M", "10.6.0", "17.99.99"),
     MacDevice("MacBookPro8,3", "i7-2820QM", "Sandy Bridge", "AMD Radeon HD 6750M", "10.6.0", "17.99.99"),
@@ -86,7 +91,8 @@ mac_devices = [
     # iMacPro Models
     MacDevice("iMacPro1,1", "W-2140B", "Skylake-W", "AMD Radeon RX Vega 56", "17.3.0"),
     # MacPro Models
-    MacDevice("MacPro6,1", "E5-1620 v2", "Ivy Bridge EP", "AMD FirePro D300", "10.9.1", "21.99.99"),
+    MacDevice("MacPro5,1", "X5675 x2", "Nehalem/Westmere", "ATI Radeon HD 5770", "10.4.0", "18.99.99"),
+    MacDevice("MacPro6,1", "E5-1620 v2", "Ivy Bridge EP", "AMD FirePro D300", "13.0.0", "21.99.99"),
     MacDevice("MacPro7,1", "W-3245M", "Cascade Lake-W", "AMD Radeon Pro 580X", "19.0.0")
 ]
 
