@@ -3056,9 +3056,14 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=27):
             selected_patches.append("FixHPET")
 
-        if hardware_report.get("Intel MEI"):
-            if  "Sandy Bridge" in hardware_report.get("CPU").get("Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1E3A" or \
-                "Ivy Bridge" in hardware_report.get("CPU").get("Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1C3A":
+        for device_name, device_info in hardware_report.get("System Devices", {}).items():
+            device_id = device_info.get("Device ID")
+
+            if not device_id in ("8086-1C3A", "8086-1E3A"):
+                continue
+            
+            if  "Sandy Bridge" in hardware_report.get("CPU").get("Codename") and device_id in "8086-1E3A" or \
+                "Ivy Bridge" in hardware_report.get("CPU").get("Codename") and device_id in "8086-1C3A":
                 selected_patches.append("IMEI")
 
         if hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[100:112]:

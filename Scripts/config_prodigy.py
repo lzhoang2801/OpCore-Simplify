@@ -268,12 +268,16 @@ class ConfigProdigy:
                                 ))
                                 if deviceproperties_add[gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")]:
                                     if gpu_info.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
-                                        intel_mei = next((device_props for device_name, device_props in hardware_report.get("System Devices").items() if "HECI" in device_name or "Management Engine Interface" in device_name), None)
-                                        if intel_mei:
-                                            if "Sandy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1E3A":
-                                                add_device_property(intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1C0000"})
-                                            elif "Ivy Bridge" in gpu_info.get("Codename") and intel_mei.get("Device ID") in "8086-1C3A":
-                                                add_device_property(intel_mei.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1E0000"})
+                                        for device_name, device_info in hardware_report.get("System Devices", {}).items():
+                                            device_id = device_info.get("Device ID")
+
+                                            if not device_id in ("8086-1C3A", "8086-1E3A"):
+                                                continue
+
+                                            if "Sandy Bridge" in gpu_info.get("Codename") and device_id in "8086-1E3A":
+                                                add_device_property(device_info.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1C0000"})
+                                            elif "Ivy Bridge" in gpu_info.get("Codename") and device_id in "8086-1C3A":
+                                                add_device_property(device_info.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1E0000"})
                         elif gpu_info.get("Device Type") == "Discrete GPU":
                             discrete_gpu = gpu_info
 
