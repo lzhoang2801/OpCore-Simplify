@@ -1909,11 +1909,10 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "DGPU", 0x00000000)
         
                 ssdt_content += """\n        }\n    }\n}"""
 
-            elif "Network" in device_name and device_props.get("Bus Type") == "PCI" and \
-                (not device_props.get("Device ID") in pci_data.NetworkIDs or 20 < pci_data.NetworkIDs.index(device_props.get("Device ID")) < 108 ):
-                ssdt_name = "SSDT-Disable_WiFi_{}".format(device_props.get("ACPI Path").split(".")[2])
+            elif "Network" in device_name and device_props.get("Bus Type") == "PCI":
+                ssdt_name = "SSDT-Disable_Network_{}".format(device_props.get("ACPI Path").split(".")[2])
                 ssdt_content = """
-DefinitionBlock ("", "SSDT", 2, "ZPSS", "DWIFI", 0x00000000)
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "DNET", 0x00000000)
 {
     External ([[DevicePath]], DeviceObj)
 
@@ -3074,7 +3073,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         else:
             selected_patches.append("PLUG")
 
-        if not any(network_props.get("Device ID") in pci_data.NetworkIDs[108:326] for network_props in hardware_report.get("Network", {}).values()):
+        if not any(network_props.get("Device ID") in pci_data.WirelessCardIDs + pci_data.EthernetIDs for network_props in hardware_report.get("Network", {}).values()):
             selected_patches.append("RMNE")
 
         if hardware_report.get("Motherboard").get("Chipset") in ("C610/X99", "Wellsburg", "X299"):

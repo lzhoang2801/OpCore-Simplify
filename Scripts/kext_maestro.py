@@ -55,7 +55,7 @@ class KextMaestro:
             elif match_key == "IONameMatch":
                 for pci_id in properties[match_key]:
                     vendor_id = pci_id[3:7]
-                    device_id = pci_id[-4:]
+                    device_id = pci_id.split(",")[1].zfill(4)
                     pci_ids.append("{}-{}".format(vendor_id, device_id).upper())
             elif match_key == "idProduct":
                 vendor_id = self.utils.int_to_hex(properties["idVendor"]).zfill(4)
@@ -154,41 +154,36 @@ class KextMaestro:
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
-            try:
-                device_index = pci_data.NetworkIDs.index(device_id)
-            except:
-                continue
+            ethernet_device = ethernet_device or device_id in pci_data.EthernetIDs
 
-            ethernet_device = ethernet_device or 107 < device_index < 326
-
-            if device_index < 21 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
+            if device_id in pci_data.BroadcomWiFiIDs and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                 selected_kexts.append("IOSkywalkFamily")
 
-            if device_index < 15:
+            if device_id in pci_data.BroadcomWiFiIDs[:15]:
                 selected_kexts.append("AirportBrcmFixup")
-            elif device_index == 15 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
+            elif device_id == pci_data.BroadcomWiFiIDs[15] and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
                 selected_kexts.append("AirportBrcmFixup")
-            elif 15 < device_index < 18 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
+            elif device_id in pci_data.BroadcomWiFiIDs[16:18] and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
                 selected_kexts.append("AirportBrcmFixup")
-            elif 20 < device_index < 108:
+            elif device_id in pci_data.IntelWiFiIDs:
                 selected_kexts.append("AirportItlwm" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "itlwm")
-            elif 107 < device_index < 115:
+            elif device_id in pci_data.IntelI22XIDs:
                 selected_kexts.append("AppleIGC")
-            elif 114 < device_index < 122:
+            elif device_id in pci_data.AtherosE2200IDs:
                 selected_kexts.append("AtherosE2200Ethernet")
-            elif 121 < device_index < 183:
+            elif device_id in pci_data.IntelMausiIDs:
                 selected_kexts.append("IntelMausiEthernet")
-            elif 182 < device_index < 186:
+            elif device_id in pci_data.RealtekRTL8125IDs:
                 selected_kexts.append("LucyRTL8125Ethernet")
-            elif device_index == 186:
+            elif device_id in pci_data.RealtekRTL8100IDs:
                 selected_kexts.append("RealtekRTL8100")
-            elif 186 < device_index < 191:
+            elif device_id in pci_data.RealtekRTL8111IDs:
                 selected_kexts.append("RealtekRTL8111")
-            elif 190 < device_index < 229:
+            elif device_id in pci_data.AppleIGBIDs:
                 selected_kexts.append("AppleIGB")
-            elif 228 < device_index < 263:
+            elif device_id in pci_data.BroadcomBCM57XXIDs:
                 selected_kexts.append("CatalinaBCM5701Ethernet")
-            elif 279 < device_index < 326:
+            elif device_id in pci_data.IntelX500IDs:
                 selected_kexts.append("IntelLucy")
 
         if not ethernet_device:

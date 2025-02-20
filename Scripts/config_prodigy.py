@@ -253,7 +253,7 @@ class ConfigProdigy:
                     for network_name, network_props in hardware_report.get("Network", {}).items():
                         device_id = network_props.get("Device ID")
 
-                        if device_id in pci_data.NetworkIDs[21:108] and network_props.get("PCI Path"):
+                        if device_id in pci_data.IntelWiFiIDs and network_props.get("PCI Path"):
                             add_device_property(network_props.get("PCI Path"), {"IOName": "pci14e4,43a0"})
                 elif kext.name == "WhateverGreen":
                     discrete_gpu = None
@@ -308,19 +308,16 @@ class ConfigProdigy:
         for network_name, network_props in network_items:
             device_id = network_props.get("Device ID")
 
-            try:
-                device_index = pci_data.NetworkIDs.index(device_id)
-            except:
-                continue
-
-            if device_index < 18:
-                add_device_property(network_props.get("PCI Path"), {"IOName": "pci14e4,43a0"})
-            elif 228 < device_index < 258:
+            if device_id in pci_data.BroadcomWiFiIDs[:18]:
+                add_device_property(network_props.get("PCI Path"), {
+                    "IOName": "pci14e4,43a0"
+                })
+            elif device_id in pci_data.BroadcomBCM57XXIDs[:-5]:
                 add_device_property(network_props.get("PCI Path"), {
                     "IOName": "pci14e4,16b4",
                     "device-id": self.utils.hex_to_bytes("B4160000")
                 })
-            elif 277 < device_index < 280:
+            elif device_id in pci_data.AquantiaAqtionIDs[:2]:
                 add_device_property(network_props.get("PCI Path"), {
                     "IOName": "1D6A-91B1"
                 })
@@ -387,7 +384,7 @@ class ConfigProdigy:
         if "AMD" in cpu_manufacturer:
             kernel_patch.extend(self.g.get_kernel_patches("AMD Vanilla Patches", self.g.amd_vanilla_patches_url))
 
-        if any(network_props.get("Device ID") in pci_data.NetworkIDs[263:280] for network_props in networks.values()):
+        if any(network_props.get("Device ID") in pci_data.AquantiaAqtionIDs for network_props in networks.values()):
             kernel_patch.extend(self.g.get_kernel_patches("Aquantia macOS Patches", self.g.aquantia_macos_patches_url))
 
         for kext in kexts:
@@ -601,7 +598,7 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["CustomSMBIOSGuid"] = True
         config["Kernel"]["Quirks"]["DisableIoMapper"] = not "AMD" in hardware_report.get("CPU").get("Manufacturer")
         config["Kernel"]["Quirks"]["DisableRtcChecksum"] = "ASUS" in hardware_report.get("Motherboard").get("Name") or "HP " in hardware_report.get("Motherboard").get("Name")
-        config["Kernel"]["Quirks"]["ForceAquantiaEthernet"] = any(network_props.get("Device ID") in pci_data.NetworkIDs[263:280] for network_props in hardware_report.get("Network", {}).values())
+        config["Kernel"]["Quirks"]["ForceAquantiaEthernet"] = any(network_props.get("Device ID") in pci_data.AquantiaAqtionIDs for network_props in hardware_report.get("Network", {}).values())
         config["Kernel"]["Quirks"]["LapicKernelPanic"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["Kernel"]["Quirks"]["PanicNoKextDump"] = config["Kernel"]["Quirks"]["PowerTimeoutKernelPanic"] = True
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[1:3]

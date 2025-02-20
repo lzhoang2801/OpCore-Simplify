@@ -220,45 +220,45 @@ class CompatibilityChecker:
             print("{}- {}: {}".format(" "*3, biometric_device, self.show_macos_compatibility(biometric_props.get("Compatibility"))))
 
     def check_network_compatibility(self):
-        primary_wifi_device = next((device_props.get("Device ID") for device_name, device_props in self.hardware_report.get("Network", {}).items() if device_props.get("Device ID") in pci_data.NetworkIDs and pci_data.NetworkIDs.index(device_props.get("Device ID")) < 21), None)
+        primary_wifi_device = next((device_props.get("Device ID") for device_name, device_props in self.hardware_report.get("Network", {}).items() if device_props.get("Device ID") in pci_data.BroadcomWiFiIDs), None)
         if not primary_wifi_device:
-            primary_wifi_device = next((device_props.get("Device ID") for device_name, device_props in self.hardware_report.get("Network", {}).items() if device_props.get("Device ID") in pci_data.NetworkIDs and pci_data.NetworkIDs.index(device_props.get("Device ID")) < 108), None)
+            primary_wifi_device = next((device_props.get("Device ID") for device_name, device_props in self.hardware_report.get("Network", {}).items() if device_props.get("Device ID") in pci_data.IntelWiFiIDs), None)
+            if not primary_wifi_device:
+                primary_wifi_device = next((device_props.get("Device ID") for device_name, device_props in self.hardware_report.get("Network", {}).items() if device_props.get("Device ID") in pci_data.AtherosWiFiIDs), None)
 
         for device_name, device_props in self.hardware_report.get("Network", {}).items():
             bus_type = device_props.get("Bus Type")
             device_id = device_props.get("Device ID")
             
-            try:
-                device_index = pci_data.NetworkIDs.index(device_id)
+            max_version = os_data.get_latest_darwin_version()
+            min_version = os_data.get_lowest_darwin_version()
+            ocl_patched_max_version = max_version
+            ocl_patched_min_version = "20.0.0"
 
-                max_version = os_data.get_latest_darwin_version()
-                min_version = os_data.get_lowest_darwin_version()
-                ocl_patched_max_version = max_version
-                ocl_patched_min_version = "20.0.0"
+            if device_id in pci_data.BroadcomWiFiIDs:
+                device_index = pci_data.BroadcomWiFiIDs.index(device_id)
 
-                if 109 < device_index < 115:
-                    min_version = "19.0.0"
+                if device_index == 13 or 17 < device_index < 21:
+                    max_version = "22.99.99"
+                    ocl_patched_min_version = "23.0.0"
+                elif device_index < 12:
+                    max_version = "17.99.99"
+            elif device_id in pci_data.AtherosWiFiIDs:
+                max_version = "17.99.99"
+            elif device_id in pci_data.IntelI22XIDs:
+                min_version = "19.0.0"
+            elif device_id in pci_data.AquantiaAqtionIDs:
+                min_version = "21.0.0"
 
-                if 262 < device_index < 280:
-                    min_version = "21.0.0"
-
-                if pci_data.NetworkIDs.index(device_id) < 108:
-                    if device_id == primary_wifi_device:
-                        if device_index == 13 or 17 < device_index < 21:
-                            max_version = "22.99.99"
-                            ocl_patched_min_version = "23.0.0"
-                        elif device_index < 12:
-                            max_version = "17.99.99"
-
-                        if device_index < 21:
-                            device_props["OCLP Compatibility"] = (ocl_patched_max_version, ocl_patched_min_version)
-                            self.ocl_patched_macos_version = (ocl_patched_max_version, self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) < self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[-1]) else device_props.get("OCLP Compatibility")[-1])
-                        device_props["Compatibility"] = (max_version, min_version)
-                        primary_wifi_device = None
-                else:
+            if device_id in pci_data.WirelessCardIDs:
+                if device_id == primary_wifi_device:
+                    if not device_id in pci_data.IntelWiFiIDs:
+                        device_props["OCLP Compatibility"] = (ocl_patched_max_version, ocl_patched_min_version)
+                        self.ocl_patched_macos_version = (ocl_patched_max_version, self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) < self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[-1]) else device_props.get("OCLP Compatibility")[-1])
                     device_props["Compatibility"] = (max_version, min_version)
-            except:
-                pass
+                    primary_wifi_device = None
+            elif device_id in pci_data.EthernetIDs + pci_data.WirelessUSBIDs:
+                device_props["Compatibility"] = (max_version, min_version)
 
             if bus_type.startswith("PCI") and not device_props.get("Compatibility"):
                 device_props["Compatibility"] = (None, None)
