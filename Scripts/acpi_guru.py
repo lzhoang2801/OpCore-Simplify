@@ -3061,7 +3061,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
                 "Ivy Bridge" in hardware_report.get("CPU").get("Codename") and hardware_report.get("Intel MEI").get("Device ID") in "8086-1C3A":
                 selected_patches.append("IMEI")
 
-        if self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Chipset"), start=89, end=101):
+        if hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[100:112]:
             selected_patches.append("PMC")
 
         if "Sandy Bridge" in hardware_report.get("CPU").get("Codename") or "Ivy Bridge" in hardware_report.get("CPU").get("Codename"):
@@ -3089,7 +3089,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if hardware_report.get("Motherboard").get("Chipset") in ("C600/X79", "C610/X99", "Wellsburg"):
             selected_patches.append("UNC")
         
-        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.utils.contains_any(chipset_data.IntelChipsets, hardware_report.get("Motherboard").get("Chipset"), start=101):
+        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[112:]:
             selected_patches.append("USB Reset")
 
         selected_patches.append("USBX")

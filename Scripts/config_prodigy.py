@@ -552,20 +552,20 @@ class ConfigProdigy:
         config["Booter"]["Patch"] = self.add_booter_patch(smbios_model, macos_version)
         config["Booter"]["Quirks"]["AvoidRuntimeDefrag"] = not (hardware_report.get("BIOS").get("Firmware Type") == "Legacy" and self.utils.parse_darwin_version(macos_version) != self.utils.parse_darwin_version("20.0.0"))
         config["Booter"]["Quirks"]["DevirtualiseMmio"] = len(config["Booter"]["MmioWhitelist"]) != 0 or \
-            hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[101:] + chipset_data.IntelChipsets[79:89] or \
-            hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[93:101] and ("Desktop" in hardware_report.get("Motherboard").get("Platform") or not "-8" in hardware_report.get("CPU").get("Processor Name")) or \
+            hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[112:] + chipset_data.IntelChipsets[90:100] or \
+            hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[104:112] and ("Desktop" in hardware_report.get("Motherboard").get("Platform") or not "-8" in hardware_report.get("CPU").get("Processor Name")) or \
             hardware_report.get("Motherboard").get("Chipset") == chipset_data.AMDChipsets[16]
         config["Booter"]["Quirks"]["EnableSafeModeSlide"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI"
-        config["Booter"]["Quirks"]["EnableWriteUnprotector"] = not (hardware_report.get("BIOS").get("Firmware Type") == "Legacy" or "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[79:89] + chipset_data.IntelChipsets[101:])
+        config["Booter"]["Quirks"]["EnableWriteUnprotector"] = not (hardware_report.get("BIOS").get("Firmware Type") == "Legacy" or "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[90:100] + chipset_data.IntelChipsets[112:])
         config["Booter"]["Quirks"]["ProtectMemoryRegions"] = "GOOGLE" in hardware_report.get("Motherboard").get("Name") or any(device_props.get("Device ID") in pci_data.ChromebookIDs and device_props.get("Subsystem ID") in pci_data.ChromebookIDs[device_props.get("Device ID")] for device_props in hardware_report.get("System Devices", {}).values())
         config["Booter"]["Quirks"]["FixupAppleEfiImages"] = not (hardware_report.get("BIOS").get("Firmware Type") == "Legacy" and self.utils.parse_darwin_version("17.0.0") < self.utils.parse_darwin_version(macos_version))
-        config["Booter"]["Quirks"]["ProtectUefiServices"] = hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[101:] or \
-            hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[93:101] and (not "-8" in hardware_report.get("CPU").get("Processor Name") or hardware_report.get("Motherboard").get("Chipset") == chipset_data.IntelChipsets[98])
+        config["Booter"]["Quirks"]["ProtectUefiServices"] = hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[112:] or \
+            hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[104:112] and (not "-8" in hardware_report.get("CPU").get("Processor Name") or hardware_report.get("Motherboard").get("Chipset") == chipset_data.IntelChipsets[109])
         config["Booter"]["Quirks"]["ProvideCustomSlide"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI"
         config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = not config["Booter"]["Quirks"]["EnableWriteUnprotector"] if hardware_report.get("CPU").get("Codename") not in cpu_data.IntelCPUGenerations[-11:] else self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("10.0.0")
         config["Booter"]["Quirks"]["ResizeAppleGpuBars"] = 0 if any(gpu_props.get("Resizable BAR", "Disabled") == "Enabled" for gpu_name, gpu_props in hardware_report.get("GPU", {}).items()) else -1
-        config["Booter"]["Quirks"]["SetupVirtualMap"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI" and not hardware_report.get("Motherboard").get("Chipset") in chipset_data.AMDChipsets[11:17] + chipset_data.IntelChipsets[79:89]
-        config["Booter"]["Quirks"]["SyncRuntimePermissions"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[79:89] + chipset_data.IntelChipsets[93:]
+        config["Booter"]["Quirks"]["SetupVirtualMap"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI" and not hardware_report.get("Motherboard").get("Chipset") in chipset_data.AMDChipsets[11:17] + chipset_data.IntelChipsets[90:100]
+        config["Booter"]["Quirks"]["SyncRuntimePermissions"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[90:100] + chipset_data.IntelChipsets[104:]
 
         config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, unsupported_devices, macos_version, kexts)
 

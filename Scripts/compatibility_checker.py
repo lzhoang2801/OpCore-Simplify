@@ -91,7 +91,7 @@ class CompatibilityChecker:
                 else:
                     max_version = min_version = None
 
-                if self.is_low_end_intel_cpu(self.hardware_report.get("CPU").get("Processor Name")) or self.utils.contains_any(chipset_data.IntelChipsets, self.hardware_report.get("Motherboard").get("Chipset"), start=116, end=130):
+                if self.is_low_end_intel_cpu(self.hardware_report.get("CPU").get("Processor Name")) or self.hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[127:141]:
                     max_version = min_version = None
             elif "AMD" in gpu_manufacturer:
                 if "Navi 2" in gpu_codename:
