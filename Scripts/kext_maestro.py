@@ -167,6 +167,10 @@ class KextMaestro:
                 selected_kexts.append("AirportBrcmFixup")
             elif device_id in pci_data.IntelWiFiIDs:
                 selected_kexts.append("AirportItlwm" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "itlwm")
+            elif device_id in pci_data.AtherosWiFiIDs[:8]:
+                selected_kexts.append("corecaptureElCap")
+                if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.99.99"):
+                    selected_kexts.append("AMFIPass")
             elif device_id in pci_data.IntelI22XIDs:
                 selected_kexts.append("AppleIGC")
             elif device_id in pci_data.AtherosE2200IDs:
@@ -192,13 +196,14 @@ class KextMaestro:
         for bluetooth_name, bluetooth_props in hardware_report.get("Bluetooth", {}).items():
             usb_id = bluetooth_props.get("Device ID")
 
-            if usb_id in pci_data.BluetoothIDs:               
-                if pci_data.BluetoothIDs.index(usb_id) < 99:
-                    selected_kexts.append("BrcmFirmwareData")
-                if pci_data.BluetoothIDs[-1] == usb_id:
-                    selected_kexts.append("BlueToolFixup")
-                else:
-                    selected_kexts.append("IntelBluetoothFirmware")
+            if usb_id in pci_data.AtherosBluetoothIDs:
+                selected_kexts.extend(("Ath3kBT", "Ath3kBTInjector"))
+            elif usb_id in pci_data.BroadcomBluetoothIDs:               
+                selected_kexts.append("BrcmFirmwareData")
+            elif usb_id in pci_data.IntelBluetoothIDs:
+                selected_kexts.append("IntelBluetoothFirmware")
+            elif usb_id in pci_data.BluetoothDongleIDs:
+                selected_kexts.append("BlueToolFixup")
 
         if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
             if "SURFACE" in hardware_report.get("Motherboard").get("Name"):
@@ -347,7 +352,12 @@ class KextMaestro:
         kernel_add = []
         unload_kext = []
 
-        if self.kexts[self.get_kext_index("VoodooSMBus")].checked:
+        if self.kexts[self.get_kext_index("IO80211ElCap")].checked:
+            unload_kext.extend((
+                "AirPortBrcm4331",
+                "AppleAirPortBrcm43224"
+            ))
+        elif self.kexts[self.get_kext_index("VoodooSMBus")].checked:
             unload_kext.append("VoodooPS2Mouse")
         elif self.kexts[self.get_kext_index("VoodooRMI")].checked:
             if not self.kexts[self.get_kext_index("VoodooI2C")].checked:

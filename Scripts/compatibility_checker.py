@@ -243,8 +243,10 @@ class CompatibilityChecker:
                     ocl_patched_min_version = "23.0.0"
                 elif device_index < 12:
                     max_version = "17.99.99"
-            elif device_id in pci_data.AtherosWiFiIDs:
+            elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 max_version = "17.99.99"
+            elif device_id in pci_data.AtherosWiFiIDs[8:]:
+                max_version = "20.99.99"
             elif device_id in pci_data.IntelI22XIDs:
                 min_version = "19.0.0"
             elif device_id in pci_data.AquantiaAqtionIDs:
@@ -252,7 +254,7 @@ class CompatibilityChecker:
 
             if device_id in pci_data.WirelessCardIDs:
                 if device_id == primary_wifi_device:
-                    if not device_id in pci_data.IntelWiFiIDs:
+                    if not device_id in pci_data.IntelWiFiIDs and not device_id in pci_data.AtherosWiFiIDs[8:]:
                         device_props["OCLP Compatibility"] = (ocl_patched_max_version, ocl_patched_min_version)
                         self.ocl_patched_macos_version = (ocl_patched_max_version, self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) < self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[-1]) else device_props.get("OCLP Compatibility")[-1])
                     device_props["Compatibility"] = (max_version, min_version)
@@ -290,6 +292,23 @@ class CompatibilityChecker:
         if all(controller_props.get("Compatibility") == (None, None) for controller_name, controller_props in self.hardware_report.get("Storage Controllers", {}).items()):
             self.utils.request_input("\n\nNo compatible storage for macOS was found!")
             self.utils.exit_program()
+
+    def check_bluetooth_compatibility(self):
+        for bluetooth_name, bluetooth_props in self.hardware_report.get("Bluetooth", {}).items():
+            device_id = bluetooth_props.get("Device ID")
+            
+            max_version = os_data.get_latest_darwin_version()
+            min_version = os_data.get_lowest_darwin_version()
+
+            if device_id in pci_data.BroadcomBluetoothIDs + pci_data.IntelBluetoothIDs + pci_data.BluetoothDongleIDs:
+                pass
+            elif device_id in pci_data.AtherosBluetoothIDs:
+                max_version = "20.99.99"
+            else:
+                max_version = min_version = None
+
+            bluetooth_props["Compatibility"] = (max_version, min_version)
+            print("{}- {}: {}".format(" "*3, bluetooth_name, self.show_macos_compatibility(bluetooth_props.get("Compatibility"))))
         
     def check_sd_controller_compatibility(self):
         for controller_name, controller_props in self.hardware_report.get("SD Controller", {}).items():
@@ -305,7 +324,7 @@ class CompatibilityChecker:
         needs_oclp = False
 
         for device_type, devices in self.hardware_report.items():
-            if device_type in ("Motherboard", "BIOS", "CPU", "USB Controllers", "Input", "Bluetooth", "System Devices"):
+            if device_type in ("Motherboard", "BIOS", "CPU", "USB Controllers", "Input", "System Devices"):
                 new_hardware_report[device_type] = devices
                 continue
 
@@ -350,6 +369,7 @@ class CompatibilityChecker:
             ('Biometric', self.check_biometric_compatibility),
             ('Network', self.check_network_compatibility),
             ('Storage Controllers', self.check_storage_compatibility),
+            ('Bluetooth', self.check_bluetooth_compatibility),
             ('SD Controller', self.check_sd_controller_compatibility)
         ]
 

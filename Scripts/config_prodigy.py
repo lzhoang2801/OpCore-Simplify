@@ -308,7 +308,12 @@ class ConfigProdigy:
         for network_name, network_props in network_items:
             device_id = network_props.get("Device ID")
 
-            if device_id in pci_data.BroadcomWiFiIDs[:18]:
+            if device_id in pci_data.AtherosWiFiIDs[6:8]:
+                add_device_property(network_props.get("PCI Path"), {
+                    "IOName": "pci168c,2a",
+                    "device-id": self.utils.hex_to_bytes("2A000000")
+                })
+            elif device_id in pci_data.BroadcomWiFiIDs[:18]:
                 add_device_property(network_props.get("PCI Path"), {
                     "IOName": "pci14e4,43a0"
                 })

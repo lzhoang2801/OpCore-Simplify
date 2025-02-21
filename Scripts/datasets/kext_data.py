@@ -157,8 +157,30 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "corecaptureElCap", 
+        description = "Enable legacy Qualcomm Atheros Wireless cards",
+        category = "Wi-Fi",
+        min_darwin_version = "18.0.0",
+        requires_kexts = ["IO80211ElCap"],
+        download_info = {
+            "id": 348147192, 
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Wifi/corecaptureElCap-v1.0.2.zip"
+        }
+    ),
+    KextInfo(
+        name = "IO80211ElCap", 
+        description = "Enable legacy Qualcomm Atheros Wireless cards",
+        category = "Wi-Fi",
+        min_darwin_version = "18.0.0",
+        requires_kexts = ["corecaptureElCap"],
+        download_info = {
+            "id": 128321732, 
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Wifi/IO80211ElCap-v2.0.1.zip"
+        }
+    ),
+    KextInfo(
         name = "IO80211FamilyLegacy", 
-        description = "Enable legacy native Apple Wireless adapters",
+        description = "Enable legacy Apple Wireless adapters",
         category = "Wi-Fi",
         min_darwin_version = "23.0.0",
         requires_kexts = ["AMFIPass", "IOSkywalkFamily"],
@@ -169,7 +191,7 @@ kexts = [
     ),
     KextInfo(
         name = "IOSkywalkFamily", 
-        description = "Enable legacy native Apple Wireless adapters",
+        description = "Enable legacy Apple Wireless adapters",
         category = "Wi-Fi",
         min_darwin_version = "23.0.0",
         requires_kexts = ["AMFIPass", "IO80211FamilyLegacy"],
@@ -186,6 +208,28 @@ kexts = [
         github_repo = {
             "owner": "OpenIntelWireless",
             "repo": "itlwm"
+        }
+    ),
+    KextInfo(
+        name = "Ath3kBT", 
+        description = "Uploads firmware to enable Atheros Bluetooth support",
+        category = "Bluetooth",
+        max_darwin_version = "20.99.99",
+        requires_kexts = ["Ath3kBTInjector"],
+        github_repo = {
+            "owner": "zxystd",
+            "repo": "AthBluetoothFirmware"
+        }
+    ),
+    KextInfo(
+        name = "Ath3kBTInjector", 
+        description = "Uploads firmware to enable Atheros Bluetooth support",
+        category = "Bluetooth",
+        max_darwin_version = "20.99.99",
+        requires_kexts = ["Ath3kBT"],
+        github_repo = {
+            "owner": "zxystd",
+            "repo": "AthBluetoothFirmware"
         }
     ),
     KextInfo(
