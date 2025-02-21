@@ -2882,7 +2882,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
             "Comment": "Delete {}".format(signature or oemtableid),
             "Enabled": True,
             "OemTableId": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("id"))),
-            "TableLength": 0,
+            "TableLength": table_data.get("length"),
             "TableSignature": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("signature")))
         }
 

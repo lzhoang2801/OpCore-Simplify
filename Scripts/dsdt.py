@@ -35,8 +35,8 @@ class DSDT:
                     os.path.dirname(os.path.realpath(__file__))
                 )
             raise Exception(exception)
-        self.allowed_signatures = ("APIC","DMAR","DSDT","SSDT")
-        self.mixed_listing      = ("DSDT","SSDT")
+        self.allowed_signatures = (b"APIC",b"DMAR",b"DSDT",b"SSDT")
+        self.mixed_listing      = (b"DSDT",b"SSDT")
         self.acpi_tables = {}
         # Setup regex matches
         self.hex_match  = re.compile(r"^\s*[0-9A-F]{4,}:(\s[0-9A-F]{2})+(\s+\/\/.*)?$")
@@ -51,7 +51,6 @@ class DSDT:
         with open(path,"rb") as f:
             try:
                 sig = f.read(4)
-                if 2/3!=0: sig = sig.decode()
                 return sig
             except:
                 pass
@@ -59,6 +58,22 @@ class DSDT:
 
     def table_is_valid(self, table_path, table_name = None):
         return self._table_signature(table_path,table_name=table_name) in self.allowed_signatures
+
+    def get_ascii_print(self, data):
+        # Helper to sanitize unprintable characters by replacing them with
+        # ? where needed
+        unprintables = False
+        ascii_string = ""
+        for b in data:
+            if not isinstance(b,int):
+                try: b = ord(b)
+                except: pass
+            if ord(" ") <= b < ord("~"):
+                ascii_string += chr(b)
+            else:
+                ascii_string += "?"
+                unprintables = True
+        return (unprintables,ascii_string)
 
     def load(self, table_path):
         # Attempt to load the passed file - or if a directory
@@ -192,15 +207,18 @@ class DSDT:
                     # 
                     target_files[file]["signature"] = table_bytes[0:4]
                     target_files[file]["revision"]  = table_bytes[8]
-                    target_files[file]["oem"]       = table_bytes[10:16].rstrip(b"\x00")
-                    target_files[file]["id"]        = table_bytes[16:24].rstrip(b"\x00")
+                    target_files[file]["oem"]       = table_bytes[10:16]
+                    target_files[file]["id"]        = table_bytes[16:24]
                     target_files[file]["oem_revision"] = int(binascii.hexlify(table_bytes[24:28][::-1]),16)
-                    # Cast as int on py2, and decode bytes to strings on py3
+                    target_files[file]["length"]    = len(table_bytes)
+                    # Get the printable versions of the sig, oem, and id as needed
+                    for key in ("signature","oem","id"):
+                        unprintable,ascii_string = self.get_ascii_print(target_files[file][key])
+                        if unprintable:
+                            target_files[file][key+"_ascii"] = ascii_string
+                    # Cast as int on py2, and try to decode bytes to strings on py3
                     if 2/3==0:
                         target_files[file]["revision"] = int(binascii.hexlify(target_files[file]["revision"]),16)
-                    else:
-                        for key in ("signature","oem","id"):
-                            target_files[file][key] = target_files[file][key].decode()
                 # The disassembler omits the last line of hex data in a mixed listing
                 # file... convenient.  However - we should be able to reconstruct this
                 # manually.
@@ -417,13 +435,21 @@ class DSDT:
     def get_hex_bytes(self, line):
         return binascii.unhexlify(line)
 
+    def get_str_bytes(self, value):
+        if 2/3!=0 and isinstance(value,str):
+            value = value.encode()
+        return value
+
     def get_table_with_id(self, table_id):
+        table_id = self.get_str_bytes(table_id)
         return next((v for k,v in self.acpi_tables.items() if table_id == v.get("id")),None)
 
     def get_table_with_signature(self, table_sig):
+        table_sig = self.get_str_bytes(table_sig)
         return next((v for k,v in self.acpi_tables.items() if table_sig == v.get("signature")),None)
     
     def get_table(self, table_id_or_sig):
+        table_id_or_sig = self.get_str_bytes(table_id_or_sig)
         return next((v for k,v in self.acpi_tables.items() if table_id_or_sig in (v.get("signature"),v.get("id"))),None)
 
     def get_dsdt(self):
@@ -668,7 +694,8 @@ class DSDT:
                 path = []
                 for p in _path[::-1]:
                     path.append(p[0])
-                    if p[0] in ("_SB","_SB_","_PR","_PR_") or p[0].startswith(("\\","_SB.","_SB_.","_PR.","_PR_.")):
+                    p_check = p[0].split(".")[0].rstrip("_")
+                    if p_check.startswith("\\") or p_check in ("_SB","_PR"):
                         # Fully qualified - bail here
                         break
                 path = ".".join(path[::-1]).split(".")
@@ -684,8 +711,9 @@ class DSDT:
                     path = new_path
                 if not path:
                     continue
-                path_str = ".".join(path)
-                path_str = "\\"+path_str if path_str[0] != "\\" else path_str
+                # Ensure we strip trailing underscores for consistency
+                padded_path = [("\\" if j==0 else"")+x.lstrip("\\").rstrip("_") for j,x in enumerate(path)]
+                path_str = ".".join(padded_path)
                 path_list.append((path_str,i,type_match.group("type")))
         return sorted(path_list)
 
@@ -693,9 +721,16 @@ class DSDT:
         if not table: table = self.get_dsdt_or_only()
         if not table: return []
         paths = []
+        # Remove trailing underscores and normalize case for all path
+        # elements passed
+        obj = ".".join([x.rstrip("_").upper() for x in obj.split(".")])
+        obj_type = obj_type.lower() if obj_type else obj_type
         for path in table.get("paths",[]):
-            if path[2].lower() == obj_type.lower() and path[0].upper().endswith(obj.upper()):
-                paths.append(path)
+            path_check = ".".join([x.rstrip("_").upper() for x in path[0].split(".")])
+            if (obj_type and obj_type != path[2].lower()) or not path_check.endswith(obj):
+                # Type or object mismatch - skip
+                continue
+            paths.append(path)
         return sorted(paths)
 
     def get_device_paths(self, obj="HPET",table=None):
@@ -713,21 +748,17 @@ class DSDT:
     def get_device_paths_with_hid(self, hid="ACPI000E", table=None):
         if not table: table = self.get_dsdt_or_only()
         if not table: return []
-        starting_indexes = []
-        for index,line in enumerate(table.get("lines","")):
-            if self.is_hex(line): continue
-            if hid.upper() in line.upper():
-                starting_indexes.append(index)
-        if not starting_indexes: return starting_indexes
+        devs = []
+        for p in table.get("paths",[]):
+            try:
+                if p[0].endswith("._HID") and hid.upper() in table.get("lines")[p[1]]:
+                    # Save the path, strip the ._HID from the end
+                    devs.append(p[0][:-len("._HID")])
+            except: continue
         devices = []
-        for i in starting_indexes:
-            # Walk backwards and get the next parent device
-            pad = len(table.get("lines","")[i]) - len(table.get("lines","")[i].lstrip(" "))
-            for sub,line in enumerate(table.get("lines","")[i::-1]):
-                if "Device (" in line and len(line)-len(line.lstrip(" ")) < pad:
-                    # Add it if it's already in our dsdt_paths - if not, add the current line
-                    device = next((x for x in table.get("paths",[]) if x[1]==i-sub),None)
-                    if device: devices.append(device)
-                    else: devices.append((line,i-sub))
-                    break
+        # Walk the paths again - and save any devices
+        # that match our prior list
+        for p in table.get("paths",[]):
+            if p[0] in devs and p[-1] == "Device":
+                devices.append(p)
         return devices
