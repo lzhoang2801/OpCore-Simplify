@@ -66,6 +66,7 @@
    - Add built-in device property for network devices (fix 'Could not communicate with the server' when using iServices) and storage controllers (fix internal drives shown as external).
    - Prioritize SMBIOS optimized for both power management and performance.
    - Re-enable CPU power management on legacy Intel CPUs in macOS Ventura 13 and newer.
+   - Apply WiFi profiles for itlwm kext to enable auto WiFi connections at boot time.
 
    and more...
 

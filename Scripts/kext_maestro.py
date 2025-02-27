@@ -337,7 +337,20 @@ class KextMaestro:
         try:
             bundle_info = self.utils.read_file(plist_path)
 
-            if bundle_info.get("IOKitPersonalities").get("VoodooTSCSync"):
+            if bundle_info.get("IOKitPersonalities").get("itlwm").get("WiFiConfig"):
+                from Scripts import wifi_profile_extractor
+                
+                wifi_profiles = wifi_profile_extractor.WifiProfileExtractor().get_profiles()
+
+                if wifi_profiles:
+                    bundle_info["IOKitPersonalities"]["itlwm"]["WiFiConfig"] = {
+                        "WiFi_{}".format(index): {
+                            "password": profile[1],
+                            "ssid": profile[0]
+                        }
+                        for index, profile in enumerate(wifi_profiles, start=1)
+                    }
+            elif bundle_info.get("IOKitPersonalities").get("VoodooTSCSync"):
                 bundle_info["IOKitPersonalities"]["VoodooTSCSync"]["IOPropertyMatch"]["IOCPUNumber"] = 0 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.0.0") else int(hardware_report["CPU"]["Core Count"]) - 1
             elif bundle_info.get("IOKitPersonalities").get("AmdTscSync"):
                 bundle_info["IOKitPersonalities"]["AmdTscSync"]["IOPropertyMatch"]["IOCPUNumber"] = 0 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.0.0") else int(hardware_report["CPU"]["Core Count"]) - 1
