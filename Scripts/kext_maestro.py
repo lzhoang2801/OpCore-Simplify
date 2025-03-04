@@ -202,7 +202,7 @@ class KextMaestro:
                 selected_kexts.append("BrcmFirmwareData")
             elif usb_id in pci_data.IntelBluetoothIDs:
                 selected_kexts.append("IntelBluetoothFirmware")
-            elif usb_id in pci_data.BluetoothDongleIDs:
+            elif usb_id in pci_data.BluetoothIDs[-1]:
                 selected_kexts.append("BlueToolFixup")
 
         if "Laptop" in hardware_report.get("Motherboard").get("Platform"):

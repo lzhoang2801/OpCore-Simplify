@@ -300,10 +300,10 @@ class CompatibilityChecker:
             max_version = os_data.get_latest_darwin_version()
             min_version = os_data.get_lowest_darwin_version()
 
-            if device_id in pci_data.BroadcomBluetoothIDs + pci_data.IntelBluetoothIDs + pci_data.BluetoothDongleIDs:
-                pass
-            elif device_id in pci_data.AtherosBluetoothIDs:
+            if device_id in pci_data.AtherosBluetoothIDs:
                 max_version = "20.99.99"
+            elif device_id in pci_data.BluetoothIDs:
+                pass
             else:
                 max_version = min_version = None
 

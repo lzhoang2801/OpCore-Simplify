@@ -174,7 +174,37 @@ IntelBluetoothIDs = [
     "8087-0AAA"
 ]
 
-BluetoothDongleIDs = [
+BluetoothIDs = AtherosBluetoothIDs + BroadcomBluetoothIDs + IntelBluetoothIDs + [
+    "05AC-1000",
+    "05AC-8203",
+    "05AC-8204",
+    "05AC-8205",
+    "05AC-8206",
+    "05AC-8207",
+    "05AC-820F",
+    "05AC-8210",
+    "05AC-8213",
+    "05AC-8215",
+    "05AC-8216",
+    "05AC-8217",
+    "05AC-8218",
+    "05AC-821A",
+    "05AC-821B",
+    "05AC-821D",
+    "05AC-821F",
+    "05AC-8281",
+    "05AC-8286",
+    "05AC-8289",
+    "05AC-828A",
+    "05AC-828B",
+    "05AC-828C",
+    "05AC-828D",
+    "05AC-828F",
+    "05AC-8290",
+    "05AC-8291",
+    "05AC-8294",
+    "05AC-8296",
+    "05AC-F007",
     "0A12-0001"
 ]
 
