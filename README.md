@@ -88,6 +88,7 @@
 2. **Running OpCore Simplify**:
    - On **Windows**, run `OpCore-Simplify.bat`.
    - On **macOS**, run `OpCore-Simplify.command`.
+   - On **Linux**, run `OpCore-Simplify.sh`.
 
    ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
 

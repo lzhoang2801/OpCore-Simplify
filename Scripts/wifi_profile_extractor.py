@@ -59,6 +59,20 @@ class WifiProfileExtractor:
         
         return None
 
+    def get_wifi_password_linux(self, ssid):
+        output = self.run({
+            "args": ["nmcli", "-s", "-g", "802-11-wireless-security.psk", "connection", "show", ssid]
+        })
+
+        if output[-1] != 0:
+            return None
+
+        password = output[0].strip()
+        if self.validate_wifi_password(password):
+            return password
+
+        return None
+
     def ask_network_count(self, total_networks):
         self.utils.head("WiFi Network Retrieval")
         print("")
@@ -195,6 +209,27 @@ class WifiProfileExtractor:
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_windows)
 
+    def get_preferred_networks_linux(self):
+        output = self.run({
+            "args": ["nmcli", "-t", "-f", "NAME", "connection", "show"]
+        })
+
+        if output[-1] != 0:
+            return []
+        
+        ssid_list = [network.strip() for network in output[0].splitlines() if network.strip()]
+        
+        if not ssid_list:
+            return []
+            
+        max_networks = self.ask_network_count(len(ssid_list))
+    
+        self.utils.head("WiFi Profile Extractor")
+        print("")
+        print("Ready to retrieve passwords for networks.")
+        
+        return self.process_networks(ssid_list, max_networks, self.get_wifi_password_linux)
+
     def get_wifi_interfaces(self):
         output = self.run({
             "args": ["networksetup", "-listallhardwareports"]
@@ -256,6 +291,8 @@ class WifiProfileExtractor:
                         break
             else:
                 print("No WiFi interfaces detected.")
+        elif os_name == "Linux":
+            profiles = self.get_preferred_networks_linux()
 
         if not profiles:
             self.utils.head("WiFi Profile Extractor")
