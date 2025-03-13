@@ -217,18 +217,21 @@ REM Incorrect answer - go back
 goto askinstall
 
 :installpy
-REM This will attempt to download and install python
-REM First we get the html for the python downloads page for Windows
+REM This will attempt to download and install Python
+REM First we get the HTML for the Python download page from the mirror site
 set /a tried=!tried!+1
 cls
 echo   ###               ###
 echo  # Installing Python #
 echo ###               ###
 echo.
-echo Gathering info from https://www.python.org/downloads/windows/...
-powershell -command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;(new-object System.Net.WebClient).DownloadFile('https://www.python.org/downloads/windows/','%TEMP%\pyurl.txt')"
+
+echo Gathering info from https://mirror.njtu.edu.cn/python ...
+powershell -command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;(new-object System.Net.WebClient).DownloadFile('https://mirror.njtu.edu.cn/python','%TEMP%\pyurl.txt')"
+
 REM Extract it if it's gzip compressed
 powershell -command "$infile='%TEMP%\pyurl.txt';$outfile='%TEMP%\pyurl.temp';try{$input=New-Object System.IO.FileStream $infile,([IO.FileMode]::Open),([IO.FileAccess]::Read),([IO.FileShare]::Read);$output=New-Object System.IO.FileStream $outfile,([IO.FileMode]::Create),([IO.FileAccess]::Write),([IO.FileShare]::None);$gzipStream=New-Object System.IO.Compression.GzipStream $input,([IO.Compression.CompressionMode]::Decompress);$buffer=New-Object byte[](1024);while($true){$read=$gzipstream.Read($buffer,0,1024);if($read -le 0){break};$output.Write($buffer,0,$read)};$gzipStream.Close();$output.Close();$input.Close();Move-Item -Path $outfile -Destination $infile -Force}catch{}"
+
 if not exist "%TEMP%\pyurl.txt" (
     if /i "!just_installing!" == "TRUE" (
         echo Failed to get info
@@ -237,31 +240,57 @@ if not exist "%TEMP%\pyurl.txt" (
         goto checkpy
     )
 )
+
 echo Parsing for latest...
 pushd "%TEMP%"
-:: Version detection code slimmed by LussacZheng (https://github.com/corpnewt/gibMacOS/issues/20)
-for /f "tokens=9 delims=< " %%x in ('findstr /i /c:"Latest Python !targetpy! Release" pyurl.txt') do ( set "release=%%x" )
-popd
+
+REM Extract version numbers and filter out unwanted versions
+for /f "tokens=*" %%x in ('findstr /i /c:"3.[0-9][0-9]*\.[0-9][0-9]*" pyurl.txt') do (
+    REM Exclude versions like 3.14.0
+    echo %%x | findstr /v /i /c:"3.14." >nul
+    if !errorlevel! equ 0 (
+        set "release=%%x"
+        goto found_version
+    )
+)
+
+:found_version
 if "!release!" == "" (
+    echo No suitable Python version found.
     if /i "!just_installing!" == "TRUE" (
-        echo Failed to get python version
         exit /b 1
     ) else (
         goto checkpy
     )
 )
+
+popd
 echo Found Python !release! - Downloading...
 REM Let's delete our txt file now - we no longer need it
 del "%TEMP%\pyurl.txt"
-REM At this point - we should have the version number.
-REM We can build the url like so: "https://www.python.org/ftp/python/[version]/python-[version]-amd64.exe"
-set "url=https://www.python.org/ftp/python/!release!/python-!release!-amd64.exe"
+
+REM Build the URL for the found version
+set "url=https://mirror.njtu.edu.cn/python/!release!/python-!release!-amd64.exe"
 set "pytype=exe"
 if "!targetpy!" == "2" (
-    set "url=https://www.python.org/ftp/python/!release!/python-!release!.amd64.msi"
+    set "url=https://mirror.njtu.edu.cn/python/!release!/python-!release!.amd64.msi"
     set "pytype=msi"
 )
-REM Now we download it with our slick powershell command
+
+REM Now we download it with our slick PowerShell command
+powershell -command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (new-object System.Net.WebClient).DownloadFile('!url!','%TEMP%\pyinstall.!pytype!')"
+
+REM If it doesn't exist - we bail
+if not exist "%TEMP%\pyinstall.!pytype!" (
+    if /i "!just_installing!" == "TRUE" (
+        echo Failed to download installer
+        exit /b 1
+    ) else (
+        goto checkpy
+    )
+)
+
+REM It should exist at this point - let's run it to install silently
 powershell -command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (new-object System.Net.WebClient).DownloadFile('!url!','%TEMP%\pyinstall.!pytype!')"
 REM If it doesn't exist - we bail
 if not exist "%TEMP%\pyinstall.!pytype!" (
