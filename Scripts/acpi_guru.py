@@ -2412,8 +2412,14 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
         }
 
     def is_intel_hedt_cpu(self, processor_name, cpu_codename):
-        return cpu_codename in cpu_data.IntelCPUGenerations[22:] and (cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX")) or not (cpu_codename in ("Arrandale", "Clarksfield", "Lynnfield", "Clarkdale") and "Xeon" not in processor_name))
-     
+        if cpu_codename in cpu_data.IntelCPUGenerations[22:43]:
+            return cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
+        
+        if cpu_codename in cpu_data.IntelCPUGenerations[43:]:
+            return "Xeon" in processor_name
+        
+        return False
+    
     def fix_system_clock_hedt(self):
         awac_device = self.acpi.get_device_paths_with_hid("ACPI000E", self.dsdt)
         try:

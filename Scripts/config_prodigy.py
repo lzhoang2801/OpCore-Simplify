@@ -366,8 +366,14 @@ class ConfigProdigy:
         return self.is_low_end_intel_cpu(processor_name) and cpu_codename in cpu_data.IntelCPUGenerations[:39]
 
     def is_intel_hedt_cpu(self, processor_name, cpu_codename):
-        return cpu_codename in cpu_data.IntelCPUGenerations[22:] and (cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX")) or not (cpu_codename in ("Arrandale", "Clarksfield", "Lynnfield", "Clarkdale") and "Xeon" not in processor_name))
-            
+        if cpu_codename in cpu_data.IntelCPUGenerations[22:43]:
+            return cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
+        
+        if cpu_codename in cpu_data.IntelCPUGenerations[43:]:
+            return "Xeon" in processor_name
+        
+        return False
+    
     def spoof_cpuid(self, processor_name, cpu_codename, macos_version):
         if self.is_low_end_haswell_plus(processor_name, cpu_codename):
             return self.cpuids.get("Ivy Bridge")
