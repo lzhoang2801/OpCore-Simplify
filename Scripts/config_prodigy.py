@@ -234,6 +234,72 @@ class ConfigProdigy:
                 break
 
         return dict(sorted(igpu_properties.items(), key=lambda item: item[0]))
+    
+    def select_audio_codec_layout(self, hardware_report, config=None):
+        try:
+            for device_properties in config["DeviceProperties"]["Add"].values():
+                if device_properties.get("layout-id"):
+                    return None, None
+        except:
+            pass
+
+        codec_id = None
+        audio_controller_properties = None
+
+        for codec_properties in hardware_report.get("Sound", {}).values():
+            if codec_properties.get("Device ID") in codec_layouts.data:
+                codec_id = codec_properties.get("Device ID")
+
+                if codec_properties.get("Controller Device ID"):
+                    for device_name, device_properties in hardware_report.get("System Devices").items():
+                        if device_properties.get("Device ID") == codec_properties.get("Controller Device ID"):
+                            audio_controller_properties = device_properties
+                            break
+                break
+
+        if not codec_id:
+            return None, None
+        
+        available_layouts = codec_layouts.data.get(codec_id)
+
+        recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
+        recommended_layouts = [layout for layout in available_layouts if self.utils.contains_any(recommended_authors, layout.comment)]
+
+        default_layout = random.choice(recommended_layouts or available_layouts)
+
+        while True:
+            contents = []
+            contents.append("")
+            contents.append("List of Codec Layouts:")
+            contents.append("")
+            contents.append("ID   Comment")
+            contents.append("------------------------------------------------------------------")
+            for layout in available_layouts:
+                line = "{:<4} {}".format(layout.id, layout.comment[:60])
+                if layout == default_layout:
+                    contents.append("\033[1;32m{}\033[0m".format(line))
+                else:
+                    contents.append(line)
+            contents.append("")
+            contents.append("\033[93mNote:\033[0m")
+            contents.append("- The default layout may not be optimal.")
+            contents.append("- Test different layouts to find what works best for your system.")
+            contents.append("")
+            content = "\n".join(contents)
+
+            self.utils.adjust_window_size(content)
+            self.utils.head("Choosing Codec Layout ID", resize=False)
+            print(content)
+            selected_layout_id = self.utils.request_input(f"Enter the ID of the codec layout you want to use (default: {default_layout.id}): ") or default_layout.id
+
+            try:
+                selected_layout_id = int(selected_layout_id)
+
+                for layout in available_layouts:
+                    if layout.id == selected_layout_id:
+                        return selected_layout_id, audio_controller_properties
+            except:
+                continue
   
     def deviceproperties(self, hardware_report, unsupported_devices, macos_version, kexts):
         deviceproperties_add = {}
@@ -289,19 +355,10 @@ class ConfigProdigy:
                                 "model": gpu_name
                             })
                 elif kext.name == "AppleALC":
-                    if not hardware_report.get("Sound"):
-                        continue
+                    selected_layout_id, audio_controller_properties = self.select_audio_codec_layout(hardware_report)
 
-                    for codec_props in hardware_report.get("Sound").values():
-                        codec_id = codec_props.get("Device ID")
-                        controller_id = codec_props.get("Controller Device ID", "Unknown")
-                        controller_props = next((props for props in hardware_report.get("System Devices", {}).values() if props.get("Device ID") == controller_id), {})
-
-                        if codec_id in codec_layouts.data:
-                            recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
-                            recommended_layouts = [layout for layout in codec_layouts.data.get(codec_id) if self.utils.contains_any(recommended_authors, layout.comment) or hardware_report.get("Motherboard").get("Name").split(" ")[0].lower() in layout.comment.lower()]
-
-                            add_device_property(controller_props.get("PCI Path"), {"layout-id": random.choice((recommended_layouts or codec_layouts.data.get(codec_id))).id})
+                    if selected_layout_id and audio_controller_properties:
+                        add_device_property(audio_controller_properties.get("PCI Path"), {"layout-id": selected_layout_id})
 
         network_items = hardware_report.get("Network", {}).items()
 
@@ -443,14 +500,14 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, hardware_report, macos_version, kexts, resize_bar):
+    def boot_args(self, hardware_report, macos_version, kexts, config):
         boot_args = [
             "-v",
             "debug=0x100",
             "keepsyms=1"
         ]
 
-        if not resize_bar and ("AMD" in hardware_report.get("CPU").get("Manufacturer") or self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename"))):
+        if config["Booter"]["Quirks"]["ResizeAppleGpuBars"] != 0 and ("AMD" in hardware_report.get("CPU").get("Manufacturer") or self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename"))):
             boot_args.append("npci=0x2000")
 
         for kext in kexts:
@@ -504,23 +561,10 @@ class ConfigProdigy:
                         elif discrete_gpu.get("Manufacturer") == "NVIDIA" and not "Kepler" in discrete_gpu.get("Codename"):
                             boot_args.extend(("nvda_drv_vrl=1", "ngfxcompat=1", "ngfxgl=1"))
             elif kext.name == "AppleALC":
-                if not hardware_report.get("Sound"):
-                    continue
+                selected_layout_id, _ = self.select_audio_codec_layout(hardware_report, config)
 
-                codec_props = list(hardware_report.get("Sound").items())[0][-1]
-                codec_id = codec_props.get("Device ID")
-                controller_id = codec_props.get("Controller Device ID", "Unknown")
-
-                controller_props = next((props for props in hardware_report.get("System Devices", {}).values() if props.get("Device ID") == controller_id), {})
-                pci_path = controller_props.get("PCI Path")
-
-                if pci_path:
-                    continue
-
-                if codec_id in codec_layouts.data:
-                    recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
-                    recommended_layouts = [layout for layout in codec_layouts.data.get(codec_id) if self.utils.contains_any(recommended_authors, layout.comment) or hardware_report.get("Motherboard").get("Name").split(" ")[0].lower() in layout.comment.lower()]
-                    boot_args.append("alcid={}".format(random.choice((recommended_layouts or codec_layouts.data.get(codec_id))).id))
+                if selected_layout_id:
+                    boot_args.append("alcid={}".format(selected_layout_id))
             elif kext.name == "VoodooI2C":
                 boot_args.append("-vi2c-force-polling")
             elif kext.name == "CpuTopologyRebuild":
@@ -629,7 +673,7 @@ class ConfigProdigy:
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
-        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts, config["Booter"]["Quirks"]["ResizeAppleGpuBars"] == 0)
+        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts, config)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = "en:252"
 
