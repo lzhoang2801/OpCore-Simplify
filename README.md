@@ -61,7 +61,6 @@
    - Properly configure ResizeAppleGpuBars based on specific Resizable BAR information.
    - Allow flexible iGPU configuration between headless and driving a display when a supported discrete GPU is present.
    - Force Intel GPUs into VESA mode with HDMI and DVI connectors to simplify installation process.
-   - Use random layout IDs have comment based on author or motherboard brand for better sound quality.
    - Provide configuration required for using OpenCore Legacy Patcher.
    - Add built-in device property for network devices (fix 'Could not communicate with the server' when using iServices) and storage controllers (fix internal drives shown as external).
    - Prioritize SMBIOS optimized for both power management and performance.
