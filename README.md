@@ -111,6 +111,10 @@
    - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
    - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
 
+   ![WiFi Profile Extractor](https://i.imgur.com/71TkJkD.png)
+
+   ![Choosing Codec Layout ID](https://i.imgur.com/Mcm20EQ.png)
+
    ![Building OpenCore EFI](https://i.imgur.com/deyj5de.png)
 
 6. **USB Mapping**:
