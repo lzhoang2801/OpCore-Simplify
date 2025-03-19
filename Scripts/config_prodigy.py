@@ -125,7 +125,7 @@ class ConfigProdigy:
                     igpu_properties["AAPL,ig-platform-id"] = "0500260A"
                 igpu_properties["framebuffer-cursormem"] = "00009000"
         elif device_id.startswith(("0B", "16")):
-            native_supported_ids = ("0BD1", "0BD2", "0BD3", "1606", "160E", "1616", "161E", "1626", "1622", "1612", "162B")
+            native_supported_ids = ("0BD1", "0BD2", "0BD3", "1606", "160E", "161E", "1626", "1622", "1612", "162B")
             if not device_id in native_supported_ids:
                 igpu_properties["device-id"] = "26160000"
             if platform == "Desktop":
