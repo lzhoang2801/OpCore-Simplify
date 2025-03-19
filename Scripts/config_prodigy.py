@@ -235,7 +235,7 @@ class ConfigProdigy:
 
         return dict(sorted(igpu_properties.items(), key=lambda item: item[0]))
     
-    def select_audio_codec_layout(self, hardware_report, config=None):
+    def select_audio_codec_layout(self, hardware_report, config=None, controller_required=False):
         try:
             for device_properties in config["DeviceProperties"]["Add"].values():
                 if device_properties.get("layout-id"):
@@ -258,6 +258,9 @@ class ConfigProdigy:
                 break
 
         if not codec_id:
+            return None, None
+        
+        if controller_required and not audio_controller_properties:
             return None, None
         
         available_layouts = codec_layouts.data.get(codec_id)
@@ -355,7 +358,7 @@ class ConfigProdigy:
                                 "model": gpu_name
                             })
                 elif kext.name == "AppleALC":
-                    selected_layout_id, audio_controller_properties = self.select_audio_codec_layout(hardware_report)
+                    selected_layout_id, audio_controller_properties = self.select_audio_codec_layout(hardware_report, controller_required=True)
 
                     if selected_layout_id and audio_controller_properties:
                         add_device_property(audio_controller_properties.get("PCI Path"), {"layout-id": selected_layout_id})
