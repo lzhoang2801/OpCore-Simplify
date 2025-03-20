@@ -355,8 +355,8 @@ class OCPE:
                     continue
 
                 if option == 2:
-                    macos_version = self.select_macos_version(native_macos_version, ocl_patched_macos_version)
-                    customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(macos_version)
+                    macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
+                    customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
                     smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
                     self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
                     self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
