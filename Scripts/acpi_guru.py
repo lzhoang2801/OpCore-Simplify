@@ -22,7 +22,7 @@ class ACPIGuru:
         self.utils = utils.Utils()
         self.patches = acpi_patch_data.patches
         self.hardware_report = None
-        self.unsupported_devices = None
+        self.disabled_devices = None
         self.acpi_directory = None
         self.smbios_model = None
         self.dsdt = None
@@ -1833,7 +1833,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
             "Add": []
         }
 
-        for device_name, device_props in self.unsupported_devices.items():
+        for device_name, device_props in self.disabled_devices.items():
             if not device_props.get("Bus Type", "PCI") == "PCI" or not device_props.get("ACPI Path"):
                 continue
 
@@ -1852,6 +1852,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
                 
                 if not off_method_found and not ps3_method_found:
                     continue
+
+                if off_method_found:
+                    ps3_method_found = False
 
                 device_props["Disabled"] = True
                 
@@ -3046,7 +3049,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
                 return index
         return None
 
-    def select_acpi_patches(self, hardware_report, unsupported_devices):
+    def select_acpi_patches(self, hardware_report, disabled_devices):
         selected_patches = []
 
         if  "Laptop" in hardware_report.get("Motherboard").get("Platform") and \
@@ -3061,7 +3064,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
             selected_patches.append("BUS0")
 
-        for device_name, device_info in unsupported_devices.items():
+        for device_name, device_info in disabled_devices.items():
             if "PCI" in device_info.get("Bus Type", "PCI"):
                 selected_patches.append("Disable Devices")
 
