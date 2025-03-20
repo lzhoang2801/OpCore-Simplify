@@ -304,7 +304,7 @@ class ConfigProdigy:
             except:
                 continue
   
-    def deviceproperties(self, hardware_report, unsupported_devices, macos_version, kexts):
+    def deviceproperties(self, hardware_report, disabled_devices, macos_version, kexts):
         deviceproperties_add = {}
 
         def add_device_property(pci_path, properties):
@@ -325,7 +325,6 @@ class ConfigProdigy:
                         if device_id in pci_data.IntelWiFiIDs and network_props.get("PCI Path"):
                             add_device_property(network_props.get("PCI Path"), {"IOName": "pci14e4,43a0"})
                 elif kext.name == "WhateverGreen":
-                    discrete_gpu = None
                     for gpu_name, gpu_info in hardware_report.get("GPU", {}).items():
                         if gpu_info.get("Device Type") == "Integrated GPU":
                             if "Intel" in gpu_info.get("Manufacturer"):
@@ -348,8 +347,6 @@ class ConfigProdigy:
                                             elif "Ivy Bridge" in gpu_info.get("Codename") and device_id in "8086-1C3A":
                                                 add_device_property(device_info.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1E0000"})
                         elif gpu_info.get("Device Type") == "Discrete GPU":
-                            discrete_gpu = gpu_info
-
                             if not gpu_info.get("Device ID") in pci_data.SpoofGPUIDs:
                                 continue
 
@@ -393,7 +390,7 @@ class ConfigProdigy:
             if not device_props.get("ACPI Path"):
                 add_device_property(device_props.get("PCI Path"), {"built-in": "01"})
 
-        for device_name, device_props in unsupported_devices.items():
+        for device_name, device_props in disabled_devices.items():
             if "GPU" in device_name and not device_props.get("Disabled", False):
                 add_device_property(device_props.get("PCI Path"), {"disable-gpu": True})
 
@@ -601,7 +598,7 @@ class ConfigProdigy:
         
         return uefi_drivers
 
-    def genarate(self, hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp, kexts, config):
+    def genarate(self, hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp, kexts, config):
         del config["#WARNING - 1"]
         del config["#WARNING - 2"]
         del config["#WARNING - 3"]
@@ -626,7 +623,7 @@ class ConfigProdigy:
         config["Booter"]["Quirks"]["SetupVirtualMap"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI" and not hardware_report.get("Motherboard").get("Chipset") in chipset_data.AMDChipsets[11:17] + chipset_data.IntelChipsets[90:100]
         config["Booter"]["Quirks"]["SyncRuntimePermissions"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[90:100] + chipset_data.IntelChipsets[104:]
 
-        config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, unsupported_devices, macos_version, kexts)
+        config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, disabled_devices, macos_version, kexts)
 
         config["Kernel"]["Block"] = self.block_kext_bundle(kexts)
         spoof_cpuid = self.spoof_cpuid(
