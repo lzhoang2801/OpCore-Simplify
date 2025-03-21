@@ -571,9 +571,22 @@ kexts = [
         name = "CtlnaAHCIPort", 
         description = "Improves support for certain SATA controllers", 
         category = "Storage",
+        min_darwin_version = "20.0.0",
+        conflict_group_id = "SATA",
         download_info = {
-            "id": 10460478, 
-            "url": "https://github.com/lzhoang2801/lzhoang2801.github.io/raw/main/public/extra-files/CtlnaAHCIPort-v3.4.1.zip"
+            "id": 934285327, 
+            "url": "https://raw.githubusercontent.com/lzhoang2801/lzhoang2801.github.io/refs/heads/main/public/extra-files/CtlnaAHCIPort-v3.4.1.zip"
+        }
+    ),
+    KextInfo(
+        name = "SATA-unsupported", 
+        description = "Improves support for certain SATA controllers", 
+        category = "Storage",
+        max_darwin_version = "19.99.99",
+        conflict_group_id = "SATA",
+        download_info = {
+            "id": 214351953, 
+            "url": "https://raw.githubusercontent.com/lzhoang2801/lzhoang2801.github.io/refs/heads/main/public/extra-files/SATA-unsupported-v0.9.2.zip"
         }
     ),
     KextInfo(

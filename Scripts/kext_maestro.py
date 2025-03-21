@@ -255,9 +255,13 @@ class KextMaestro:
         for controller_name, controller_props in hardware_report.get("Storage Controllers", {}).items():
             if "NVMe" in controller_name or "NVM Express" in controller_name:
                 selected_kexts.append("NVMeFix")
-            else:
-                if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs and not "AHCI" in controller_name:
-                    selected_kexts.append("CtlnaAHCIPort")
+            elif not "AHCI" in controller_name:
+                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
+                    if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs:
+                        selected_kexts.append("CtlnaAHCIPort")
+                else:
+                    if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs[15:]:
+                        selected_kexts.append("SATA-unsupported")
 
         for controller_name, controller_props in hardware_report.get("USB Controllers").items():
             device_id = controller_props.get("Device ID")
