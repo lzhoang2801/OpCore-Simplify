@@ -320,7 +320,7 @@ class gatheringFiles:
         latest_release = self.github.get_latest_release("lzhoang2801", "Hardware-Sniffer") or {}
 
         for product in latest_release.get("assets"):
-            if product.get("product_name") == product_name:
+            if product.get("product_name") == product_name.split(".")[0]:
                 _, product_id, product_download_url = product.values()
         
         product_history_index = self.get_product_index(download_history, product_name)
