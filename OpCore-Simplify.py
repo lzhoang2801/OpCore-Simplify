@@ -30,15 +30,6 @@ class OCPE:
         self.u = utils.Utils()
         self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
 
-    def gathering_files(self, macos_version):
-        self.u.head("Gathering Files")
-        print("")
-        print("Please wait for download OpenCorePkg, kexts and macserial...")
-        print("")
-
-        self.o.get_bootloader_kexts_data(self.k.kexts)
-        self.o.gather_bootloader_kexts(self.k.kexts, macos_version)
-
     def select_hardware_report(self):
         self.hardware_sniffer = self.o.gather_hardware_sniffer()
         self.ac.dsdt = self.ac.acpi.acpi_tables = None
@@ -368,7 +359,9 @@ class OCPE:
                     smbios_model = self.s.customize_smbios_model(customized_hardware, smbios_model, macos_version)
                     self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
                 elif option == 6:
-                    self.gathering_files(macos_version)
+                    if not self.o.gather_bootloader_kexts(self.k.kexts, macos_version):
+                        continue
+                    
                     self.build_opencore_efi(customized_hardware, disabled_devices, smbios_model, macos_version, needs_oclp)
                     self.results(customized_hardware, smbios_model, self.k.kexts)
 
