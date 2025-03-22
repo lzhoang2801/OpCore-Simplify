@@ -41,25 +41,41 @@ kexts = [
         name = "SMCBatteryManager", 
         description = "Manages, monitors, and reports on battery status",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["Lilu", "VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"],
+        github_repo = {
+            "owner": "acidanthera",
+            "repo": "VirtualSMC"
+        }
     ),
     KextInfo(
         name = "SMCDellSensors", 
         description = "Enables fan monitoring and control on Dell computers",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["Lilu", "VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"],
+        github_repo = {
+            "owner": "acidanthera",
+            "repo": "VirtualSMC"
+        }
     ),
     KextInfo(
         name = "SMCLightSensor", 
         description = "Allows system utilize ambient light sensor device",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["Lilu", "VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"],
+        github_repo = {
+            "owner": "acidanthera",
+            "repo": "VirtualSMC"
+        }
     ),
     KextInfo(
         name = "SMCProcessor", 
         description = "Manages Intel CPU temperature sensors",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["Lilu", "VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"],
+        github_repo = {
+            "owner": "acidanthera",
+            "repo": "VirtualSMC"
+        }
     ),
     KextInfo(
         name = "SMCRadeonSensors", 
@@ -72,7 +88,7 @@ kexts = [
             "repo": "SMCRadeonSensors"
         },
         download_info = {
-            "id": "".join(random.choices('0123456789', k=9)), 
+            "id": int("".join(random.choices('0123456789', k=9))), 
             "url": "https://nightly.link/ChefKissInc/SMCRadeonSensors/workflows/main/master/Artifacts.zip"
         }
     ),
@@ -80,7 +96,11 @@ kexts = [
         name = "SMCSuperIO", 
         description = "Monitoring hardware sensors and controlling fan speeds",
         category = "VirtualSMC Plugins",
-        requires_kexts = ["Lilu", "VirtualSMC"]
+        requires_kexts = ["Lilu", "VirtualSMC"],
+        github_repo = {
+            "owner": "acidanthera",
+            "repo": "VirtualSMC"
+        }
     ),
     KextInfo(
         name = "NootRX", 
@@ -94,7 +114,7 @@ kexts = [
             "repo": "NootRX"
         },
         download_info = {
-            "id": "".join(random.choices('0123456789', k=9)), 
+            "id": int("".join(random.choices('0123456789', k=9))), 
             "url": "https://nightly.link/ChefKissInc/NootRX/workflows/main/master/Artifacts.zip"
         }
     ),
@@ -110,7 +130,7 @@ kexts = [
             "repo": "NootedRed"
         },
         download_info = {
-            "id": "".join(random.choices('0123456789', k=9)), 
+            "id": int("".join(random.choices('0123456789', k=9))), 
             "url": "https://nightly.link/ChefKissInc/NootedRed/workflows/main/master/Artifacts.zip"
         }
     ),
@@ -300,14 +320,22 @@ kexts = [
         name = "IntelBTPatcher", 
         description = "Fixes Intel Bluetooth bugs for better connectivity",
         category = "Bluetooth",
-        requires_kexts = ["Lilu", "BlueToolFixup", "IntelBluetoothFirmware", "IntelBluetoothInjector"]
+        requires_kexts = ["Lilu", "BlueToolFixup", "IntelBluetoothFirmware", "IntelBluetoothInjector"],
+        github_repo = {
+            "owner": "OpenIntelWireless",
+            "repo": "IntelBluetoothFirmware"
+        }
     ),
     KextInfo(
         name = "IntelBluetoothInjector", 
         description = "Enables the Intel Bluetooth on/off switch on older versions",
         category = "Bluetooth",
         max_darwin_version = "20.99.99",
-        requires_kexts = ["BlueToolFixup", "IntelBluetoothFirmware", "IntelBTPatcher"]
+        requires_kexts = ["BlueToolFixup", "IntelBluetoothFirmware", "IntelBTPatcher"],
+        github_repo = {
+            "owner": "OpenIntelWireless",
+            "repo": "IntelBluetoothFirmware"
+        }
     ),
     KextInfo(
         name = "AppleIGB", 
@@ -520,31 +548,51 @@ kexts = [
         name = "VoodooI2CAtmelMXT", 
         description = "A satellite kext for Atmel MXT I2C touchscreen",
         category = "Input",
-        requires_kexts = ["VoodooI2C"]
+        requires_kexts = ["VoodooI2C"],
+        github_repo = {
+            "owner": "VoodooI2C",
+            "repo": "VoodooI2C"
+        }
     ),
     KextInfo(
         name = "VoodooI2CELAN", 
         description = "A satellite kext for ELAN I2C touchpads",
         category = "Input",
-        requires_kexts = ["VoodooI2C"]
+        requires_kexts = ["VoodooI2C"],
+        github_repo = {
+            "owner": "VoodooI2C",
+            "repo": "VoodooI2C"
+        }
     ),
     KextInfo(
         name = "VoodooI2CFTE", 
         description = "A satellite kext for FTE based touchpads",
         category = "Input",
-        requires_kexts = ["VoodooI2C"]
+        requires_kexts = ["VoodooI2C"],
+        github_repo = {
+            "owner": "VoodooI2C",
+            "repo": "VoodooI2C"
+        }
     ),
     KextInfo(
         name = "VoodooI2CHID", 
         description = "A satellite kext for HID I2C or ELAN1200+ input devices",
         category = "Input",
-        requires_kexts = ["VoodooI2C"]
+        requires_kexts = ["VoodooI2C"],
+        github_repo = {
+            "owner": "VoodooI2C",
+            "repo": "VoodooI2C"
+        }
     ),
     KextInfo(
         name = "VoodooI2CSynaptics", 
         description = "A satellite kext for Synaptics I2C touchpads",
         category = "Input",
-        requires_kexts = ["VoodooI2C"]
+        requires_kexts = ["VoodooI2C"],
+        github_repo = {
+            "owner": "VoodooI2C",
+            "repo": "VoodooI2C"
+        }
     ),
     KextInfo(
         name = "AsusSMC", 
@@ -681,7 +729,7 @@ kexts = [
             "repo": "ForgedInvariant"
         },
         download_info = {
-            "id": "".join(random.choices('0123456789', k=9)), 
+            "id": int("".join(random.choices('0123456789', k=9))), 
             "url": "https://nightly.link/ChefKissInc/ForgedInvariant/workflows/main/master/Artifacts.zip"
         }
     ),
