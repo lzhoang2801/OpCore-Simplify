@@ -197,7 +197,7 @@ class gatheringFiles:
             product_history_index = self.get_product_index(download_history, product_name)
 
             print("")
-            if product_history_index == None:
+            if product_history_index is None:
                 print("Please wait for download {}...".format(product_name))
             else:
                 if product_id == download_history[product_history_index].get("id"):
@@ -206,7 +206,7 @@ class gatheringFiles:
                 else:
                     print("Updating {}...".format(product_name))
 
-            if product_download_url:
+            if product_download_url is not None:
                 print("from " + product_download_url)
             else:
                 print("Could not find download URL for {}.".format(product_name))
@@ -221,7 +221,7 @@ class gatheringFiles:
             self.fetcher.download_and_save_file(product_download_url, zip_path)
 
             if not os.path.exists(zip_path):
-                if product_history_index:
+                if product_history_index is not None:
                     print("Using previously version of {}.".format(product_name))
                     continue
                 else:
