@@ -70,7 +70,13 @@ class KextMaestro:
         return pci_ids
 
     def is_intel_hedt_cpu(self, processor_name, cpu_codename):
-        return cpu_codename in cpu_data.IntelCPUGenerations[22:] and (cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX")) or not (cpu_codename in ("Arrandale", "Clarksfield", "Lynnfield", "Clarkdale") and "Xeon" not in processor_name))
+        if cpu_codename in cpu_data.IntelCPUGenerations[22:43]:
+            return cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
+        
+        if cpu_codename in cpu_data.IntelCPUGenerations[43:]:
+            return "Xeon" in processor_name
+        
+        return False
     
     def get_kext_index(self, name):
         for index, kext in enumerate(self.kexts):
@@ -105,9 +111,6 @@ class KextMaestro:
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
             selected_kexts.extend(("SMCProcessor", "SMCSuperIO"))
 
-        if "AMD" in hardware_report.get("CPU").get("Manufacturer"):
-            selected_kexts.append("IntelMKLFixup")
-
         if "Laptop" in hardware_report.get("Motherboard").get("Platform") and not "SURFACE" in hardware_report.get("Motherboard").get("Name"):
             selected_kexts.append("SMCBatteryManager")
             if "DELL" in hardware_report.get("Motherboard").get("Name"):
@@ -119,8 +122,8 @@ class KextMaestro:
             self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
             selected_kexts.append("RestrictEvents")
 
-        if hardware_report.get("Sound"):
-            if list(hardware_report.get("Sound").items())[0][-1].get("Device ID") in codec_layouts.data:
+        for codec_properties in hardware_report.get("Sound", {}).values():
+            if codec_properties.get("Device ID") in codec_layouts.data:
                 selected_kexts.append("AppleALC")
         
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.4.0") or \
@@ -249,9 +252,13 @@ class KextMaestro:
         for controller_name, controller_props in hardware_report.get("Storage Controllers", {}).items():
             if "NVMe" in controller_name or "NVM Express" in controller_name:
                 selected_kexts.append("NVMeFix")
-            else:
-                if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs and not "AHCI" in controller_name:
-                    selected_kexts.append("CtlnaAHCIPort")
+            elif not "AHCI" in controller_name:
+                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
+                    if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs:
+                        selected_kexts.append("CtlnaAHCIPort")
+                else:
+                    if controller_props.get("Device ID") in pci_data.UnsupportedSATAControllerIDs[15:]:
+                        selected_kexts.append("SATA-unsupported")
 
         for controller_name, controller_props in hardware_report.get("USB Controllers").items():
             device_id = controller_props.get("Device ID")

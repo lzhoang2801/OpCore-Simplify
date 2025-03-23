@@ -3,6 +3,7 @@ from Scripts import acpi_guru
 from Scripts import compatibility_checker
 from Scripts import config_prodigy
 from Scripts import gathering_files
+from Scripts import hardware_customizer
 from Scripts import kext_maestro
 from Scripts import run
 from Scripts import smbios
@@ -18,24 +19,16 @@ import time
 class OCPE:
     def __init__(self):
         self.u = utils.Utils("OpCore Simplify")
-        self.o = gathering_files.gatheringFiles()
         self.ac = acpi_guru.ACPIGuru()
         self.c = compatibility_checker.CompatibilityChecker()
         self.co = config_prodigy.ConfigProdigy()
+        self.o = gathering_files.gatheringFiles()
+        self.h = hardware_customizer.HardwareCustomizer()
         self.k = kext_maestro.KextMaestro()
         self.s = smbios.SMBIOS()
         self.r = run.Run()
         self.u = utils.Utils()
         self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
-
-    def gathering_files(self, macos_version):
-        self.u.head("Gathering Files")
-        print("")
-        print("Please wait for download OpenCorePkg, kexts and macserial...")
-        print("")
-
-        self.o.get_bootloader_kexts_data(self.k.kexts)
-        self.o.gather_bootloader_kexts(self.k.kexts, macos_version)
 
     def select_hardware_report(self):
         self.hardware_sniffer = self.o.gather_hardware_sniffer()
@@ -45,11 +38,10 @@ class OCPE:
             self.u.head("Select hardware report")
             print("")
             if os.name == "nt":
-                print("\033[1;36m", end="")
-                print("Note:")
+                print("\033[93mNote:\033[0m")
                 print("- Ensure you are using the latest version of Hardware Sniffer before generating the hardware report.")
                 print("- Hardware Sniffer will not collect information related to Resizable BAR option of GPU (disabled by default) and monitor connections in Windows PE.")
-                print("\033[0m", end="")
+                print("")
                 if self.hardware_sniffer:
                     print("")
                     print("E. Export hardware report (Recommended)")
@@ -92,28 +84,50 @@ class OCPE:
             
             return path, data
 
-    def select_macos_version(self, native_macos_version, ocl_patched_macos_version):
+    def select_macos_version(self, hardware_report, native_macos_version, ocl_patched_macos_version):
+        suggested_macos_version = native_macos_version[1]
         version_pattern = re.compile(r'^(\d+)(?:\.(\d+)(?:\.(\d+))?)?$')
+
+        for device_type in ("GPU", "Network", "Bluetooth", "SD Controller"):
+            if device_type in hardware_report:
+                for device_name, device_props in hardware_report[device_type].items():
+                    if device_props.get("Compatibility", (None, None)) != (None, None):
+                        if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
+                            device_id = device_props.get("Device ID", ""*8)[5:]
+
+                            if device_props.get("Manufacturer") == "AMD" or device_id.startswith(("59", "87C0")):
+                                suggested_macos_version = "22.99.99"
+                            elif device_id.startswith(("09", "19")):
+                                suggested_macos_version = "21.99.99"
+
+                        if self.u.parse_darwin_version(suggested_macos_version) > self.u.parse_darwin_version(device_props.get("Compatibility")[0]):
+                            suggested_macos_version = device_props.get("Compatibility")[0]
 
         while True:
             self.u.head("Select macOS Version")
+            if native_macos_version[1][:2] != suggested_macos_version[:2]:
+                print("")
+                print("\033[1;36mSuggested macOS version:\033[0m")
+                print("- For better compatibility and stability, we suggest you to use only {} or older.".format(os_data.get_macos_name_by_darwin(suggested_macos_version)))
+            print("")
+            print("Available macOS versions:")
             print("")
             if ocl_patched_macos_version:
-                print("* Native macOS versions: ")
+                print(" * Native macOS versions: ")
             for darwin_version in range(int(native_macos_version[0][:2]), min(int(native_macos_version[-1][:2]), (int(ocl_patched_macos_version[-1][:2]) - 1) if ocl_patched_macos_version else 99) + 1):
                 print("{}{}. {}".format(" "*3 if ocl_patched_macos_version else "", darwin_version, os_data.get_macos_name_by_darwin(str(darwin_version))))
             if ocl_patched_macos_version:
-                print("* Requires OpenCore Legacy Patcher: ")
+                print(" * Requires OpenCore Legacy Patcher: ")
                 for darwin_version in range(int(ocl_patched_macos_version[-1][:2]), int(ocl_patched_macos_version[0][:2]) + 1):
                     print("   {}. {}".format(darwin_version, os_data.get_macos_name_by_darwin(str(darwin_version))))
             print("")
-            print("Please enter the macOS version you want to select:")
+            print("\033[93mNote:\033[0m")
             print("- To select a major version, enter the number (e.g., 19).")
             print("- To specify a full version, use the Darwin version format (e.g., 22.4.6).")
             print("")
             print("Q. Quit")
             print("")
-            option = self.u.request_input("Select macOS version: ")
+            option = self.u.request_input("Please enter the macOS version you want to use (default: {}): ".format(os_data.get_macos_name_by_darwin(suggested_macos_version))) or suggested_macos_version
             if option.lower() == "q":
                 self.u.exit_program()
 
@@ -125,7 +139,7 @@ class OCPE:
                     (ocl_patched_macos_version and self.u.parse_darwin_version(ocl_patched_macos_version[-1]) <= self.u.parse_darwin_version(target_version) <= self.u.parse_darwin_version(ocl_patched_macos_version[0])):
                     return target_version
 
-    def build_opencore_efi(self, hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp):
+    def build_opencore_efi(self, hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp):
         self.u.head("Building OpenCore EFI")
         print("")
         print("1. Copy EFI base to results folder...", end=" ")
@@ -149,7 +163,7 @@ class OCPE:
         config_data["ACPI"]["Patch"] = []
         if self.ac.ensure_dsdt():
             self.ac.hardware_report = hardware_report
-            self.ac.unsupported_devices = unsupported_devices
+            self.ac.disabled_devices = disabled_devices
             self.ac.acpi_directory = os.path.join(self.result_dir, "EFI", "OC", "ACPI")
             self.ac.smbios_model = smbios_model
             self.ac.lpc_bus_device = self.ac.get_lpc_name()
@@ -179,7 +193,7 @@ class OCPE:
         config_data["Kernel"]["Add"] = self.k.load_kexts(hardware_report, macos_version, kexts_directory)
         print("Done")
         print("4. Generate config.plist...", end=" ")      
-        self.co.genarate(hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp, self.k.kexts, config_data)
+        self.co.genarate(hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp, self.k.kexts, config_data)
         self.u.write_file(config_file, config_data)
         print("Done")
         print("5. Clean up unused drivers, resources, and tools...", end=" ")
@@ -272,7 +286,7 @@ class OCPE:
     def main(self):
         hardware_report_path = None
         native_macos_version = None
-        unsupported_devices = None
+        disabled_devices = None
         macos_version = None
         ocl_patched_macos_version = None
         needs_oclp = False
@@ -287,11 +301,10 @@ class OCPE:
                 print("* Hardware Compatibility:")
                 if native_macos_version:
                     print("   - Native macOS Version: {}".format(self.c.show_macos_compatibility((native_macos_version[-1], native_macos_version[0]))))
-                if unsupported_devices:
-                    print("   - Unsupported devices:")
-                    for index, device_name in enumerate(unsupported_devices, start=1):
-                        device_props = unsupported_devices.get(device_name)
-                        print("{}{}. {}{}".format(" "*6, index, device_name, "" if not device_props.get("Audio Endpoints") else " ({})".format(", ".join(device_props.get("Audio Endpoints")))))
+                if disabled_devices:
+                    print("   - Disabled Devices:")
+                    for index, device_name in enumerate(disabled_devices, start=1):
+                        print("{}{}. {}".format(" "*6, index, device_name))
                 print("* EFI Options:")
                 print("   - macOS Version: {}{}{}".format("Unknown" if not macos_version else os_data.get_macos_name_by_darwin(macos_version), "" if not macos_version else " ({})".format(macos_version), ". \033[1;36mRequires OpenCore Legacy Patcher\033[0m" if needs_oclp else ""))
                 print("   - SMBIOS: {}".format("Unknown" if not smbios_model else smbios_model))
@@ -316,40 +329,41 @@ class OCPE:
 
             if option == 1:
                 hardware_report_path, hardware_report = self.select_hardware_report()
-                native_macos_version, hardware_report, unsupported_devices, needs_oclp, ocl_patched_macos_version = self.c.check_compatibility(hardware_report)
-                macos_version = native_macos_version[-1]
-                if int(macos_version[:2]) == os_data.macos_versions[-1].darwin_version and os_data.macos_versions[-1].release_status == "beta":
-                    macos_version = str(int(macos_version[:2]) - 1) + macos_version[2:]
-                smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
+                hardware_report, native_macos_version, ocl_patched_macos_version = self.c.check_compatibility(hardware_report)
+                macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
+                customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
+                smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
                 if not self.ac.ensure_dsdt():
                     self.ac.select_acpi_tables()
-                self.ac.select_acpi_patches(hardware_report, unsupported_devices)
-                self.k.select_required_kexts(hardware_report, macos_version, needs_oclp, self.ac.patches)
-                self.s.smbios_specific_options(hardware_report, smbios_model, macos_version, self.ac.patches, self.k)
+                self.ac.select_acpi_patches(customized_hardware, disabled_devices)
+                self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
+                self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
             elif option < 7:
                 try:
-                    hardware_report
+                    customized_hardware
                 except:
                     self.u.request_input("\nPlease select a hardware report to proceed")
                     continue
 
                 if option == 2:
-                    macos_version = self.select_macos_version(native_macos_version, ocl_patched_macos_version)
-                    hardware_report, unsupported_devices, needs_oclp = self.c.get_unsupported_devices(macos_version)
-                    smbios_model = self.s.select_smbios_model(hardware_report, macos_version)
-                    self.k.select_required_kexts(hardware_report, macos_version, needs_oclp, self.ac.patches)
-                    self.s.smbios_specific_options(hardware_report, smbios_model, macos_version, self.ac.patches, self.k)
+                    macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
+                    customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
+                    smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
+                    self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
+                    self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
                 elif option == 3:
                     self.ac.customize_patch_selection()
                 elif option == 4:
                     self.k.kext_configuration_menu(macos_version)
                 elif option == 5:
-                    smbios_model = self.s.customize_smbios_model(hardware_report, smbios_model, macos_version)
-                    self.s.smbios_specific_options(hardware_report, smbios_model, macos_version, self.ac.patches, self.k)
+                    smbios_model = self.s.customize_smbios_model(customized_hardware, smbios_model, macos_version)
+                    self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
                 elif option == 6:
-                    self.gathering_files(macos_version)
-                    self.build_opencore_efi(hardware_report, unsupported_devices, smbios_model, macos_version, needs_oclp)
-                    self.results(hardware_report, smbios_model, self.k.kexts)
+                    if not self.o.gather_bootloader_kexts(self.k.kexts, macos_version):
+                        continue
+                    
+                    self.build_opencore_efi(customized_hardware, disabled_devices, smbios_model, macos_version, needs_oclp)
+                    self.results(customized_hardware, smbios_model, self.k.kexts)
 
 if __name__ == '__main__':
     update_flag = updater.Updater().run_update()

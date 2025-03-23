@@ -61,7 +61,6 @@
    - Properly configure ResizeAppleGpuBars based on specific Resizable BAR information.
    - Allow flexible iGPU configuration between headless and driving a display when a supported discrete GPU is present.
    - Force Intel GPUs into VESA mode with HDMI and DVI connectors to simplify installation process.
-   - Use random layout IDs have comment based on author or motherboard brand for better sound quality.
    - Provide configuration required for using OpenCore Legacy Patcher.
    - Add built-in device property for network devices (fix 'Could not communicate with the server' when using iServices) and storage controllers (fix internal drives shown as external).
    - Prioritize SMBIOS optimized for both power management and performance.
@@ -112,6 +111,10 @@
 5. **Building OpenCore EFI**:
    - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
    - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
+
+   ![WiFi Profile Extractor](https://i.imgur.com/71TkJkD.png)
+
+   ![Choosing Codec Layout ID](https://i.imgur.com/Mcm20EQ.png)
 
    ![Building OpenCore EFI](https://i.imgur.com/deyj5de.png)
 
