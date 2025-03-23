@@ -185,7 +185,7 @@ class gatheringFiles:
                 if product.github_repo:
                     product_download_index = self.get_product_index(bootloader_kext_urls, product.github_repo.get("repo"))
             
-            if product_download_index:
+            if product_download_index is not None:
                 _, product_id, product_download_url = bootloader_kext_urls[product_download_index].values()
 
                 if product_download_url in seen_download_urls:
