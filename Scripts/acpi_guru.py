@@ -2905,9 +2905,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
             "All": True,
             "Comment": "Delete {}".format(signature or oemtableid),
             "Enabled": True,
-            "OemTableId": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("id"))),
+            "OemTableId": self.utils.hex_to_bytes(binascii.hexlify(table_data.get("id")).decode()),
             "TableLength": table_data.get("length"),
-            "TableSignature": self.utils.hex_to_bytes(self.utils.string_to_hex(table_data.get("signature")))
+            "TableSignature": self.utils.hex_to_bytes(binascii.hexlify(table_data.get("signature")).decode())
         }
 
     def fix_apic_processor_id(self):
