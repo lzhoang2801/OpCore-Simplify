@@ -164,7 +164,7 @@ class gatheringFiles:
             
             if product_name == "AirportItlwm":
                 version = macos_version[:2]
-                if self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
+                if all((kexts[kext_maestro.kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked, kexts[kext_maestro.kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked)) or self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
                     version = "22"
                 elif self.utils.parse_darwin_version("23.4.0") <= self.utils.parse_darwin_version(macos_version):
                     version = "23.4"

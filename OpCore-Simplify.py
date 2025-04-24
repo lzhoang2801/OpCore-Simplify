@@ -172,7 +172,7 @@ class OCPE:
                 if patch.checked:
                     if patch.name == "BATP":
                         patch.checked = getattr(self.ac, patch.function_name)()
-                        self.k.kexts[self.k.kext_data.kext_index_by_name("ECEnabler")].checked = patch.checked
+                        self.k.kexts[kext_maestro.kext_data.kext_index_by_name.get("ECEnabler")].checked = patch.checked
                         continue
 
                     acpi_load = getattr(self.ac, patch.function_name)()
@@ -256,7 +256,7 @@ class OCPE:
         print("")
         print("Your OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Name")))
         print("\t{}".format(self.result_dir))
-        if self.k.kexts[self.k.kext_data.kext_index_by_name("USBInjectAll")].checked:
+        if self.k.kexts[kext_maestro.kext_data.kext_index_by_name.get("USBInjectAll")].checked:
             print("\033[0;31mNote: USBInjectAll is not recommended. Please use USBMap.kext instead.\033[0m")
             print("")
             print("To use USBMap.kext:")

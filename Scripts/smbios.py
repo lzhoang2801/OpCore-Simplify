@@ -1,4 +1,5 @@
 from Scripts.datasets.mac_model_data import mac_devices
+from Scripts.datasets import kext_data
 from Scripts.datasets import os_data
 from Scripts import gathering_files
 from Scripts import run
@@ -73,7 +74,7 @@ class SMBIOS:
             selected_kexts.append("NoTouchID")
 
         for name in selected_kexts:
-            kext_maestro.check_kext(kext_maestro.kext_data.kext_index_by_name(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
+            kext_maestro.check_kext(kext_data.kext_index_by_name.get(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
     
     def select_smbios_model(self, hardware_report, macos_version):
         platform = "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform")

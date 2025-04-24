@@ -316,53 +316,44 @@ class ConfigProdigy:
 
             deviceproperties_add[pci_path].update(properties)
 
-        for kext in kexts:
-            if kext.checked:
-                if kext.name == "AirportItlwm" and self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
-                    for network_name, network_props in hardware_report.get("Network", {}).items():
-                        device_id = network_props.get("Device ID")
+        if kexts[kext_data.kext_index_by_name.get("WhateverGreen")].checked:
+            for gpu_name, gpu_info in hardware_report.get("GPU", {}).items():
+                if gpu_info.get("Device Type") == "Integrated GPU":
+                    if "Intel" in gpu_info.get("Manufacturer"):
+                        add_device_property(gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)"), self.igpu_properties(
+                            "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform"), 
+                            (gpu_name, gpu_info),
+                            hardware_report.get("Monitor", {}),
+                            macos_version
+                        ))
+                        if deviceproperties_add[gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")]:
+                            if gpu_info.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
+                                for device_name, device_info in hardware_report.get("System Devices", {}).items():
+                                    device_id = device_info.get("Device ID")
 
-                        if device_id in pci_data.IntelWiFiIDs and network_props.get("PCI Path"):
-                            add_device_property(network_props.get("PCI Path"), {"IOName": "pci14e4,43a0"})
-                elif kext.name == "WhateverGreen":
-                    for gpu_name, gpu_info in hardware_report.get("GPU", {}).items():
-                        if gpu_info.get("Device Type") == "Integrated GPU":
-                            if "Intel" in gpu_info.get("Manufacturer"):
-                                add_device_property(gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)"), self.igpu_properties(
-                                    "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform"), 
-                                    (gpu_name, gpu_info),
-                                    hardware_report.get("Monitor", {}),
-                                    macos_version
-                                ))
-                                if deviceproperties_add[gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")]:
-                                    if gpu_info.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
-                                        for device_name, device_info in hardware_report.get("System Devices", {}).items():
-                                            device_id = device_info.get("Device ID")
+                                    if not device_id in ("8086-1C3A", "8086-1E3A"):
+                                        continue
 
-                                            if not device_id in ("8086-1C3A", "8086-1E3A"):
-                                                continue
+                                    if "Sandy Bridge" in gpu_info.get("Codename") and device_id in "8086-1E3A":
+                                        add_device_property(device_info.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1C0000"})
+                                    elif "Ivy Bridge" in gpu_info.get("Codename") and device_id in "8086-1C3A":
+                                        add_device_property(device_info.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1E0000"})
+                elif gpu_info.get("Device Type") == "Discrete GPU":
+                    if not gpu_info.get("Device ID") in pci_data.SpoofGPUIDs:
+                        continue
 
-                                            if "Sandy Bridge" in gpu_info.get("Codename") and device_id in "8086-1E3A":
-                                                add_device_property(device_info.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1C0000"})
-                                            elif "Ivy Bridge" in gpu_info.get("Codename") and device_id in "8086-1C3A":
-                                                add_device_property(device_info.get("PCI Path", "PciRoot(0x0)/Pci(0x16,0x0)"), {"device-id": "3A1E0000"})
-                        elif gpu_info.get("Device Type") == "Discrete GPU":
-                            if not gpu_info.get("Device ID") in pci_data.SpoofGPUIDs:
-                                continue
+                    add_device_property(gpu_info.get("PCI Path"), {
+                        "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(gpu_info.get("Device ID")).split("-")[-1]),
+                        "model": gpu_name
+                    })
+        
+        if kexts[kext_data.kext_index_by_name.get("AppleALC")].checked:
+            selected_layout_id, audio_controller_properties = self.select_audio_codec_layout(hardware_report, controller_required=True)
 
-                            add_device_property(gpu_info.get("PCI Path"), {
-                                "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(gpu_info.get("Device ID")).split("-")[-1]),
-                                "model": gpu_name
-                            })
-                elif kext.name == "AppleALC":
-                    selected_layout_id, audio_controller_properties = self.select_audio_codec_layout(hardware_report, controller_required=True)
+            if selected_layout_id and audio_controller_properties:
+                add_device_property(audio_controller_properties.get("PCI Path"), {"layout-id": selected_layout_id})
 
-                    if selected_layout_id and audio_controller_properties:
-                        add_device_property(audio_controller_properties.get("PCI Path"), {"layout-id": selected_layout_id})
-
-        network_items = hardware_report.get("Network", {}).items()
-
-        for network_name, network_props in network_items:
+        for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
             if device_id in pci_data.AtherosWiFiIDs[6:8]:
@@ -383,10 +374,15 @@ class ConfigProdigy:
                 add_device_property(network_props.get("PCI Path"), {
                     "IOName": "1D6A-91B1"
                 })
+            elif device_id in pci_data.IntelWiFiIDs:
+                if all((kexts[kext_data.kext_index_by_name.get("AirportItlwm")].checked, self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"))):
+                    if all((kexts[kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked, kexts[kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked)):
+                        add_device_property(network_props.get("PCI Path"), {"IOName": "pci14e4,43a0"})
 
-        storage_controllers_items = hardware_report.get("Storage Controllers", {}).items()
+            if not network_props.get("ACPI Path"):
+                add_device_property(device_props.get("PCI Path"), {"built-in": "01"})
 
-        for device_name, device_props in list(network_items) + list(storage_controllers_items):
+        for device_name, device_props in hardware_report.get("Storage Controllers", {}).items():
             if not device_props.get("ACPI Path"):
                 add_device_property(device_props.get("PCI Path"), {"built-in": "01"})
 
@@ -404,7 +400,7 @@ class ConfigProdigy:
     def block_kext_bundle(self, kexts):
         kernel_block = []
 
-        if kexts[kext_data.kext_index_by_name("IOSkywalkFamily")].checked:
+        if kexts[kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked:
             kernel_block.append({
                 "Arch": "x86_64",
                 "Comment": "Allow IOSkywalk Downgrade",
@@ -453,12 +449,12 @@ class ConfigProdigy:
         if any(network_props.get("Device ID") in pci_data.AquantiaAqtionIDs for network_props in networks.values()):
             kernel_patch.extend(self.g.get_kernel_patches("Aquantia macOS Patches", self.g.aquantia_macos_patches_url))
 
-        if kexts[kext_data.kext_index_by_name("CpuTopologyRebuild")].checked:
+        if kexts[kext_data.kext_index_by_name.get("CpuTopologyRebuild")].checked:
             kernel_patch.extend(self.g.get_kernel_patches("Hyper Threading Patches", self.g.hyper_threading_patches_url))
-        elif kexts[kext_data.kext_index_by_name("ForgedInvariant")].checked:
+        elif kexts[kext_data.kext_index_by_name.get("ForgedInvariant")].checked:
             if not "AMD" in cpu_manufacturer:
                 kernel_patch.extend(self.g.get_kernel_patches("AMD Vanilla Patches", self.g.amd_vanilla_patches_url)[-6:-4])
-        elif kexts[kext_data.kext_index_by_name("CatalinaBCM5701Ethernet")].checked:
+        elif kexts[kext_data.kext_index_by_name.get("CatalinaBCM5701Ethernet")].checked:
             kernel_patch.append({
                 "Arch": "Any",
                 "Base": "",
@@ -687,14 +683,14 @@ class ConfigProdigy:
         config["UEFI"]["Quirks"]["UnblockFsConnect"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["UEFI"]["ReservedMemory"] = []
 
-        if kexts[kext_data.kext_index_by_name("BlueToolFixup")].checked:
+        if kexts[kext_data.kext_index_by_name.get("BlueToolFixup")].checked:
             config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothExternalDongleFailed"] = self.utils.hex_to_bytes("00")
             config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothInternalControllerInfo"] = self.utils.hex_to_bytes("0000000000000000000000000000")
         
-        if kexts[kext_data.kext_index_by_name("USBInjectAll")].checked:
+        if kexts[kext_data.kext_index_by_name.get("USBInjectAll")].checked:
             config["Kernel"]["Quirks"]["XhciPortLimit"] = True
 
-        if kexts[kext_data.kext_index_by_name("RestrictEvents")].checked:
+        if kexts[kext_data.kext_index_by_name.get("RestrictEvents")].checked:
             revpatch = []
             revblock = []
             if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("23.0.0") or \

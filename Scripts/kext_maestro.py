@@ -86,7 +86,7 @@ class KextMaestro:
         kext.checked = True
 
         for requires_kext_name in kext.requires_kexts:
-            requires_kext_index = kext_data.kext_index_by_name(requires_kext_name)
+            requires_kext_index = kext_data.kext_index_by_name.get(requires_kext_name)
             if requires_kext_index:
                 self.check_kext(requires_kext_index, target_darwin_version, allow_unsupported_kexts)
 
@@ -96,6 +96,10 @@ class KextMaestro:
                     other_kext.checked = False
 
     def select_required_kexts(self, hardware_report, macos_version, needs_oclp, acpi_patches):
+        self.utils.head("Select Required Kernel Extensions")
+        print("")
+        print("Checking for required kernel extensions...")
+
         for kext in self.kexts:
             kext.checked = kext.required
 
@@ -162,7 +166,52 @@ class KextMaestro:
             elif device_id in pci_data.BroadcomWiFiIDs[16:18] and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
                 selected_kexts.append("AirportBrcmFixup")
             elif device_id in pci_data.IntelWiFiIDs:
-                selected_kexts.append("AirportItlwm" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "itlwm")
+                print("\n*** Found {} is Intel WiFi device.".format(network_name))
+                print("")
+                print("\033[93mNote:\033[0m Intel WiFi devices have two available kext options:")
+                print("")
+                print("1. \033[1mAirportItlwm\033[0m - Uses native WiFi settings menu")
+                print("   • Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support")
+                print("   • Supports enterprise-level security")
+
+                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
+                    print("   • \033[91mSince macOS Sequoia 15\033[0m: Can work with OCLP root patch but may cause issues")
+                elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
+                    print("   • \033[91mOn macOS Sonoma 14\033[0m: iServices won't work unless using OCLP root patch")
+                
+                print("")
+                print("2. \033[1mitlwm\033[0m - More stable overall")
+                print("   • Works with HeliPort app instead of native WiFi settings menu")
+                print("   • No Apple Continuity features and enterprise-level security")
+                print("   • Can connect to Hidden Networks")
+                print("")
+
+                recommended_option = 2 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else 1
+                recommended_name = "itlwm" if recommended_option == 2 else "AirportItlwm"
+
+                kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name)).strip() or str(recommended_option)
+                
+                if kext_option.isdigit() and 0 < int(kext_option) < 3:
+                    selected_option = int(kext_option)
+                else:
+                    print("\033[91mInvalid selection, using recommended option: {}\033[0m".format(recommended_option))
+                    selected_option = recommended_option
+                
+                if selected_option == 2:
+                    selected_kexts.append("itlwm")
+                else:
+                    selected_kexts.append("AirportItlwm")
+                    
+                    if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
+                        selected_kexts.append("IOSkywalkFamily")
+                    elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
+                        print("")
+                        print("\033[93mNote:\033[0m Since macOS Sonoma 14, iServices won't work with AirportItlwm without patches")
+                        print("")
+                        option = self.utils.request_input("Apply OCLP root patch to fix iServices? (y/N): ").strip().lower() or "n"
+                        
+                        if option == "y":
+                            selected_kexts.append("IOSkywalkFamily")
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 selected_kexts.append("corecaptureElCap")
                 if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.99.99"):
@@ -270,7 +319,7 @@ class KextMaestro:
             selected_kexts.extend(("AppleIntelCPUPowerManagement", "AppleIntelCPUPowerManagementClient"))
 
         for name in selected_kexts:
-            self.check_kext(kext_data.kext_index_by_name(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
+            self.check_kext(kext_data.kext_index_by_name.get(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
 
     def install_kexts_to_efi(self, macos_version, kexts_directory):
         for kext in self.kexts:
@@ -295,7 +344,7 @@ class KextMaestro:
                                 break
                         else:
                             main_kext = kext_path.split("/")[0]
-                            main_kext_index = kext_data.kext_index_by_name(main_kext)
+                            main_kext_index = kext_data.kext_index_by_name.get(main_kext)
                             if not main_kext_index or self.kexts[main_kext_index].checked:
                                 if os.path.splitext(os.path.basename(kext_path))[0] in kext.name:
                                     source_kext_path = os.path.join(self.ock_files_dir, kext_path)
@@ -365,15 +414,15 @@ class KextMaestro:
         kernel_add = []
         unload_kext = []
 
-        if self.kexts[kext_data.kext_index_by_name("IO80211ElCap")].checked:
+        if self.kexts[kext_data.kext_index_by_name.get("IO80211ElCap")].checked:
             unload_kext.extend((
                 "AirPortBrcm4331",
                 "AppleAirPortBrcm43224"
             ))
-        elif self.kexts[kext_data.kext_index_by_name("VoodooSMBus")].checked:
+        elif self.kexts[kext_data.kext_index_by_name.get("VoodooSMBus")].checked:
             unload_kext.append("VoodooPS2Mouse")
-        elif self.kexts[kext_data.kext_index_by_name("VoodooRMI")].checked:
-            if not self.kexts[kext_data.kext_index_by_name("VoodooI2C")].checked:
+        elif self.kexts[kext_data.kext_index_by_name.get("VoodooRMI")].checked:
+            if not self.kexts[kext_data.kext_index_by_name.get("VoodooI2C")].checked:
                 unload_kext.append("RMII2C")
             else:
                 unload_kext.extend((
@@ -407,7 +456,7 @@ class KextMaestro:
             bundle["MaxKernel"] = os_data.get_latest_darwin_version()
             bundle["MinKernel"] = os_data.get_lowest_darwin_version()
             
-            kext_index = kext_data.kext_index_by_name(os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0])
+            kext_index = kext_data.kext_index_by_name.get(os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0])
 
             if kext_index:
                 bundle["MaxKernel"] = self.kexts[kext_index].max_darwin_version
