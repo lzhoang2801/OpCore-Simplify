@@ -1,4 +1,3 @@
-
 from Scripts.datasets import cpu_data
 from Scripts.datasets import kext_data
 from Scripts.datasets import os_data
@@ -77,12 +76,6 @@ class KextMaestro:
             return "Xeon" in processor_name
         
         return False
-    
-    def get_kext_index(self, name):
-        for index, kext in enumerate(self.kexts):
-            if kext.name == name:
-                return index
-        return None
 
     def check_kext(self, index, target_darwin_version, allow_unsupported_kexts=False):
         kext = self.kexts[index]
@@ -93,7 +86,7 @@ class KextMaestro:
         kext.checked = True
 
         for requires_kext_name in kext.requires_kexts:
-            requires_kext_index = self.get_kext_index(requires_kext_name)
+            requires_kext_index = kext_data.kext_index_by_name(requires_kext_name)
             if requires_kext_index:
                 self.check_kext(requires_kext_index, target_darwin_version, allow_unsupported_kexts)
 
@@ -277,7 +270,7 @@ class KextMaestro:
             selected_kexts.extend(("AppleIntelCPUPowerManagement", "AppleIntelCPUPowerManagementClient"))
 
         for name in selected_kexts:
-            self.check_kext(self.get_kext_index(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
+            self.check_kext(kext_data.kext_index_by_name(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
 
     def install_kexts_to_efi(self, macos_version, kexts_directory):
         for kext in self.kexts:
@@ -302,7 +295,7 @@ class KextMaestro:
                                 break
                         else:
                             main_kext = kext_path.split("/")[0]
-                            main_kext_index = self.get_kext_index(main_kext)
+                            main_kext_index = kext_data.kext_index_by_name(main_kext)
                             if not main_kext_index or self.kexts[main_kext_index].checked:
                                 if os.path.splitext(os.path.basename(kext_path))[0] in kext.name:
                                     source_kext_path = os.path.join(self.ock_files_dir, kext_path)
@@ -372,15 +365,15 @@ class KextMaestro:
         kernel_add = []
         unload_kext = []
 
-        if self.kexts[self.get_kext_index("IO80211ElCap")].checked:
+        if self.kexts[kext_data.kext_index_by_name("IO80211ElCap")].checked:
             unload_kext.extend((
                 "AirPortBrcm4331",
                 "AppleAirPortBrcm43224"
             ))
-        elif self.kexts[self.get_kext_index("VoodooSMBus")].checked:
+        elif self.kexts[kext_data.kext_index_by_name("VoodooSMBus")].checked:
             unload_kext.append("VoodooPS2Mouse")
-        elif self.kexts[self.get_kext_index("VoodooRMI")].checked:
-            if not self.kexts[self.get_kext_index("VoodooI2C")].checked:
+        elif self.kexts[kext_data.kext_index_by_name("VoodooRMI")].checked:
+            if not self.kexts[kext_data.kext_index_by_name("VoodooI2C")].checked:
                 unload_kext.append("RMII2C")
             else:
                 unload_kext.extend((
@@ -414,7 +407,7 @@ class KextMaestro:
             bundle["MaxKernel"] = os_data.get_latest_darwin_version()
             bundle["MinKernel"] = os_data.get_lowest_darwin_version()
             
-            kext_index = self.get_kext_index(os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0])
+            kext_index = kext_data.kext_index_by_name(os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0])
 
             if kext_index:
                 bundle["MaxKernel"] = self.kexts[kext_index].max_darwin_version

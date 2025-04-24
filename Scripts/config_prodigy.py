@@ -1,7 +1,7 @@
 from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
 from Scripts.datasets import mac_model_data
-from Scripts.datasets import os_data
+from Scripts.datasets import kext_data
 from Scripts.datasets import pci_data
 from Scripts.datasets import codec_layouts
 from Scripts import gathering_files
@@ -404,18 +404,16 @@ class ConfigProdigy:
     def block_kext_bundle(self, kexts):
         kernel_block = []
 
-        for kext in kexts:
-            if kext.checked:
-                if kext.name == "IOSkywalkFamily":
-                    kernel_block.append({
-                        "Arch": "x86_64",
-                        "Comment": "Allow IOSkywalk Downgrade",
-                        "Enabled": True,
-                        "Identifier": "com.apple.iokit.IOSkywalkFamily",
-                        "MaxKernel": "",
-                        "MinKernel": "23.0.0",
-                        "Strategy": "Exclude"
-                    })
+        if kexts[kext_data.kext_index_by_name("IOSkywalkFamily")].checked:
+            kernel_block.append({
+                "Arch": "x86_64",
+                "Comment": "Allow IOSkywalk Downgrade",
+                "Enabled": True,
+                "Identifier": "com.apple.iokit.IOSkywalkFamily",
+                "MaxKernel": "",
+                "MinKernel": "23.0.0",
+                "Strategy": "Exclude"
+            })
         
         return kernel_block
 
@@ -455,30 +453,28 @@ class ConfigProdigy:
         if any(network_props.get("Device ID") in pci_data.AquantiaAqtionIDs for network_props in networks.values()):
             kernel_patch.extend(self.g.get_kernel_patches("Aquantia macOS Patches", self.g.aquantia_macos_patches_url))
 
-        for kext in kexts:
-            if kext.checked:
-                if kext.name == "CpuTopologyRebuild":
-                    kernel_patch.extend(self.g.get_kernel_patches("Hyper Threading Patches", self.g.hyper_threading_patches_url))
-                elif kext.name == "ForgedInvariant":
-                    if not "AMD" in cpu_manufacturer:
-                        kernel_patch.extend(self.g.get_kernel_patches("AMD Vanilla Patches", self.g.amd_vanilla_patches_url)[-6:-4])
-                elif kext.name == "CatalinaBCM5701Ethernet":
-                    kernel_patch.append({
-                        "Arch": "Any",
-                        "Base": "",
-                        "Comment": "Broadcom BCM577XX Patch",
-                        "Count": 1,
-                        "Enabled": True,
-                        "Find": self.utils.hex_to_bytes("E8CA9EFFFF66898300050000"),
-                        "Identifier": "com.apple.iokit.CatalinaBCM5701Ethernet",
-                        "Limit": 0,
-                        "Mask": self.utils.hex_to_bytes(""),
-                        "MaxKernel": "",
-                        "MinKernel": "20.0.0",
-                        "Replace": self.utils.hex_to_bytes("B8B416000066898300050000"),
-                        "ReplaceMask": self.utils.hex_to_bytes(""),
-                        "Skip": 0
-                    })
+        if kexts[kext_data.kext_index_by_name("CpuTopologyRebuild")].checked:
+            kernel_patch.extend(self.g.get_kernel_patches("Hyper Threading Patches", self.g.hyper_threading_patches_url))
+        elif kexts[kext_data.kext_index_by_name("ForgedInvariant")].checked:
+            if not "AMD" in cpu_manufacturer:
+                kernel_patch.extend(self.g.get_kernel_patches("AMD Vanilla Patches", self.g.amd_vanilla_patches_url)[-6:-4])
+        elif kexts[kext_data.kext_index_by_name("CatalinaBCM5701Ethernet")].checked:
+            kernel_patch.append({
+                "Arch": "Any",
+                "Base": "",
+                "Comment": "Broadcom BCM577XX Patch",
+                "Count": 1,
+                "Enabled": True,
+                "Find": self.utils.hex_to_bytes("E8CA9EFFFF66898300050000"),
+                "Identifier": "com.apple.iokit.CatalinaBCM5701Ethernet",
+                "Limit": 0,
+                "Mask": self.utils.hex_to_bytes(""),
+                "MaxKernel": "",
+                "MinKernel": "20.0.0",
+                "Replace": self.utils.hex_to_bytes("B8B416000066898300050000"),
+                "ReplaceMask": self.utils.hex_to_bytes(""),
+                "Skip": 0
+            })
 
         for patch in kernel_patch:
             if "AppleEthernetAquantiaAqtion" in patch["Identifier"]:
@@ -691,42 +687,42 @@ class ConfigProdigy:
         config["UEFI"]["Quirks"]["UnblockFsConnect"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["UEFI"]["ReservedMemory"] = []
 
-        for kext in kexts:
-            if kext.checked:
-                if kext.name == "BlueToolFixup":
-                    config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothExternalDongleFailed"] = self.utils.hex_to_bytes("00")
-                    config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothInternalControllerInfo"] = self.utils.hex_to_bytes("0000000000000000000000000000")
-                elif kext.name == "USBInjectAll":
-                    config["Kernel"]["Quirks"]["XhciPortLimit"] = True
-                elif kext.name == "RestrictEvents":
-                    revpatch = []
-                    revblock = []
-                    if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("23.0.0") or \
-                        len(config["Booter"]["Patch"]) and self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.4.0"):
-                        revpatch.append("sbvmm")
-                    if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-                        self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=5)):
-                        config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpu"] = 1
-                        config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpuname"] = hardware_report.get("CPU").get("Processor Name")
-                        if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("23.0.0"):
-                            revpatch.append("cpuname")
-                        config["PlatformInfo"]["Generic"]["ProcessorType"] = 1537 if int(hardware_report.get("CPU").get("Core Count")) < 8 else 3841
-                    if  "Intel" in hardware_report.get("CPU").get("Manufacturer") and \
-                        "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
-                        intergrated_gpu = list(hardware_report.get("GPU").items())[-1][-1]
-                        if intergrated_gpu.get("OCLP Compatibility"):
-                            config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Settings"] = "-allow_amfi"
-                            if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.4.0"):
-                                if intergrated_gpu.get("Codename") in ("Broadwell", "Haswell", "Ivy Bridge", "Sandy Bridge"):
-                                    revblock.append("media")
-                                if intergrated_gpu.get("Codename") in ("Kaby Lake", "Skylake", "Broadwell", "Haswell"):
-                                    revpatch.append("asset")
-                                elif intergrated_gpu.get("Codename") in ("Ivy Bridge", "Sandy Bridge"):
-                                    revpatch.append("f16c")
-                    if revpatch:
-                        config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revpatch"] = ",".join(revpatch)
-                    if revblock:
-                        config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revblock"] = ",".join(revblock)
+        if kexts[kext_data.kext_index_by_name("BlueToolFixup")].checked:
+            config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothExternalDongleFailed"] = self.utils.hex_to_bytes("00")
+            config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothInternalControllerInfo"] = self.utils.hex_to_bytes("0000000000000000000000000000")
+        
+        if kexts[kext_data.kext_index_by_name("USBInjectAll")].checked:
+            config["Kernel"]["Quirks"]["XhciPortLimit"] = True
+
+        if kexts[kext_data.kext_index_by_name("RestrictEvents")].checked:
+            revpatch = []
+            revblock = []
+            if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("23.0.0") or \
+                len(config["Booter"]["Patch"]) and self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.4.0"):
+                revpatch.append("sbvmm")
+            if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
+                self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=5)):
+                config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpu"] = 1
+                config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revcpuname"] = hardware_report.get("CPU").get("Processor Name")
+                if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("23.0.0"):
+                    revpatch.append("cpuname")
+                config["PlatformInfo"]["Generic"]["ProcessorType"] = 1537 if int(hardware_report.get("CPU").get("Core Count")) < 8 else 3841
+            if  "Intel" in hardware_report.get("CPU").get("Manufacturer") and \
+                "Integrated GPU" in list(hardware_report.get("GPU").items())[-1][-1].get("Device Type"):
+                intergrated_gpu = list(hardware_report.get("GPU").items())[-1][-1]
+                if intergrated_gpu.get("OCLP Compatibility"):
+                    config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Settings"] = "-allow_amfi"
+                    if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.4.0"):
+                        if intergrated_gpu.get("Codename") in ("Broadwell", "Haswell", "Ivy Bridge", "Sandy Bridge"):
+                            revblock.append("media")
+                        if intergrated_gpu.get("Codename") in ("Kaby Lake", "Skylake", "Broadwell", "Haswell"):
+                            revpatch.append("asset")
+                        elif intergrated_gpu.get("Codename") in ("Ivy Bridge", "Sandy Bridge"):
+                            revpatch.append("f16c")
+            if revpatch:
+                config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revpatch"] = ",".join(revpatch)
+            if revblock:
+                config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["revblock"] = ",".join(revblock)
         
         config["NVRAM"]["Delete"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"] = list(config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"].keys())
         config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"] = list(config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].keys())

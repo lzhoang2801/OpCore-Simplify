@@ -172,7 +172,7 @@ class OCPE:
                 if patch.checked:
                     if patch.name == "BATP":
                         patch.checked = getattr(self.ac, patch.function_name)()
-                        self.k.kexts[self.k.get_kext_index("ECEnabler")].checked = patch.checked
+                        self.k.kexts[self.k.kext_data.kext_index_by_name("ECEnabler")].checked = patch.checked
                         continue
 
                     acpi_load = getattr(self.ac, patch.function_name)()
@@ -251,22 +251,20 @@ class OCPE:
         print("OpenCore EFI build complete.")
         time.sleep(2)
         
-    def results(self, hardware_report, smbios_model, kexts):
+    def results(self, hardware_report, smbios_model):
         self.u.head("Results")
         print("")
         print("Your OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Name")))
         print("\t{}".format(self.result_dir))
-        for kext in kexts:
-            if kext.name == "USBInjectAll":
-                if kext.checked:
-                    print("\033[0;31mNote: USBInjectAll is not recommended. Please use USBMap.kext instead.\033[0m")
-                    print("")
-                    print("To use USBMap.kext:")
-                    print("")
-                    print("* Remove USBInjectAll.kext from the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
-                else:
-                    print("")
-                    print("Before using EFI, please complete the following steps:")
+        if self.k.kexts[self.k.kext_data.kext_index_by_name("USBInjectAll")].checked:
+            print("\033[0;31mNote: USBInjectAll is not recommended. Please use USBMap.kext instead.\033[0m")
+            print("")
+            print("To use USBMap.kext:")
+            print("")
+            print("* Remove USBInjectAll.kext from the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+        else:
+            print("")
+            print("Before using EFI, please complete the following steps:")
         print("")
         print("* Use USBToolBox:")
         print("   - Mapping USB with the option 'Use Native Class' enabled.")
@@ -363,7 +361,7 @@ class OCPE:
                         continue
                     
                     self.build_opencore_efi(customized_hardware, disabled_devices, smbios_model, macos_version, needs_oclp)
-                    self.results(customized_hardware, smbios_model, self.k.kexts)
+                    self.results(customized_hardware, smbios_model)
 
 if __name__ == '__main__':
     update_flag = updater.Updater().run_update()

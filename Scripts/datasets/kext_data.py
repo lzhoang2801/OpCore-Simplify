@@ -887,3 +887,5 @@ kexts = [
         }
     )
 ]
+
+kext_index_by_name = {kext.name: index for index, kext in enumerate(kexts)}
