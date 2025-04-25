@@ -1581,7 +1581,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
             return
         
         try:
-            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.utils.contains_any(cpu_data.IntelCPUGenerations, self.hardware_report.get("CPU").get("Codename"), start=27) else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
+            smbus_device_name = self.acpi.get_device_paths_with_hid("0x001F0003" if self.hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[50:] else "0x001F0004", self.dsdt)[0][0].split(".")[-1]
         except:
             smbus_device_name = "SBUS"
             
@@ -2415,10 +2415,10 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
         }
 
     def is_intel_hedt_cpu(self, processor_name, cpu_codename):
-        if cpu_codename in cpu_data.IntelCPUGenerations[22:43]:
+        if cpu_codename in cpu_data.IntelCPUGenerations[45:66]:
             return cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
         
-        if cpu_codename in cpu_data.IntelCPUGenerations[43:]:
+        if cpu_codename in cpu_data.IntelCPUGenerations[66:]:
             return "Xeon" in processor_name
         
         return False
@@ -3076,7 +3076,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[-7:]:
             selected_patches.append("RCSP")
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=27):
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[50:]:
             selected_patches.append("FixHPET")
 
         for device_name, device_info in hardware_report.get("System Devices", {}).items():
@@ -3103,7 +3103,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if hardware_report.get("Motherboard").get("Chipset") in ("C610/X99", "Wellsburg", "X299"):
             selected_patches.append("RTC0")
 
-        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=17):
+        if "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:40]:
             selected_patches.append("RTCAWAC")
 
         if "SURFACE" in hardware_report.get("Motherboard").get("Name"):

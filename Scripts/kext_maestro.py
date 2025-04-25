@@ -69,10 +69,10 @@ class KextMaestro:
         return pci_ids
 
     def is_intel_hedt_cpu(self, processor_name, cpu_codename):
-        if cpu_codename in cpu_data.IntelCPUGenerations[22:43]:
+        if cpu_codename in cpu_data.IntelCPUGenerations[45:66]:
             return cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
         
-        if cpu_codename in cpu_data.IntelCPUGenerations[43:]:
+        if cpu_codename in cpu_data.IntelCPUGenerations[66:]:
             return "Xeon" in processor_name
         
         return False
@@ -115,7 +115,7 @@ class KextMaestro:
             selected_kexts.append("SMCLightSensor")
 
         if  not (" Core" in hardware_report.get("CPU").get("Processor Name") and \
-                 self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), start=5)) or \
+                 hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[28:]) or \
             self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
             selected_kexts.append("RestrictEvents")
 
@@ -130,7 +130,9 @@ class KextMaestro:
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("22.0.0") and not "AVX2" in hardware_report.get("CPU").get("SIMD Features"):
             selected_kexts.append("CryptexFixup")
 
-        if self.utils.contains_any(cpu_data.IntelCPUGenerations, hardware_report.get("CPU").get("Codename"), end=3) and \
+        if  "Lunar Lake" not in hardware_report.get("CPU").get("Codename") and \
+            "Meteor Lake" not in hardware_report.get("CPU").get("Codename") and \
+            hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:20] and \
             int(hardware_report.get("CPU").get("Core Count")) > 6:
             selected_kexts.append("CpuTopologyRebuild")
 
