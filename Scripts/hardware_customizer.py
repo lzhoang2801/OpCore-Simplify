@@ -173,4 +173,4 @@ class HardwareCustomizer:
             if not self.customized_hardware[hardware_category]:
                 del self.customized_hardware[hardware_category]
         
-        self.disabled_devices["{}: {}".format(device_type, device_name)] = device_props
+        self.disabled_devices["{}: {}".format(hardware_category, device_name)] = device_props
