@@ -380,7 +380,7 @@ class ConfigProdigy:
                         add_device_property(network_props.get("PCI Path"), {"IOName": "pci14e4,43a0"})
 
             if not network_props.get("ACPI Path"):
-                add_device_property(device_props.get("PCI Path"), {"built-in": "01"})
+                add_device_property(network_props.get("PCI Path"), {"built-in": "01"})
 
         for device_name, device_props in hardware_report.get("Storage Controllers", {}).items():
             if not device_props.get("ACPI Path"):
