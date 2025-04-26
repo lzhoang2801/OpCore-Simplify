@@ -20,11 +20,6 @@ jobs:
           cache: 'pip'
           cache-dependency-path: nuitka-requirements.txt
 
-      - name: Upgrade dependencies
-        run: |
-          python.exe -m pip install --upgrade pip
-          pip install -U -r nuitka-requirements.txt
-
       - name: Build with Nuitka
         uses: Nuitka/Nuitka-Action@main
         with:
