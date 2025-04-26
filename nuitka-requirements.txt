@@ -1,4 +1,5 @@
 ordered-set
 wheel
 zstandard
+certifi
 nuitka
