@@ -3076,7 +3076,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[-7:]:
             selected_patches.append("RCSP")
 
-        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and self.hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[50:]:
+        if "Laptop" in hardware_report.get("Motherboard").get("Platform") and hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[50:]:
             selected_patches.append("FixHPET")
 
         for device_name, device_info in hardware_report.get("System Devices", {}).items():
