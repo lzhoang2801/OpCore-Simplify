@@ -29,10 +29,11 @@ jobs:
         with:
           nuitka-version: main
           script-name: OpCore-Simplify.py
-          mode: app
-          onefile: true
-          enable-console: true
+          include-data-dir: "Scripts=Scripts"
+          product-name: "OpCore-Simplify"
+          file-description: "A tool designed to simplify the creation of OpenCore EFI configurations for Hackintosh systems."
           windows-icon-from-ico: "assets/icon.ico"
+          windows-uac-admin: true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
