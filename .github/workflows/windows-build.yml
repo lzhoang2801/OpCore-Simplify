@@ -1,0 +1,43 @@
+name: Windows Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Windows Executable
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.x'
+          architecture: 'x64'
+          # cache: 'pip'
+
+      # - name: Install dependencies
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install -r requirements.txt
+
+      - name: Build with Nuitka
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          script-name: OpCore-Simplify.py
+          mode: app
+          onefile: true
+          enable-console: true
+          windows-icon-from-ico: "assets/icon.ico"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpCore-Simplify-Windows
+          path: build/OpCore-Simplify.exe
+          include-hidden-files: true
+          retention-days: 30
