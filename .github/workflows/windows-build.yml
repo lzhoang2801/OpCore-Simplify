@@ -29,21 +29,22 @@ jobs:
         uses: Nuitka/Nuitka-Action@main
         with:
           nuitka-version: main
+          mode: standalone
           script-name: OpCore-Simplify.py
-          include-data-dir: "Scripts=Scripts"
-          product-name: "OpCore-Simplify"
-          file-version: "1.0.0.0"
-          product-version: "1.0.0.0"
+          include-data-dir: Scripts=Scripts
+          product-name: OpCore-Simplify
+          file-version: 1.0.0.0
+          product-version: 1.0.0.0
           file-description: "A tool designed to simplify the creation of OpenCore EFI configurations for Hackintosh systems."
-          windows-icon-from-ico: "assets/icon.ico"
+          windows-icon-from-ico: assets/icon.ico
           windows-uac-admin: true
-          include-package: "certifi"
-          include-package-data: "certifi"
+          include-package: certifi
+          include-package-data: certifi
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: OpCore-Simplify-Windows
-          path: build/OpCore-Simplify.exe
+          path: build/OpCore-Simplify.dist
           include-hidden-files: true
           retention-days: 30
