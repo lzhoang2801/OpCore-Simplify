@@ -17,12 +17,15 @@ jobs:
         with:
           python-version: '3.13.x'
           architecture: 'x64'
-          # cache: 'pip'
+          cache: 'pip'
 
       # - name: Install dependencies
       #   run: |
       #     python -m pip install --upgrade pip
       #     pip install -r requirements.txt
+
+      - name: Upgrade dependencies
+        run: pip install -U ordered-set wheel zstandard 
 
       - name: Build with Nuitka
         uses: Nuitka/Nuitka-Action@main
@@ -31,6 +34,8 @@ jobs:
           script-name: OpCore-Simplify.py
           include-data-dir: "Scripts=Scripts"
           product-name: "OpCore-Simplify"
+          file-version: "1.0.0.0"
+          product-version: "1.0.0.0"
           file-description: "A tool designed to simplify the creation of OpenCore EFI configurations for Hackintosh systems."
           windows-icon-from-ico: "assets/icon.ico"
           windows-uac-admin: true
