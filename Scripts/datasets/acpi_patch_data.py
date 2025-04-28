@@ -127,8 +127,13 @@ patches = [
         function_name = "add_usb_power_properties"
     ),
     PatchInfo(
+        name = "WMIS",
+        description = "Certain models forget to return result from ThermalZone",
+        function_name = "return_thermal_zone"
+    ),
+    PatchInfo(
         name = "XOSI",
         description = "Spoofs the operating system to Windows, enabling devices locked behind non-Windows systems on macOS",
         function_name = "operating_system_patch"
-    ),
+    )
 ]

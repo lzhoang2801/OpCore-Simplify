@@ -3015,6 +3015,68 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
             ],
             "Patch": patches
         }
+    
+    def return_thermal_zone(self):
+        ssdt_name = "SSDT-WMIS"
+        ssdt_content = """
+// Resource: https://github.com/zhen-zen/YogaSMC/blob/master/YogaSMC/SSDTSample/SSDT-WMIS.dsl
+
+/*
+ * Sample SSDT to fix sensor return
+ *
+ * Certain models forget to return result from ThermalZone:
+ *
+ * Method (WQBI, 1, NotSerialized)
+ * {
+ *     \_TZ.WQBI (Arg0)
+ * }
+ *
+ * So we have to patch it for correct reporting.
+ * Rename Method (WQBI, 1, N) to XQBI
+ * (ThermalZone one usually has Serialized type)
+ *
+ * Find: 57514249 01 // WQBI
+ * Repl: 58514249 01 // XQBI 
+ *
+ * MethodFlags :=
+ * bit 0-2: ArgCount (0-7)
+ * bit 3:   SerializeFlag
+ *          0 NotSerialized
+ *          1 Serialized
+ */
+DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
+{
+    External (_TZ.WQBI, MethodObj)    // Method in ThermalZone
+
+    Method (_SB.WMIS.WQBI, 1, NotSerialized)
+    {
+        Return (\_TZ.WQBI (Arg0))
+    }
+}
+"""
+        for table_name in self.sorted_nicely(list(self.acpi.acpi_tables)):
+            table = self.acpi.acpi_tables[table_name]
+            wqbi_method = self.acpi.get_method_paths("WQBI", table=table)
+
+            if not wqbi_method:
+                continue
+
+            return {
+                "Add": [
+                    {
+                        "Comment": ssdt_name + ".aml",
+                        "Enabled": self.write_ssdt(ssdt_name, ssdt_content),
+                        "Path": ssdt_name + ".aml"
+                    }
+                ],
+                "Patch": [
+                    {
+                        "Comment": "WQBI to XQBI Rename",
+                        "Find": "5751424901",
+                        "Replace": "5851424901"
+                    }
+                ]
+            }
 
     def drop_cpu_tables(self):
         deletes = []
@@ -3125,6 +3187,10 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
         if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
             selected_patches.append("BATP")
             selected_patches.append("XOSI")
+
+        for device_name, device_info in hardware_report.get("System Devices", {}).items():
+            if device_info.get("Bus Type") == "ACPI" and device_info.get("Device") in pci_data.YogaHIDs:
+                selected_patches.append("WMIS")
 
         for patch in self.patches:
             patch.checked = patch.name in selected_patches
