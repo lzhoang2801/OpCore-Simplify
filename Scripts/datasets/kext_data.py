@@ -616,6 +616,16 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "YogaSMC", 
+        description = "Enables support for syncing SMC keys, controlling sensors and managing vendor-specific features",
+        category = "Brand Specific",
+        requires_kexts = ["Lilu", "VirtualSMC"],
+        github_repo = {
+            "owner": "zhen-zen",
+            "repo": "YogaSMC"
+        }
+    ),
+    KextInfo(
         name = "CtlnaAHCIPort", 
         description = "Improves support for certain SATA controllers", 
         category = "Storage",

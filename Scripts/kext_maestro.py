@@ -282,6 +282,10 @@ class KextMaestro:
                                 selected_kexts.append("AlpsHID")
                             elif 78 < idx:
                                 selected_kexts.append("VoodooRMI")
+        
+        for device_name, device_info in hardware_report.get("System Devices", {}).items():
+            if device_info.get("Bus Type") == "ACPI" and device_info.get("Device") in pci_data.YogaHIDs:
+                selected_kexts.append("YogaSMC")
 
         if any(patch.checked for patch in acpi_patches if patch.name == "BATP"):
             selected_kexts.append("ECEnabler")
