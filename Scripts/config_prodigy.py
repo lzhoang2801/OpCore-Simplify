@@ -435,7 +435,7 @@ class ConfigProdigy:
             return self.cpuids.get("Broadwell")
         elif "Tiger Lake" in cpu_codename:
             return self.cpuids.get("Ice Lake")
-        elif "Ice Lake" not in cpu_codename and cpu_codename in cpu_data.IntelCPUGenerations[:57]:
+        elif "Ice Lake" not in cpu_codename and cpu_codename in cpu_data.IntelCPUGenerations[:34]:
             if not "Comet Lake" in cpu_codename:
                 return self.cpuids.get("Comet Lake")
             if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.0.0"):
