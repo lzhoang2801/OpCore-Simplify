@@ -152,7 +152,6 @@ class KextMaestro:
         if needs_oclp:
             selected_kexts.extend(("AMFIPass", "RestrictEvents"))
 
-        ethernet_device = None
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
@@ -237,7 +236,7 @@ class KextMaestro:
             elif device_id in pci_data.IntelX500IDs:
                 selected_kexts.append("IntelLucy")
 
-        if not ethernet_device:
+        if not hardware_report.get("Network"):
             selected_kexts.append("NullEthernet")
 
         for bluetooth_name, bluetooth_props in hardware_report.get("Bluetooth", {}).items():
