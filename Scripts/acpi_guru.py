@@ -2876,24 +2876,133 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
             ]
         }
 
+    def find_line_start(self, text, index):
+        current_idx = index
+        while current_idx > 0:
+            if text[current_idx] == '\n':
+                return current_idx + 1
+            current_idx -= 1
+        return 0
+
+    def extract_line(self, text, index):
+        start_idx = self.find_line_start(text, index)
+        end_idx = text.index("\n", start_idx) + 1 if "\n" in text[start_idx:] else len(text)
+        return text[start_idx:end_idx].strip(), start_idx, end_idx
+
+    def extract_block_content(self, text, start_idx):
+        try:
+            block_start = text.index("{", start_idx)
+            
+            brace_count = 1
+            pos = block_start + 1
+            
+            while brace_count > 0 and pos < len(text):
+                if text[pos] == '{':
+                    brace_count += 1
+                elif text[pos] == '}':
+                    brace_count -= 1
+                pos += 1
+            
+            if brace_count == 0:
+                return text[block_start:pos]
+        except ValueError as e:
+            pass
+
+        return ""
+
+    def parse_field_line(self, line):
+        try:
+            if "//" in line:
+                line = line.split("//")[0].strip()
+            
+            parts = line.split(",")
+            
+            if len(parts) >= 2:
+                field_name = parts[0].strip()
+                
+                size_part = parts[1].strip()
+                try:
+                    field_size = int(size_part)
+                except ValueError:
+                    return None, None
+                        
+                return field_name, field_size
+        except (ValueError, IndexError) as e:
+            pass
+        
+        return None, None
+
+    def process_embedded_control_region(self, table, start_idx):
+        try:
+            embed_control_idx = table.index("EmbeddedControl", start_idx)
+            line, start_line_idx, end_line_idx = self.extract_line(table, embed_control_idx)
+            
+            region_name = line.split("(")[1].split(",")[0].strip()
+            
+            return region_name, end_line_idx
+        except (ValueError, IndexError) as e:
+            return None, start_idx + 1
+
+    def process_field_definition(self, table, region_name, start_idx):
+        fields = []
+        try:
+            field_pattern = f"Field ({region_name}"
+            if field_pattern not in table[start_idx:]:
+                return fields, len(table)
+                
+            field_start_idx = table.index(field_pattern, start_idx)
+            field_line, field_start_line_idx, field_end_line_idx = self.extract_line(table, field_start_idx)
+            
+            field_block = self.extract_block_content(table, field_end_line_idx)
+            
+            for line in field_block.splitlines():
+                line = line.strip()
+                if not line or line in ["{", "}"]:
+                    continue
+                    
+                field_name, field_size = self.parse_field_line(line)
+                if field_name and field_size is not None:
+                    field_info = {
+                        "name": field_name,
+                        "size": field_size,
+                    }
+                    fields.append(field_info)
+            
+            return fields, field_end_line_idx
+        except (ValueError, IndexError) as e:
+            return fields, start_idx + 1
+
     def battery_status_patch(self):
         if not self.dsdt:
             return False
-        
+
         search_start_idx = 0
-
+        all_fields = []
+        
         while "EmbeddedControl" in self.dsdt.get("table")[search_start_idx:]:
-            emb_ctrl_start_idx = self.dsdt.get("table").index("EmbeddedControl", search_start_idx)
-            emb_ctrl_end_idx = emb_ctrl_start_idx + self.dsdt.get("table")[emb_ctrl_start_idx:].index("}")
-            emb_ctrl_block = self.dsdt.get("table")[emb_ctrl_start_idx:emb_ctrl_end_idx]
+            region_name, search_start_idx = self.process_embedded_control_region(self.dsdt.get("table"), search_start_idx)
+            
+            if not region_name:
+                continue
+                
+            current_idx = search_start_idx
+            region_fields = []
+            
+            while True:
+                fields, next_idx = self.process_field_definition(self.dsdt.get("table"), region_name, current_idx)
+                
+                if not fields or next_idx <= current_idx:
+                    break
+                    
+                region_fields.extend(fields)
+                current_idx = next_idx
+                
+                if f"Field ({region_name}" not in self.dsdt.get("table")[current_idx:]:
+                    break
+            
+            all_fields.extend(region_fields)
 
-            for line in emb_ctrl_block.splitlines():
-                if ",   " in line and int(line.split(",")[1].strip()) > 8:
-                    return True
-
-            search_start_idx = emb_ctrl_end_idx
-
-        return False
+        return any(f["size"] > 8 for f in all_fields)
 
     def dropping_the_table(self, signature=None, oemtableid=None):
         table_data = self.acpi.get_table_with_signature(signature) or self.acpi.get_table_with_id(oemtableid)
