@@ -155,8 +155,6 @@ class KextMaestro:
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
-            ethernet_device = ethernet_device or device_id in pci_data.EthernetIDs
-
             if device_id in pci_data.BroadcomWiFiIDs and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                 selected_kexts.append("IOSkywalkFamily")
 
