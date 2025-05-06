@@ -13,6 +13,8 @@ import binascii
 import re
 import tempfile
 import shutil
+import sys
+import plistlib
 
 class ACPIGuru:
     def __init__(self):
@@ -1443,6 +1445,14 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "EC", 0x00001000)
             ],
             "Patch": patches
         }
+
+    def get_data(self, data, pad_to=0):
+        if sys.version_info >= (3, 0):
+            if not isinstance(data,bytes):
+                data = data.encode()
+            return data+b"\x00"*(max(pad_to-len(data),0))
+        else:
+            return plistlib.Data(data+b"\x00"*(max(pad_to-len(data),0)))
 
     def write_ssdt(self, ssdt_name, ssdt_content, compile=True):
         dsl_path = os.path.join(self.acpi_directory, ssdt_name + ".dsl")
@@ -3012,7 +3022,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
                 
         return {
             "All": True,
-            "Comment": "Delete {}".format(signature or oemtableid),
+            "Comment": "Delete {}".format((signature or oemtableid).rstrip(b"\x00").decode()),
             "Enabled": True,
             "OemTableId": self.utils.hex_to_bytes(binascii.hexlify(table_data.get("id")).decode()),
             "TableLength": table_data.get("length"),
@@ -3188,13 +3198,14 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
             }
 
     def drop_cpu_tables(self):
+        cpu_tables = ["CpuPm", "Cpu0Ist"]
         deletes = []
 
-        if self.dropping_the_table(oemtableid="CpuPm"):
-            deletes.append(self.dropping_the_table(oemtableid="CpuPm"))
-
-        if self.dropping_the_table(oemtableid="Cpu0Ist"):
-            deletes.append(self.dropping_the_table(oemtableid="Cpu0Ist"))
+        for table_name in cpu_tables:
+            padded_table_id = self.get_data(table_name, pad_to=8)
+            table_entry = self.dropping_the_table(oemtableid=padded_table_id)
+            if table_entry:
+                deletes.append(table_entry)
 
         return {
             "Delete": deletes
