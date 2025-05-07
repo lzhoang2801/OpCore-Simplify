@@ -1848,7 +1848,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
                 continue
 
             ssdt_name = None
-            if "GPU" in device_name:
+            if "GPU" in device_name and device_props.get("Device Type") != "Integrated GPU":
                 ssdt_name = "SSDT-Disable_GPU_{}".format(device_props.get("ACPI Path").split(".")[2])
                 target_device = device_props.get("ACPI Path")
 
