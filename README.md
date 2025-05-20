@@ -3,7 +3,7 @@
   <h3 align="center">OpCore Simplify</h3>
 
   <p align="center">
-    A tool designed to simplify the creation of <a href="https://github.com/acidanthera/OpenCorePkg">OpenCore</a> EFI. Whether you're a beginner or experienced user, OpCore Simplify takes away much of the complexity associated with Hackintosh setups.
+    A specialized tool that streamlines <a href="https://github.com/acidanthera/OpenCorePkg">OpenCore</a> EFI creation by automating the essential setup process and providing standardized configurations. Designed to reduce manual effort while ensuring accuracy in your Hackintosh journey.
     <br />
     <br />
     <a href="#-features">Features</a> •
@@ -15,11 +15,32 @@
   </p>
 </div>
 
+> [!CAUTION]
+> **DO NOT TRUST ANY HACKINTOSH INFORMATION FROM AI/LLM SOURCES**
+> 
+> They often provide incorrect information about Hackintosh. Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information.
+
+> [!WARNING]
+> **OUTDATED SECTIONS IN DORTANIA GUIDE**
+> 
+> While the Dortania Guide is a valuable resource, some sections may be outdated. Always:
+> - Verify information with the Hackintosh community
+> - Test configurations yourself
+> - Prefer reading documentation directly from the GitHub repositories of bootloaders and kexts you plan to use
+
 > [!IMPORTANT]
 > If the installation process is successful using OpCore Simplify, please confirm it at [Successful Hackintosh Setup with OpCore Simplify](https://github.com/lzhoang2801/OpCore-Simplify/discussions/23). 
 > This will greatly assist others in the community.
 >
-> Whatever the outcome, just enjoy what an automated tool can accomplish!
+> OpCore Simplify is the ONLY tool that builds OpenCore EFI based on your complete hardware configuration, not just predefined options. This fundamental difference sets us apart from other tools in the Hackintosh community.
+
+> [!NOTE]
+> While OpCore Simplify significantly reduces setup time, the Hackintosh journey still requires:
+> - Understanding basic concepts from the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/)
+> - Testing and troubleshooting during the installation process
+> - Patience and persistence in resolving any issues that arise
+>
+> Our tool doesn't eliminate these steps, but it ensures you start with a solid foundation.
 
 ## ✨ **Features**
 
@@ -45,8 +66,6 @@
 
 3. **Automatic Updates**  
     Automatically checks for and updates OpenCorePkg and kexts from [Dortania Builds](https://dortania.github.io/builds/) and GitHub releases before each EFI build.
-
-   - All download links are stored in `bootloader_kexts_data.json`.
             
 4. **EFI Configuration**  
    Apply additional customization based on both widely used sources and personal experience.
