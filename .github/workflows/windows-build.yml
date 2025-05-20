@@ -1,0 +1,50 @@
+name: Build Windows Executable
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Windows Executable
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.x'
+          architecture: 'x64'
+          cache: 'pip'
+          cache-dependency-path: nuitka-requirements.txt
+
+      - name: Upgrade dependencies
+        run: |
+          python.exe -m pip install --upgrade pip
+          pip install -r nuitka-requirements.txt
+
+      - name: Build with Nuitka
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          mode: standalone
+          script-name: OpCore-Simplify.py
+          include-data-dir: Scripts=Scripts
+          product-name: OpCore-Simplify
+          file-version: 1.0.0.0
+          product-version: 1.0.0.0
+          file-description: "A tool designed to simplify the creation of OpenCore EFI configurations for Hackintosh systems."
+          windows-icon-from-ico: assets/icon.ico
+          windows-uac-admin: true
+          include-package: certifi
+          include-package-data: certifi
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpCore-Simplify-Windows
+          path: build/OpCore-Simplify.dist
+          include-hidden-files: true
+          retention-days: 30
