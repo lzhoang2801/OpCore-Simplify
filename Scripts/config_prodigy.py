@@ -656,10 +656,8 @@ class ConfigProdigy:
         config["Misc"]["BlessOverride"] = []
         config["Misc"]["Boot"]["HideAuxiliary"] = False
         config["Misc"]["Boot"]["PickerMode"] = "External"
-        config["Misc"]["Boot"]["Timeout"] = 10
         config["Misc"]["Debug"]["AppleDebug"] = config["Misc"]["Debug"]["ApplePanic"] = False
         config["Misc"]["Debug"]["DisableWatchDog"] = True
-        config["Misc"]["Debug"]["Target"] = 0
         config["Misc"]["Entries"] = []
         config["Misc"]["Security"]["AllowSetDefault"] = True
         config["Misc"]["Security"]["ScanPolicy"] = 0
@@ -670,7 +668,7 @@ class ConfigProdigy:
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts, config)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
-        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = "en:252"
+        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = self.utils.hex_to_bytes("")
 
         config["PlatformInfo"]["Generic"].update(self.smbios.generate_smbios(smbios_model))
         config["PlatformInfo"]["Generic"]["ROM"] = self.utils.hex_to_bytes(config["PlatformInfo"]["Generic"]["ROM"])
