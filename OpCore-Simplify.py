@@ -8,7 +8,6 @@ from Scripts import kext_maestro
 from Scripts import run
 from Scripts import smbios
 from Scripts import utils
-import updater
 import os
 import sys
 import re
@@ -359,14 +358,16 @@ class OCPE:
                 elif option == 6:
                     if not self.o.gather_bootloader_kexts(self.k.kexts, macos_version):
                         continue
-                    
+
                     self.build_opencore_efi(customized_hardware, disabled_devices, smbios_model, macos_version, needs_oclp)
                     self.results(customized_hardware, smbios_model)
 
 if __name__ == '__main__':
-    update_flag = updater.Updater().run_update()
-    if update_flag:
-        os.execv(sys.executable, ['python3'] + sys.argv)
+    if '__compiled__' not in globals():
+        import updater
+        update_flag = updater.Updater().run_update()
+        if update_flag:
+            os.execv(sys.executable, ['python3'] + sys.argv)
 
     o = OCPE()
     while True:
