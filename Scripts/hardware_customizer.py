@@ -114,9 +114,10 @@ class HardwareCustomizer:
                             continue
                         elif gpu_type == "Discrete GPU":
                             if gpu_codename.startswith("Navi"):
-                                _navi_indices.add(index)
                                 if gpu_codename == "Navi 22":
                                     _navi_22_indices.add(index)
+                                else:
+                                    _navi_indices.add(index)
                                 continue
                     elif gpu_manufacturer == "Intel":
                         _intel_gpu_indices.add(index)
