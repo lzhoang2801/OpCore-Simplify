@@ -2,13 +2,14 @@ from Scripts import resource_fetcher
 from Scripts import utils
 import random
 
+
 class Github:
     def __init__(self):
         self.utils = utils.Utils()
         self.fetcher = resource_fetcher.ResourceFetcher()
-        
+
     def get_latest_commit(self, owner, repo, branch="main"):
-        url = "https://github.com/{}/{}/commits/{}".format(owner, repo, branch)
+        url = f"https://github.com/{owner}/{repo}/commits/{branch}"
         response = self.fetcher.fetch_and_parse_content(url)
 
         if not response:
@@ -21,16 +22,15 @@ class Github:
                     message = line.split("title=\"", 1)[1].split("\"", 1)[0]
                 except:
                     message = line.split(sha)[1].split(">", 1)[1].split("<")[0]
-
                 return {
                     "message": message,
                     "sha": sha
                 }
-                
+
         return None
 
     def get_latest_release(self, owner, repo):
-        url = "https://github.com/{}/{}/releases".format(owner, repo)
+        url = f"https://github.com/{owner}/{repo}/releases"
         response = self.fetcher.fetch_and_parse_content(url)
 
         if not response:
@@ -39,7 +39,7 @@ class Github:
         tag_name = self._extract_tag_name(response)
         body = self._extract_body_content(response)
 
-        release_tag_url = "https://github.com/{}/{}/releases/expanded_assets/{}".format(owner, repo, tag_name)
+        release_tag_url = f"https://github.com/{owner}/{repo}/releases/expanded_assets/{tag_name}"
         response = self.fetcher.fetch_and_parse_content(release_tag_url)
 
         if not response:
@@ -74,9 +74,16 @@ class Github:
                 if "tlwm" in download_link or ("tlwm" not in download_link and "DEBUG" not in download_link.upper()):
                     asset_data = response.split(line)[1].split("</div>", 2)[1]
                     asset_id = self._generate_asset_id(asset_data)
+
+                    try:
+                        asset_id_int = int(asset_id)
+                    except ValueError:
+                        print(f"Skipping asset with invalid ID: {asset_id}")
+                        continue
+
                     assets.append({
-                        "product_name": self.extract_asset_name(download_link.split("/")[-1]), 
-                        "id": int(asset_id), 
+                        "product_name": self.extract_asset_name(download_link.split("/")[-1]),
+                        "id": asset_id_int,
                         "url": "https://github.com" + download_link
                     })
 
@@ -84,9 +91,14 @@ class Github:
 
     def _generate_asset_id(self, asset_data):
         try:
-            return "".join(char for char in asset_data.split("datetime=\"")[-1].split("\"")[0][::-1] if char.isdigit())[:9]
-        except:
-            return "".join(random.choices('0123456789', k=9))
+            date_string = asset_data.split("datetime=\"")[-1].split("\"")[0]
+            digits = "".join(char for char in date_string[::-1] if char.isdigit())[:9]
+            if digits:
+                return digits
+        except Exception:
+            pass
+        # Fallback: return a random 9-digit string
+        return "".join(random.choices('0123456789', k=9))
 
     def extract_asset_name(self, file_name):
         end_idx = len(file_name)
@@ -97,7 +109,8 @@ class Github:
         if "." in file_name:
             end_idx = min(file_name.index("."), end_idx)
             if file_name[end_idx] == "." and file_name[end_idx - 1].isdigit():
-                end_idx = end_idx - 1
+                end_idx -= 1
+
         asset_name = file_name[:end_idx]
 
         if "Sniffer" in file_name:
