@@ -83,6 +83,27 @@ class OCPE:
                 continue
             
             return path, data
+        
+    def show_oclp_warning(self):
+        self.u.head("OpenCore Legacy Patcher Warning")
+        print("")
+        print("1. OpenCore Legacy Patcher is the only solution to enable dropped GPU and Broadcom WiFi")
+        print("   support in newer macOS versions.")
+        print("")
+        print("2. OpenCore Legacy Patcher disables macOS security features including SIP and AMFI, which may")
+        print("   lead to issues such as requiring full installers for updates, application crashes, and")
+        print("   system instability")
+        print("")
+        print("3. OpenCore Legacy Patcher is not officially supported by any Hackintosh community.")
+        print("")
+        print("\033[91mImportant:\033[0m")
+        print("Please consider these risks carefully before proceeding.")
+        print("")
+        print("\033[93mNote:\033[0m")
+        print("If you experience black screen after login with OpenCore Legacy Patcher v2.2.0 or newer")
+        print("after applying root patches, please revert to version v2.1.2.")
+        print("")
+        return (self.u.request_input("Do you want to continue with OpenCore Legacy Patcher? (y/N): ").strip().lower() or "n") == "y"
 
     def select_macos_version(self, hardware_report, native_macos_version, ocl_patched_macos_version):
         suggested_macos_version = native_macos_version[1]
@@ -135,8 +156,11 @@ class OCPE:
             if match:
                 target_version = "{}.{}.{}".format(match.group(1), match.group(2) if match.group(2) else 99, match.group(3) if match.group(3) else 99)
                 
-                if  self.u.parse_darwin_version(native_macos_version[0]) <= self.u.parse_darwin_version(target_version) <= self.u.parse_darwin_version(native_macos_version[-1]) or \
-                    (ocl_patched_macos_version and self.u.parse_darwin_version(ocl_patched_macos_version[-1]) <= self.u.parse_darwin_version(target_version) <= self.u.parse_darwin_version(ocl_patched_macos_version[0])):
+                if ocl_patched_macos_version and self.u.parse_darwin_version(ocl_patched_macos_version[-1]) <= self.u.parse_darwin_version(target_version) <= self.u.parse_darwin_version(ocl_patched_macos_version[0]):
+                    if self.show_oclp_warning():
+                        return target_version
+                    continue
+                elif self.u.parse_darwin_version(native_macos_version[0]) <= self.u.parse_darwin_version(target_version) <= self.u.parse_darwin_version(native_macos_version[-1]):
                     return target_version
 
     def build_opencore_efi(self, hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp):
