@@ -67,13 +67,28 @@ class Github:
     def _extract_assets(self, response):
         assets = []
 
-        for line in response.splitlines():
-            if "<a" in line and "href=\"" in line and "/releases/download" in line:
-                download_link = line.split("href=\"", 1)[1].split("\"", 1)[0]
+        in_li_block = False
+        download_link = None
 
-                if "tlwm" in download_link or ("tlwm" not in download_link and "DEBUG" not in download_link.upper()):
-                    asset_data = response.split(line)[1].split("</div>", 2)[1]
-                    asset_id = self._generate_asset_id(asset_data)
+        for line in response.splitlines():
+
+            if "<li" in line:
+                in_li_block = True
+            elif "</li" in line:
+                in_li_block = False
+                download_link = None
+
+            if in_li_block:
+                if "<a" in line and "href=\"" in line and "/releases/download" in line:
+                    download_link = line.split("href=\"", 1)[1].split("\"", 1)[0]
+
+                    if not ("tlwm" in download_link or ("tlwm" not in download_link and "DEBUG" not in download_link.upper())):
+                        in_li_block = False
+                        download_link = None
+                        continue
+
+                if download_link and "<relative-time" in line:
+                    asset_id = self._generate_asset_id(line)
                     assets.append({
                         "product_name": self.extract_asset_name(download_link.split("/")[-1]), 
                         "id": int(asset_id), 
@@ -82,9 +97,9 @@ class Github:
 
         return assets
 
-    def _generate_asset_id(self, asset_data):
+    def _generate_asset_id(self, line):
         try:
-            return "".join(char for char in asset_data.split("datetime=\"")[-1].split("\"")[0][::-1] if char.isdigit())[:9]
+            return "".join(char for char in line.split("datetime=\"")[-1].split("\"")[0][::-1] if char.isdigit())[:9]
         except:
             return "".join(random.choices('0123456789', k=9))
 
