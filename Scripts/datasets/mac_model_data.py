@@ -78,7 +78,7 @@ mac_devices = [
     MacDevice("MacBookPro15,4", "i5-8257U", "Coffee Lake", None, "18.6.0", "24.99.99"),
     MacDevice("MacBookPro16,1", "i7-9750H", "Coffee Lake", "AMD Radeon Pro 5300", "19.0.0"),
     MacDevice("MacBookPro16,2", "i5-1038NG7", "Ice Lake", None, "19.4.0"),
-    MacDevice("MacBookPro16,3", "i5-8257U", "Coffee Lake", None, "19.4.0"),
+    MacDevice("MacBookPro16,3", "i5-8257U", "Coffee Lake", None, "19.4.0", "24.99.99"),
     MacDevice("MacBookPro16,4", "i7-9750H", "Coffee Lake", "AMD Radeon Pro 5600M", "19.0.0"),
     # Macmini Models
     MacDevice("Macmini5,1", "i5-2415M", "Sandy Bridge", None, "11.0.0", "17.99.99"),
