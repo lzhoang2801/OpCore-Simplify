@@ -13,6 +13,15 @@
     <a href="#-credits">Credits</a> •
     <a href="#-contact">Contact</a>
   </p>
+
+  <img src="macos_tahoe_supported_devices.png" alt="macOS Tahoe Supported Devices" width="500"/>
+  <div style="background: #e0f7fa; border-radius: 12px; padding: 18px 24px; margin: 18px 0; display: inline-block;">
+    <h2 style="color: #00796b; font-size: 2em; margin: 0;">🎉 Great News for Hackintosh Users! 🎉</h2>
+    <p style="color: #004d40; font-size: 1.3em; font-weight: bold; margin: 10px 0 0 0;">
+      <b>macOS Tahoe 26 will continue to support Intel and AMD CPUs for another year!</b><br/>
+      Stay on the latest macOS with your current hardware 🚀
+    </p>
+  </div>
 </div>
 
 > [!CAUTION]
