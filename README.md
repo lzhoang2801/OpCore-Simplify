@@ -60,7 +60,7 @@
    |----------------|-----------------------------------------------------------------------------------------------------|
    | **CPU**        | Intel: Nehalem and Westmere (1nd Gen) → Arrow Lake (15th Gen/Core Ultra Series 2) <br> AMD: Ryzen and Threadripper with [AMD Vanilla](https://github.com/AMD-OSX/AMD_Vanilla) |
    | **GPU**        | Intel iGPU: Iron Lake (1nd Gen) → Ice Lake (10th Gen) <br> AMD APU: The entire Vega Raven ASIC family (Ryzen 1xxx → 5xxx, 7x30 series) <br> AMD dGPU: Navi 23, Navi 22, Navi 21 generations, and older series <br> NVIDIA: Kepler, Pascal, Maxwell, Fermi, Tesla generations |
-   | **macOS**      | macOS High Sierra → macOS Sequoia |
+   | **macOS**      | macOS High Sierra → macOS Tahoe |
 
 2. **ACPI Patches and Kexts**  
    Automatically detects and adds ACPI patches and kexts based on hardware configuration.
