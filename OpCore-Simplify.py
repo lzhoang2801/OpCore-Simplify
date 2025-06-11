@@ -125,6 +125,12 @@ class OCPE:
                             suggested_macos_version = device_props.get("Compatibility")[0]
 
         while True:
+            if "Beta" in os_data.get_macos_name_by_darwin(suggested_macos_version):
+                suggested_macos_version = "{}{}".format(int(suggested_macos_version[:2]) - 1, suggested_macos_version[2:])
+            else:
+                break
+
+        while True:
             self.u.head("Select macOS Version")
             if native_macos_version[1][:2] != suggested_macos_version[:2]:
                 print("")
