@@ -1458,6 +1458,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "EC", 0x00001000)
         dsl_path = os.path.join(self.acpi_directory, ssdt_name + ".dsl")
         aml_path = os.path.join(self.acpi_directory, ssdt_name + ".aml")
 
+        if not os.path.exists(self.acpi_directory):
+            os.makedirs(self.acpi_directory)
+
         with open(dsl_path,"w") as f:
             f.write(ssdt_content)
 
