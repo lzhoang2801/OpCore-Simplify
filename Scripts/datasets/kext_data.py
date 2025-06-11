@@ -8,7 +8,7 @@ class KextInfo:
         self.category = category
         self.required = required
         self.min_darwin_version = min_darwin_version or os_data.get_lowest_darwin_version()
-        self.max_darwin_version = max_darwin_version or os_data.get_latest_darwin_version(include_beta=False)
+        self.max_darwin_version = max_darwin_version or os_data.get_latest_darwin_version(include_beta=False) if "Lilu" in requires_kexts else os_data.get_latest_darwin_version()
         self.requires_kexts = requires_kexts
         self.conflict_group_id = conflict_group_id
         self.github_repo = github_repo

@@ -83,7 +83,7 @@ class CompatibilityChecker:
 
             max_version = os_data.get_latest_darwin_version()
             min_version = os_data.get_lowest_darwin_version()
-            ocl_patched_max_version = max_version
+            ocl_patched_max_version = os_data.get_latest_darwin_version(include_beta=False)
             ocl_patched_min_version = "20.0.0"
 
             if "Intel" in gpu_manufacturer:
@@ -152,7 +152,7 @@ class CompatibilityChecker:
                 gpu_props["Compatibility"] = (None, None)
             else:
                 gpu_props["Compatibility"] = (max_version, min_version)
-                if max_version != ocl_patched_max_version:
+                if self.utils.parse_darwin_version(max_version) < self.utils.parse_darwin_version(ocl_patched_max_version):
                     gpu_props["OCLP Compatibility"] = (ocl_patched_max_version, ocl_patched_min_version if self.utils.parse_darwin_version(ocl_patched_min_version) > self.utils.parse_darwin_version("{}.{}.{}".format(int(max_version[:2]) + 1, 0, 0)) else "{}.{}.{}".format(int(max_version[:2]) + 1, 0, 0))
 
             print("{}- {}: {}".format(" "*3, gpu_name, self.show_macos_compatibility(gpu_props.get("Compatibility"))))
@@ -235,7 +235,7 @@ class CompatibilityChecker:
             
             max_version = os_data.get_latest_darwin_version()
             min_version = os_data.get_lowest_darwin_version()
-            ocl_patched_max_version = max_version
+            ocl_patched_max_version = os_data.get_latest_darwin_version(include_beta=False)
             ocl_patched_min_version = "20.0.0"
 
             if device_id in pci_data.BroadcomWiFiIDs:

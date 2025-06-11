@@ -232,13 +232,19 @@ class KextMaestro:
                 recommended_option = 2 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else 1
                 recommended_name = "itlwm" if recommended_option == 2 else "AirportItlwm"
 
-                kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name)).strip() or str(recommended_option)
-                
-                if kext_option.isdigit() and 0 < int(kext_option) < 3:
-                    selected_option = int(kext_option)
-                else:
-                    print("\033[91mInvalid selection, using recommended option: {}\033[0m".format(recommended_option))
+                if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
+                    print("\033[91mImportant:\033[0m For macOS Beta versions, only itlwm kext is supported")
+                    print("")
+                    self.utils.request_input("Press Enter to continue...")
                     selected_option = recommended_option
+                else:
+                    kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name)).strip() or str(recommended_option)
+                    
+                    if kext_option.isdigit() and 0 < int(kext_option) < 3:
+                        selected_option = int(kext_option)
+                    else:
+                        print("\033[91mInvalid selection, using recommended option: {}\033[0m".format(recommended_option))
+                        selected_option = recommended_option
                 
                 if selected_option == 2:
                     selected_kexts.append("itlwm")

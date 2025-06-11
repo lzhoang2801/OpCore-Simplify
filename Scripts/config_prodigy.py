@@ -2,6 +2,7 @@ from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
 from Scripts.datasets import mac_model_data
 from Scripts.datasets import kext_data
+from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts.datasets import codec_layouts
 from Scripts import gathering_files
@@ -443,7 +444,7 @@ class ConfigProdigy:
             
         return None
     
-    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_codename, cpu_cores, gpu_manufacturer, networks, kexts):
+    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_codename, cpu_cores, gpu_manufacturer, networks, macos_version, kexts):
         kernel_patch = []
 
         if "AMD" in cpu_manufacturer:
@@ -475,6 +476,8 @@ class ConfigProdigy:
                 "Skip": 0
             })
 
+        latest_darwin_version = (os_data.get_latest_darwin_version(), os_data.get_latest_darwin_version(include_beta=False))
+
         for patch in kernel_patch:
             if "AppleEthernetAquantiaAqtion" in patch["Identifier"]:
                 patch["Enabled"] = patch["Base"] != ""
@@ -492,6 +495,10 @@ class ConfigProdigy:
                         patch["Enabled"] = False
                     elif "shaneee" in patch["Comment"].lower():
                         patch["Enabled"] = True
+
+            if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
+                if patch["MaxKernel"] in latest_darwin_version:
+                    patch["MaxKernel"] = latest_darwin_version[0]
         
         return kernel_patch
 
@@ -639,6 +646,7 @@ class ConfigProdigy:
             hardware_report.get("CPU").get("Core Count"), 
             list(hardware_report.get("GPU").items())[0][-1].get("Manufacturer"),
             hardware_report.get("Network", {}),
+            macos_version,
             kexts
         )
         config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[62:]
