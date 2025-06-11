@@ -503,12 +503,11 @@ class KextMaestro:
             bundle["MaxKernel"] = os_data.get_latest_darwin_version()
             bundle["MinKernel"] = os_data.get_lowest_darwin_version()
 
-            if not "Beta" in os_data.get_macos_name_by_darwin(macos_version):
-                kext_index = kext_data.kext_index_by_name.get(os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0])
+            kext_index = kext_data.kext_index_by_name.get(os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0])
 
-                if kext_index:
-                    bundle["MaxKernel"] = self.kexts[kext_index].max_darwin_version
-                    bundle["MinKernel"] = self.kexts[kext_index].min_darwin_version
+            if kext_index:
+                bundle["MaxKernel"] = self.kexts[kext_index].max_darwin_version
+                bundle["MinKernel"] = self.kexts[kext_index].min_darwin_version
             
             for dep_identifier in bundle.get("BundleLibraries"):
                 if dep_identifier in bundle_dict:
@@ -535,6 +534,9 @@ class KextMaestro:
         for bundle in bundle_list:
             visit(bundle)
 
+        latest_darwin_version = (os_data.get_latest_darwin_version(), os_data.get_latest_darwin_version(include_beta=False))
+        lowest_darwin_version = os_data.get_lowest_darwin_version()
+
         for bundle in sorted_bundles:
             kernel_add.append({
                 "Arch": "x86_64",
@@ -542,8 +544,8 @@ class KextMaestro:
                 "Comment": "",
                 "Enabled": bundle.get("Enabled"),
                 "ExecutablePath": bundle.get("ExecutablePath"),
-                "MaxKernel": "" if bundle.get("MaxKernel") == os_data.get_latest_darwin_version() else bundle.get("MaxKernel"),
-                "MinKernel": "" if bundle.get("MinKernel") == os_data.get_lowest_darwin_version() else bundle.get("MinKernel"),
+                "MaxKernel": "" if bundle.get("MaxKernel") in latest_darwin_version else bundle.get("MaxKernel"),
+                "MinKernel": "" if bundle.get("MinKernel") == lowest_darwin_version else bundle.get("MinKernel"),
                 "PlistPath": bundle.get("PlistPath")
             })
 
