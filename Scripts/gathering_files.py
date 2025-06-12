@@ -156,7 +156,7 @@ class gatheringFiles:
 
         seen_download_urls = set()
 
-        for product in kexts:
+        for product in kexts + [{"Name": "OpenCorePkg"}]:
             if not isinstance(product, dict) and not product.checked:
                 continue
 
