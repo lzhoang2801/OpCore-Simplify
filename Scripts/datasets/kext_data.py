@@ -800,7 +800,6 @@ kexts = [
         name = "BrightnessKeys", 
         description = "Handler for brightness keys without DSDT patches",
         category = "Extras",
-        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
@@ -894,7 +893,6 @@ kexts = [
         name = "RTCMemoryFixup", 
         description = "Emulate some offsets in your CMOS (RTC) memory",
         category = "Extras",
-        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
