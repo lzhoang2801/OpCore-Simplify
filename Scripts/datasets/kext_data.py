@@ -8,7 +8,7 @@ class KextInfo:
         self.category = category
         self.required = required
         self.min_darwin_version = min_darwin_version or os_data.get_lowest_darwin_version()
-        self.max_darwin_version = max_darwin_version or os_data.get_latest_darwin_version(include_beta=False) if "Lilu" in requires_kexts else os_data.get_latest_darwin_version()
+        self.max_darwin_version = max_darwin_version or os_data.get_latest_darwin_version()
         self.requires_kexts = requires_kexts
         self.conflict_group_id = conflict_group_id
         self.github_repo = github_repo
@@ -82,6 +82,7 @@ kexts = [
         description = "Provides temperature readings for AMD GPUs",
         category = "VirtualSMC Plugins",
         min_darwin_version = "18.0.0",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu", "VirtualSMC"],
         github_repo = {
             "owner": "ChefKissInc",
@@ -732,6 +733,7 @@ kexts = [
         name = "ForgedInvariant", 
         description = "The plug & play kext for syncing the TSC on AMD & Intel",
         category = "TSC Synchronization",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         conflict_group_id = "TSC",
         github_repo = {
@@ -748,6 +750,7 @@ kexts = [
         description = "A replacement for amfi=0x80 boot argument",
         category = "Extras",
         min_darwin_version = "20.0.0",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         download_info = {
             "id": 926491527, 
@@ -797,6 +800,7 @@ kexts = [
         name = "BrightnessKeys", 
         description = "Handler for brightness keys without DSDT patches",
         category = "Extras",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
@@ -890,6 +894,7 @@ kexts = [
         name = "RTCMemoryFixup", 
         description = "Emulate some offsets in your CMOS (RTC) memory",
         category = "Extras",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         github_repo = {
             "owner": "acidanthera",
