@@ -82,7 +82,6 @@ kexts = [
         description = "Provides temperature readings for AMD GPUs",
         category = "VirtualSMC Plugins",
         min_darwin_version = "18.0.0",
-        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu", "VirtualSMC"],
         github_repo = {
             "owner": "ChefKissInc",
@@ -733,7 +732,6 @@ kexts = [
         name = "ForgedInvariant", 
         description = "The plug & play kext for syncing the TSC on AMD & Intel",
         category = "TSC Synchronization",
-        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         conflict_group_id = "TSC",
         github_repo = {
