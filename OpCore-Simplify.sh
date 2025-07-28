@@ -304,4 +304,4 @@ if [ "$1" == "--install-python" ]; then
     download_py
 else
     main
-}
+fi
