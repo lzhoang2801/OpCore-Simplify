@@ -300,7 +300,10 @@ class gatheringFiles:
             return []
         
     def gather_hardware_sniffer(self):
-        if os_name != "Windows":
+        if os_name == "Linux":
+            # For Linux, we use built-in hardware detection
+            return "linux_internal"
+        elif os_name != "Windows":
             return
         
         self.utils.head("Gathering Files")

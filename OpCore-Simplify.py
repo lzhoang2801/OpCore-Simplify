@@ -46,6 +46,13 @@ class OCPE:
                     print("")
                     print("E. Export hardware report (Recommended)")
                 print("")
+            elif os.name == "posix" and self.hardware_sniffer == "linux_internal":
+                print("\033[93mNote:\033[0m")
+                print("- Linux hardware detection will gather system information using built-in tools.")
+                print("- Some features may require sudo access (ACPI tables, memory details).")
+                print("")
+                print("E. Export hardware report (Recommended)")
+                print("")
             print("Q. Quit")
             print("")
         
@@ -53,24 +60,55 @@ class OCPE:
             if user_input.lower() == "q":
                 self.u.exit_program()
             if self.hardware_sniffer and user_input.lower() == "e":
-                output = self.r.run({
-                    "args":[self.hardware_sniffer, "-e"]
-                })
-                
-                if output[-1] != 0:
-                    print("")
-                    print("Could not export the hardware report. Please export it manually using Hardware Sniffer.")
-                    print("")
-                    self.u.request_input()
-                    return
-                else:
-                    report_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "Report.json")
-                    acpitables_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "ACPI")
-
-                    report_data = self.u.read_file(report_path)
-                    self.ac.read_acpi_tables(acpitables_dir)
+                if self.hardware_sniffer == "linux_internal":
+                    # Use built-in Linux hardware detection
+                    from Scripts import linux_hardware_detector
+                    detector = linux_hardware_detector.LinuxHardwareDetector()
                     
-                    return report_path, report_data
+                    print("")
+                    print("Gathering hardware information from Linux system...")
+                    print("")
+                    
+                    try:
+                        report_path = detector.export_report()
+                        acpitables_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "ACPI")
+                        
+                        report_data = self.u.read_file(report_path)
+                        self.ac.read_acpi_tables(acpitables_dir)
+                        
+                        print("")
+                        print("Hardware report exported successfully!")
+                        print("")
+                        self.u.request_input("Press Enter to continue...")
+                        
+                        return report_path, report_data
+                    except Exception as e:
+                        print("")
+                        print(f"Error exporting hardware report: {e}")
+                        print("You may need to run with sudo for full hardware detection.")
+                        print("")
+                        self.u.request_input()
+                        continue
+                else:
+                    # Windows hardware sniffer
+                    output = self.r.run({
+                        "args":[self.hardware_sniffer, "-e"]
+                    })
+                    
+                    if output[-1] != 0:
+                        print("")
+                        print("Could not export the hardware report. Please export it manually using Hardware Sniffer.")
+                        print("")
+                        self.u.request_input()
+                        return
+                    else:
+                        report_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "Report.json")
+                        acpitables_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "ACPI")
+
+                        report_data = self.u.read_file(report_path)
+                        self.ac.read_acpi_tables(acpitables_dir)
+                        
+                        return report_path, report_data
                 
             path = self.u.normalize_path(user_input)
             data = self.u.read_file(path)
