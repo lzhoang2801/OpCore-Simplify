@@ -11,9 +11,15 @@ class LinuxHardwareDetector:
     def run_command(self, command):
         """Run a shell command and return output"""
         try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            # Use list of args instead of shell=True for security
+            if isinstance(command, str):
+                import shlex
+                command = shlex.split(command)
+            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
             return result.stdout.strip()
-        except:
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            return ""
+        except Exception:
             return ""
     
     def get_cpu_info(self):
@@ -282,6 +288,267 @@ class LinuxHardwareDetector:
         
         self.hardware_info["Bluetooth"] = bluetooth
     
+    def get_input_devices(self):
+        """Get input device information (touchpad, touchscreen, keyboard, mouse)"""
+        input_devices = {}
+        
+        # Parse /proc/bus/input/devices for detailed input device info
+        try:
+            with open('/proc/bus/input/devices', 'r') as f:
+                devices_content = f.read()
+            
+            # Split into individual device entries
+            device_entries = devices_content.split('\n\n')
+            
+            for entry in device_entries:
+                if not entry.strip():
+                    continue
+                
+                # Parse device information
+                name = ""
+                phys = ""
+                sysfs = ""
+                handlers = ""
+                
+                for line in entry.split('\n'):
+                    if line.startswith('N: Name='):
+                        name = line.split('Name=')[1].strip('"')
+                    elif line.startswith('P: Phys='):
+                        phys = line.split('Phys=')[1].strip()
+                    elif line.startswith('S: Sysfs='):
+                        sysfs = line.split('Sysfs=')[1].strip()
+                    elif line.startswith('H: Handlers='):
+                        handlers = line.split('Handlers=')[1].strip()
+                
+                # Determine device type and connection
+                device_type = None
+                connection_type = "Unknown"
+                
+                # Check device type based on name and handlers
+                name_lower = name.lower()
+                if 'touchpad' in name_lower or 'trackpad' in name_lower:
+                    device_type = "Touchpad"
+                elif 'touchscreen' in name_lower or 'touch' in name_lower and 'screen' in name_lower:
+                    device_type = "Touchscreen"
+                elif 'keyboard' in name_lower:
+                    device_type = "Keyboard"
+                elif 'mouse' in name_lower:
+                    device_type = "Mouse"
+                elif 'pen' in name_lower or 'stylus' in name_lower:
+                    device_type = "Pen/Stylus"
+                elif 'trackpoint' in name_lower or 'pointing stick' in name_lower:
+                    device_type = "TrackPoint"
+                
+                # Determine connection type from physical path
+                if phys:
+                    if 'usb' in phys.lower():
+                        connection_type = "USB"
+                    elif 'i2c' in phys.lower():
+                        connection_type = "I2C"
+                    elif 'serio' in phys.lower() or 'isa' in phys.lower():
+                        connection_type = "PS/2"
+                    elif 'bluetooth' in phys.lower():
+                        connection_type = "Bluetooth"
+                    elif 'spi' in phys.lower():
+                        connection_type = "SPI"
+                
+                # Also check sysfs path for connection hints
+                if sysfs and connection_type == "Unknown":
+                    if '/i2c-' in sysfs or '/i2c/' in sysfs:
+                        connection_type = "I2C"
+                    elif '/usb' in sysfs:
+                        connection_type = "USB"
+                    elif '/serio' in sysfs:
+                        connection_type = "PS/2"
+                    elif '/platform/' in sysfs:
+                        # Platform devices could be I2C or other
+                        if 'i2c' in name_lower:
+                            connection_type = "I2C"
+                        else:
+                            connection_type = "Platform"
+                
+                # Add to devices if it's an input device we care about
+                if device_type and name:
+                    device_key = f"{device_type}_{len([k for k in input_devices if k.startswith(device_type)])}"
+                    
+                    input_devices[device_key] = {
+                        "Name": name,
+                        "Type": device_type,
+                        "Connection": connection_type,
+                        "Physical": phys if phys else "N/A",
+                        "Handlers": handlers if handlers else "N/A"
+                    }
+                    
+                    # Try to get vendor and product IDs from sysfs
+                    if sysfs:
+                        # Extract IDs from path if available
+                        id_match = re.search(r'/([0-9a-f]{4}):([0-9a-f]{4})', sysfs)
+                        if id_match:
+                            input_devices[device_key]["Vendor ID"] = f"0x{id_match.group(1)}"
+                            input_devices[device_key]["Product ID"] = f"0x{id_match.group(2)}"
+        
+        except (IOError, OSError):
+            # Fallback to xinput if /proc not available
+            xinput_output = self.run_command("xinput list")
+            if xinput_output:
+                for line in xinput_output.split('\n'):
+                    if '↳' in line or '⎜' in line:  # Slave devices
+                        # Parse xinput device
+                        match = re.search(r'[↳⎜]\s+(.*?)\s+id=(\d+)', line)
+                        if match:
+                            device_name = match.group(1).strip()
+                            device_id = match.group(2)
+                            
+                            # Determine type from name
+                            name_lower = device_name.lower()
+                            device_type = None
+                            
+                            if 'touchpad' in name_lower:
+                                device_type = "Touchpad"
+                            elif 'touchscreen' in name_lower:
+                                device_type = "Touchscreen"
+                            elif 'keyboard' in name_lower:
+                                device_type = "Keyboard"
+                            elif 'mouse' in name_lower:
+                                device_type = "Mouse"
+                            
+                            if device_type:
+                                device_key = f"{device_type}_{device_id}"
+                                input_devices[device_key] = {
+                                    "Name": device_name,
+                                    "Type": device_type,
+                                    "Connection": "Unknown",
+                                    "X11 ID": device_id
+                                }
+        
+        self.hardware_info["Input Devices"] = input_devices
+    
+    def get_biometric_devices(self):
+        """Get biometric device information (fingerprint readers, face recognition, etc.)"""
+        biometric = {}
+        
+        # Check for fingerprint readers via USB
+        fingerprint_vendors = {
+            "138a": "Validity Sensors",
+            "147e": "Upek",
+            "1c7a": "LighTuning/EgisTec",
+            "27c6": "Shenzhen Goodix",
+            "06cb": "Synaptics",
+            "04f3": "Elan",
+            "298d": "Realtek",
+            "0483": "STMicroelectronics",
+            "1c7e": "SecuGen",
+            "0a5c": "Broadcom Corp",
+            "045e": "Microsoft Corp",
+            "05ba": "DigitalPersona"
+        }
+        
+        # Security key vendors (FIDO/U2F)
+        security_key_vendors = {
+            "18d1": "Google Inc.",
+            "1050": "Yubico",
+            "096e": "Feitian Technologies"
+        }
+        
+        # Get all USB devices
+        lsusb_output = self.run_command("lsusb")
+        if lsusb_output:
+            for line in lsusb_output.split('\n'):
+                if line:
+                    match = re.search(r'ID\s+([0-9a-f]{4}):([0-9a-f]{4})\s+(.*)', line)
+                    if match:
+                        vendor_id = match.group(1).lower()
+                        device_id = match.group(2)
+                        device_desc = match.group(3)
+                        
+                        # Check if it's a known fingerprint vendor
+                        if vendor_id in fingerprint_vendors:
+                            bio_key = f"Fingerprint Reader {len(biometric)}"
+                            biometric[bio_key] = {
+                                "Name": device_desc,
+                                "Type": "Fingerprint Reader",
+                                "Manufacturer": fingerprint_vendors[vendor_id],
+                                "Device ID": f"USB\\VID_{vendor_id.upper()}&PID_{device_id.upper()}",
+                                "Vendor ID": f"0x{vendor_id}",
+                                "Connection": "USB"
+                            }
+                        # Also check for generic fingerprint/biometric keywords
+                        elif any(keyword in device_desc.lower() for keyword in ['fingerprint', 'biometric', 'fpr']):
+                            bio_key = f"Fingerprint Reader {len(biometric)}"
+                            biometric[bio_key] = {
+                                "Name": device_desc,
+                                "Type": "Fingerprint Reader",
+                                "Device ID": f"USB\\VID_{vendor_id.upper()}&PID_{device_id.upper()}",
+                                "Vendor ID": f"0x{vendor_id}",
+                                "Connection": "USB"
+                            }
+                        # Check for security keys
+                        elif vendor_id in security_key_vendors:
+                            bio_key = f"Security Key {len([k for k in biometric if 'Security Key' in k])}"
+                            biometric[bio_key] = {
+                                "Name": device_desc,
+                                "Type": "Security Key (FIDO/U2F)",
+                                "Manufacturer": security_key_vendors[vendor_id],
+                                "Device ID": f"USB\\VID_{vendor_id.upper()}&PID_{device_id.upper()}",
+                                "Vendor ID": f"0x{vendor_id}",
+                                "Connection": "USB"
+                            }
+                        # Check for security key keywords
+                        elif any(keyword in device_desc.lower() for keyword in ['security key', 'yubikey', 'fido', 'u2f', 'titan']):
+                            bio_key = f"Security Key {len([k for k in biometric if 'Security Key' in k])}"
+                            biometric[bio_key] = {
+                                "Name": device_desc,
+                                "Type": "Security Key (FIDO/U2F)",
+                                "Device ID": f"USB\\VID_{vendor_id.upper()}&PID_{device_id.upper()}",
+                                "Vendor ID": f"0x{vendor_id}",
+                                "Connection": "USB"
+                            }
+        
+        # Check for TPM (Trusted Platform Module) - often used with biometrics
+        tpm_info = self.run_command("ls /dev/tpm* 2>/dev/null")
+        if tpm_info:
+            bio_key = f"TPM Device"
+            biometric[bio_key] = {
+                "Name": "Trusted Platform Module",
+                "Type": "Security Chip",
+                "Device": tpm_info.strip()
+            }
+        
+        # Check if fprintd service is available (fingerprint daemon)
+        fprintd = self.run_command("systemctl status fprintd 2>/dev/null | head -1")
+        if fprintd and "fprintd.service" in fprintd:
+            # Try to list enrolled fingerprints
+            enrolled = self.run_command("fprintd-list $USER 2>/dev/null")
+            if enrolled and "enrolled" in enrolled.lower():
+                if not biometric:  # Only add if we haven't detected hardware already
+                    bio_key = "Fingerprint Reader 0"
+                    biometric[bio_key] = {
+                        "Name": "Generic Fingerprint Reader",
+                        "Type": "Fingerprint Reader",
+                        "Status": "Configured",
+                        "Connection": "Unknown"
+                    }
+        
+        # Check for camera devices that might be used for face recognition
+        camera_devices = self.run_command("ls /dev/video* 2>/dev/null")
+        if camera_devices:
+            # Check if it's an IR camera (often used for Windows Hello-style face recognition)
+            for device in camera_devices.split():
+                device_name = self.run_command(f"v4l2-ctl -d {device} --info 2>/dev/null | grep 'Card type' | cut -d: -f2")
+                if device_name:
+                    device_name = device_name.strip()
+                    # Check for IR or depth camera indicators
+                    if any(keyword in device_name.lower() for keyword in ['ir', 'depth', 'infrared', '3d']):
+                        bio_key = f"IR Camera {len([k for k in biometric if 'Camera' in k])}"
+                        biometric[bio_key] = {
+                            "Name": device_name,
+                            "Type": "IR Camera (Face Recognition)",
+                            "Device": device,
+                            "Connection": "Platform"
+                        }
+        
+        self.hardware_info["Biometric Devices"] = biometric
+    
     def export_acpi_tables(self, output_dir):
         """Export ACPI tables"""
         acpi_dir = os.path.join(output_dir, "ACPI")
@@ -295,17 +562,24 @@ class LinuxHardwareDetector:
             if os.path.exists(table_path):
                 output_file = os.path.join(acpi_dir, f"{table}.aml")
                 try:
-                    # Use sudo if available, otherwise try without
-                    result = self.run_command(f"sudo cat {table_path} 2>/dev/null")
-                    if not result:
-                        result = self.run_command(f"cat {table_path} 2>/dev/null")
-                    
-                    if result:
-                        with open(output_file, 'wb') as f:
-                            f.write(result.encode('latin-1'))
-                        print(f"  Exported {table}")
-                except:
-                    pass
+                    # Read binary ACPI data properly
+                    try:
+                        # Try with sudo first
+                        result = subprocess.run(['sudo', 'cat', table_path], 
+                                              capture_output=True, timeout=5)
+                        if result.returncode != 0:
+                            # Fall back to non-sudo
+                            result = subprocess.run(['cat', table_path], 
+                                                  capture_output=True, timeout=5)
+                        
+                        if result.returncode == 0 and result.stdout:
+                            with open(output_file, 'wb') as f:
+                                f.write(result.stdout)  # Already binary data
+                            print(f"  Exported {table}")
+                    except subprocess.TimeoutExpired:
+                        print(f"  Timeout reading {table}")
+                except (IOError, OSError) as e:
+                    print(f"  Failed to export {table}: {e}")
         
         # Export multiple SSDTs if they exist  
         ssdt_index = 1
@@ -313,18 +587,21 @@ class LinuxHardwareDetector:
             table_path = f"/sys/firmware/acpi/tables/SSDT{ssdt_index}"
             output_file = os.path.join(acpi_dir, f"SSDT-{ssdt_index}.aml")
             try:
-                result = self.run_command(f"sudo cat {table_path} 2>/dev/null")
-                if not result:
-                    result = self.run_command(f"cat {table_path} 2>/dev/null")
+                # Read binary ACPI data properly
+                result = subprocess.run(['sudo', 'cat', table_path], 
+                                      capture_output=True, timeout=5)
+                if result.returncode != 0:
+                    result = subprocess.run(['cat', table_path], 
+                                          capture_output=True, timeout=5)
                 
-                if result:
+                if result.returncode == 0 and result.stdout:
                     with open(output_file, 'wb') as f:
-                        f.write(result.encode('latin-1'))
+                        f.write(result.stdout)  # Already binary data
                     print(f"  Exported SSDT-{ssdt_index}")
                     ssdt_index += 1
                 else:
                     break
-            except:
+            except (subprocess.TimeoutExpired, IOError, OSError):
                 break
     
     def collect_all(self):
@@ -349,6 +626,12 @@ class LinuxHardwareDetector:
         
         print("Gathering Bluetooth devices...")
         self.get_bluetooth_info()
+        
+        print("Gathering Input devices...")
+        self.get_input_devices()
+        
+        print("Gathering Biometric devices...")
+        self.get_biometric_devices()
         
         return self.hardware_info
     

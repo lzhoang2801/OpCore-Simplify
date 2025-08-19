@@ -10,19 +10,22 @@ class WifiProfileExtractor:
         self.run = run.Run().run
         self.utils = utils.Utils()
 
-    def validate_wifi_password(self, password):
+    def validate_wifi_password(self, authentication_type="wpa-psk", password=None):
+        if authentication_type.lower() in ("none", "owe"):
+            return ""
+            
         if not password:
-            return False
-        
+            return None
+            
         try:
             password.encode('ascii')
         except UnicodeEncodeError:
-            return False
-        
+            return None
+
         if 8 <= len(password) <= 63 and all(32 <= ord(c) <= 126 for c in password):
-            return True
-            
-        return False
+            return password
+                
+        return None
 
     def get_wifi_password_macos(self, ssid):
         output = self.run({
@@ -38,10 +41,27 @@ class WifiProfileExtractor:
         except:
             password = output[0].strip() if output[0].strip() else None
             
-        if password and self.validate_wifi_password(password):
-            return password
+        if password:
+            return self.validate_wifi_password(password=password)
         
         return None
+    
+    def get_wifi_password_linux(self, ssid):
+        output = self.run({
+            "args": ["nmcli", "--show-secrets", "connection", "show", ssid]
+        })
+        if output[-1] != 0:
+            return None
+        
+        key_mgmt = "none"
+        password = ""
+        for line in output[0].splitlines():
+            if "802-11-wireless-security.key-mgmt:" in line:
+                key_mgmt = line.split(":")[1].strip()
+            elif "802-11-wireless-security.psk:" in line:
+                password = line.split(":")[1].strip()
+        
+        return self.validate_wifi_password(key_mgmt, password)
         
     def get_wifi_password_windows(self, ssid):
         output = self.run({
@@ -54,8 +74,7 @@ class WifiProfileExtractor:
         for line in output[0].splitlines():
             if "Key Content" in line:
                 password = line.split(":")[1].strip()
-                if self.validate_wifi_password(password):
-                    return password
+                return self.validate_wifi_password(password=password)
         
         return None
 
@@ -65,7 +84,7 @@ class WifiProfileExtractor:
         print("Found {} WiFi networks on this device.".format(total_networks))
         print("")
         print("How many networks would you like to process?")
-        print("  1-5 - Specific number (default: 5)")
+        print("  1-{} - Specific number (default: 5)".format(total_networks))
         print("  A   - All available networks")
         print("")
         
@@ -100,7 +119,7 @@ class WifiProfileExtractor:
                     print("Please enter your administrator name and password or click 'Deny' to skip this network...")
                 
                 password = get_password_func(ssid)
-                if password:
+                if password != None:
                     if (ssid, password) not in networks:
                         consecutive_failures = 0
                         networks.append((ssid, password))
@@ -164,6 +183,26 @@ class WifiProfileExtractor:
         print("you for administrator credentials for each WiFi network.")
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_macos)
+    
+    def get_preferred_networks_linux(self):
+        output = self.run({
+            "args": ["nmcli", "-t", "-f", "NAME", "connection", "show"]
+        })
+        if output[-1] != 0:
+            return []
+        
+        ssid_list = [network.strip() for network in output[0].splitlines() if network.strip()]
+        
+        if not ssid_list:
+            return []
+            
+        max_networks = self.ask_network_count(len(ssid_list))
+    
+        self.utils.head("WiFi Profile Extractor")
+        print("")
+        print("Ready to retrieve passwords for networks.")
+        
+        return self.process_networks(ssid_list, max_networks, self.get_wifi_password_linux)
 
     def get_preferred_networks_windows(self):
         output = self.run({
@@ -231,6 +270,7 @@ class WifiProfileExtractor:
         print("- You'll need Heliport app to manage WiFi connections in macOS")
         print("- This step will enable auto WiFi connections at boot time")
         print("  and is useful for users installing macOS via Recovery OS")
+        print("- Only supports WiFi networks using WPA-PSK or Open authentication")
         print("")
         
         user_input = self.utils.request_input("Would you like to scan for WiFi profiles? (Y/n): ").strip().lower() or "y"
@@ -244,6 +284,9 @@ class WifiProfileExtractor:
         
         if os_name == "Windows":
             profiles = self.get_preferred_networks_windows()
+        elif os_name == "Linux":
+            profiles = self.get_preferred_networks_linux()
+            self.utils.request_input()
         elif os_name == "Darwin":
             wifi_interfaces = self.get_wifi_interfaces()
 
