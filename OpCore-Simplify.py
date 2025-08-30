@@ -88,13 +88,13 @@ class OCPE:
         self.u.head("OpenCore Legacy Patcher Warning")
         print("")
         print("1. OpenCore Legacy Patcher is the only solution to enable dropped GPU and Broadcom WiFi")
-        print("   support in newer macOS versions.")
+        print("   support in newer macOS versions, as well as to bring back AppleHDA for macOS Tahoe 26.")
         print("")
         print("2. OpenCore Legacy Patcher disables macOS security features including SIP and AMFI, which may")
         print("   lead to issues such as requiring full installers for updates, application crashes, and")
-        print("   system instability")
+        print("   system instability.")
         print("")
-        print("3. OpenCore Legacy Patcher is not officially supported by any Hackintosh community.")
+        print("3. OpenCore Legacy Patcher is not officially supported for Hackintosh community.")
         print("")
         print("\033[91mImportant:\033[0m")
         print("Please consider these risks carefully before proceeding.")
@@ -364,7 +364,7 @@ class OCPE:
                 if not self.ac.ensure_dsdt():
                     self.ac.select_acpi_tables()
                 self.ac.select_acpi_patches(customized_hardware, disabled_devices)
-                self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
+                needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
                 self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
             elif option < 7:
                 try:
@@ -377,7 +377,7 @@ class OCPE:
                     macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
                     customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
                     smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
-                    self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
+                    needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
                     self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
                 elif option == 3:
                     self.ac.customize_patch_selection()

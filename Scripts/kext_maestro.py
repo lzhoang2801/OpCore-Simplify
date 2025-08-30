@@ -121,7 +121,19 @@ class KextMaestro:
 
         for codec_properties in hardware_report.get("Sound", {}).values():
             if codec_properties.get("Device ID") in codec_layouts.data:
-                selected_kexts.append("AppleALC")
+                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
+                    print("\n\033[93mNote:\033[0m Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext and uses the Apple T2 chip for audio management.")
+                    print("To use AppleALC, you must rollback AppleHDA. Alternatively, you can use VoodooHDA.")
+                    print("")
+                    print("1. \033[1mAppleALC\033[0m - Requires AppleHDA rollback with OpenCore Legacy Patcher")
+                    print("2. \033[1mVoodooHDA\033[0m - Lower audio quality, manual injection to /Library/Extensions")
+                    print("")
+                    kext_option = self.utils.request_input("Select audio kext for your system (default: AppleALC): ").strip() or "1"
+                    if kext_option == "1":
+                        needs_oclp = True
+                        selected_kexts.append("AppleALC")
+                else:
+                    selected_kexts.append("AppleALC")
         
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.4.0") or \
             int(hardware_report.get("CPU").get("CPU Count")) > 1 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
@@ -373,6 +385,8 @@ class KextMaestro:
 
         for name in selected_kexts:
             self.check_kext(kext_data.kext_index_by_name.get(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
+
+        return needs_oclp
 
     def install_kexts_to_efi(self, macos_version, kexts_directory):
         for kext in self.kexts:
