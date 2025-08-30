@@ -296,7 +296,7 @@ class KextMaestro:
             elif device_id in pci_data.IntelX500IDs:
                 selected_kexts.append("IntelLucy")
 
-        if not hardware_report.get("Network"):
+        if all(network_props.get("Bus Type") == "USB" for network_props in hardware_report.get("Network", {}).values()):
             selected_kexts.append("NullEthernet")
 
         for bluetooth_name, bluetooth_props in hardware_report.get("Bluetooth", {}).items():

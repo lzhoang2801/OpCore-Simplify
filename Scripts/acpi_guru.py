@@ -3282,7 +3282,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
         else:
             selected_patches.append("PLUG")
 
-        if not hardware_report.get("Network"):
+        if all(network_props.get("Bus Type") == "USB" for network_props in hardware_report.get("Network", {}).values()):
             selected_patches.append("RMNE")
 
         if hardware_report.get("Motherboard").get("Chipset") in ("C610/X99", "Wellsburg", "X299"):
