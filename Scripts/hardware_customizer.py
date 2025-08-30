@@ -19,11 +19,27 @@ class HardwareCustomizer:
         self.utils.head("Hardware Customization")
 
         for device_type, devices in self.hardware_report.items():
-            if not device_type in ("GPU", "Sound", "Biometric", "Network", "Storage Controllers", "Bluetooth", "SD Controller"):
+            if not device_type in ("BIOS", "GPU", "Sound", "Biometric", "Network", "Storage Controllers", "Bluetooth", "SD Controller"):
                 self.customized_hardware[device_type] = devices
                 continue
 
             self.customized_hardware[device_type] = {}
+
+            if device_type == "BIOS":
+                self.customized_hardware[device_type] = devices.copy()
+                if devices.get("Firmware Type") != "UEFI":
+                    print("\n*** BIOS Firmware Type is not UEFI")
+                    print("")
+                    print("Do you want to build the EFI for UEFI?")
+                    print("If yes, please make sure to update your BIOS and enable UEFI Boot Mode in your BIOS settings.")
+                    print("You can still proceed with Legacy if you prefer.")
+                    print("")
+                    answer = self.utils.request_input("Build EFI for UEFI? (Y/n): ").strip().lower() or "y"
+                    if answer == "n":
+                        self.customized_hardware[device_type]["Firmware Type"] = "Legacy"
+                    else:
+                        self.customized_hardware[device_type]["Firmware Type"] = "UEFI"
+                continue
             
             for device_name in devices:
                 device_props = devices[device_name].copy()
