@@ -1,4 +1,5 @@
 from Scripts.datasets import os_data
+from Scripts.datasets import chipset_data
 from Scripts import acpi_guru
 from Scripts import compatibility_checker
 from Scripts import config_prodigy
@@ -163,9 +164,7 @@ class OCPE:
                 target_version = "{}.{}.{}".format(match.group(1), match.group(2) if match.group(2) else 99, match.group(3) if match.group(3) else 99)
                 
                 if ocl_patched_macos_version and self.u.parse_darwin_version(ocl_patched_macos_version[-1]) <= self.u.parse_darwin_version(target_version) <= self.u.parse_darwin_version(ocl_patched_macos_version[0]):
-                    if self.show_oclp_warning():
-                        return target_version
-                    continue
+                    return target_version
                 elif self.u.parse_darwin_version(native_macos_version[0]) <= self.u.parse_darwin_version(target_version) <= self.u.parse_darwin_version(native_macos_version[-1]):
                     return target_version
 
@@ -281,32 +280,58 @@ class OCPE:
         print("OpenCore EFI build complete.")
         time.sleep(2)
         
-    def results(self, hardware_report, smbios_model):
+    def check_bios_requirements(self, org_hardware_report, hardware_report):
+        requirements = []
+        
+        org_firmware_type = org_hardware_report.get("BIOS", {}).get("Firmware Type", "Unknown")
+        firmware_type = hardware_report.get("BIOS", {}).get("Firmware Type", "Unknown")
+        if org_firmware_type == "Legacy" and firmware_type == "UEFI":
+            requirements.append("Enable UEFI mode (disable Legacy/CSM (Compatibility Support Module))")
+
+        secure_boot = hardware_report.get("BIOS", {}).get("Secure Boot", "Unknown")
+        if secure_boot != "Disabled":
+            requirements.append("Disable Secure Boot")
+        
+        if hardware_report.get("Motherboard", {}).get("Platform") == "Desktop" and hardware_report.get("Motherboard", {}).get("Chipset") in chipset_data.IntelChipsets[112:]:
+            resizable_bar_enabled = any(gpu_props.get("Resizable BAR", "Disabled") == "Enabled" for gpu_props in hardware_report.get("GPU", {}).values())
+            if not resizable_bar_enabled:
+                requirements.append("Enable Above 4G Decoding")
+                requirements.append("Disable Resizable BAR/Smart Access Memory")
+                
+        return requirements
+
+    def results(self, org_hardware_report, hardware_report, smbios_model):
         self.u.head("Results")
         print("")
         print("Your OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Name")))
         print("\t{}".format(self.result_dir))
+        
+        bios_requirements = self.check_bios_requirements(org_hardware_report, hardware_report)
+        
+        print("")
+        print("\033[93mBefore using EFI, please complete the following steps:\033[0m")
+        print("")
+        
+        if bios_requirements:
+            print("* BIOS/UEFI Settings Required:")
+            for requirement in bios_requirements:
+                print("    - {}".format(requirement))
+            print("")
+        
+        print("* USB Mapping:")
         if self.k.kexts[kext_maestro.kext_data.kext_index_by_name.get("USBInjectAll")].checked:
-            print("\033[0;31mNote: USBInjectAll is not recommended. Please use USBMap.kext instead.\033[0m")
-            print("")
-            print("To use USBMap.kext:")
-            print("")
-            print("* Remove USBInjectAll.kext from the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
-        else:
-            print("")
-            print("Before using EFI, please complete the following steps:")
-        print("")
-        print("* Use USBToolBox:")
-        print("   - Mapping USB with the option 'Use Native Class' enabled.")
-        print("   - Use the model identifier '{}'.".format(smbios_model))
-        print("")
-        print("* Add created USBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
-        print("")
-        print("* Edit config.plist:")
-        print("   - Use ProperTree to open your config.plist.")
-        print("   - Run OC Snapshot by pressing Command/Ctrl + R.")
-        print("   - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.")
-        print("   - Save the file when finished.")
+            print("    \033[93mNote:\033[0m USBInjectAll is not recommended. Please use USBMap.kext instead.")
+            print("    - To use USBMap.kext, remove USBInjectAll.kext from the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+
+        print("    - Use USBToolBox:")
+        print("        - Mapping USB with the option 'Use Native Class' enabled.")
+        print("        - Use the model identifier '{}'.".format(smbios_model))
+        print("    - Add created USBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+        print("    - Edit config.plist:")
+        print("        - Use ProperTree to open your config.plist.")
+        print("        - Run OC Snapshot by pressing Command/Ctrl + R.")
+        print("        - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.")
+        print("        - Save the file when finished.")
         print("")
         self.u.open_folder(self.result_dir)
         self.u.request_input()
@@ -387,11 +412,19 @@ class OCPE:
                     smbios_model = self.s.customize_smbios_model(customized_hardware, smbios_model, macos_version)
                     self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
                 elif option == 6:
+                    if needs_oclp and not self.show_oclp_warning():
+                        macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
+                        customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
+                        smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
+                        needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
+                        self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
+                        continue
+
                     if not self.o.gather_bootloader_kexts(self.k.kexts, macos_version):
                         continue
                     
                     self.build_opencore_efi(customized_hardware, disabled_devices, smbios_model, macos_version, needs_oclp)
-                    self.results(customized_hardware, smbios_model)
+                    self.results(hardware_report, customized_hardware, smbios_model)
 
 if __name__ == '__main__':
     update_flag = updater.Updater().run_update()
