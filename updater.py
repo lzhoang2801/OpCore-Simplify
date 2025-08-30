@@ -34,14 +34,11 @@ class Updater:
     def get_latest_sha_version(self):
         print("Fetching latest version from GitHub...")
         try:
-            latest_commit = self.github.get_latest_commit("lzhoang2801", "OpCore-Simplify")
-            if latest_commit and latest_commit.get("sha"):
-                return latest_commit.get("sha")
+            commits = self.github.get_commits("lzhoang2801", "OpCore-Simplify")
+            return commits["commitGroups"][0]["commits"][0]["oid"]
         except Exception as e:
             print("Error fetching latest SHA version: {}".format(str(e)))
-            return None
         
-        print("Could not fetch latest commit information from GitHub.")
         return None
 
     def download_update(self):

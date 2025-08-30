@@ -1,33 +1,47 @@
 from Scripts import resource_fetcher
 from Scripts import utils
 import random
+import json
 
 class Github:
     def __init__(self):
         self.utils = utils.Utils()
         self.fetcher = resource_fetcher.ResourceFetcher()
+
+    def extract_payload(self, response):
+        for line in response.splitlines():
+            if "type=\"application/json\"" in line:
+                payload = line.split(">", 1)[1].split("<", 1)[0]
+
+                try:
+                    payload = json.loads(payload)
+                    payload = payload["payload"]
+                except:
+                    continue
+
+                return payload
+        return None
         
-    def get_latest_commit(self, owner, repo, branch="main"):
-        url = "https://github.com/{}/{}/commits/{}".format(owner, repo, branch)
+    def get_commits(self, owner, repo, branch="main", start_commit=None, after=-1):
+        if after > -1 and not start_commit:
+            start_commit = self.get_commits(owner, repo, branch)["currentCommit"]["oid"]
+
+        if after < 0:
+            url = "https://github.com/{}/{}/commits/{}".format(owner, repo, branch)
+        else:
+            url = "https://github.com/{}/{}/commits/{}?after={}+{}".format(owner, repo, branch, start_commit, after)
+
         response = self.fetcher.fetch_and_parse_content(url)
 
         if not response:
             raise ValueError("Failed to fetch commit information from GitHub.")
 
-        for line in response.splitlines():
-            if "href=\"" in line and "/commit/" in line and "title=\"" in line:
-                sha = line.split("href=\"", 1)[1].split("\"", 1)[0].split("/commit/")[-1]
-                try:
-                    message = line.split("title=\"", 1)[1].split("\"", 1)[0]
-                except:
-                    message = line.split(sha)[1].split(">", 1)[1].split("<")[0]
+        payload = self.extract_payload(response)
 
-                return {
-                    "message": message,
-                    "sha": sha
-                }
-                
-        return None
+        if not "commitGroups" in payload:
+            raise ValueError("Cannot find commit information for repository {} on branch {}.".format(repo, branch))
+        
+        return payload
 
     def get_latest_release(self, owner, repo):
         url = "https://github.com/{}/{}/releases".format(owner, repo)
