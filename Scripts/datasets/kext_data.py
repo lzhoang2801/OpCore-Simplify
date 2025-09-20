@@ -320,6 +320,7 @@ kexts = [
         name = "IntelBTPatcher", 
         description = "Fixes Intel Bluetooth bugs for better connectivity",
         category = "Bluetooth",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu", "BlueToolFixup", "IntelBluetoothFirmware", "IntelBluetoothInjector"],
         github_repo = {
             "owner": "OpenIntelWireless",
@@ -354,6 +355,7 @@ kexts = [
         name = "AppleIGC", 
         description = "Provides support for Intel 2.5G Ethernet(i225/i226)", 
         category = "Ethernet",
+        max_darwin_version = "24.99.99",
         github_repo = {
             "owner": "SongXiaoXi",
             "repo": "AppleIGC"
