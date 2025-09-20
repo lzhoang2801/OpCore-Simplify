@@ -249,6 +249,11 @@ class KextMaestro:
                     print("")
                     self.utils.request_input("Press Enter to continue...")
                     selected_option = recommended_option
+                elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
+                    print("\033[91mImportant:\033[0m For macOS Tahoe 26, only itlwm kext is supported")
+                    print("")
+                    self.utils.request_input("Press Enter to continue...")
+                    selected_option = recommended_option
                 else:
                     kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name)).strip() or str(recommended_option)
                     
@@ -307,7 +312,7 @@ class KextMaestro:
             elif usb_id in pci_data.BroadcomBluetoothIDs:               
                 selected_kexts.append("BrcmFirmwareData")
             elif usb_id in pci_data.IntelBluetoothIDs:
-                selected_kexts.append("IntelBluetoothFirmware")
+                selected_kexts.append("IntelBTPatcher")
             elif usb_id in pci_data.BluetoothIDs[-1]:
                 selected_kexts.append("BlueToolFixup")
 
@@ -383,8 +388,10 @@ class KextMaestro:
         if "Sandy Bridge" in hardware_report.get("CPU").get("Codename") or "Ivy Bridge" in hardware_report.get("CPU").get("Codename"):
             selected_kexts.extend(("AppleIntelCPUPowerManagement", "AppleIntelCPUPowerManagementClient"))
 
+        allow_unsupported_kexts = self.verify_kext_compatibility(selected_kexts, macos_version)
+
         for name in selected_kexts:
-            self.check_kext(kext_data.kext_index_by_name.get(name), macos_version, "Beta" in os_data.get_macos_name_by_darwin(macos_version))
+            self.check_kext(kext_data.kext_index_by_name.get(name), macos_version, allow_unsupported_kexts)
 
         return needs_oclp
 
@@ -580,13 +587,23 @@ class KextMaestro:
                 other_kext.checked = False
 
     def verify_kext_compatibility(self, selected_kexts, target_darwin_version):
-        incompatible_kexts = [
-            (self.kexts[index].name, "Lilu" in self.kexts[index].requires_kexts)
-            for index in selected_kexts
-            if not self.utils.parse_darwin_version(self.kexts[index].min_darwin_version)
-            <= self.utils.parse_darwin_version(target_darwin_version)
-            <= self.utils.parse_darwin_version(self.kexts[index].max_darwin_version)
-        ]
+        incompatible_kexts = []
+        try:
+            incompatible_kexts = [
+                (self.kexts[index].name, "Lilu" in self.kexts[index].requires_kexts)
+                for index in selected_kexts
+                if not self.utils.parse_darwin_version(self.kexts[index].min_darwin_version)
+                <= self.utils.parse_darwin_version(target_darwin_version)
+                <= self.utils.parse_darwin_version(self.kexts[index].max_darwin_version)
+            ]
+        except:
+            incompatible_kexts = [
+                (self.kexts[kext_data.kext_index_by_name.get(kext_name)].name, "Lilu" in self.kexts[kext_data.kext_index_by_name.get(kext_name)].requires_kexts)
+                for kext_name in selected_kexts
+                if not self.utils.parse_darwin_version(self.kexts[kext_data.kext_index_by_name.get(kext_name)].min_darwin_version)
+                <= self.utils.parse_darwin_version(target_darwin_version)
+                <= self.utils.parse_darwin_version(self.kexts[kext_data.kext_index_by_name.get(kext_name)].max_darwin_version)
+            ]
 
         if not incompatible_kexts:
             return False
@@ -652,7 +669,7 @@ class KextMaestro:
                 self.utils.exit_program()
             indices = [int(i.strip()) -1 for i in option.split(",") if i.strip().isdigit()]
 
-            allow_unsupported_kexts = "Beta" in os_data.get_macos_name_by_darwin(macos_version) or self.verify_kext_compatibility(indices, macos_version)
+            allow_unsupported_kexts = self.verify_kext_compatibility(indices, macos_version)
     
             for index in indices:
                 if index >= 0 and index < len(self.kexts):
