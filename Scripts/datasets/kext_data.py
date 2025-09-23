@@ -181,6 +181,7 @@ kexts = [
         description = "Enable legacy Qualcomm Atheros Wireless cards",
         category = "Wi-Fi",
         min_darwin_version = "18.0.0",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["IO80211ElCap"],
         download_info = {
             "id": 348147192, 
@@ -192,6 +193,7 @@ kexts = [
         description = "Enable legacy Qualcomm Atheros Wireless cards",
         category = "Wi-Fi",
         min_darwin_version = "18.0.0",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["corecaptureElCap"],
         download_info = {
             "id": 128321732, 
@@ -203,6 +205,7 @@ kexts = [
         description = "Enable legacy Apple Wireless adapters",
         category = "Wi-Fi",
         min_darwin_version = "23.0.0",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["AMFIPass", "IOSkywalkFamily"],
         download_info = {
             "id": 817294638, 
@@ -214,6 +217,7 @@ kexts = [
         description = "Enable legacy Apple Wireless adapters",
         category = "Wi-Fi",
         min_darwin_version = "23.0.0",
+        max_darwin_version = "24.99.99",
         requires_kexts = ["AMFIPass", "IO80211FamilyLegacy"],
         download_info = {
             "id": 926584761, 
@@ -750,7 +754,6 @@ kexts = [
         description = "A replacement for amfi=0x80 boot argument",
         category = "Extras",
         min_darwin_version = "20.0.0",
-        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         download_info = {
             "id": 926491527, 
