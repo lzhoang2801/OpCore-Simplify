@@ -3150,7 +3150,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "UsbReset", 0x00001000)
  *
  * Method (WQBI, 1, NotSerialized)
  * {
- *     \_TZ.WQBI (Arg0)
+ *     \\_TZ.WQBI (Arg0)
  * }
  *
  * So we have to patch it for correct reporting.
