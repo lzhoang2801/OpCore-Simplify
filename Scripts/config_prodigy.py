@@ -695,9 +695,6 @@ class ConfigProdigy:
         if kexts[kext_data.kext_index_by_name.get("BlueToolFixup")].checked:
             config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothExternalDongleFailed"] = self.utils.hex_to_bytes("00")
             config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["bluetoothInternalControllerInfo"] = self.utils.hex_to_bytes("0000000000000000000000000000")
-        
-        if kexts[kext_data.kext_index_by_name.get("USBInjectAll")].checked:
-            config["Kernel"]["Quirks"]["XhciPortLimit"] = True
 
         if kexts[kext_data.kext_index_by_name.get("RestrictEvents")].checked:
             revpatch = []

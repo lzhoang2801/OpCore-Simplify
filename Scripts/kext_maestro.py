@@ -103,7 +103,7 @@ class KextMaestro:
         for kext in self.kexts:
             kext.checked = kext.required
 
-        selected_kexts = []
+        selected_kexts = ["UTBDefault"]
 
         if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
             selected_kexts.extend(("SMCProcessor", "SMCSuperIO"))

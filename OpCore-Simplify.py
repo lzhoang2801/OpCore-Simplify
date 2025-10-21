@@ -148,7 +148,7 @@ class OCPE:
 
             for darwin_version in range(min_version, max_version + 1):
                 name = os_data.get_macos_name_by_darwin(str(darwin_version))
-                label = " (Requires OpenCore Legacy Patcher)" if oclp_min <= darwin_version <= oclp_max else ""
+                label = " (\033[1;93mRequires OpenCore Legacy Patcher\033[0m)" if oclp_min <= darwin_version <= oclp_max else ""
                 print("   {}. {}{}".format(darwin_version, name, label))
 
             print("")
@@ -303,7 +303,7 @@ class OCPE:
                 
         return requirements
 
-    def results(self, org_hardware_report, hardware_report, smbios_model):
+    def results(self, org_hardware_report, hardware_report):
         self.u.head("Results")
         print("")
         print("Your OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Name")))
@@ -322,14 +322,9 @@ class OCPE:
             print("")
         
         print("* USB Mapping:")
-        if self.k.kexts[kext_maestro.kext_data.kext_index_by_name.get("USBInjectAll")].checked:
-            print("    \033[93mNote:\033[0m USBInjectAll is not recommended. Please use USBMap.kext instead.")
-            print("    - To use USBMap.kext, remove USBInjectAll.kext from the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
-
-        print("    - Use USBToolBox:")
-        print("        - Mapping USB with the option 'Use Native Class' enabled.")
-        print("        - Use the model identifier '{}'.".format(smbios_model))
-        print("    - Add created USBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+        print("    - Use USBToolBox tool to map USB ports.")
+        print("    - Add created UTBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+        print("    - Remove UTBDefault.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
         print("    - Edit config.plist:")
         print("        - Use ProperTree to open your config.plist.")
         print("        - Run OC Snapshot by pressing Command/Ctrl + R.")
@@ -362,7 +357,7 @@ class OCPE:
                     for index, device_name in enumerate(disabled_devices, start=1):
                         print("{}{}. {}".format(" "*6, index, device_name))
                 print("* EFI Options:")
-                print("   - macOS Version: {}{}{}".format("Unknown" if not macos_version else os_data.get_macos_name_by_darwin(macos_version), "" if not macos_version else " ({})".format(macos_version), ". \033[1;36mRequires OpenCore Legacy Patcher\033[0m" if needs_oclp else ""))
+                print("   - macOS Version: {}{}{}".format("Unknown" if not macos_version else os_data.get_macos_name_by_darwin(macos_version), "" if not macos_version else " ({})".format(macos_version), ". \033[1;93mRequires OpenCore Legacy Patcher\033[0m" if needs_oclp else ""))
                 print("   - SMBIOS: {}".format("Unknown" if not smbios_model else smbios_model))
                 print("")
             print("1. Select Hardware Report")
@@ -427,7 +422,7 @@ class OCPE:
                         continue
                     
                     self.build_opencore_efi(customized_hardware, disabled_devices, smbios_model, macos_version, needs_oclp)
-                    self.results(hardware_report, customized_hardware, smbios_model)
+                    self.results(hardware_report, customized_hardware)
 
 if __name__ == '__main__':
     update_flag = updater.Updater().run_update()

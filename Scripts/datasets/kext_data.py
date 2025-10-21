@@ -473,12 +473,22 @@ kexts = [
         }
     ),
     KextInfo(
-        name = "USBInjectAll", 
-        description = "Inject all USB ports for the installed Intel EHCI/XHCI chipset automatically",
+        name = "USBToolBox", 
+        description = "Flexible USB mapping",
         category = "USB",
         github_repo = {
-            "owner": "daliansky",
-            "repo": "OS-X-USB-Inject-All"
+            "owner": "USBToolBox",
+            "repo": "kext"
+        }
+    ),
+    KextInfo(
+        name = "UTBDefault", 
+        description = "Enables all USB ports (assumes no port limit)",
+        category = "USB",
+        requires_kexts = ["USBToolBox"],
+        github_repo = {
+            "owner": "USBToolBox",
+            "repo": "kext"
         }
     ),
     KextInfo(

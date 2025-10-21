@@ -181,6 +181,8 @@ class gatheringFiles:
                 product_name = "IntelBluetoothFirmware"
             elif product_name.startswith("VoodooI2C"):
                 product_name = "VoodooI2C"
+            elif product_name == "UTBDefault":
+                product_name = "USBToolBox"
 
             product_download_index = self.get_product_index(bootloader_kext_urls, product_name)
             if product_download_index is None:
