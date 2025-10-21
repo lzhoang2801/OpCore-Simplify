@@ -286,7 +286,7 @@ class ConfigProdigy:
                 else:
                     contents.append(line)
             contents.append("")
-            contents.append("\033[93mNote:\033[0m")
+            contents.append("\033[1;93mNote:\033[0m")
             contents.append("- The default layout may not be optimal.")
             contents.append("- Test different layouts to find what works best for your system.")
             contents.append("")

@@ -122,7 +122,7 @@ class KextMaestro:
         for codec_properties in hardware_report.get("Sound", {}).values():
             if codec_properties.get("Device ID") in codec_layouts.data:
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                    print("\n\033[93mNote:\033[0m Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext and uses the Apple T2 chip for audio management.")
+                    print("\n\033[1;93mNote:\033[0m Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext and uses the Apple T2 chip for audio management.")
                     print("To use AppleALC, you must rollback AppleHDA. Alternatively, you can use VoodooHDA.")
                     print("")
                     print("1. \033[1mAppleALC\033[0m - Requires AppleHDA rollback with \033[1;93mOpenCore Legacy Patcher\033[0m")
@@ -179,8 +179,8 @@ class KextMaestro:
                         recommended_option = 1
                         recommended_name = "NootRX"
                         max_option = 3
-                        print("\033[93mNote:\033[0m - Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD {} GPUs.".format(gpu_props.get("Codename")))
-                        print("      - To avoid this, you can use NootRX or choose not to install a GPU kext.")
+                        print("\033[1;93mNote:\033[0m Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD {} GPUs.".format(gpu_props.get("Codename")))
+                        print("To avoid this, you can use NootRX or choose not to install a GPU kext.")
                         print("")
                         print("1. \033[1mNootRX\033[0m - Uses latest GPU firmware")
                         print("2. \033[1mWhateverGreen\033[0m - Uses original Apple firmware")
@@ -189,16 +189,17 @@ class KextMaestro:
                         recommended_option = 2
                         recommended_name = "WhateverGreen"
                         max_option = 2
-                        print("\033[93mNote:\033[0m - AMD {} GPUs have two available kext options:".format(gpu_props.get("Codename")))
-                        print("      - You can try different kexts after installation to find the best one for your system")
+                        print("\033[1;93mNote:\033[0m")
+                        print("- AMD {} GPUs have two available kext options:".format(gpu_props.get("Codename")))
+                        print("- You can try different kexts after installation to find the best one for your system")
                         print("")
                         print("1. \033[1mNootRX\033[0m - Uses latest GPU firmware")
                         print("2. \033[1mWhateverGreen\033[0m - Uses original Apple firmware")
                     print("")
 
                     if any(other_gpu_props.get("Manufacturer") == "Intel" for other_gpu_props in hardware_report.get("GPU", {}).values()):
-                        print("\033[91mImportant:\033[0m - NootRX kext is not compatible with Intel GPUs")
-                        print("      - Automatically selecting WhateverGreen kext due to Intel GPU compatibility")
+                        print("\033[91mImportant:\033[0m NootRX kext is not compatible with Intel GPUs")
+                        print("Automatically selecting WhateverGreen kext due to Intel GPU compatibility")
                         print("")
                         self.utils.request_input("Press Enter to continue...")
                         continue
@@ -221,9 +222,9 @@ class KextMaestro:
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
                     print("\n*** Found {} is AMD {} GPU.".format(gpu_name, gpu_props.get("Codename")))
                     print("")
-                    print("\033[93mNote:\033[0m - Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD GPUs.")
-                    print("      - The current recommendation is to not use WhateverGreen.")
-                    print("      - However, you can still try adding it to see if it works on your system.")
+                    print("\033[1;93mNote:\033[0m Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD GPUs.")
+                    print("The current recommendation is to not use WhateverGreen.")
+                    print("However, you can still try adding it to see if it works on your system.")
                     print("")
                     self.utils.request_input("Press Enter to continue...")
                     break
@@ -254,7 +255,7 @@ class KextMaestro:
             elif device_id in pci_data.IntelWiFiIDs:
                 print("\n*** Found {} is Intel WiFi device.".format(network_name))
                 print("")
-                print("\033[93mNote:\033[0m Intel WiFi devices have two available kext options:")
+                print("\033[1;93mNote:\033[0m Intel WiFi devices have two available kext options:")
                 print("")
                 print("1. \033[1mAirportItlwm\033[0m - Uses native WiFi settings menu")
                 print("   • Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support")
@@ -303,7 +304,7 @@ class KextMaestro:
                         selected_kexts.append("IOSkywalkFamily")
                     elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                         print("")
-                        print("\033[93mNote:\033[0m Since macOS Sonoma 14, iServices won't work with AirportItlwm without patches")
+                        print("\033[1;93mNote:\033[0m Since macOS Sonoma 14, iServices won't work with AirportItlwm without patches")
                         print("")
                         while True:
                             option = self.utils.request_input("Apply OCLP root patch to fix iServices? (yes/No): ").strip().lower()
@@ -651,11 +652,10 @@ class KextMaestro:
             for index, (kext_name, is_lilu_dependent) in enumerate(incompatible_kexts, start=1):
                 print("{:2}. {:25}{}".format(index, kext_name, " - Lilu Plugin" if is_lilu_dependent else ""))
             
-            print("\n\033[1;36m")
-            print("Note:")
+            print("\n\033[1;93mNote:\033[0m")
             print("- With Lilu plugins, using the \"-lilubetaall\" boot argument will force them to load.")
             print("- Forcing unsupported kexts can cause system instability. \033[0;31mProceed with caution.\033[0m")
-            print("\033[0m")
+            print("")
             
             option = self.utils.request_input("Do you want to force load {} on the unsupported macOS version? (yes/No): ".format("these kexts" if len(incompatible_kexts) > 1 else "this kext"))
             
@@ -684,12 +684,12 @@ class KextMaestro:
                 elif not self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(kext.max_darwin_version):
                     line = "\033[90m{}\033[0m".format(line)
                 contents.append(line)
-            contents.append("\033[1;36m")
-            contents.append("Note:")
+            contents.append("")
+            contents.append("\033[1;93mNote:\033[0m")
             contents.append("- Lines in gray indicate kexts that are not supported by the current macOS version ({}).".format(macos_version))
             contents.append("- When a plugin of a kext is selected, the entire kext will be automatically selected.")
             contents.append("- You can select multiple kexts by entering their indices separated by commas (e.g., '1, 2, 3').")
-            contents.append("\033[0m")
+            contents.append("")
             contents.append("B. Back")
             contents.append("Q. Quit")
             contents.append("")

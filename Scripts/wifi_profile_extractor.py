@@ -226,7 +226,7 @@ class WifiProfileExtractor:
 
         self.utils.head("WiFi Profile Extractor")
         print("")
-        print("\033[93mNote:\033[0m")
+        print("\033[1;93mNote:\033[0m")
         print("- When using itlwm kext, WiFi appears as Ethernet in macOS")
         print("- You'll need Heliport app to manage WiFi connections in macOS")
         print("- This step will enable auto WiFi connections at boot time")

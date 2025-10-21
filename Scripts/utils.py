@@ -8,11 +8,30 @@ import binascii
 import subprocess
 import pathlib
 import zipfile
+import tempfile
 
 class Utils:
     def __init__(self, script_name = "OpCore Simplify"):
         self.script_name = script_name
+        self.clean_temporary_dir()
+
+    def clean_temporary_dir(self):
+        temporary_dir = tempfile.gettempdir()
+        
+        for file in os.listdir(temporary_dir):
+            if file.startswith("ocs_"):
     
+                if not os.path.isdir(os.path.join(temporary_dir, file)):
+                    continue
+
+                try:
+                    shutil.rmtree(os.path.join(temporary_dir, file))
+                except Exception as e:
+                    pass
+    
+    def get_temporary_dir(self):
+        return tempfile.mkdtemp(prefix="ocs_")
+
     def write_file(self, file_path, data):
         file_extension = os.path.splitext(file_path)[1]
 
@@ -78,18 +97,13 @@ class Utils:
 
     def hex_to_bytes(self, string):
         try:
-            # Remove non-hex characters (e.g., hyphens)
             hex_string = re.sub(r'[^0-9a-fA-F]', '', string)
 
             if len(re.sub(r"\s+", "", string)) != len(hex_string):
                 return string
             
-            # Convert hex string to bytes
-            bytes_data = binascii.unhexlify(hex_string)
-            
-            return bytes_data
+            return binascii.unhexlify(hex_string)
         except binascii.Error:
-            # Handle invalid hex string
             return string
     
     def int_to_hex(self, number):
@@ -98,9 +112,7 @@ class Utils:
     def to_little_endian_hex(self, hex_string):
         hex_string = hex_string.lower().lstrip("0x")
 
-        little_endian_hex = ''.join(reversed([hex_string[i:i+2] for i in range(0, len(hex_string), 2)]))
-        
-        return little_endian_hex.upper()
+        return ''.join(reversed([hex_string[i:i+2] for i in range(0, len(hex_string), 2)])).upper()
     
     def string_to_hex(self, string):
         return ''.join(format(ord(char), '02X') for char in string)
@@ -118,29 +130,20 @@ class Utils:
         return next((item for item in data[start:end] if item.lower() in search_item.lower()), None)
 
     def normalize_path(self, path):
-        # Remove all surrounding quotes if present
         path = re.sub(r'^[\'"]+|[\'"]+$', '', path)
         
-        # Remove trailing spaces
         path = path.strip()
         
-        # Expand ~ to the user's home directory
         path = os.path.expanduser(path)
         
-        # Normalize path separators for the target operating system
-        if os.name == 'nt':  # Windows
-            # Replace single backslashes with forward slashes
+        if os.name == 'nt':
             path = path.replace('\\', '/')
-            # Remove redundant slashes
             path = re.sub(r'/+', '/', path)
         else:
-            # Remove backslashes
             path = path.replace('\\', '')
         
-        # Normalize the path
         path = os.path.normpath(path)
         
-        # Convert the path to an absolute path and normalize it according to the OS
         return str(pathlib.Path(path).resolve())
     
     def parse_darwin_version(self, darwin_version):
@@ -155,36 +158,47 @@ class Utils:
                 subprocess.run(['xdg-open', folder_path])
         elif os.name == 'nt':
             os.startfile(folder_path)
-        else:
-            raise NotImplementedError("This function is only supported on macOS, Windows, and Linux.")
 
     def request_input(self, prompt="Press Enter to continue..."):
-        try:
-            user_response = input(prompt)
-        except NameError:
+        if sys.version_info[0] < 3:
             user_response = raw_input(prompt)
+        else:
+            user_response = input(prompt)
         
         if not isinstance(user_response, str):
             user_response = str(user_response)
         
         return user_response
 
-    def clear_screen(self):
-    	os.system('cls' if os.name=='nt' else 'clear')
+    def progress_bar(self, title, steps, current_step_index, done=False):
+        self.head(title)
+        print("")
+        if done:
+            for step in steps:
+                print("  [\033[92m✓\033[0m] {}".format(step))
+        else:
+            for i, step in enumerate(steps):
+                if i < current_step_index:
+                    print("  [\033[92m✓\033[0m] {}".format(step))
+                elif i == current_step_index:
+                    print("  [\033[1;93m>\033[0m] {}...".format(step))
+                else:
+                    print("  [ ] {}".format(step))
+        print("")
 
     def head(self, text = None, width = 68, resize=True):
         if resize:
             self.adjust_window_size()
-        self.clear_screen()
+        os.system('cls' if os.name=='nt' else 'clear')
         if text == None:
             text = self.script_name
-        separator = "#" * width
+        separator = "═" * (width - 2)
         title = " {} ".format(text)
         if len(title) > width - 2:
             title = title[:width-4] + "..."
-        title = title.center(width - 2)  # Center the title within the width minus 2 for the '#' characters
+        title = title.center(width - 2)
         
-        print("{}\n#{}#\n{}".format(separator, title, separator))
+        print("╔{}╗\n║{}║\n╚{}╝".format(separator, title, separator))
     
     def adjust_window_size(self, content=""):
         lines = content.splitlines()
@@ -194,14 +208,27 @@ class Utils:
 
     def exit_program(self):
         self.head()
+        width = 68
         print("")
-        print("For more information, to report errors, or to contribute to the product:")
-        print("* Facebook: https://www.facebook.com/macforce2601")
-        print("* Telegram: https://t.me/lzhoang2601")
-        print("* GitHub: https://github.com/lzhoang2801/OpCore-Simplify")
+        print("For more information, to report errors, or to contribute to the product:".center(width))
         print("")
 
-        print("Thank you for using our program!")
+        separator = "─" * (width - 4)
+        print(f" ┌{separator}┐ ")
+        
+        contacts = {
+            "Facebook": "https://www.facebook.com/macforce2601",
+            "Telegram": "https://t.me/lzhoang2601",
+            "GitHub": "https://github.com/lzhoang2801/OpCore-Simplify"
+        }
+        
+        for platform, link in contacts.items():
+            line = f" * {platform}: {link}"
+            print(f" │{line.ljust(width - 4)}│ ")
+
+        print(f" └{separator}┘ ")
         print("")
-        self.request_input("Press Enter to exit.")
+        print("Thank you for using our program!".center(width))
+        print("")
+        self.request_input("Press Enter to exit.".center(width))
         sys.exit(0)

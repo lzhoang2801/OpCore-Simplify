@@ -29,33 +29,32 @@ class OCPE:
         self.s = smbios.SMBIOS()
         self.r = run.Run()
         self.u = utils.Utils()
-        self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
+        self.result_dir = self.u.get_temporary_dir()
 
     def select_hardware_report(self):
-        self.hardware_sniffer = self.o.gather_hardware_sniffer()
         self.ac.dsdt = self.ac.acpi.acpi_tables = None
 
         while True:
             self.u.head("Select hardware report")
             print("")
             if os.name == "nt":
-                print("\033[93mNote:\033[0m")
+                print("\033[1;93mNote:\033[0m")
                 print("- Ensure you are using the latest version of Hardware Sniffer before generating the hardware report.")
                 print("- Hardware Sniffer will not collect information related to Resizable BAR option of GPU (disabled by default) and monitor connections in Windows PE.")
                 print("")
-                if self.hardware_sniffer:
-                    print("")
-                    print("E. Export hardware report (Recommended)")
+                print("E. Export hardware report (Recommended)")
                 print("")
             print("Q. Quit")
             print("")
         
-            user_input = self.u.request_input("Drag and drop your hardware report here (.JSON){}: ".format(" or type \"E\" to export" if self.hardware_sniffer else ""))
+            user_input = self.u.request_input("Drag and drop your hardware report here (.JSON) or type \"E\" to export: ")
             if user_input.lower() == "q":
                 self.u.exit_program()
-            if self.hardware_sniffer and user_input.lower() == "e":
+            if user_input.lower() == "e":
+                hardware_sniffer = self.o.gather_hardware_sniffer()
+
                 output = self.r.run({
-                    "args":[self.hardware_sniffer, "-e"]
+                    "args":[hardware_sniffer, "-e"]
                 })
                 
                 if output[-1] != 0:
@@ -101,7 +100,7 @@ class OCPE:
             print("\033[91mImportant:\033[0m")
             print("Please consider these risks carefully before proceeding.")
             print("")
-            print("\033[93mNote:\033[0m")
+            print("\033[1;93mNote:\033[0m")
             print("If you experience black screen after login with OpenCore Legacy Patcher v2.2.0 or newer")
             print("after applying root patches, please revert to version v2.1.2.")
             print("")
@@ -157,7 +156,7 @@ class OCPE:
                 print("   {}. {}{}".format(darwin_version, name, label))
 
             print("")
-            print("\033[93mNote:\033[0m")
+            print("\033[1;93mNote:\033[0m")
             print("- To select a major version, enter the number (e.g., 19).")
             print("- To specify a full version, use the Darwin version format (e.g., 22.4.6).")
             print("")
@@ -177,9 +176,17 @@ class OCPE:
                     return target_version
 
     def build_opencore_efi(self, hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp):
-        self.u.head("Building OpenCore EFI")
-        print("")
-        print("1. Copy EFI base to results folder...", end=" ")
+        steps = [
+            "Copying EFI base to results folder",
+            "Applying ACPI patches",
+            "Copying kexts and snapshotting to config.plist",
+            "Generating config.plist",
+            "Cleaning up unused drivers, resources, and tools"
+        ]
+        
+        title = "Building OpenCore EFI"
+
+        self.u.progress_bar(title, steps, 0)
         self.u.create_folder(self.result_dir, remove_content=True)
 
         if not os.path.exists(self.k.ock_files_dir):
@@ -193,8 +200,8 @@ class OCPE:
         
         if not config_data:
             raise Exception("Error: The file {} does not exist.".format(config_file))
-        print("Done")
-        print("2. Apply ACPI patches...", end=" ")
+        
+        self.u.progress_bar(title, steps, 1)
         config_data["ACPI"]["Add"] = []
         config_data["ACPI"]["Delete"] = []
         config_data["ACPI"]["Patch"] = []
@@ -223,17 +230,17 @@ class OCPE:
         
         config_data["ACPI"]["Patch"].extend(self.ac.dsdt_patches)
         config_data["ACPI"]["Patch"] = self.ac.apply_acpi_patches(config_data["ACPI"]["Patch"])
-        print("Done")
-        print("3. Copy kexts and snapshot to config.plist...", end=" ")
+
+        self.u.progress_bar(title, steps, 2)
         kexts_directory = os.path.join(self.result_dir, "EFI", "OC", "Kexts")
         self.k.install_kexts_to_efi(macos_version, kexts_directory)
         config_data["Kernel"]["Add"] = self.k.load_kexts(hardware_report, macos_version, kexts_directory)
-        print("Done")
-        print("4. Generate config.plist...", end=" ")      
+
+        self.u.progress_bar(title, steps, 3)
         self.co.genarate(hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp, self.k.kexts, config_data)
         self.u.write_file(config_file, config_data)
-        print("Done")
-        print("5. Clean up unused drivers, resources, and tools...", end=" ")
+
+        self.u.progress_bar(title, steps, 4)
         files_to_remove = []
 
         drivers_directory = os.path.join(self.result_dir, "EFI", "OC", "Drivers")
@@ -269,7 +276,6 @@ class OCPE:
             if not tool_path in tool_loaded:
                 files_to_remove.append(os.path.join(tools_directory, tool_path))
 
-        removal_error = None
         for file_path in files_to_remove:
             try:
                 if os.path.isdir(file_path):
@@ -277,14 +283,10 @@ class OCPE:
                 else:
                     os.remove(file_path)
             except Exception as e:
-                removal_error = True
                 print("Failed to remove file: {}".format(e))
-
-        if removal_error:
-            print("")
-
-        print("Done")
-        print("")
+        
+        self.u.progress_bar(title, steps, len(steps), done=True)
+        
         print("OpenCore EFI build complete.")
         time.sleep(2)
         
@@ -308,36 +310,37 @@ class OCPE:
                 
         return requirements
 
-    def results(self, org_hardware_report, hardware_report):
-        self.u.head("Results")
-        print("")
-        print("Your OpenCore EFI for {} has been built at:".format(hardware_report.get("Motherboard").get("Name")))
-        print("\t{}".format(self.result_dir))
-        
-        bios_requirements = self.check_bios_requirements(org_hardware_report, hardware_report)
-        
-        print("")
-        print("\033[93mBefore using EFI, please complete the following steps:\033[0m")
-        print("")
-        
-        if bios_requirements:
-            print("* BIOS/UEFI Settings Required:")
-            for requirement in bios_requirements:
-                print("    - {}".format(requirement))
+    def before_using_efi(self, org_hardware_report, hardware_report):
+        while True:
+            self.u.head("Before Using EFI")
+            print("")                 
+            print("\033[93mPlease complete the following steps:\033[0m")
             print("")
-        
-        print("* USB Mapping:")
-        print("    - Use USBToolBox tool to map USB ports.")
-        print("    - Add created UTBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
-        print("    - Remove UTBDefault.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
-        print("    - Edit config.plist:")
-        print("        - Use ProperTree to open your config.plist.")
-        print("        - Run OC Snapshot by pressing Command/Ctrl + R.")
-        print("        - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.")
-        print("        - Save the file when finished.")
-        print("")
-        self.u.open_folder(self.result_dir)
-        self.u.request_input()
+            
+            bios_requirements = self.check_bios_requirements(org_hardware_report, hardware_report)
+            if bios_requirements:
+                print("* BIOS/UEFI Settings Required:")
+                for requirement in bios_requirements:
+                    print("    - {}".format(requirement))
+                print("")
+            
+            print("* USB Mapping:")
+            print("    - Use USBToolBox tool to map USB ports.")
+            print("    - Add created UTBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+            print("    - Remove UTBDefault.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+            print("    - Edit config.plist:")
+            print("        - Use ProperTree to open your config.plist.")
+            print("        - Run OC Snapshot by pressing Command/Ctrl + R.")
+            print("        - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.")
+            print("        - Save the file when finished.")
+            print("")
+            print("Type \"AGREE\" to open the built EFI for you\n")
+            response = self.u.request_input("")
+            if response.lower() == "agree":
+                self.u.open_folder(self.result_dir)
+                break
+            else:
+                print("\033[91mInvalid input. Please try again.\033[0m")
 
     def main(self):
         hardware_report_path = None
@@ -351,20 +354,17 @@ class OCPE:
         while True:
             self.u.head()
             print("")
-            print("Hardware Report: {}".format("No report selected" if not hardware_report_path else hardware_report_path))
+            print("  Hardware Report: {}".format(hardware_report_path or 'Not selected'))
             print("")
             if hardware_report_path:
-                print("* Hardware Compatibility:")
-                if native_macos_version:
-                    print("   - Native macOS Version: {}".format(self.c.show_macos_compatibility((native_macos_version[-1], native_macos_version[0]))))
+                print("  macOS Version:   {}".format(os_data.get_macos_name_by_darwin(macos_version) if macos_version else 'Not selected') + (' (' + macos_version + ')' if macos_version else '') + ('. \033[1;93mRequires OpenCore Legacy Patcher\033[0m' if needs_oclp else ''))
+                print("  SMBIOS:          {}".format(smbios_model or 'Not selected'))
                 if disabled_devices:
-                    print("   - Disabled Devices:")
-                    for index, device_name in enumerate(disabled_devices, start=1):
-                        print("{}{}. {}".format(" "*6, index, device_name))
-                print("* EFI Options:")
-                print("   - macOS Version: {}{}{}".format("Unknown" if not macos_version else os_data.get_macos_name_by_darwin(macos_version), "" if not macos_version else " ({})".format(macos_version), ". \033[1;93mRequires OpenCore Legacy Patcher\033[0m" if needs_oclp else ""))
-                print("   - SMBIOS: {}".format("Unknown" if not smbios_model else smbios_model))
-                print("")
+                    print("  Disabled Devices:")
+                    for device, _ in disabled_devices.items():
+                        print("    - {}".format(device))
+                    print("")
+
             print("1. Select Hardware Report")
             print("2. Select macOS Version")
             print("3. Customize ACPI Patch")
@@ -374,16 +374,12 @@ class OCPE:
             print("")
             print("Q. Quit")
             print("")
+
             option = self.u.request_input("Select an option: ")
             if option.lower() == "q":
                 self.u.exit_program()
-
-            try:
-                option = int(option)
-            except:
-                continue
-
-            if option == 1:
+           
+            if option == "1":
                 hardware_report_path, hardware_report = self.select_hardware_report()
                 hardware_report, native_macos_version, ocl_patched_macos_version = self.c.check_compatibility(hardware_report)
                 macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
@@ -394,40 +390,49 @@ class OCPE:
                 self.ac.select_acpi_patches(customized_hardware, disabled_devices)
                 needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
                 self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
-            elif option < 7:
-                try:
-                    customized_hardware
-                except:
-                    self.u.request_input("\nPlease select a hardware report to proceed")
-                    continue
 
-                if option == 2:
+            if not hardware_report_path:
+                self.u.head()
+                print("\n\n")
+                print("\033[1;93mPlease select a hardware report first.\033[0m")
+                print("\n\n")
+                self.u.request_input("Press Enter to go back...")
+                continue
+
+            if option == "2":
+                macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
+                customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
+                smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
+                needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
+                self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
+            elif option == "3":
+                self.ac.customize_patch_selection()
+            elif option == "4":
+                self.k.kext_configuration_menu(macos_version)
+            elif option == "5":
+                smbios_model = self.s.customize_smbios_model(customized_hardware, smbios_model, macos_version)
+                self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
+            elif option == "6":
+                if needs_oclp and not self.show_oclp_warning():
                     macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
                     customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
                     smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
                     needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
                     self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
-                elif option == 3:
-                    self.ac.customize_patch_selection()
-                elif option == 4:
-                    self.k.kext_configuration_menu(macos_version)
-                elif option == 5:
-                    smbios_model = self.s.customize_smbios_model(customized_hardware, smbios_model, macos_version)
-                    self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
-                elif option == 6:
-                    if needs_oclp and not self.show_oclp_warning():
-                        macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
-                        customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
-                        smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
-                        needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
-                        self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
-                        continue
+                    continue
 
-                    if not self.o.gather_bootloader_kexts(self.k.kexts, macos_version):
-                        continue
-                    
-                    self.build_opencore_efi(customized_hardware, disabled_devices, smbios_model, macos_version, needs_oclp)
-                    self.results(hardware_report, customized_hardware)
+                if not self.o.gather_bootloader_kexts(self.k.kexts, macos_version):
+                    continue
+                
+                self.build_opencore_efi(customized_hardware, disabled_devices, smbios_model, macos_version, needs_oclp)
+                self.before_using_efi(hardware_report, customized_hardware)
+
+                self.u.head("Result")
+                print("")
+                print("Your OpenCore EFI for {} has been built at:".format(customized_hardware.get("Motherboard").get("Name")))
+                print("\t{}".format(self.result_dir))
+                print("")
+                self.u.request_input("Press Enter to main menu...")
 
 if __name__ == '__main__':
     update_flag = updater.Updater().run_update()
