@@ -509,7 +509,7 @@ class ConfigProdigy:
             "keepsyms=1"
         ]
 
-        if config["Booter"]["Quirks"]["ResizeAppleGpuBars"] != 0 and ("AMD" in hardware_report.get("CPU").get("Manufacturer") or self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename"))):
+        if config["Booter"]["Quirks"]["ResizeAppleGpuBars"] != 0 and self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")):
             boot_args.append("npci=0x2000")
 
         for kext in kexts:
