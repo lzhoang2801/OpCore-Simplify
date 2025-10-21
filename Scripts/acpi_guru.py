@@ -3172,7 +3172,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
 
     Method (_SB.WMIS.WQBI, 1, NotSerialized)
     {
-        Return (\_TZ.WQBI (Arg0))
+        Return (\\_TZ.WQBI (Arg0))
     }
 }
 """
@@ -3246,9 +3246,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
         if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")):
             selected_patches.append("APIC")
 
-        if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
-            selected_patches.append("BUS0")
-
         for device_name, device_info in disabled_devices.items():
             if "PCI" in device_info.get("Bus Type", "PCI"):
                 selected_patches.append("Disable Devices")
@@ -3290,6 +3287,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
 
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:40]:
             selected_patches.append("RTCAWAC")
+
+        if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
+            selected_patches.append("BUS0")
 
         if "SURFACE" in hardware_report.get("Motherboard").get("Name"):
             selected_patches.append("Surface Patch")
