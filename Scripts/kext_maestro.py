@@ -208,8 +208,8 @@ class KextMaestro:
                         selected_kexts.append("NootRX")
                     elif selected_option == 2:
                         selected_kexts.append("WhateverGreen")
-                    else:
-                        continue
+                    
+                    continue
 
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
                     print("\n*** Found {} is AMD {} GPU.".format(gpu_name, gpu_props.get("Codename")))
