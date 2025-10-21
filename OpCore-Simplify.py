@@ -140,14 +140,17 @@ class OCPE:
             print("")
             print("Available macOS versions:")
             print("")
-            if ocl_patched_macos_version:
-                print(" * Native macOS versions: ")
-            for darwin_version in range(int(native_macos_version[0][:2]), min(int(native_macos_version[-1][:2]), (int(ocl_patched_macos_version[-1][:2]) - 1) if ocl_patched_macos_version else 99) + 1):
-                print("{}{}. {}".format(" "*3 if ocl_patched_macos_version else "", darwin_version, os_data.get_macos_name_by_darwin(str(darwin_version))))
-            if ocl_patched_macos_version:
-                print(" * Requires OpenCore Legacy Patcher: ")
-                for darwin_version in range(int(ocl_patched_macos_version[-1][:2]), int(ocl_patched_macos_version[0][:2]) + 1):
-                    print("   {}. {}".format(darwin_version, os_data.get_macos_name_by_darwin(str(darwin_version))))
+
+            oclp_min = int(ocl_patched_macos_version[-1][:2]) if ocl_patched_macos_version else 99
+            oclp_max = int(ocl_patched_macos_version[0][:2]) if ocl_patched_macos_version else 0
+            min_version = min(int(native_macos_version[0][:2]), oclp_min)
+            max_version = max(int(native_macos_version[-1][:2]), oclp_max)
+
+            for darwin_version in range(min_version, max_version + 1):
+                name = os_data.get_macos_name_by_darwin(str(darwin_version))
+                label = " (Requires OpenCore Legacy Patcher)" if oclp_min <= darwin_version <= oclp_max else ""
+                print("   {}. {}{}".format(darwin_version, name, label))
+
             print("")
             print("\033[93mNote:\033[0m")
             print("- To select a major version, enter the number (e.g., 19).")
