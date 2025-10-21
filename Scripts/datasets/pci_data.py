@@ -1279,7 +1279,8 @@ UnsupportedSATAControllerIDs = [
 ]
 
 IntelVMDIDs = [
-    "8086-09AB"
+    "8086-09AB",
+    "8086-467F"
 ]
 
 # Resource: https://pci-ids.ucw.cz/
