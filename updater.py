@@ -145,15 +145,19 @@ class Updater:
             print("Please check your internet connection and try again later.")
             print("")
             
-            user_input = self.utils.request_input("Do you want to skip the update process? (Y/n): ").strip().lower() or "y"
-            if user_input == 'y':
-                print("")
-                print("Update process skipped.")
-                return False
-            else:
-                print("")
-                print("Continuing with update using default version check...")
-                latest_sha_version = "update_forced_by_user"
+            while True:
+                user_input = self.utils.request_input("Do you want to skip the update process? (yes/No): ").strip().lower()
+                if user_input == "yes":
+                    print("")
+                    print("Update process skipped.")
+                    return False
+                elif user_input == "no":
+                    print("")
+                    print("Continuing with update using default version check...")
+                    latest_sha_version = "update_forced_by_user"
+                    break
+                else:
+                    print("\033[91mInvalid selection, please try again.\033[0m\n\n")
         else:
             print("Current script SHA version: {}".format(current_sha_version))
             print("Latest script SHA version: {}".format(latest_sha_version))

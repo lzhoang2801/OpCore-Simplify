@@ -86,25 +86,30 @@ class OCPE:
             return path, data
         
     def show_oclp_warning(self):
-        self.u.head("OpenCore Legacy Patcher Warning")
-        print("")
-        print("1. OpenCore Legacy Patcher is the only solution to enable dropped GPU and Broadcom WiFi")
-        print("   support in newer macOS versions, as well as to bring back AppleHDA for macOS Tahoe 26.")
-        print("")
-        print("2. OpenCore Legacy Patcher disables macOS security features including SIP and AMFI, which may")
-        print("   lead to issues such as requiring full installers for updates, application crashes, and")
-        print("   system instability.")
-        print("")
-        print("3. OpenCore Legacy Patcher is not officially supported for Hackintosh community.")
-        print("")
-        print("\033[91mImportant:\033[0m")
-        print("Please consider these risks carefully before proceeding.")
-        print("")
-        print("\033[93mNote:\033[0m")
-        print("If you experience black screen after login with OpenCore Legacy Patcher v2.2.0 or newer")
-        print("after applying root patches, please revert to version v2.1.2.")
-        print("")
-        return (self.u.request_input("Do you want to continue with OpenCore Legacy Patcher? (y/N): ").strip().lower() or "n") == "y"
+        while True:
+            self.u.head("OpenCore Legacy Patcher Warning")
+            print("")
+            print("1. OpenCore Legacy Patcher is the only solution to enable dropped GPU and Broadcom WiFi")
+            print("   support in newer macOS versions, as well as to bring back AppleHDA for macOS Tahoe 26.")
+            print("")
+            print("2. OpenCore Legacy Patcher disables macOS security features including SIP and AMFI, which may")
+            print("   lead to issues such as requiring full installers for updates, application crashes, and")
+            print("   system instability.")
+            print("")
+            print("3. OpenCore Legacy Patcher is not officially supported for Hackintosh community.")
+            print("")
+            print("\033[91mImportant:\033[0m")
+            print("Please consider these risks carefully before proceeding.")
+            print("")
+            print("\033[93mNote:\033[0m")
+            print("If you experience black screen after login with OpenCore Legacy Patcher v2.2.0 or newer")
+            print("after applying root patches, please revert to version v2.1.2.")
+            print("")
+            option = self.u.request_input("Do you want to continue with OpenCore Legacy Patcher? (yes/No): ").strip().lower()
+            if option == "yes":
+                return True
+            elif option == "no":
+                return False
 
     def select_macos_version(self, hardware_report, native_macos_version, ocl_patched_macos_version):
         suggested_macos_version = native_macos_version[1]

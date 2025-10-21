@@ -233,9 +233,15 @@ class WifiProfileExtractor:
         print("  and is useful for users installing macOS via Recovery OS")
         print("")
         
-        user_input = self.utils.request_input("Would you like to scan for WiFi profiles? (Y/n): ").strip().lower() or "y"
-        if user_input != "y":
-            return []
+        while True:
+            user_input = self.utils.request_input("Would you like to scan for WiFi profiles? (Yes/no): ").strip().lower()
+            
+            if user_input == "yes":
+                break
+            elif user_input == "no":
+                return []
+            else:
+                print("\033[91mInvalid selection, please try again.\033[0m\n\n")
 
         profiles = []
         self.utils.head("Detecting WiFi Profiles")

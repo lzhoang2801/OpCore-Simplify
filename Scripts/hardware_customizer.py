@@ -34,11 +34,17 @@ class HardwareCustomizer:
                     print("If yes, please make sure to update your BIOS and enable UEFI Boot Mode in your BIOS settings.")
                     print("You can still proceed with Legacy if you prefer.")
                     print("")
-                    answer = self.utils.request_input("Build EFI for UEFI? (Y/n): ").strip().lower() or "y"
-                    if answer == "n":
-                        self.customized_hardware[device_type]["Firmware Type"] = "Legacy"
-                    else:
-                        self.customized_hardware[device_type]["Firmware Type"] = "UEFI"
+
+                    while True:
+                        answer = self.utils.request_input("Build EFI for UEFI? (Yes/no): ").strip().lower()
+                        if answer == "yes":
+                            self.customized_hardware[device_type]["Firmware Type"] = "UEFI"
+                            break
+                        elif answer == "no":
+                            self.customized_hardware[device_type]["Firmware Type"] = "Legacy"
+                            break
+                        else:
+                            print("\033[91mInvalid selection, please try again.\033[0m\n\n")
                 continue
             
             for device_name in devices:
@@ -79,7 +85,7 @@ class HardwareCustomizer:
             print("")
             print("All other devices of the same type have been disabled.")
             print("")
-            self.utils.request_input("Press Enter to continue...")
+            self.utils.request_input()
         
         return self.customized_hardware, self.disabled_devices, needs_oclp
 

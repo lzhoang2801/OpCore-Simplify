@@ -125,13 +125,20 @@ class KextMaestro:
                     print("\n\033[93mNote:\033[0m Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext and uses the Apple T2 chip for audio management.")
                     print("To use AppleALC, you must rollback AppleHDA. Alternatively, you can use VoodooHDA.")
                     print("")
-                    print("1. \033[1mAppleALC\033[0m - Requires AppleHDA rollback with OpenCore Legacy Patcher")
+                    print("1. \033[1mAppleALC\033[0m - Requires AppleHDA rollback with \033[1;93mOpenCore Legacy Patcher\033[0m")
                     print("2. \033[1mVoodooHDA\033[0m - Lower audio quality, manual injection to /Library/Extensions")
                     print("")
-                    kext_option = self.utils.request_input("Select audio kext for your system (default: AppleALC): ").strip() or "1"
-                    if kext_option == "1":
-                        needs_oclp = True
-                        selected_kexts.append("AppleALC")
+                    while True:
+                        kext_option = self.utils.request_input("Select audio kext for your system: ").strip()
+                        if kext_option == "1":
+                            needs_oclp = True
+                            selected_kexts.append("AppleALC")
+                            break
+                        elif kext_option == "2":
+                            selected_kexts.append("VoodooHDA")
+                            break
+                        else:
+                            print("\033[91mInvalid selection, please try again.\033[0m\n\n")
                 else:
                     selected_kexts.append("AppleALC")
         
@@ -201,7 +208,7 @@ class KextMaestro:
                     if kext_option.isdigit() and 0 < int(kext_option) < max_option + 1:
                         selected_option = int(kext_option)
                     else:
-                        print("\033[91mInvalid selection, using recommended option: {}\033[0m".format(recommended_option))
+                        print("\033[93mInvalid selection, using recommended option: {}\033[0m".format(recommended_option))
                         selected_option = recommended_option
 
                     if selected_option == 1:
@@ -298,10 +305,15 @@ class KextMaestro:
                         print("")
                         print("\033[93mNote:\033[0m Since macOS Sonoma 14, iServices won't work with AirportItlwm without patches")
                         print("")
-                        option = self.utils.request_input("Apply OCLP root patch to fix iServices? (y/N): ").strip().lower() or "n"
-                        
-                        if option == "y":
-                            selected_kexts.append("IOSkywalkFamily")
+                        while True:
+                            option = self.utils.request_input("Apply OCLP root patch to fix iServices? (yes/No): ").strip().lower()
+                            if option == "yes":
+                                selected_kexts.append("IOSkywalkFamily")
+                                break
+                            elif option == "no":
+                                break
+                            else:
+                                print("\033[91mInvalid selection, please try again.\033[0m\n\n")
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 selected_kexts.append("corecaptureElCap")
                 if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.99.99"):
@@ -645,11 +657,11 @@ class KextMaestro:
             print("- Forcing unsupported kexts can cause system instability. \033[0;31mProceed with caution.\033[0m")
             print("\033[0m")
             
-            option = self.utils.request_input("Do you want to force load {} on the unsupported macOS version? (Y/n): ".format("these kexts" if len(incompatible_kexts) > 1 else "this kext"))
+            option = self.utils.request_input("Do you want to force load {} on the unsupported macOS version? (yes/No): ".format("these kexts" if len(incompatible_kexts) > 1 else "this kext"))
             
-            if option.lower() == "y":
+            if option.lower() == "yes":
                 return True
-            elif option.lower() == "n":
+            elif option.lower() == "no":
                 return False
 
     def kext_configuration_menu(self, macos_version):
