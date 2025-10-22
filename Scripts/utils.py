@@ -13,7 +13,6 @@ import tempfile
 class Utils:
     def __init__(self, script_name = "OpCore Simplify"):
         self.script_name = script_name
-        self.clean_temporary_dir()
 
     def clean_temporary_dir(self):
         temporary_dir = tempfile.gettempdir()

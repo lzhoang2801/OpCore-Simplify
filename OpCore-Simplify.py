@@ -20,6 +20,7 @@ import time
 class OCPE:
     def __init__(self):
         self.u = utils.Utils("OpCore Simplify")
+        self.u.clean_temporary_dir()
         self.ac = acpi_guru.ACPIGuru()
         self.c = compatibility_checker.CompatibilityChecker()
         self.co = config_prodigy.ConfigProdigy()
@@ -28,7 +29,6 @@ class OCPE:
         self.k = kext_maestro.KextMaestro()
         self.s = smbios.SMBIOS()
         self.r = run.Run()
-        self.u = utils.Utils()
         self.result_dir = self.u.get_temporary_dir()
 
     def select_hardware_report(self):
