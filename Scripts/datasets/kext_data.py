@@ -359,7 +359,6 @@ kexts = [
         name = "AppleIGC", 
         description = "Provides support for Intel 2.5G Ethernet(i225/i226)", 
         category = "Ethernet",
-        max_darwin_version = "24.99.99",
         github_repo = {
             "owner": "SongXiaoXi",
             "repo": "AppleIGC"
