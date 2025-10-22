@@ -411,7 +411,7 @@ kexts = [
         description = "Intel Ethernet LAN driver for macOS",
         category = "Ethernet",
         github_repo = {
-            "owner": "CloverHackyColor",
+            "owner": "Mieze",
             "repo": "IntelMausiEthernet"
         }
     ),
