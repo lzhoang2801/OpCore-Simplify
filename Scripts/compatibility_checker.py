@@ -190,9 +190,8 @@ class CompatibilityChecker:
         
         if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
             print("")
-            print("No compatible GPU for macOS was found!")
-            if self.hardware_report.get("Motherboard").get("Platform") == "Desktop":
-                print("Consider purchasing a compatible GPU for your system.")
+            print("You cannot install macOS without a supported GPU.")
+            print("Please do NOT spam my inbox or issue tracker about this issue anymore!")
             print("")
             self.utils.request_input()
             self.utils.exit_program()
