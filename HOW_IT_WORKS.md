@@ -360,18 +360,24 @@ Analyzes hardware report and suggests required BIOS changes:
 ### Hardware Matching Algorithm
 
 ```python
-for each detected_device in hardware_report:
-    for each kext in kext_database:
-        if kext.pci_ids matches detected_device.pci_id:
-            enable kext
-        if kext.vendor_id matches detected_device.vendor_id:
-            if kext.device_id matches detected_device.device_id:
-                enable kext
+# Pseudocode representation of kext matching logic
+for detected_device in hardware_report:
+    for kext in kext_database:
+        if detected_device.pci_id in kext.pci_ids:
+            enable_kext(kext)
+        if kext.vendor_id == detected_device.vendor_id:
+            if kext.device_id == detected_device.device_id:
+                enable_kext(kext)
 ```
 
 ### Compatibility Scoring
 
 ```python
+# Pseudocode representation of compatibility scoring logic
+NATIVE_SUPPORT = "native"
+REQUIRES_OCLP = "oclp"
+UNSUPPORTED = "unsupported"
+
 compatibility_score = 0
 for device in hardware_report:
     device_compat = check_device_compatibility(device, macos_version)
@@ -383,9 +389,11 @@ for device in hardware_report:
         compatibility_score += 0
 
 if compatibility_score > threshold:
-    suggest native_install
+    # Suggest native installation
+    suggest_installation_type("native")
 else:
-    suggest oclp_install or lower_macos_version
+    # Suggest OCLP installation or lower macOS version
+    suggest_installation_type("oclp_or_lower_version")
 ```
 
 ### ACPI Patch Priority
