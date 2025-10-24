@@ -8,6 +8,7 @@
     <br />
     <a href="#-features">Features</a> •
     <a href="#-how-to-use">How To Use</a> •
+    <a href="HOW_IT_WORKS.md">How It Works</a> •
     <a href="#-contributing">Contributing</a> •
     <a href="#-license">License</a> •
     <a href="#-credits">Credits</a> •
@@ -148,6 +149,17 @@
 > 1. After a successful installation, if OpenCore Legacy Patcher is required, simply apply root patches to activate the missing features (such as modern Broadcom Wi-Fi card and graphics acceleration).
 > 
 > 2. For AMD GPUs, after applying root patches from OpenCore Legacy Patcher, you need to remove the boot argument `-radvesa`/`-amd_no_dgpu_accel` for graphics acceleration to work.
+
+## 🔍 **How It Works**
+
+Curious about the internal architecture and technical details? Check out our comprehensive [**How It Works**](HOW_IT_WORKS.md) documentation that explains:
+
+- The modular architecture and core workflow
+- Hardware detection and analysis process
+- ACPI patch generation mechanisms
+- Kext selection algorithms
+- Config.plist generation logic
+- And much more technical details!
 
 ## 🤝 **Contributing**
 
