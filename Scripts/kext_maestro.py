@@ -135,7 +135,6 @@ class KextMaestro:
                             selected_kexts.append("AppleALC")
                             break
                         elif kext_option == "2":
-                            selected_kexts.append("VoodooHDA")
                             break
                         else:
                             print("\033[91mInvalid selection, please try again.\033[0m\n\n")
