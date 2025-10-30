@@ -582,13 +582,14 @@ class ConfigProdigy:
         else:
             return "FF030000"
         
-    def load_drivers(self, firmware_type, cpu_codename, macos_version):
+    def load_drivers(self, firmware_type, cpu_codename, macos_version, picker_mode):
         uefi_drivers = []
         required_drivers = ["HfsPlus.efi" if not cpu_codename in cpu_data.IntelCPUGenerations[64:] else "HfsPlusLegacy.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"]
         
         if firmware_type != "UEFI":
             required_drivers.append("OpenUsbKbDxe.efi")
-        else:
+        
+        if picker_mode == "External":
             required_drivers.append("OpenCanopy.efi")
 
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
@@ -692,7 +693,7 @@ class ConfigProdigy:
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
             config["UEFI"]["APFS"]["EnableJumpstart"] = False
         config["UEFI"]["APFS"]["MinDate"] = config["UEFI"]["APFS"]["MinVersion"] = -1
-        config["UEFI"]["Drivers"] = self.load_drivers(hardware_report.get("BIOS").get("Firmware Type"), hardware_report.get("CPU").get("Codename"), macos_version)
+        config["UEFI"]["Drivers"] = self.load_drivers(hardware_report.get("BIOS").get("Firmware Type"), hardware_report.get("CPU").get("Codename"), macos_version, config["Misc"]["Boot"]["PickerMode"])
         config["UEFI"]["Input"]["KeySupport"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI"
         config["UEFI"]["Quirks"]["ForceOcWriteFlash"] = any(device_props.get("Device ID") in pci_data.ThinkPadTWX30IDs and device_props.get("Subsystem ID") in pci_data.ThinkPadTWX30IDs[device_props.get("Device ID")] for device_props in hardware_report.get("System Devices", {}).values())
         config["UEFI"]["Quirks"]["EnableVectorAcceleration"] = not hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:20]
