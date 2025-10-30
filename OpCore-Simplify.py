@@ -355,15 +355,15 @@ class OCPE:
             self.u.head()
             print("")
             print("  Hardware Report: {}".format(hardware_report_path or 'Not selected'))
-            print("")
             if hardware_report_path:
+                print("")
                 print("  macOS Version:   {}".format(os_data.get_macos_name_by_darwin(macos_version) if macos_version else 'Not selected') + (' (' + macos_version + ')' if macos_version else '') + ('. \033[1;93mRequires OpenCore Legacy Patcher\033[0m' if needs_oclp else ''))
                 print("  SMBIOS:          {}".format(smbios_model or 'Not selected'))
                 if disabled_devices:
                     print("  Disabled Devices:")
                     for device, _ in disabled_devices.items():
                         print("    - {}".format(device))
-                    print("")
+            print("")
 
             print("1. Select Hardware Report")
             print("2. Select macOS Version")
