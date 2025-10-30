@@ -582,12 +582,17 @@ class ConfigProdigy:
         else:
             return "FF030000"
         
-    def load_drivers(self, firmware_type, cpu_codename):
+    def load_drivers(self, firmware_type, cpu_codename, macos_version):
         uefi_drivers = []
         required_drivers = ["HfsPlus.efi" if not cpu_codename in cpu_data.IntelCPUGenerations[64:] else "HfsPlusLegacy.efi", "OpenCanopy.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"]
         
         if firmware_type == "Legacy":
             required_drivers.append("OpenUsbKbDxe.efi")
+
+        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
+            required_drivers.append("apfs_aligned.efi")
+
+        required_drivers = sorted(required_drivers, key=lambda x: x.lower())
 
         for driver in required_drivers:
             uefi_drivers.append({
@@ -682,8 +687,10 @@ class ConfigProdigy:
         config["PlatformInfo"]["Generic"]["ROM"] = self.utils.hex_to_bytes(config["PlatformInfo"]["Generic"]["ROM"])
         config["PlatformInfo"]["UpdateSMBIOSMode"] = "Custom"
 
+        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
+            config["UEFI"]["APFS"]["EnableJumpstart"] = False
         config["UEFI"]["APFS"]["MinDate"] = config["UEFI"]["APFS"]["MinVersion"] = -1
-        config["UEFI"]["Drivers"] = self.load_drivers(hardware_report.get("BIOS").get("Firmware Type"), hardware_report.get("CPU").get("Codename"))
+        config["UEFI"]["Drivers"] = self.load_drivers(hardware_report.get("BIOS").get("Firmware Type"), hardware_report.get("CPU").get("Codename"), macos_version)
         config["UEFI"]["Input"]["KeySupport"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI"
         config["UEFI"]["Quirks"]["ForceOcWriteFlash"] = any(device_props.get("Device ID") in pci_data.ThinkPadTWX30IDs and device_props.get("Subsystem ID") in pci_data.ThinkPadTWX30IDs[device_props.get("Device ID")] for device_props in hardware_report.get("System Devices", {}).values())
         config["UEFI"]["Quirks"]["EnableVectorAcceleration"] = not hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:20]
