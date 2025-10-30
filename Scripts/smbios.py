@@ -188,7 +188,7 @@ class SMBIOS:
                     line = "\033[90m{}\033[0m".format(line)
                 contents.append(line)
             contents.append("")
-            contents.append("\033[93mNote:\033[0m")
+            contents.append("\033[1;93mNote:\033[0m")
             contents.append("- Lines in gray indicate mac models that are not officially supported by {}.".format(os_data.get_macos_name_by_darwin(macos_version)))
             contents.append("")
             if not show_all_models:
