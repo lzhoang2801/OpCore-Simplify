@@ -584,10 +584,12 @@ class ConfigProdigy:
         
     def load_drivers(self, firmware_type, cpu_codename, macos_version):
         uefi_drivers = []
-        required_drivers = ["HfsPlus.efi" if not cpu_codename in cpu_data.IntelCPUGenerations[64:] else "HfsPlusLegacy.efi", "OpenCanopy.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"]
+        required_drivers = ["HfsPlus.efi" if not cpu_codename in cpu_data.IntelCPUGenerations[64:] else "HfsPlusLegacy.efi", "OpenRuntime.efi", "ResetNvramEntry.efi"]
         
-        if firmware_type == "Legacy":
+        if firmware_type != "UEFI":
             required_drivers.append("OpenUsbKbDxe.efi")
+        else:
+            required_drivers.append("OpenCanopy.efi")
 
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
             required_drivers.append("apfs_aligned.efi")
@@ -668,7 +670,7 @@ class ConfigProdigy:
 
         config["Misc"]["BlessOverride"] = []
         config["Misc"]["Boot"]["HideAuxiliary"] = False
-        config["Misc"]["Boot"]["PickerMode"] = "External"
+        config["Misc"]["Boot"]["PickerMode"] = "Builtin" if hardware_report.get("BIOS").get("Firmware Type") != "UEFI" else "External"
         config["Misc"]["Debug"]["AppleDebug"] = config["Misc"]["Debug"]["ApplePanic"] = False
         config["Misc"]["Debug"]["DisableWatchDog"] = True
         config["Misc"]["Entries"] = []
