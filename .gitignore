@@ -161,3 +161,8 @@ cython_debug/
 
 *.DS_Store
 OCK_Files
+
+sha_version.txt
+bootloader_kexts_data.json
+macserial*
+iasl

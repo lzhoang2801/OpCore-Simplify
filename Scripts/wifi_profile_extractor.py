@@ -2,6 +2,8 @@ from Scripts import run
 from Scripts import utils
 import platform
 import json
+import os
+import configparser
 
 os_name = platform.system()
 
@@ -194,6 +196,54 @@ class WifiProfileExtractor:
         print("Ready to retrieve passwords for networks.")
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_windows)
+    
+    def get_preferred_networks_linux(self):
+        NM_CON_PATH = "/etc/NetworkManager/system-connections/"
+        if os.geteuid() != 0:
+            print("\nError: Root privileges are required to read saved network connections on Linux.")
+            print("Please run this script with 'sudo'.")
+            self.utils.request_input()
+            return []
+
+        if not os.path.isdir(NM_CON_PATH):
+            print(f"\nNetworkManager connection directory not found at: {NM_CON_PATH}")
+            self.utils.request_input()
+            return []
+
+        ssid_list = []
+        connections = {}
+
+        for filename in os.listdir(NM_CON_PATH):
+            if not filename.endswith(".nmconnection"):
+                continue
+            filepath = os.path.join(NM_CON_PATH, filename)
+            try:
+                config = configparser.ConfigParser()
+                config.read(filepath)
+                
+                if 'wifi' in config and 'ssid' in config['wifi'] and \
+                   'wifi-security' in config and 'psk' in config['wifi-security']:
+                    ssid = config['wifi']['ssid']
+                    password = config['wifi-security']['psk']
+                    if ssid and self.validate_wifi_password(password):
+                        ssid_list.append(ssid)
+                        connections[ssid] = password
+            except Exception:
+                continue
+        
+        if not ssid_list:
+            return []
+
+        max_networks = self.ask_network_count(len(ssid_list))
+        
+        # Process the networks found
+        networks_to_return = []
+        for i, ssid in enumerate(ssid_list):
+            if i >= max_networks:
+                break
+            networks_to_return.append((ssid, connections[ssid]))
+
+        return networks_to_return
 
     def get_wifi_interfaces(self):
         output = self.run({
@@ -252,6 +302,8 @@ class WifiProfileExtractor:
             profiles = self.get_preferred_networks_windows()
         elif os_name == "Darwin":
             wifi_interfaces = self.get_wifi_interfaces()
+        elif os_name == "Linux":
+            profiles = self.get_preferred_networks_linux()
 
             if wifi_interfaces:
                 for interface in wifi_interfaces:
