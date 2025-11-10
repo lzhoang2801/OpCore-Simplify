@@ -34,7 +34,10 @@ class Utils:
     def write_file(self, file_path, data):
         file_extension = os.path.splitext(file_path)[1]
 
-        with open(file_path, "w" if file_extension == ".json" else "wb") as file:
+        mode = "w" if file_extension == ".json" else "wb"
+        encoding = "utf-8" if file_extension == ".json" else None
+
+        with open(file_path, mode, encoding=encoding) as file:
             if file_extension == ".json":
                 json.dump(data, file, indent=4)
             else:
@@ -49,7 +52,10 @@ class Utils:
 
         file_extension = os.path.splitext(file_path)[1]
 
-        with open(file_path, "r" if file_extension == ".json" else "rb") as file_handle:
+        mode = "r" if file_extension == ".json" else "rb"
+        encoding = "utf-8" if file_extension == ".json" else None
+
+        with open(file_path, mode, encoding=encoding) as file_handle:
             if file_extension == ".plist":
                 data = plistlib.load(file_handle)
             elif file_extension == ".json":
@@ -151,15 +157,18 @@ class Utils:
     def open_folder(self, folder_path):
         if os.name == "posix":
             if "darwin" in os.uname().sysname.lower():
-                subprocess.run(["open", folder_path])
+                subprocess.run(["open", folder_path], check=False)
             else:
-                subprocess.run(["xdg-open", folder_path])
+                subprocess.run(["xdg-open", folder_path], check=False)
         elif os.name == "nt":
-            os.startfile(folder_path)
+            subprocess.run(["explorer", folder_path], check=False, shell=True)
 
     def request_input(self, prompt="Press Enter to continue..."):
         if sys.version_info[0] < 3:
-            user_response = raw_input(prompt)
+            try:
+                user_response = raw_input(prompt)  # noqa: F821
+            except NameError:
+                user_response = input(prompt)
         else:
             user_response = input(prompt)
 
@@ -188,7 +197,7 @@ class Utils:
         if resize:
             self.adjust_window_size()
         os.system("cls" if os.name == "nt" else "clear")
-        if text == None:
+        if text is None:
             text = self.script_name
         separator = "═" * (width - 2)
         title = " {} ".format(text)
@@ -196,7 +205,7 @@ class Utils:
             title = title[: width - 4] + "..."
         title = title.center(width - 2)
 
-        print("╔{}╗\n║{}║\n╚{}╝".format(separator, title, separator))
+        print("╔{sep}╗\n║{title}║\n╚{sep}╝".format(sep=separator, title=title))
 
     def adjust_window_size(self, content=""):
         lines = content.splitlines()
