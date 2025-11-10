@@ -25,6 +25,7 @@ class ACPIGuru:
         self.smbios_model = None
         self.dsdt = None
         self.lpc_bus_device = None
+        self.apic = None  # Initialize apic attribute
         self.osi_strings = {
             "Windows 2000": "Windows 2000",
             "Windows XP": "Windows 2001",
@@ -100,7 +101,9 @@ class ACPIGuru:
                 return check_name
             num += 1  # Increment our counter
 
-    def get_unique_device(self, path, base_name, starting_number=0, used_names=[]):
+    def get_unique_device(self, _path, base_name, starting_number=0, used_names=None):
+        if used_names is None:
+            used_names = []
         # Appends a hex number until a unique device is found
         while True:
             hex_num = hex(starting_number).replace("0x", "").upper()
@@ -109,10 +112,14 @@ class ACPIGuru:
                 return (name, starting_number)
             starting_number += 1
 
-    def sorted_nicely(self, l):
-        convert = lambda text: int(text) if text.isdigit() else text
-        alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key.lower())]
-        return sorted(l, key=alphanum_key)
+    def sorted_nicely(self, lst):
+        def convert(text):
+            return int(text) if text.isdigit() else text
+
+        def alphanum_key(key):
+            return [convert(c) for c in re.split("([0-9]+)", key.lower())]
+
+        return sorted(lst, key=alphanum_key)
 
     def read_acpi_tables(self, path):
         if not path:
@@ -150,7 +157,7 @@ class ACPIGuru:
             # We got at least one file - let's look for the DSDT specifically
             # and try to load that as-is.  If it doesn't load, we'll have to
             # manage everything with temp folders
-            dsdt_list = [x for x in tables if self.acpi._table_signature(path, x) == "DSDT"]
+            dsdt_list = [x for x in tables if self.acpi.table_is_valid(path, x) and self.acpi._table_signature(path, x) == b"DSDT"]
             if len(dsdt_list) > 1:
                 print("Multiple files with DSDT signature passed:")
                 for d in self.sorted_nicely(dsdt_list):
@@ -163,9 +170,9 @@ class ACPIGuru:
                 self.acpi.acpi_tables = prior_tables
                 return
             # Get the DSDT, if any
-            dsdt = dsdt_list[0] if len(dsdt_list) else None
-            if dsdt:  # Try to load it and see if it causes problems
-                print("Disassembling {} to verify if pre-patches are needed...".format(dsdt))
+            dsdt_file = dsdt_list[0] if len(dsdt_list) else None
+            if dsdt_file:  # Try to load it and see if it causes problems
+                print("Disassembling {} to verify if pre-patches are needed...".format(dsdt_file))
                 if not self.acpi.load(os.path.join(path, dsdt))[0]:
                     trouble_dsdt = dsdt
                 else:
@@ -215,7 +222,7 @@ class ACPIGuru:
             with open(trouble_path, "rb") as f:
                 d = f.read()
             res = self.acpi.check_output(path)
-            target_name = self.get_unique_name(trouble_dsdt, res, name_append="-Patched")
+            _ = self.get_unique_name(trouble_dsdt, res, name_append="-Patched")  # Unused for now
             self.dsdt_patches = []
             print("Iterating patches...\n")
             for p in self.pre_patches:
@@ -387,7 +394,7 @@ class ACPIGuru:
                         if log:
                             print(" - Found {} in {}".format(lpc_name, table_name))
                         return lpc_name
-                    except:
+                    except Exception:
                         pass
             # Finally check by address - some Intel tables have devices at
             # 0x00140003
@@ -414,7 +421,7 @@ class ACPIGuru:
             table = self.acpi.get_dsdt_or_only()
         try:
             return int(table["lines"][line].split(split_by)[1].split(")")[0].replace("Zero", "0x0").replace("One", "0x1"), 16)
-        except:
+        except Exception:
             return None
 
     def enable_cpu_power_management(self):
@@ -431,7 +438,7 @@ class ACPIGuru:
             # print(" Checking {}...".format(table_name))
             try:
                 cpu_name = self.acpi.get_processor_paths(table=table)[0][0]
-            except:
+            except Exception:
                 cpu_name = None
             if cpu_name:
                 # print(" - Found Processor: {}".format(cpu_name))
@@ -488,7 +495,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlug", 0x00003000)
                         _uid = table["lines"][uid[0][1]].split("_UID, ")[1].split(")")[0]
                         # print(" --> _UID: {}".format(_uid))
                         proc_list.append((proc[0], _uid))
-                    except:
+                    except Exception:
                         pass
                         # print(" --> Not found!  Skipping...")
                 if not proc_list:
@@ -617,13 +624,13 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
                 current_hid = None
                 try:
                     current_device = line.split("(")[1].split(")")[0]
-                except:
+                except Exception:
                     current_device = None
                     continue
             elif "_HID, " in line and current_device:
                 try:
                     current_hid = line.split('"')[1]
-                except:
+                except Exception:
                     pass
             elif "IRQNoFlags" in line and current_device:
                 # Next line has our interrupts
@@ -664,7 +671,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
             # Now we need to verify if we're patching *all* IRQs, or just some specifics
             if rem_irq:
                 repl = [x for x in find]
-                matched = []
+                # matched = []  # Unused variable
                 for x in rem_irq:
                     # Get the int
                     rem = self.convert_irq_to_int(x)
@@ -702,8 +709,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
             if i == "#":
                 continue  # Null value
             try:
-                i = int(i)
-            except:
+                _ = int(i)  # Just checking if valid int
+            except Exception:
                 continue  # Not an int
             if i > 15 or i < 0:
                 continue  # Out of range
@@ -742,8 +749,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
                 # We're primed, and not at the end - let's try to get the base and length
                 try:
                     val = line.strip().split(",")[0].replace("Zero", "0x0").replace("One", "0x1")
-                    check = int(val, 16)
-                except:
+                    _ = int(val, 16)  # Just checking if valid hex
+                except Exception:
                     break
                 # Set them in order
                 if mem_base is None:
@@ -771,12 +778,12 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
             name = None
             if len(ec_list):
                 name = ".".join(ec_list[0][0].split(".")[:-1])
-            if name == None:
+            if name is None:
                 for x in ("LPCB", "LPC0", "LPC", "SBRG", "PX40"):
                     try:
                         name = self.acpi.get_device_paths(x)[0][0]
                         break
-                    except:
+                    except Exception:
                         pass
             if not name:
                 return
@@ -794,7 +801,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "CpuPlugA", 0x00003000)
                 continue
             irq_patches = self.get_hex_from_irqs(devs[dev]["irq"], target_irqs[dev])
             i = [x for x in irq_patches if x["changed"]]
-            for a, t in enumerate(i):
+            for _a, t in enumerate(i):
                 if not t["changed"]:
                     # Nothing patched - skip
                     continue
@@ -1008,7 +1015,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "HPET", 0x00000000)
                                 curr_adr = int(fixed_scope[i + 1].strip().split(",")[0], 16)
                                 curr_len = int(fixed_scope[i + 4].strip().split(",")[0], 16)
                                 curr_ind = i + 4  # Save the value we may pad
-                            except:  # Bad values? Bail...
+                            except Exception:  # Bad values? Bail...
                                 # print(" ----> Failed to gather values - could not verify RTC range.")
                                 rtc_range_needed = False
                                 break
@@ -1018,9 +1025,10 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "HPET", 0x00000000)
                                     rtc_range_needed = True
                                     # print(" ----> Adjusting IO range {} length to {}".format(self.hexy(last_adr,pad_to=4),self.hexy(last_len+adjust,pad_to=2)))
                                     try:
-                                        hex_find, hex_repl = self.hexy(last_len, pad_to=2), self.hexy(last_len + adjust, pad_to=2)
-                                        crs_lines[last_ind] = crs_lines[last_ind].replace(hex_find, hex_repl)
-                                    except:
+                                        if last_ind is not None and isinstance(last_ind, int):
+                                            hex_find, hex_repl = self.hexy(last_len, pad_to=2), self.hexy(last_len + adjust, pad_to=2)
+                                            crs_lines[last_ind] = crs_lines[last_ind].replace(hex_find, hex_repl)
+                                    except Exception:
                                         # print(" ----> Failed to adjust values - could not verify RTC range.")
                                         rtc_range_needed = False
                                         break
@@ -1280,7 +1288,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
         ec_enable_sta = {}
         patches = []
         lpc_name = None
-        ec_located = False
+        # ec_located = False  # Unused variable
         for table_name in self.sorted_nicely(list(self.acpi.acpi_tables)):
             table = self.acpi.acpi_tables[table_name]
             ec_list = self.acpi.get_device_paths_with_hid("PNP0C09", table=table)
@@ -1302,7 +1310,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
                     # We need to check for _HID, _CRS, and _GPE
                     if all(y in scope for y in ["_HID", "_CRS", "_GPE"]):
                         # print(" ----> Valid PNP0C09 (EC) Device")
-                        ec_located = True
+                        # ec_located = True  # Unused variable
                         sta = self.get_sta_var(
                             var=None, device=orig_device, dev_hid="PNP0C09", dev_name=orig_device.split(".")[-1], log_locate=False, table=table
                         )
@@ -1340,7 +1348,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "RTCAWAC", 0x00000000)
             # self.u.grab("Press [enter] to return to main menu...")
             return
         # comment = "Faked Embedded Controller"
-        if rename == True:
+        if rename:
             patches.insert(
                 0,
                 {
@@ -1467,14 +1475,14 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "EC", 0x00001000)
         else:
             return plistlib.Data(data + b"\x00" * (max(pad_to - len(data), 0)))
 
-    def write_ssdt(self, ssdt_name, ssdt_content, compile=True):
+    def write_ssdt(self, ssdt_name, ssdt_content, _should_compile=True):
         dsl_path = os.path.join(self.acpi_directory, ssdt_name + ".dsl")
         aml_path = os.path.join(self.acpi_directory, ssdt_name + ".aml")
 
         if not os.path.exists(self.acpi_directory):
             os.makedirs(self.acpi_directory)
 
-        with open(dsl_path, "w") as f:
+        with open(dsl_path, "w", encoding="utf-8") as f:
             f.write(ssdt_content)
 
         if not compile:
@@ -1592,7 +1600,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "MCHC", 0)
             smbus_device_name = self.acpi.get_device_paths_with_hid(
                 "0x001F0003" if self.hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[50:] else "0x001F0004", self.dsdt
             )[0][0].split(".")[-1]
-        except:
+        except Exception:
             smbus_device_name = "SBUS"
 
         pci_bus_device = ".".join(self.lpc_bus_device.split(".")[:2])
@@ -1673,7 +1681,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "USBX", 0x00001000)
                 "kUSBWakePowerSupply": "0x13EC",
                 "kUSBWakePortCurrentLimit": "0x0834",
             }
-        elif "MacMini8,1" in self.smbios_model:
+        elif self.smbios_model and isinstance(self.smbios_model, str) and "MacMini8,1" in self.smbios_model:
             usb_power_properties = {
                 "kUSBSleepPowerSupply": "0x0C80",
                 "kUSBSleepPortCurrentLimit": "0x0834",
@@ -1682,7 +1690,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "USBX", 0x00001000)
             }
         elif self.utils.contains_any(["MacBookPro16,", "MacBookPro15,", "MacBookPro14,", "MacBookPro13,", "MacBookAir9,1"], self.smbios_model):
             usb_power_properties = {"kUSBSleepPortCurrentLimit": "0x0BB8", "kUSBWakePortCurrentLimit": "0x0BB8"}
-        elif "MacBook9,1" in self.smbios_model:
+        elif self.smbios_model and isinstance(self.smbios_model, str) and "MacBook9,1" in self.smbios_model:
             usb_power_properties = {
                 "kUSBSleepPowerSupply": "0x05DC",
                 "kUSBSleepPortCurrentLimit": "0x05DC",
@@ -1743,7 +1751,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "ALS0", 0x00000000)
 }"""
         try:
             als_device = self.acpi.get_device_paths_with_hid("ACPI0008", self.dsdt)[0][0]
-        except:
+        except Exception:
             als_device = None
 
         patches = []
@@ -1835,7 +1843,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "[[ALSName]]", 0x00000000)
                 target_device = device_props.get("ACPI Path")
 
                 off_method_found = ps3_method_found = False
-                for table_name, table_data in self.acpi.acpi_tables.items():
+                for _, table_data in self.acpi.acpi_tables.items():
                     off_methods = self.acpi.get_method_paths("_OFF", table_data)
                     ps3_methods = self.acpi.get_method_paths("_PS3", table_data)
 
@@ -2174,7 +2182,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "PNLF", 0x00000000)
     def enable_gpio_device(self):
         try:
             gpio_device = self.acpi.get_device_paths("GPI0", self.dsdt)[0][0] or self.acpi.get_device_paths("GPIO", self.dsdt)[0][0]
-        except:
+        except Exception:
             return
 
         sta = self.get_sta_var(var=None, device=gpio_device, dev_hid=None, dev_name=gpio_device.split(".")[-1], table=self.dsdt)
@@ -2380,7 +2388,7 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
             rtc_device = self.acpi.get_device_paths_with_hid("PNP0B00", self.dsdt)[0][0]
             if rtc_device.endswith("RTC"):
                 rtc_device += "_"
-        except:
+        except Exception:
             if not self.lpc_bus_device:
                 return
             rtc_device = self.lpc_bus_device + ".RTC0"
@@ -2837,9 +2845,9 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
     def process_embedded_control_region(self, table, start_idx):
         try:
             embed_control_idx = table.index("EmbeddedControl", start_idx)
-            line, start_line_idx, end_line_idx = self.extract_line(table, embed_control_idx)
+            embed_control_line, _start_line_idx, end_line_idx = self.extract_line(table, embed_control_idx)
 
-            region_name = line.split("(")[1].split(",")[0].strip()
+            region_name = embed_control_line.split("(")[1].split(",")[0].strip()
 
             return region_name, end_line_idx
         except (ValueError, IndexError):
@@ -2853,7 +2861,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
                 return fields, len(table)
 
             field_start_idx = table.index(field_pattern, start_idx)
-            field_line, field_start_line_idx, field_end_line_idx = self.extract_line(table, field_start_idx)
+            _, _field_start_line_idx, field_end_line_idx = self.extract_line(table, field_start_idx)
 
             field_block = self.extract_block_content(table, field_end_line_idx)
 
@@ -2953,7 +2961,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "SURFACE", 0x00001000)
                     apic_processor_id = self.apic["lines"][index + 2][-2:]
                     try:
                         processor_id = table.get("lines")[processors[processor_index][1]].split(", ")[1][2:]
-                    except:
+                    except Exception:
                         return
                     if processor_index == 0 and apic_processor_id == processor_id:
                         return
@@ -3109,7 +3117,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
         if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")):
             selected_patches.append("APIC")
 
-        for device_name, device_info in disabled_devices.items():
+        for _, device_info in disabled_devices.items():
             if "PCI" in device_info.get("Bus Type", "PCI"):
                 selected_patches.append("Disable Devices")
 
@@ -3127,7 +3135,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
         ):
             selected_patches.append("FixHPET")
 
-        for device_name, device_info in hardware_report.get("System Devices", {}).items():
+        for _, device_info in hardware_report.get("System Devices", {}).items():
             device_id = device_info.get("Device ID")
 
             if device_id not in ("8086-1C3A", "8086-1E3A"):
@@ -3165,7 +3173,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
             selected_patches.append("Surface Patch")
         else:
             if "Intel" in hardware_report.get("CPU").get("Manufacturer"):
-                for device_name, device_info in hardware_report.get("Input", {}).items():
+                for _, device_info in hardware_report.get("Input", {}).items():
                     if "I2C" in device_info.get("Device Type", "None"):
                         selected_patches.append("GPI0")
 
@@ -3184,7 +3192,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
             selected_patches.append("BATP")
             selected_patches.append("XOSI")
 
-        for device_name, device_info in hardware_report.get("System Devices", {}).items():
+        for _, device_info in hardware_report.get("System Devices", {}).items():
             if device_info.get("Bus Type") == "ACPI" and device_info.get("Device") in pci_data.YogaHIDs:
                 selected_patches.append("WMIS")
 
