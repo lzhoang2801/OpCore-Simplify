@@ -4,6 +4,7 @@ import shutil
 from Scripts import utils
 from Scripts.datasets import codec_layouts, cpu_data, kext_data, os_data, pci_data
 
+# Python 2/3 compatibility
 try:
     long
     unicode
@@ -26,9 +27,12 @@ class KextMaestro:
         plist_path = os.path.join(kext_path, "Contents", "Info.plist")
         plist_data = self.utils.read_file(plist_path)
 
+        if not plist_data or not isinstance(plist_data, dict):
+            return []
+
         pci_ids = []
 
-        for personality_name, properties in plist_data.get("IOKitPersonalities", {}).items():
+        for _, properties in plist_data.get("IOKitPersonalities", {}).items():
             matching_keys = [key for key in self.matching_keys if key in properties]
 
             if not matching_keys:
@@ -294,7 +298,8 @@ class KextMaestro:
                 recommended_option = 2 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else 1
                 recommended_name = "itlwm" if recommended_option == 2 else "AirportItlwm"
 
-                if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
+                macos_name = os_data.get_macos_name_by_darwin(macos_version)
+                if macos_name and "Beta" in macos_name:
                     print("\033[91mImportant:\033[0m For macOS Beta versions, only itlwm kext is supported")
                     print("")
                     self.utils.request_input("Press Enter to continue...")
@@ -361,7 +366,7 @@ class KextMaestro:
         if all(network_props.get("Bus Type") == "USB" for network_props in hardware_report.get("Network", {}).values()):
             selected_kexts.append("NullEthernet")
 
-        for bluetooth_name, bluetooth_props in hardware_report.get("Bluetooth", {}).items():
+        for _, bluetooth_props in hardware_report.get("Bluetooth", {}).items():
             usb_id = bluetooth_props.get("Device ID")
 
             if usb_id in pci_data.AtherosBluetoothIDs:
@@ -381,7 +386,7 @@ class KextMaestro:
                     selected_kexts.append("AsusSMC")
                 selected_kexts.append("BrightnessKeys")
 
-                for device_name, device_props in hardware_report.get("Input").items():
+                for _, device_props in hardware_report.get("Input").items():
                     if not device_props.get("Device"):
                         continue
 
@@ -404,7 +409,7 @@ class KextMaestro:
                             elif 78 < idx:
                                 selected_kexts.append("VoodooRMI")
 
-        for device_name, device_info in hardware_report.get("System Devices", {}).items():
+        for _, device_info in hardware_report.get("System Devices", {}).items():
             if device_info.get("Bus Type") == "ACPI" and device_info.get("Device") in pci_data.YogaHIDs:
                 selected_kexts.append("YogaSMC")
 
@@ -459,14 +464,16 @@ class KextMaestro:
                     source_kext_path = destination_kext_path = None
 
                     kext_paths = self.utils.find_matching_paths(self.ock_files_dir, extension_filter=".kext", name_filter=kext.name)
-                    for kext_path, type in kext_paths:
+                    for kext_path, _ in kext_paths:
                         if "AirportItlwm" == kext.name:
                             version = macos_version[:2]
-                            if all(
-                                (
-                                    self.kexts[kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked,
-                                    self.kexts[kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked,
-                                )
+                            ioskywalk_idx = kext_data.kext_index_by_name.get("IOSkywalkFamily")
+                            io80211_idx = kext_data.kext_index_by_name.get("IO80211FamilyLegacy")
+                            if (
+                                ioskywalk_idx is not None
+                                and io80211_idx is not None
+                                and self.kexts[ioskywalk_idx].checked
+                                and self.kexts[io80211_idx].checked
                             ) or self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
                                 version = "22"
                             elif self.utils.parse_darwin_version("23.4.0") <= self.utils.parse_darwin_version(macos_version):
@@ -486,9 +493,9 @@ class KextMaestro:
                                     source_kext_path = os.path.join(self.ock_files_dir, kext_path)
                                     destination_kext_path = os.path.join(kexts_directory, os.path.basename(kext_path))
 
-                    if os.path.exists(source_kext_path):
+                    if source_kext_path and destination_kext_path and os.path.exists(source_kext_path):
                         shutil.copytree(source_kext_path, destination_kext_path, dirs_exist_ok=True)
-                except:
+                except Exception:
                     continue
 
     def process_kext(self, kexts_directory, kext_path):
@@ -496,9 +503,9 @@ class KextMaestro:
             plist_path = self.utils.find_matching_paths(os.path.join(kexts_directory, kext_path), extension_filter=".plist", name_filter="Info")[0][0]
             bundle_info = self.utils.read_file(os.path.join(kexts_directory, kext_path, plist_path))
 
-            if isinstance(bundle_info.get("CFBundleIdentifier", None), (str, unicode)):
-                pass
-        except:
+            if not isinstance(bundle_info, dict) or not isinstance(bundle_info.get("CFBundleIdentifier", None), (str, unicode)):
+                return None
+        except Exception:
             return None
 
         executable_path = os.path.join("Contents", "MacOS", bundle_info.get("CFBundleExecutable", "None"))
@@ -521,7 +528,10 @@ class KextMaestro:
         try:
             bundle_info = self.utils.read_file(plist_path)
 
-            if bundle_info.get("IOKitPersonalities").get("itlwm").get("WiFiConfig"):
+            if not isinstance(bundle_info, dict):
+                return
+
+            if bundle_info.get("IOKitPersonalities", {}).get("itlwm", {}).get("WiFiConfig"):
                 from Scripts import wifi_profile_extractor
 
                 wifi_profiles = wifi_profile_extractor.WifiProfileExtractor().get_profiles()
@@ -530,13 +540,13 @@ class KextMaestro:
                     bundle_info["IOKitPersonalities"]["itlwm"]["WiFiConfig"] = {
                         "WiFi_{}".format(index): {"password": profile[1], "ssid": profile[0]} for index, profile in enumerate(wifi_profiles, start=1)
                     }
-            elif bundle_info.get("IOKitPersonalities").get("VoodooTSCSync"):
+            elif bundle_info.get("IOKitPersonalities", {}).get("VoodooTSCSync"):
                 bundle_info["IOKitPersonalities"]["VoodooTSCSync"]["IOPropertyMatch"]["IOCPUNumber"] = (
                     0
                     if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.0.0")
                     else int(hardware_report["CPU"]["Core Count"]) - 1
                 )
-            elif bundle_info.get("IOKitPersonalities").get("AmdTscSync"):
+            elif bundle_info.get("IOKitPersonalities", {}).get("AmdTscSync"):
                 bundle_info["IOKitPersonalities"]["AmdTscSync"]["IOPropertyMatch"]["IOCPUNumber"] = (
                     0
                     if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.0.0")
@@ -546,19 +556,24 @@ class KextMaestro:
                 return
 
             self.utils.write_file(plist_path, bundle_info)
-        except:
+        except Exception:
             return
 
     def load_kexts(self, hardware_report, macos_version, kexts_directory):
         kernel_add = []
         unload_kext = []
 
-        if self.kexts[kext_data.kext_index_by_name.get("IO80211ElCap")].checked:
+        io80211_idx = kext_data.kext_index_by_name.get("IO80211ElCap")
+        voodoo_smbus_idx = kext_data.kext_index_by_name.get("VoodooSMBus")
+        voodoo_rmi_idx = kext_data.kext_index_by_name.get("VoodooRMI")
+        voodoo_i2c_idx = kext_data.kext_index_by_name.get("VoodooI2C")
+
+        if io80211_idx is not None and self.kexts[io80211_idx].checked:
             unload_kext.extend(("AirPortBrcm4331", "AppleAirPortBrcm43224"))
-        elif self.kexts[kext_data.kext_index_by_name.get("VoodooSMBus")].checked:
+        elif voodoo_smbus_idx is not None and self.kexts[voodoo_smbus_idx].checked:
             unload_kext.append("VoodooPS2Mouse")
-        elif self.kexts[kext_data.kext_index_by_name.get("VoodooRMI")].checked:
-            if not self.kexts[kext_data.kext_index_by_name.get("VoodooI2C")].checked:
+        elif voodoo_rmi_idx is not None and self.kexts[voodoo_rmi_idx].checked:
+            if voodoo_i2c_idx is None or not self.kexts[voodoo_i2c_idx].checked:
                 unload_kext.append("RMII2C")
             else:
                 unload_kext.extend(("VoodooSMBus", "RMISMBus", "VoodooI2CHID"))
@@ -566,11 +581,13 @@ class KextMaestro:
         kext_paths = self.utils.find_matching_paths(kexts_directory, extension_filter=".kext")
         bundle_list = []
 
-        for kext_path, type in kext_paths:
+        for kext_path, _ in kext_paths:
             bundle_info = self.process_kext(kexts_directory, kext_path)
 
             if bundle_info:
-                self.modify_kexts(os.path.join(kexts_directory, kext_path, bundle_info.get("PlistPath")), hardware_report, macos_version)
+                plist_path = bundle_info.get("PlistPath")
+                if plist_path:
+                    self.modify_kexts(os.path.join(kexts_directory, kext_path, plist_path), hardware_report, macos_version)
 
                 bundle_list.append(bundle_info)
 
@@ -669,16 +686,17 @@ class KextMaestro:
                 <= self.utils.parse_darwin_version(target_darwin_version)
                 <= self.utils.parse_darwin_version(self.kexts[index].max_darwin_version)
             ]
-        except:
+        except Exception:
             incompatible_kexts = [
                 (
-                    self.kexts[kext_data.kext_index_by_name.get(kext_name)].name,
-                    "Lilu" in self.kexts[kext_data.kext_index_by_name.get(kext_name)].requires_kexts,
+                    self.kexts[kext_index].name,
+                    "Lilu" in self.kexts[kext_index].requires_kexts,
                 )
                 for kext_name in selected_kexts
-                if not self.utils.parse_darwin_version(self.kexts[kext_data.kext_index_by_name.get(kext_name)].min_darwin_version)
+                if (kext_index := kext_data.kext_index_by_name.get(kext_name)) is not None
+                and not self.utils.parse_darwin_version(self.kexts[kext_index].min_darwin_version)
                 <= self.utils.parse_darwin_version(target_darwin_version)
-                <= self.utils.parse_darwin_version(self.kexts[kext_data.kext_index_by_name.get(kext_name)].max_darwin_version)
+                <= self.utils.parse_darwin_version(self.kexts[kext_index].max_darwin_version)
             ]
 
         if not incompatible_kexts:

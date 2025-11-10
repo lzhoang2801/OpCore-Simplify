@@ -6,6 +6,11 @@ class HardwareCustomizer:
     def __init__(self):
         self.compatibility_checker = compatibility_checker.CompatibilityChecker()
         self.utils = utils.Utils()
+        self.hardware_report = None
+        self.macos_version = None
+        self.customized_hardware = {}
+        self.disabled_devices = {}
+        self.selected_devices = {}
 
     def hardware_customization(self, hardware_report, macos_version):
         self.hardware_report = hardware_report
@@ -64,7 +69,7 @@ class HardwareCustomizer:
                         >= self.utils.parse_darwin_version(device_compatibility[-1])
                     ):
                         self.customized_hardware[device_type][device_name] = device_props
-                except:
+                except Exception:
                     self.disabled_devices[
                         "{}: {}{}".format(
                             device_props["Device Type"] if "Unknown" not in device_props.get("Device Type", "Unknown") else device_type,
@@ -138,7 +143,7 @@ class HardwareCustomizer:
                 _intel_gpu_indices = set()
                 _other_indices = set()
 
-                for index, (gpu_name, gpu_props) in enumerate(devices.items()):
+                for index, (_, gpu_props) in enumerate(devices.items()):
                     gpu_manufacturer = gpu_props.get("Manufacturer")
                     gpu_codename = gpu_props.get("Codename")
                     gpu_type = gpu_props.get("Device Type")
