@@ -7,6 +7,10 @@ from Scripts.datasets import codec_layouts, gpu_data, os_data, pci_data
 class CompatibilityChecker:
     def __init__(self):
         self.utils = utils.Utils()
+        self.hardware_report = None
+        self.ocl_patched_macos_version = None
+        self.max_native_macos_version = None
+        self.min_native_macos_version = None
 
     def show_macos_compatibility(self, device_compatibility):
         if not device_compatibility:
@@ -55,7 +59,7 @@ class CompatibilityChecker:
             )
         )
 
-        if max_version == min_version and max_version == None:
+        if max_version is None and min_version is None:
             print("")
             print("Missing required SSE4.x instruction set.")
             print("Your CPU is not supported by macOS versions newer than Sierra (10.12).")
@@ -162,7 +166,7 @@ class CompatibilityChecker:
                 else:
                     max_version = min_version = None
 
-            if (max_version == min_version and max_version == None) or (
+            if (max_version is None and min_version is None) or (
                 "Intel" in gpu_manufacturer
                 and device_id.startswith(("01", "04", "0A", "0C", "0D"))
                 and all(
@@ -173,7 +177,7 @@ class CompatibilityChecker:
                 gpu_props["Compatibility"] = (None, None)
             else:
                 gpu_props["Compatibility"] = (max_version, min_version)
-                if self.utils.parse_darwin_version(max_version) < self.utils.parse_darwin_version(ocl_patched_max_version):
+                if max_version and self.utils.parse_darwin_version(max_version) < self.utils.parse_darwin_version(ocl_patched_max_version):
                     gpu_props["OCLP Compatibility"] = (
                         ocl_patched_max_version,
                         ocl_patched_min_version
@@ -242,7 +246,7 @@ class CompatibilityChecker:
                     else gpu_props.get("OCLP Compatibility")[-1],
                 )
 
-        if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
+        if max_supported_gpu_version is None and min_supported_gpu_version is None:
             print("")
             print("You cannot install macOS without a supported GPU.")
             print("Please do NOT spam my inbox or issue tracker about this issue anymore!")

@@ -32,11 +32,9 @@ class ConfigProdigy:
         booter_patch = []
 
         mac_device = mac_model_data.get_mac_device_by_name(smbios_model)
-        if (
-            not self.utils.parse_darwin_version(mac_device.initial_support)
-            <= self.utils.parse_darwin_version(macos_version)
-            <= self.utils.parse_darwin_version(mac_device.last_supported_version)
-        ):
+        if mac_device and not self.utils.parse_darwin_version(mac_device.initial_support) <= self.utils.parse_darwin_version(
+            macos_version
+        ) <= self.utils.parse_darwin_version(mac_device.last_supported_version):
             booter_patch.append(
                 {
                     "Arch": "x86_64",
@@ -254,10 +252,11 @@ class ConfigProdigy:
 
     def select_audio_codec_layout(self, hardware_report, config=None, controller_required=False):
         try:
-            for device_properties in config["DeviceProperties"]["Add"].values():
-                if device_properties.get("layout-id"):
-                    return None, None
-        except:
+            if config:
+                for device_properties in config["DeviceProperties"]["Add"].values():
+                    if device_properties.get("layout-id"):
+                        return
+        except Exception:
             pass
 
         codec_id = None
@@ -381,7 +380,7 @@ class ConfigProdigy:
             if selected_layout_id and audio_controller_properties:
                 add_device_property(audio_controller_properties.get("PCI Path"), {"layout-id": selected_layout_id})
 
-        for network_name, network_props in hardware_report.get("Network", {}).items():
+        for _, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
             if device_id in pci_data.AtherosWiFiIDs[6:8]:

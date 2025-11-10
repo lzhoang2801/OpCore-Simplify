@@ -109,7 +109,7 @@ class OCPE:
 
         for device_type in ("GPU", "Network", "Bluetooth", "SD Controller"):
             if device_type in hardware_report:
-                for device_name, device_props in hardware_report[device_type].items():
+                for _, device_props in hardware_report[device_type].items():
                     if device_props.get("Compatibility", (None, None)) != (None, None):
                         if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
                             device_id = device_props.get("Device ID", "" * 8)[5:]
@@ -123,7 +123,8 @@ class OCPE:
                             suggested_macos_version = device_props.get("Compatibility")[0]
 
         while True:
-            if "Beta" in os_data.get_macos_name_by_darwin(suggested_macos_version):
+            macos_name = os_data.get_macos_name_by_darwin(suggested_macos_version)
+            if macos_name and "Beta" in macos_name:
                 suggested_macos_version = "{}{}".format(int(suggested_macos_version[:2]) - 1, suggested_macos_version[2:])
             else:
                 break
@@ -198,7 +199,7 @@ class OCPE:
         self.u.create_folder(self.result_dir, remove_content=True)
 
         if not os.path.exists(self.k.ock_files_dir):
-            raise Exception("Directory '{}' does not exist.".format(self.k.ock_files_dir))
+            raise FileNotFoundError("Directory '{}' does not exist.".format(self.k.ock_files_dir))
 
         source_efi_dir = os.path.join(self.k.ock_files_dir, "OpenCorePkg")
         shutil.copytree(source_efi_dir, self.result_dir, dirs_exist_ok=True)
@@ -207,7 +208,7 @@ class OCPE:
         config_data = self.u.read_file(config_file)
 
         if not config_data:
-            raise Exception("Error: The file {} does not exist.".format(config_file))
+            raise FileNotFoundError("Error: The file {} does not exist.".format(config_file))
 
         self.u.progress_bar(title, steps, 1)
         config_data["ACPI"]["Add"] = []
@@ -224,7 +225,9 @@ class OCPE:
                 if patch.checked:
                     if patch.name == "BATP":
                         patch.checked = getattr(self.ac, patch.function_name)()
-                        self.k.kexts[kext_maestro.kext_data.kext_index_by_name.get("ECEnabler")].checked = patch.checked
+                        ec_enabler_idx = kext_maestro.kext_data.kext_index_by_name.get("ECEnabler")
+                        if ec_enabler_idx is not None:
+                            self.k.kexts[ec_enabler_idx].checked = patch.checked
                         continue
 
                     acpi_load = getattr(self.ac, patch.function_name)()
@@ -254,7 +257,7 @@ class OCPE:
         drivers_directory = os.path.join(self.result_dir, "EFI", "OC", "Drivers")
         driver_list = self.u.find_matching_paths(drivers_directory, extension_filter=".efi")
         driver_loaded = [kext.get("Path") for kext in config_data.get("UEFI").get("Drivers")]
-        for driver_path, type in driver_list:
+        for driver_path, _ in driver_list:
             if driver_path not in driver_loaded:
                 files_to_remove.append(os.path.join(drivers_directory, driver_path))
 
@@ -271,7 +274,7 @@ class OCPE:
         resources_image_dir = os.path.join(self.result_dir, "EFI", "OC", "Resources", "Image")
         available_picker_variants = self.u.find_matching_paths(resources_image_dir, type_filter="dir")
 
-        for variant_name, variant_type in available_picker_variants:
+        for variant_name, _ in available_picker_variants:
             variant_path = os.path.join(resources_image_dir, variant_name)
             if ".icns" in ", ".join(os.listdir(variant_path)):
                 if picker_variant not in variant_name:
@@ -280,7 +283,7 @@ class OCPE:
         tools_directory = os.path.join(self.result_dir, "EFI", "OC", "Tools")
         tool_list = self.u.find_matching_paths(tools_directory, extension_filter=".efi")
         tool_loaded = [tool.get("Path") for tool in config_data.get("Misc").get("Tools")]
-        for tool_path, type in tool_list:
+        for tool_path, _ in tool_list:
             if tool_path not in tool_loaded:
                 files_to_remove.append(os.path.join(tools_directory, tool_path))
 
@@ -290,7 +293,7 @@ class OCPE:
                     shutil.rmtree(file_path)
                 else:
                     os.remove(file_path)
-            except Exception as e:
+            except (OSError, IOError) as e:
                 print("Failed to remove file: {}".format(e))
 
         self.u.progress_bar(title, steps, len(steps), done=True)
@@ -357,6 +360,8 @@ class OCPE:
 
     def main(self):
         hardware_report_path = None
+        hardware_report = None
+        customized_hardware = None
         native_macos_version = None
         disabled_devices = None
         macos_version = None
@@ -397,18 +402,20 @@ class OCPE:
                 self.u.exit_program()
 
             if option == "1":
-                hardware_report_path, hardware_report = self.select_hardware_report()
-                hardware_report, native_macos_version, ocl_patched_macos_version = self.c.check_compatibility(hardware_report)
-                macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
-                customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
-                smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
-                if not self.ac.ensure_dsdt():
-                    self.ac.select_acpi_tables()
-                self.ac.select_acpi_patches(customized_hardware, disabled_devices)
-                needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
-                self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
+                result = self.select_hardware_report()
+                if result:
+                    hardware_report_path, hardware_report = result
+                    hardware_report, native_macos_version, ocl_patched_macos_version = self.c.check_compatibility(hardware_report)
+                    macos_version = self.select_macos_version(hardware_report, native_macos_version, ocl_patched_macos_version)
+                    customized_hardware, disabled_devices, needs_oclp = self.h.hardware_customization(hardware_report, macos_version)
+                    smbios_model = self.s.select_smbios_model(customized_hardware, macos_version)
+                    if not self.ac.ensure_dsdt():
+                        self.ac.select_acpi_tables()
+                    self.ac.select_acpi_patches(customized_hardware, disabled_devices)
+                    needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
+                    self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
 
-            if not hardware_report_path:
+            if not hardware_report_path or not customized_hardware:
                 self.u.head()
                 print("\n\n")
                 print("\033[1;93mPlease select a hardware report first.\033[0m")
@@ -446,7 +453,8 @@ class OCPE:
 
                 self.u.head("Result")
                 print("")
-                print("Your OpenCore EFI for {} has been built at:".format(customized_hardware.get("Motherboard").get("Name")))
+                motherboard_name = customized_hardware.get("Motherboard", {}).get("Name", "Unknown") if customized_hardware else "Unknown"
+                print("Your OpenCore EFI for {} has been built at:".format(motherboard_name))
                 print("\t{}".format(self.result_dir))
                 print("")
                 self.u.request_input("Press Enter to main menu...")
@@ -461,7 +469,9 @@ if __name__ == "__main__":
     while True:
         try:
             o.main()
-        except Exception:
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
             o.u.head("An Error Occurred")
             print("")
             print(traceback.format_exc())
