@@ -471,7 +471,7 @@ if __name__ == "__main__":
             o.main()
         except (KeyboardInterrupt, SystemExit):
             raise
-        except:
+        except Exception:
             o.u.head("An Error Occurred")
             print("")
             print(traceback.format_exc())

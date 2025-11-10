@@ -320,7 +320,7 @@ class ConfigProdigy:
                 for layout in available_layouts:
                     if layout.layout_id == selected_layout_id:
                         return selected_layout_id, audio_controller_properties
-            except:
+            except (ValueError, TypeError, AttributeError):
                 continue
 
     def deviceproperties(self, hardware_report, disabled_devices, macos_version, kexts):
