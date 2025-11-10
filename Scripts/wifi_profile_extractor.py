@@ -1,5 +1,6 @@
 import json
 import platform
+import string
 
 from Scripts import run, utils
 
@@ -20,6 +21,9 @@ class WifiProfileExtractor:
         except UnicodeEncodeError:
             return False
 
+        if len(password) == 64 and all(char in string.hexdigits for char in password):
+            return True
+
         if 8 <= len(password) <= 63 and all(32 <= ord(c) <= 126 for c in password):
             return True
 
@@ -31,11 +35,19 @@ class WifiProfileExtractor:
         if output[-1] != 0:
             return None
 
+        password_output = output[0].strip()
+
+        if not password_output:
+            return None
+
+        password = None
+
         try:
-            ssid_info = json.loads(output[0].strip())
-            password = ssid_info.get("password")
-        except:
-            password = output[0].strip() if output[0].strip() else None
+            ssid_info = json.loads(password_output)
+            if isinstance(ssid_info, dict):
+                password = ssid_info.get("password")
+        except (json.JSONDecodeError, TypeError):
+            password = password_output
 
         if password and self.validate_wifi_password(password):
             return password
@@ -49,8 +61,8 @@ class WifiProfileExtractor:
             return None
 
         for line in output[0].splitlines():
-            if "Key Content" in line:
-                password = line.split(":")[1].strip()
+            if "Key Content" in line and ":" in line:
+                password = line.split(":", 1)[1].strip()
                 if self.validate_wifi_password(password):
                     return password
 
@@ -73,10 +85,13 @@ class WifiProfileExtractor:
             return total_networks
         else:
             try:
-                max_networks = min(int(num_choice), total_networks)
+                requested_networks = int(num_choice)
+                if requested_networks <= 0:
+                    raise ValueError
+                max_networks = min(requested_networks, total_networks)
                 print("Will process up to {} networks.".format(max_networks))
                 return max_networks
-            except:
+            except (TypeError, ValueError):
                 max_networks = min(5, total_networks)
                 print("Invalid choice. Will process up to {} networks.".format(max_networks))
                 return max_networks
@@ -177,12 +192,11 @@ class WifiProfileExtractor:
 
         for line in output[0].splitlines():
             if "All User Profile" in line:
-                try:
-                    ssid = line.split(":")[1].strip()
+                parts = line.split(":", 1)
+                if len(parts) == 2:
+                    ssid = parts[1].strip()
                     if ssid:
                         ssid_list.append(ssid)
-                except:
-                    continue
 
         if not ssid_list:
             return []
@@ -206,13 +220,13 @@ class WifiProfileExtractor:
         for interface_info in output[0].split("\n\n"):
             if "Device: en" in interface_info:
                 try:
-                    interface = "en{}".format(int(interface_info.split("Device: en")[1].split("\n")[0]))
-
+                    interface_suffix = int(interface_info.split("Device: en")[1].split("\n")[0])
+                    interface = "en{}".format(interface_suffix)
                     test_output = self.run({"args": ["networksetup", "-listpreferredwirelessnetworks", interface]})
 
                     if test_output[-1] == 0 and "Preferred networks on" in test_output[0]:
                         interfaces.append(interface)
-                except:
+                except (IndexError, ValueError):
                     continue
 
         return interfaces
