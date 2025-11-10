@@ -1,7 +1,8 @@
-from Scripts import resource_fetcher
-from Scripts import utils
-import random
 import json
+import random
+
+from Scripts import resource_fetcher, utils
+
 
 class Github:
     def __init__(self):
@@ -10,7 +11,7 @@ class Github:
 
     def extract_payload(self, response):
         for line in response.splitlines():
-            if "type=\"application/json\"" in line:
+            if 'type="application/json"' in line:
                 payload = line.split(">", 1)[1].split("<", 1)[0]
 
                 try:
@@ -21,7 +22,7 @@ class Github:
 
                 return payload
         return None
-        
+
     def get_commits(self, owner, repo, branch="main", start_commit=None, after=-1):
         if after > -1 and not start_commit:
             start_commit = self.get_commits(owner, repo, branch)["currentCommit"]["oid"]
@@ -38,9 +39,9 @@ class Github:
 
         payload = self.extract_payload(response)
 
-        if not "commitGroups" in payload:
+        if "commitGroups" not in payload:
             raise ValueError("Cannot find commit information for repository {} on branch {}.".format(repo, branch))
-        
+
         return payload
 
     def get_latest_release(self, owner, repo):
@@ -61,15 +62,12 @@ class Github:
 
         assets = self._extract_assets(response)
 
-        return {
-            "body": body,
-            "assets": assets
-        }
+        return {"body": body, "assets": assets}
 
     def _extract_tag_name(self, response):
         for line in response.splitlines():
-            if "<a" in line and "href=\"" in line and "/releases/tag/" in line:
-                return line.split("/releases/tag/")[1].split("\"")[0]
+            if "<a" in line and 'href="' in line and "/releases/tag/" in line:
+                return line.split("/releases/tag/")[1].split('"')[0]
         return None
 
     def _extract_body_content(self, response):
@@ -85,7 +83,6 @@ class Github:
         download_link = None
 
         for line in response.splitlines():
-
             if "<li" in line:
                 in_li_block = True
             elif "</li" in line:
@@ -93,8 +90,8 @@ class Github:
                 download_link = None
 
             if in_li_block:
-                if "<a" in line and "href=\"" in line and "/releases/download" in line:
-                    download_link = line.split("href=\"", 1)[1].split("\"", 1)[0]
+                if "<a" in line and 'href="' in line and "/releases/download" in line:
+                    download_link = line.split('href="', 1)[1].split('"', 1)[0]
 
                     if not ("tlwm" in download_link or ("tlwm" not in download_link and "DEBUG" not in download_link.upper())):
                         in_li_block = False
@@ -103,19 +100,21 @@ class Github:
 
                 if download_link and "<relative-time" in line:
                     asset_id = self._generate_asset_id(line)
-                    assets.append({
-                        "product_name": self.extract_asset_name(download_link.split("/")[-1]), 
-                        "id": int(asset_id), 
-                        "url": "https://github.com" + download_link
-                    })
+                    assets.append(
+                        {
+                            "product_name": self.extract_asset_name(download_link.split("/")[-1]),
+                            "id": int(asset_id),
+                            "url": "https://github.com" + download_link,
+                        }
+                    )
 
         return assets
 
     def _generate_asset_id(self, line):
         try:
-            return "".join(char for char in line.split("datetime=\"")[-1].split("\"")[0][::-1] if char.isdigit())[:9]
+            return "".join(char for char in line.split('datetime="')[-1].split('"')[0][::-1] if char.isdigit())[:9]
         except:
-            return "".join(random.choices('0123456789', k=9))
+            return "".join(random.choices("0123456789", k=9))
 
     def extract_asset_name(self, file_name):
         end_idx = len(file_name)

@@ -1,33 +1,33 @@
-import os
-import sys
-import json
-import plistlib
-import shutil
-import re
 import binascii
-import subprocess
+import json
+import os
 import pathlib
-import zipfile
+import plistlib
+import re
+import shutil
+import subprocess
+import sys
 import tempfile
+import zipfile
+
 
 class Utils:
-    def __init__(self, script_name = "OpCore Simplify"):
+    def __init__(self, script_name="OpCore Simplify"):
         self.script_name = script_name
 
     def clean_temporary_dir(self):
         temporary_dir = tempfile.gettempdir()
-        
+
         for file in os.listdir(temporary_dir):
             if file.startswith("ocs_"):
-    
                 if not os.path.isdir(os.path.join(temporary_dir, file)):
                     continue
 
                 try:
                     shutil.rmtree(os.path.join(temporary_dir, file))
-                except Exception as e:
+                except Exception:
                     pass
-    
+
     def get_temporary_dir(self):
         return tempfile.mkdtemp(prefix="ocs_")
 
@@ -59,7 +59,6 @@ class Utils:
             return data
 
     def find_matching_paths(self, root_path, extension_filter=None, name_filter=None, type_filter=None):
-
         def is_valid_item(name):
             if name.startswith("."):
                 return False
@@ -68,7 +67,7 @@ class Utils:
             if name_filter and name_filter not in name:
                 return False
             return True
-        
+
         found_paths = []
 
         for root, dirs, files in os.walk(root_path):
@@ -96,66 +95,66 @@ class Utils:
 
     def hex_to_bytes(self, string):
         try:
-            hex_string = re.sub(r'[^0-9a-fA-F]', '', string)
+            hex_string = re.sub(r"[^0-9a-fA-F]", "", string)
 
             if len(re.sub(r"\s+", "", string)) != len(hex_string):
                 return string
-            
+
             return binascii.unhexlify(hex_string)
         except binascii.Error:
             return string
-    
+
     def int_to_hex(self, number):
-        return format(number, '02X')
-    
+        return format(number, "02X")
+
     def to_little_endian_hex(self, hex_string):
         hex_string = hex_string.lower().lstrip("0x")
 
-        return ''.join(reversed([hex_string[i:i+2] for i in range(0, len(hex_string), 2)])).upper()
-    
+        return "".join(reversed([hex_string[i : i + 2] for i in range(0, len(hex_string), 2)])).upper()
+
     def string_to_hex(self, string):
-        return ''.join(format(ord(char), '02X') for char in string)
-    
+        return "".join(format(ord(char), "02X") for char in string)
+
     def extract_zip_file(self, zip_path, extraction_directory=None):
         if extraction_directory is None:
             extraction_directory = os.path.splitext(zip_path)[0]
-        
+
         os.makedirs(extraction_directory, exist_ok=True)
-        
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extraction_directory)
 
     def contains_any(self, data, search_item, start=0, end=None):
         return next((item for item in data[start:end] if item.lower() in search_item.lower()), None)
 
     def normalize_path(self, path):
-        path = re.sub(r'^[\'"]+|[\'"]+$', '', path)
-        
+        path = re.sub(r'^[\'"]+|[\'"]+$', "", path)
+
         path = path.strip()
-        
+
         path = os.path.expanduser(path)
-        
-        if os.name == 'nt':
-            path = path.replace('\\', '/')
-            path = re.sub(r'/+', '/', path)
+
+        if os.name == "nt":
+            path = path.replace("\\", "/")
+            path = re.sub(r"/+", "/", path)
         else:
-            path = path.replace('\\', '')
-        
+            path = path.replace("\\", "")
+
         path = os.path.normpath(path)
-        
+
         return str(pathlib.Path(path).resolve())
-    
+
     def parse_darwin_version(self, darwin_version):
-        major, minor, patch = map(int, darwin_version.split('.'))
+        major, minor, patch = map(int, darwin_version.split("."))
         return major, minor, patch
-    
+
     def open_folder(self, folder_path):
-        if os.name == 'posix':
-            if 'darwin' in os.uname().sysname.lower():
-                subprocess.run(['open', folder_path])
+        if os.name == "posix":
+            if "darwin" in os.uname().sysname.lower():
+                subprocess.run(["open", folder_path])
             else:
-                subprocess.run(['xdg-open', folder_path])
-        elif os.name == 'nt':
+                subprocess.run(["xdg-open", folder_path])
+        elif os.name == "nt":
             os.startfile(folder_path)
 
     def request_input(self, prompt="Press Enter to continue..."):
@@ -163,10 +162,10 @@ class Utils:
             user_response = raw_input(prompt)
         else:
             user_response = input(prompt)
-        
+
         if not isinstance(user_response, str):
             user_response = str(user_response)
-        
+
         return user_response
 
     def progress_bar(self, title, steps, current_step_index, done=False):
@@ -185,25 +184,25 @@ class Utils:
                     print("  [ ] {}".format(step))
         print("")
 
-    def head(self, text = None, width = 68, resize=True):
+    def head(self, text=None, width=68, resize=True):
         if resize:
             self.adjust_window_size()
-        os.system('cls' if os.name=='nt' else 'clear')
+        os.system("cls" if os.name == "nt" else "clear")
         if text == None:
             text = self.script_name
         separator = "═" * (width - 2)
         title = " {} ".format(text)
         if len(title) > width - 2:
-            title = title[:width-4] + "..."
+            title = title[: width - 4] + "..."
         title = title.center(width - 2)
-        
+
         print("╔{}╗\n║{}║\n╚{}╝".format(separator, title, separator))
-    
+
     def adjust_window_size(self, content=""):
         lines = content.splitlines()
         rows = len(lines)
         cols = max(len(line) for line in lines) if lines else 0
-        print('\033[8;{};{}t'.format(max(rows+6, 30), max(cols+2, 100)))
+        print("\033[8;{};{}t".format(max(rows + 6, 30), max(cols + 2, 100)))
 
     def exit_program(self):
         self.head()
@@ -214,13 +213,13 @@ class Utils:
 
         separator = "─" * (width - 4)
         print(f" ┌{separator}┐ ")
-        
+
         contacts = {
             "Facebook": "https://www.facebook.com/macforce2601",
             "Telegram": "https://t.me/lzhoang2601",
-            "GitHub": "https://github.com/lzhoang2801/OpCore-Simplify"
+            "GitHub": "https://github.com/lzhoang2801/OpCore-Simplify",
         }
-        
+
         for platform, link in contacts.items():
             line = f" * {platform}: {link}"
             print(f" │{line.ljust(width - 4)}│ ")

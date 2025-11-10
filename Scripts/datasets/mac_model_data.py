@@ -1,13 +1,15 @@
 from Scripts.datasets import os_data
 
+
 class MacDevice:
-    def __init__(self, name, cpu, cpu_generation, discrete_gpu, initial_support, last_supported_version = None):
+    def __init__(self, name, cpu, cpu_generation, discrete_gpu, initial_support, last_supported_version=None):
         self.name = name
         self.cpu = cpu
         self.cpu_generation = cpu_generation
         self.discrete_gpu = discrete_gpu
         self.initial_support = initial_support
         self.last_supported_version = last_supported_version or os_data.get_latest_darwin_version()
+
 
 mac_devices = [
     # iMac Models
@@ -93,8 +95,9 @@ mac_devices = [
     # MacPro Models
     MacDevice("MacPro5,1", "X5675 x2", "Nehalem/Westmere", "ATI Radeon HD 5770", "10.4.0", "18.99.99"),
     MacDevice("MacPro6,1", "E5-1620 v2", "Ivy Bridge EP", "AMD FirePro D300", "13.0.0", "21.99.99"),
-    MacDevice("MacPro7,1", "W-3245M", "Cascade Lake-W", "AMD Radeon Pro 580X", "19.0.0")
+    MacDevice("MacPro7,1", "W-3245M", "Cascade Lake-W", "AMD Radeon Pro 580X", "19.0.0"),
 ]
+
 
 def get_mac_device_by_name(name):
     return next((mac_device for mac_device in mac_devices if mac_device.name == name), None)

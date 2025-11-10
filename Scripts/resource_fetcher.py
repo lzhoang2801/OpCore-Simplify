@@ -1,19 +1,19 @@
-import ssl
-import os
+import gzip
 import json
+import os
 import plistlib
 import socket
+import ssl
 import sys
-import gzip
-import zlib
 import time
+import zlib
 
 if sys.version_info >= (3, 0):
-    from urllib.request import urlopen, Request
     from urllib.error import URLError
+    from urllib.request import Request, urlopen
 else:
-    import urllib2
-    from urllib2 import urlopen, Request, URLError
+    from urllib2 import Request, URLError, urlopen
+
 
 class ResourceFetcher:
     def __init__(self, headers=None):
@@ -28,6 +28,7 @@ class ResourceFetcher:
             cafile = ssl.get_default_verify_paths().openssl_cafile
             if not os.path.exists(cafile):
                 import certifi
+
                 cafile = certifi.where()
             ssl_context = ssl.create_default_context(cafile=cafile)
         except Exception as e:
@@ -39,7 +40,7 @@ class ResourceFetcher:
         try:
             headers = dict(self.request_headers)
             headers["Accept-Encoding"] = "gzip, deflate"
-            
+
             return urlopen(Request(resource_url, headers=headers), timeout=timeout, context=self.ssl_context)
         except socket.timeout as e:
             print("Timeout error: {}".format(e))
@@ -72,7 +73,7 @@ class ResourceFetcher:
         if not response:
             print("Failed to fetch content from {}".format(resource_url))
             return None
-        
+
         content = response.read()
 
         if response.info().get("Content-Encoding") == "gzip" or content.startswith(b"\x1f\x8b"):
@@ -85,7 +86,7 @@ class ResourceFetcher:
                 content = zlib.decompress(content)
             except Exception as e:
                 print("Failed to decompress deflate content: {}".format(e))
-        
+
         try:
             if content_type == "json":
                 return json.loads(content)
@@ -95,7 +96,7 @@ class ResourceFetcher:
                 return content.decode("utf-8")
         except Exception as e:
             print("Error parsing content as {}: {}".format(content_type, e))
-            
+
         return None
 
     def _download_with_progress(self, response, local_file):
@@ -109,44 +110,46 @@ class ResourceFetcher:
         speeds = []
 
         speed_str = "-- KB/s"
-        
+
         while True:
             chunk = response.read(self.buffer_size)
             if not chunk:
                 break
             local_file.write(chunk)
             bytes_downloaded += len(chunk)
-            
+
             current_time = time.time()
             time_diff = current_time - last_time
-            
+
             if time_diff > 0.5:
                 current_speed = (bytes_downloaded - last_bytes) / time_diff
                 speeds.append(current_speed)
                 if len(speeds) > 5:
                     speeds.pop(0)
                 avg_speed = sum(speeds) / len(speeds)
-                
-                if avg_speed < 1024*1024:
-                    speed_str = "{:.1f} KB/s".format(avg_speed/1024)
+
+                if avg_speed < 1024 * 1024:
+                    speed_str = "{:.1f} KB/s".format(avg_speed / 1024)
                 else:
-                    speed_str = "{:.1f} MB/s".format(avg_speed/(1024*1024))
-                
+                    speed_str = "{:.1f} MB/s".format(avg_speed / (1024 * 1024))
+
                 last_time = current_time
                 last_bytes = bytes_downloaded
-            
+
             if total_size:
                 percent = int(bytes_downloaded / total_size * 100)
                 bar_length = 40
                 filled = int(bar_length * bytes_downloaded / total_size)
                 bar = "█" * filled + "░" * (bar_length - filled)
-                progress = "{} [{}] {:3d}% {:.1f}/{:.1f}MB".format(speed_str, bar, percent, bytes_downloaded/(1024*1024), total_size/(1024*1024))
+                progress = "{} [{}] {:3d}% {:.1f}/{:.1f}MB".format(
+                    speed_str, bar, percent, bytes_downloaded / (1024 * 1024), total_size / (1024 * 1024)
+                )
             else:
-                progress = "{} {:.1f}MB downloaded".format(speed_str, bytes_downloaded/(1024*1024))
-            
+                progress = "{} {:.1f}MB downloaded".format(speed_str, bytes_downloaded / (1024 * 1024))
+
             print(" " * 80, end="\r")
             print(progress, end="\r")
-            
+
         print()
 
     def download_and_save_file(self, resource_url, destination_path):
@@ -164,7 +167,7 @@ class ResourceFetcher:
 
             if os.path.exists(destination_path) and os.path.getsize(destination_path) > 0:
                 return True
-            
+
             attempt += 1
 
         return False

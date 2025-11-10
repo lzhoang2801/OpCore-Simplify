@@ -175,7 +175,7 @@ IntelChipsets = [
     "H810",
     "W880",
     "HM870",
-    "WM880"
+    "WM880",
 ]
 
 AMDChipsets = [
@@ -201,5 +201,5 @@ AMDChipsets = [
     "B650",
     "X670",
     "X870",
-    "X870E"
+    "X870E",
 ]

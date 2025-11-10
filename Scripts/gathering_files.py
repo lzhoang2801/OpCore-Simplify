@@ -1,13 +1,12 @@
-from Scripts import github
-from Scripts import kext_maestro
-from Scripts import resource_fetcher
-from Scripts import utils
 import os
+import platform
 import shutil
 import subprocess
-import platform
+
+from Scripts import github, kext_maestro, resource_fetcher, utils
 
 os_name = platform.system()
+
 
 class gatheringFiles:
     def __init__(self):
@@ -18,7 +17,9 @@ class gatheringFiles:
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
         self.ocbinarydata_url = "https://github.com/acidanthera/OcBinaryData/archive/refs/heads/master.zip"
         self.amd_vanilla_patches_url = "https://raw.githubusercontent.com/AMD-OSX/AMD_Vanilla/beta/patches.plist"
-        self.aquantia_macos_patches_url = "https://raw.githubusercontent.com/CaseySJ/Aquantia-macOS-Patches/refs/heads/main/CaseySJ-Aquantia-Patch-Sets-1-and-2.plist"
+        self.aquantia_macos_patches_url = (
+            "https://raw.githubusercontent.com/CaseySJ/Aquantia-macOS-Patches/refs/heads/main/CaseySJ-Aquantia-Patch-Sets-1-and-2.plist"
+        )
         self.hyper_threading_patches_url = "https://github.com/b00t0x/CpuTopologyRebuild/raw/refs/heads/master/patches_ht.plist"
         self.temporary_dir = self.utils.get_temporary_dir()
         self.ock_files_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "OCK_Files")
@@ -30,7 +31,7 @@ class gatheringFiles:
             if product_name_name == product.get("product_name"):
                 return index
         return None
-        
+
     def get_bootloader_kexts_data(self, kexts):
         download_urls = self.utils.read_file(self.bootloader_kexts_data_path)
 
@@ -62,43 +63,47 @@ class gatheringFiles:
                 name = kext.github_repo.get("repo")
                 seen_repos.add(name)
                 if name in dortania_builds_data:
-                    add_product_to_download_urls({
-                        "product_name": name,
-                        "id": dortania_builds_data[name]["versions"][0]["release"]["id"], 
-                        "url": dortania_builds_data[name]["versions"][0]["links"]["release"]
-                    })
+                    add_product_to_download_urls(
+                        {
+                            "product_name": name,
+                            "id": dortania_builds_data[name]["versions"][0]["release"]["id"],
+                            "url": dortania_builds_data[name]["versions"][0]["links"]["release"],
+                        }
+                    )
                 else:
                     latest_release = self.github.get_latest_release(kext.github_repo.get("owner"), kext.github_repo.get("repo")) or {}
                     add_product_to_download_urls(latest_release.get("assets"))
 
-        add_product_to_download_urls({
-            "product_name": "OpenCorePkg",
-            "id": dortania_builds_data["OpenCorePkg"]["versions"][0]["release"]["id"], 
-            "url": dortania_builds_data["OpenCorePkg"]["versions"][0]["links"]["release"]
-        })
+        add_product_to_download_urls(
+            {
+                "product_name": "OpenCorePkg",
+                "id": dortania_builds_data["OpenCorePkg"]["versions"][0]["release"]["id"],
+                "url": dortania_builds_data["OpenCorePkg"]["versions"][0]["links"]["release"],
+            }
+        )
 
-        sorted_download_urls = sorted(download_urls, key=lambda x:x["product_name"])
+        sorted_download_urls = sorted(download_urls, key=lambda x: x["product_name"])
 
         self.utils.create_folder(self.ock_files_dir)
         self.utils.write_file(self.bootloader_kexts_data_path, sorted_download_urls)
-    
+
         return sorted_download_urls
-    
+
     def move_bootloader_kexts_to_product_directory(self, product_name):
         if not os.path.exists(self.temporary_dir):
             raise FileNotFoundError("The directory {} does not exist.".format(self.temporary_dir))
-        
+
         temp_product_dir = os.path.join(self.temporary_dir, product_name)
-        
-        if not "OpenCore" in product_name:
+
+        if "OpenCore" not in product_name:
             kext_paths = self.utils.find_matching_paths(temp_product_dir, extension_filter=".kext")
             for kext_path, type in kext_paths:
                 source_kext_path = os.path.join(self.temporary_dir, product_name, kext_path)
                 destination_kext_path = os.path.join(self.ock_files_dir, product_name, os.path.basename(kext_path))
-                
+
                 if "debug" in kext_path.lower() or "Contents" in kext_path or not self.kext.process_kext(temp_product_dir, kext_path):
                     continue
-                
+
                 shutil.move(source_kext_path, destination_kext_path)
         else:
             source_bootloader_path = os.path.join(self.temporary_dir, product_name, "X64", "EFI")
@@ -136,9 +141,9 @@ class gatheringFiles:
                     shutil.move(source_macserial_path, destination_macserial_path)
                     if os.name != "nt":
                         subprocess.run(["chmod", "+x", destination_macserial_path])
-        
+
         return True
-    
+
     def gather_bootloader_kexts(self, kexts, macos_version):
         self.utils.head("Gathering Files")
         print("")
@@ -150,7 +155,7 @@ class gatheringFiles:
             download_history = []
 
         bootloader_kext_urls = self.get_bootloader_kexts_data(kexts)
-        
+
         self.utils.create_folder(self.temporary_dir)
 
         seen_download_urls = set()
@@ -160,10 +165,15 @@ class gatheringFiles:
                 continue
 
             product_name = product.name if not isinstance(product, dict) else product.get("Name")
-            
+
             if product_name == "AirportItlwm":
                 version = macos_version[:2]
-                if all((kexts[kext_maestro.kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked, kexts[kext_maestro.kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked)) or self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
+                if all(
+                    (
+                        kexts[kext_maestro.kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked,
+                        kexts[kext_maestro.kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked,
+                    )
+                ) or self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
                     version = "22"
                 elif self.utils.parse_darwin_version("23.4.0") <= self.utils.parse_darwin_version(macos_version):
                     version = "23.4"
@@ -187,7 +197,7 @@ class gatheringFiles:
             if product_download_index is None:
                 if product.github_repo:
                     product_download_index = self.get_product_index(bootloader_kext_urls, product.github_repo.get("repo"))
-            
+
             if product_download_index is not None:
                 _, product_id, product_download_url = bootloader_kext_urls[product_download_index].values()
 
@@ -235,12 +245,12 @@ class gatheringFiles:
                     self.utils.request_input()
                     shutil.rmtree(self.temporary_dir, ignore_errors=True)
                     return False
-                
+
             self.utils.extract_zip_file(zip_path)
 
             asset_dir = os.path.join(self.ock_files_dir, product_name)
             self.utils.create_folder(asset_dir, remove_content=True)
-            
+
             while True:
                 zip_files = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), extension_filter=".zip")
 
@@ -268,29 +278,26 @@ class gatheringFiles:
                     self.utils.request_input()
                     shutil.rmtree(self.temporary_dir, ignore_errors=True)
                     return False
-                
+
                 self.utils.extract_zip_file(zip_path)
 
             if self.move_bootloader_kexts_to_product_directory(product_name):
                 if product_history_index is None:
-                    download_history.append({
-                        "product_name": product_name, 
-                        "id": product_id
-                    })
+                    download_history.append({"product_name": product_name, "id": product_id})
                 else:
                     download_history[product_history_index]["id"] = product_id
-                
+
                 self.utils.write_file(self.download_history_file, download_history)
 
         shutil.rmtree(self.temporary_dir, ignore_errors=True)
         return True
-    
+
     def get_kernel_patches(self, patches_name, patches_url):
         try:
             response = self.fetcher.fetch_and_parse_content(patches_url, "plist")
 
             return response["Kernel"]["Patch"]
-        except: 
+        except:
             print("")
             print("Unable to download {} at this time".format(patches_name))
             print("from " + patches_url)
@@ -299,11 +306,11 @@ class gatheringFiles:
             print("")
             self.utils.request_input()
             return []
-        
+
     def gather_hardware_sniffer(self):
         if os_name != "Windows":
             return
-        
+
         self.utils.head("Gathering Files")
         print("")
         print("Please wait for download Hardware Sniffer")
@@ -318,14 +325,14 @@ class gatheringFiles:
         if not isinstance(download_history, list):
             download_history = []
 
-        product_id = product_download_url = None 
+        product_id = product_download_url = None
 
         latest_release = self.github.get_latest_release("lzhoang2801", "Hardware-Sniffer") or {}
 
         for product in latest_release.get("assets"):
             if product.get("product_name") == product_name.split(".")[0]:
                 _, product_id, product_download_url = product.values()
-        
+
         product_history_index = self.get_product_index(download_history, product_name)
 
         print("")
@@ -349,15 +356,12 @@ class gatheringFiles:
         print("")
 
         self.fetcher.download_and_save_file(product_download_url, hardware_sniffer_path)
-        
+
         if product_history_index is None:
-            download_history.append({
-                "product_name": product_name, 
-                "id": product_id
-            })
+            download_history.append({"product_name": product_name, "id": product_id})
         else:
             download_history[product_history_index]["id"] = product_id
-        
+
         self.utils.create_folder(os.path.dirname(self.download_history_file))
         self.utils.write_file(self.download_history_file, download_history)
 
