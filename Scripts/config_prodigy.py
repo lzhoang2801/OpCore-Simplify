@@ -295,7 +295,7 @@ class ConfigProdigy:
             contents.append("ID   Comment")
             contents.append("------------------------------------------------------------------")
             for layout in available_layouts:
-                line = "{:<4} {}".format(layout.id, layout.comment[:60])
+                line = "{:<4} {}".format(layout.layout_id, layout.comment[:60])
                 if layout == default_layout:
                     contents.append("\033[1;32m{}\033[0m".format(line))
                 else:
@@ -311,14 +311,15 @@ class ConfigProdigy:
             self.utils.head("Choosing Codec Layout ID", resize=False)
             print(content)
             selected_layout_id = (
-                self.utils.request_input(f"Enter the ID of the codec layout you want to use (default: {default_layout.id}): ") or default_layout.id
+                self.utils.request_input(f"Enter the ID of the codec layout you want to use (default: {default_layout.layout_id}): ")
+                or default_layout.layout_id
             )
 
             try:
                 selected_layout_id = int(selected_layout_id)
 
                 for layout in available_layouts:
-                    if layout.id == selected_layout_id:
+                    if layout.layout_id == selected_layout_id:
                         return selected_layout_id, audio_controller_properties
             except:
                 continue

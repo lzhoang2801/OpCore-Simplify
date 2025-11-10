@@ -12,10 +12,10 @@ class KextInfo:
         required=False,
         min_darwin_version=(),
         max_darwin_version=(),
-        requires_kexts=[],
+        requires_kexts=None,
         conflict_group_id=None,
-        github_repo={},
-        download_info={},
+        github_repo=None,
+        download_info=None,
     ):
         self.name = name
         self.description = description
@@ -23,10 +23,10 @@ class KextInfo:
         self.required = required
         self.min_darwin_version = min_darwin_version or os_data.get_lowest_darwin_version()
         self.max_darwin_version = max_darwin_version or os_data.get_latest_darwin_version()
-        self.requires_kexts = requires_kexts
+        self.requires_kexts = requires_kexts if requires_kexts is not None else []
         self.conflict_group_id = conflict_group_id
-        self.github_repo = github_repo
-        self.download_info = download_info
+        self.github_repo = github_repo if github_repo is not None else {}
+        self.download_info = download_info if download_info is not None else {}
         self.checked = required
 
 
