@@ -7,9 +7,9 @@ import threading
 import time
 
 try:
-    from Queue import Empty, Queue
-except:
-    from queue import Empty, Queue
+    from Queue import Empty, Queue  # Python 2
+except ImportError:
+    from queue import Empty, Queue  # Python 3
 
 ON_POSIX = "posix" in sys.builtin_module_names
 
@@ -73,7 +73,7 @@ class Run:
                     continue  # Keep going until empty
                 # No output - see if still running
                 p.poll()
-                if p.returncode != None:
+                if p.returncode is not None:
                     # Subprocess ended
                     break
                 # No output, but subprocess still running - stall for 20ms
@@ -81,11 +81,11 @@ class Run:
 
             o, e = p.communicate()
             return (output + o, error + e, p.returncode)
-        except:
+        except Exception:
             if p:
                 try:
                     o, e = p.communicate()
-                except:
+                except Exception:
                     o = e = ""
                 return (output + o, error + e, p.returncode)
             return ("", "Command not found!", 1)
@@ -98,6 +98,7 @@ class Run:
 
     def _run_command(self, comm, shell=False):
         c = None
+        p = None
         try:
             if shell and type(comm) is list:
                 comm = " ".join(shlex.quote(x) for x in comm)
@@ -105,9 +106,13 @@ class Run:
                 comm = shlex.split(comm)
             p = subprocess.Popen(comm, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             c = p.communicate()
-        except:
-            if c == None:
+        except Exception:
+            if c is None:
                 return ("", "Command not found!", 1)
+
+        if p is None:
+            return ("", "Command not found!", 1)
+
         return (self._decode(c[0]), self._decode(c[1]), p.returncode)
 
     def run(self, command_list, leave_on_fail=False):
@@ -126,7 +131,7 @@ class Run:
             mess = comm.get("message", None)
             show = comm.get("show", False)
 
-            if not mess == None:
+            if mess is not None:
                 print(mess)
 
             if not len(args):

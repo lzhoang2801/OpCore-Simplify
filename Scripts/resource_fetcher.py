@@ -33,7 +33,10 @@ class ResourceFetcher:
             ssl_context = ssl.create_default_context(cafile=cafile)
         except Exception as e:
             print("Failed to create SSL context: {}".format(e))
-            ssl_context = ssl._create_unverified_context()
+            # Create unverified context as fallback
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
         return ssl_context
 
     def _make_request(self, resource_url, timeout=10):

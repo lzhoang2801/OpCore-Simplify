@@ -45,7 +45,7 @@ class DSDT:
                 exception += "\n\nPlease manually download {} from:\n - {}\n\nAnd place in:\n - {}\n".format(
                     '"iasl-win-YYYYMMDD.zip" and extract iasl.exe' if os.name == "nt" else "iasl", url, os.path.dirname(os.path.realpath(__file__))
                 )
-            raise Exception(exception)
+            raise FileNotFoundError(exception)
         self.allowed_signatures = (b"APIC", b"DMAR", b"DSDT", b"SSDT")
         self.mixed_listing = (b"DSDT", b"SSDT")
         self.acpi_tables = {}
@@ -63,7 +63,7 @@ class DSDT:
             try:
                 sig = f.read(4)
                 return sig
-            except:
+            except (IOError, OSError):
                 pass
         return None
 
@@ -79,7 +79,7 @@ class DSDT:
             if not isinstance(b, int):
                 try:
                     b = ord(b)
-                except:
+                except (TypeError, ValueError):
                     pass
             if ord(" ") <= b < ord("~"):
                 ascii_string += chr(b)
@@ -134,7 +134,6 @@ class DSDT:
             dsdt_or_ssdt = [x for x in list(target_files) if self._table_signature(temp, x) in self.mixed_listing]
             other_tables = [x for x in list(target_files) if x not in dsdt_or_ssdt]
             out_d = ("", "", 0)
-            out_t = ("", "", 0)
 
             def exists(folder_path, file_name):
                 # Helper to make sure the file exists and has a non-Zero size
@@ -165,13 +164,13 @@ class DSDT:
             # Check for other tables (DMAR, APIC, etc)
             if other_tables:
                 args = [self.iasl] + list(other_tables)
-                out_t = self.r.run({"args": args})
+                _ = self.r.run({"args": args})
                 # Get a list of disassembled names that failed
                 for x in other_tables:
                     if not exists(temp, target_files[x]["disassembled_name"]):
                         failed.append(x)
             if len(failed) == len(target_files):
-                raise Exception("Failed to disassemble - {}".format(", ".join(failed)))
+                raise RuntimeError("Failed to disassemble - {}".format(", ".join(failed)))
             # Actually process the tables now
             to_remove = []
             for file in target_files:
@@ -180,7 +179,7 @@ class DSDT:
                 if not exists(temp, target_files[file]["disassembled_name"]):
                     to_remove.append(file)
                     continue
-                with open(os.path.join(temp, target_files[file]["disassembled_name"]), "r") as f:
+                with open(os.path.join(temp, target_files[file]["disassembled_name"]), "r", encoding="utf-8") as f:
                     target_files[file]["table"] = f.read()
                     # Remove the compiler info at the start
                     if target_files[file]["table"].startswith("/*"):
@@ -224,7 +223,7 @@ class DSDT:
                 # The disassembler omits the last line of hex data in a mixed listing
                 # file... convenient.  However - we should be able to reconstruct this
                 # manually.
-                last_hex = next((l for l in target_files[file]["lines"][::-1] if self.is_hex(l)), None)
+                last_hex = next((line for line in target_files[file]["lines"][::-1] if self.is_hex(line)), None)
                 if last_hex:
                     # Get the address left of the colon
                     addr = int(last_hex.split(":")[0].strip(), 16)
@@ -239,25 +238,26 @@ class DSDT:
                     # Iterate in chunks of 16
                     for chunk in [remaining[i : i + 16] for i in range(0, len(remaining), 16)]:
                         # Build a new byte string
-                        hex_string = binascii.hexlify(chunk)
-                        # Decode the bytes if we're on python 3
-                        if 2 / 3 != 0:
-                            hex_string = hex_string.decode()
-                        # Ensure the bytes are all upper case
+                        hex_bytes = binascii.hexlify(chunk)
+                        # Ensure we have a string type - decode bytes to str
+                        if isinstance(hex_bytes, bytes):
+                            hex_string = hex_bytes.decode()
+                        else:
+                            hex_string = str(hex_bytes)
+                        # Ensure the string is all upper case
                         hex_string = hex_string.upper()
-                        l = "   {}: {}".format(
+                        hex_line = "   {}: {}".format(
                             hex(next_addr)[2:].upper().rjust(4, "0"), " ".join([hex_string[i : i + 2] for i in range(0, len(hex_string), 2)])
                         )
                         # Increment our address
                         next_addr += len(chunk)
                         # Append our line
-                        target_files[file]["lines"].append(l)
-                        target_files[file]["table"] += "\n" + l
+                        target_files[file]["lines"].append(hex_line)
+                        target_files[file]["table"] += "\n" + hex_line
             # Remove any that didn't disassemble
             for file in to_remove:
                 target_files.pop(file, None)
-        except Exception as e:
-            print(e)
+        except (OSError, IOError, RuntimeError):
             return ({}, failed)
         finally:
             os.chdir(cwd)
@@ -307,12 +307,14 @@ class DSDT:
             elif sys.platform == "win32":
                 iasl_url_windows = self.iasl_url_windows_legacy if legacy else self.get_latest_iasl()
                 if not iasl_url_windows:
-                    raise Exception("Could not get latest iasl for Windows")
+                    print("Could not get latest iasl for Windows")
+                    return None
                 self._download_and_extract(temp, iasl_url_windows)
             else:
-                raise Exception("Unknown OS")
-        except Exception as e:
-            print("An error occurred :(\n - {}".format(e))
+                print("Unknown OS")
+                return None
+        except Exception:
+            pass
         shutil.rmtree(temp, ignore_errors=True)
         # Check again after downloading
         return self.check_iasl(legacy=legacy, try_downloading=False)
@@ -385,8 +387,8 @@ class DSDT:
                         # Something changed - print it and rename it
                         try:
                             os.rename(os.path.join(res, f), os.path.join(res, new_name))
-                        except Exception as e:
-                            print(" - {} -> {} failed: {}".format(f, new_name, e))
+                        except (OSError, FileExistsError):
+                            print(" - {} -> {} failed".format(f, new_name))
                 print("Dump successful!")
                 if disassemble:
                     return self.load(res)
@@ -400,7 +402,6 @@ class DSDT:
                 print("Could not locate {}!".format(table_dir))
                 return
             print("Copying tables to {}...".format(res))
-            copied_files = []
             for table in os.listdir(table_dir):
                 if not os.path.isfile(os.path.join(table_dir, table)):
                     continue  # We only want files
@@ -555,24 +556,26 @@ class DSDT:
             return None
         try:
             left_pad = self.get_unique_pad(current_hex, index, False, instance, table=table)
-        except:
+        except (ValueError, KeyError, IndexError):
             left_pad = None
         try:
             right_pad = self.get_unique_pad(current_hex, index, True, instance, table=table)
-        except:
+        except (ValueError, KeyError, IndexError):
             right_pad = None
         try:
             mid_pad = self.get_unique_pad(current_hex, index, None, instance, table=table)
-        except:
+        except (ValueError, KeyError, IndexError):
             mid_pad = None
-        if left_pad == right_pad == mid_pad is None:
-            raise Exception("No unique pad found!")
+        if left_pad is None and right_pad is None and mid_pad is None:
+            return None
         # We got at least one unique pad
         min_pad = None
         for x in (left_pad, right_pad, mid_pad):
             if x is None:
                 continue  # Skip
-            if min_pad is None or len(x[0] + x[1]) < len(min_pad[0] + min_pad[1]):
+            if min_pad is None:
+                min_pad = x
+            elif len(x[0] + x[1]) < len(min_pad[0] + min_pad[1]):
                 min_pad = x
         return min_pad
 
@@ -606,13 +609,12 @@ class DSDT:
             raise Exception("Instance out of range!")
         linel = current_hex.join(parts[0 : instance + 1])
         liner = current_hex.join(parts[instance + 1 :])
-        last_check = True  # Default to forward
         while True:
             # Check if our hex string is unique
             check_bytes = self.get_hex_bytes(padl + current_hex + padr)
             if table["raw"].count(check_bytes) == 1:  # Got it!
                 break
-            if direction == True or (direction is None and len(padr) <= len(padl)):
+            if direction is True or (direction is None and len(padr) <= len(padl)):
                 # Let's check a forward byte
                 if not len(liner):
                     # Need to grab more
@@ -622,7 +624,7 @@ class DSDT:
                 padr = padr + liner[0:2]
                 liner = liner[2:]
                 continue
-            if direction == False or (direction is None and len(padl) <= len(padr)):
+            if direction is False or (direction is None and len(padl) <= len(padr)):
                 # Let's check a backward byte
                 if not len(linel):
                     # Need to grab more
@@ -793,13 +795,20 @@ class DSDT:
         if not table:
             return []
         devs = []
+        lines = table.get("lines") or []
         for p in table.get("paths", []):
-            try:
-                if p[0].endswith("._HID") and hid.upper() in table.get("lines")[p[1]]:
-                    # Save the path, strip the ._HID from the end
-                    devs.append(p[0][: -len("._HID")])
-            except:
-                continue
+            # p is expected to be (path_str, index, type); validate before accessing
+            if (
+                isinstance(p, (tuple, list))
+                and len(p) >= 2
+                and isinstance(p[0], str)
+                and p[0].endswith("._HID")
+                and isinstance(p[1], int)
+                and 0 <= p[1] < len(lines)
+                and hid.upper() in lines[p[1]]
+            ):
+                # Save the path, strip the ._HID from the end
+                devs.append(p[0][: -len("._HID")])
         devices = []
         # Walk the paths again - and save any devices
         # that match our prior list

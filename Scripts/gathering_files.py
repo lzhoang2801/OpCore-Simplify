@@ -39,6 +39,10 @@ class gatheringFiles:
             download_urls = []
 
         dortania_builds_data = self.fetcher.fetch_and_parse_content(self.dortania_builds_url, "json")
+
+        if not dortania_builds_data or not isinstance(dortania_builds_data, dict):
+            dortania_builds_data = {}
+
         seen_repos = set()
 
         def add_product_to_download_urls(products):
@@ -74,13 +78,14 @@ class gatheringFiles:
                     latest_release = self.github.get_latest_release(kext.github_repo.get("owner"), kext.github_repo.get("repo")) or {}
                     add_product_to_download_urls(latest_release.get("assets"))
 
-        add_product_to_download_urls(
-            {
-                "product_name": "OpenCorePkg",
-                "id": dortania_builds_data["OpenCorePkg"]["versions"][0]["release"]["id"],
-                "url": dortania_builds_data["OpenCorePkg"]["versions"][0]["links"]["release"],
-            }
-        )
+        if "OpenCorePkg" in dortania_builds_data:
+            add_product_to_download_urls(
+                {
+                    "product_name": "OpenCorePkg",
+                    "id": dortania_builds_data["OpenCorePkg"]["versions"][0]["release"]["id"],
+                    "url": dortania_builds_data["OpenCorePkg"]["versions"][0]["links"]["release"],
+                }
+            )
 
         sorted_download_urls = sorted(download_urls, key=lambda x: x["product_name"])
 
@@ -97,7 +102,7 @@ class gatheringFiles:
 
         if "OpenCore" not in product_name:
             kext_paths = self.utils.find_matching_paths(temp_product_dir, extension_filter=".kext")
-            for kext_path, type in kext_paths:
+            for kext_path, _ in kext_paths:
                 source_kext_path = os.path.join(self.temporary_dir, product_name, kext_path)
                 destination_kext_path = os.path.join(self.ock_files_dir, product_name, os.path.basename(kext_path))
 
@@ -107,6 +112,7 @@ class gatheringFiles:
                 shutil.move(source_kext_path, destination_kext_path)
         else:
             source_bootloader_path = os.path.join(self.temporary_dir, product_name, "X64", "EFI")
+            destination_efi_path = None
             if os.path.exists(source_bootloader_path):
                 destination_efi_path = os.path.join(self.ock_files_dir, product_name, os.path.basename(source_bootloader_path))
                 shutil.move(source_bootloader_path, destination_efi_path)
@@ -115,7 +121,7 @@ class gatheringFiles:
                 shutil.move(source_config_path, destination_config_path)
 
             ocbinarydata_dir = os.path.join(self.temporary_dir, "OcBinaryData", "OcBinaryData-master")
-            if os.path.exists(ocbinarydata_dir):
+            if os.path.exists(ocbinarydata_dir) and destination_efi_path:
                 background_picker_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "datasets", "background_picker.icns")
                 product_dir = os.path.join(self.ock_files_dir, product_name)
                 efi_dirs = self.utils.find_matching_paths(product_dir, name_filter="EFI", type_filter="dir")
@@ -140,7 +146,7 @@ class gatheringFiles:
                     destination_macserial_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.path.basename(macserial_path))
                     shutil.move(source_macserial_path, destination_macserial_path)
                     if os.name != "nt":
-                        subprocess.run(["chmod", "+x", destination_macserial_path])
+                        subprocess.run(["chmod", "+x", destination_macserial_path], check=False)
 
         return True
 
@@ -165,6 +171,9 @@ class gatheringFiles:
                 continue
 
             product_name = product.name if not isinstance(product, dict) else product.get("Name")
+
+            if not product_name:
+                continue
 
             if product_name == "AirportItlwm":
                 version = macos_version[:2]
@@ -195,8 +204,10 @@ class gatheringFiles:
 
             product_download_index = self.get_product_index(bootloader_kext_urls, product_name)
             if product_download_index is None:
-                if product.github_repo:
-                    product_download_index = self.get_product_index(bootloader_kext_urls, product.github_repo.get("repo"))
+                if not isinstance(product, dict) and hasattr(product, "github_repo") and product.github_repo:
+                    github_repo_name = product.github_repo.get("repo")
+                    if github_repo_name:
+                        product_download_index = self.get_product_index(bootloader_kext_urls, github_repo_name)
 
             if product_download_index is not None:
                 _, product_id, product_download_url = bootloader_kext_urls[product_download_index].values()
@@ -257,7 +268,7 @@ class gatheringFiles:
                 if not zip_files:
                     break
 
-                for zip_file, file_type in zip_files:
+                for zip_file, _ in zip_files:
                     full_zip_path = os.path.join(self.temporary_dir, product_name, zip_file)
                     self.utils.extract_zip_file(full_zip_path)
                     os.remove(full_zip_path)
@@ -296,8 +307,10 @@ class gatheringFiles:
         try:
             response = self.fetcher.fetch_and_parse_content(patches_url, "plist")
 
-            return response["Kernel"]["Patch"]
-        except:
+            if response and isinstance(response, dict) and "Kernel" in response and "Patch" in response["Kernel"]:
+                return response["Kernel"]["Patch"]
+            return []
+        except Exception:
             print("")
             print("Unable to download {} at this time".format(patches_name))
             print("from " + patches_url)
@@ -329,14 +342,17 @@ class gatheringFiles:
 
         latest_release = self.github.get_latest_release("lzhoang2801", "Hardware-Sniffer") or {}
 
-        for product in latest_release.get("assets"):
-            if product.get("product_name") == product_name.split(".")[0]:
-                _, product_id, product_download_url = product.values()
+        assets = latest_release.get("assets", [])
+        if assets:
+            for product in assets:
+                if product.get("product_name") == product_name.split(".")[0]:
+                    _, product_id, product_download_url = product.values()
+                    break
 
         product_history_index = self.get_product_index(download_history, product_name)
 
         print("")
-        if product_history_index == None:
+        if product_history_index is None:
             print("Please wait for download {}...".format(product_name))
         else:
             if product_id == download_history[product_history_index].get("id") and os.path.exists(hardware_sniffer_path):

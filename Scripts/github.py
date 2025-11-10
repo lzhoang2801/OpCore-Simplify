@@ -17,7 +17,7 @@ class Github:
                 try:
                     payload = json.loads(payload)
                     payload = payload["payload"]
-                except:
+                except Exception:
                     continue
 
                 return payload
@@ -25,7 +25,11 @@ class Github:
 
     def get_commits(self, owner, repo, branch="main", start_commit=None, after=-1):
         if after > -1 and not start_commit:
-            start_commit = self.get_commits(owner, repo, branch)["currentCommit"]["oid"]
+            commits = self.get_commits(owner, repo, branch)
+            if commits and "currentCommit" in commits:
+                start_commit = commits["currentCommit"]["oid"]
+            else:
+                raise ValueError("Failed to get current commit information.")
 
         if after < 0:
             url = "https://github.com/{}/{}/commits/{}".format(owner, repo, branch)
@@ -39,7 +43,7 @@ class Github:
 
         payload = self.extract_payload(response)
 
-        if "commitGroups" not in payload:
+        if not payload or "commitGroups" not in payload:
             raise ValueError("Cannot find commit information for repository {} on branch {}.".format(repo, branch))
 
         return payload
@@ -113,7 +117,7 @@ class Github:
     def _generate_asset_id(self, line):
         try:
             return "".join(char for char in line.split('datetime="')[-1].split('"')[0][::-1] if char.isdigit())[:9]
-        except:
+        except Exception:
             return "".join(random.choices("0123456789", k=9))
 
     def extract_asset_name(self, file_name):
