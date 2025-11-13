@@ -50,7 +50,7 @@ AtherosBluetoothIDs = [
     "13D3-3472",
     "13D3-3474",
     "13D3-3487",
-    "13D3-3490"
+    "13D3-3490",
 ]
 
 BroadcomBluetoothIDs = [
@@ -153,7 +153,7 @@ BroadcomBluetoothIDs = [
     "185F-2167",
     "19FF-0239",
     "413C-8143",
-    "413C-8197"
+    "413C-8197",
 ]
 
 IntelBluetoothIDs = [
@@ -171,42 +171,47 @@ IntelBluetoothIDs = [
     "8087-0A2A",
     "8087-0A2B",
     "8087-0AA7",
-    "8087-0AAA"
+    "8087-0AAA",
 ]
 
-BluetoothIDs = AtherosBluetoothIDs + BroadcomBluetoothIDs + IntelBluetoothIDs + [
-    "05AC-1000",
-    "05AC-8203",
-    "05AC-8204",
-    "05AC-8205",
-    "05AC-8206",
-    "05AC-8207",
-    "05AC-820F",
-    "05AC-8210",
-    "05AC-8213",
-    "05AC-8215",
-    "05AC-8216",
-    "05AC-8217",
-    "05AC-8218",
-    "05AC-821A",
-    "05AC-821B",
-    "05AC-821D",
-    "05AC-821F",
-    "05AC-8281",
-    "05AC-8286",
-    "05AC-8289",
-    "05AC-828A",
-    "05AC-828B",
-    "05AC-828C",
-    "05AC-828D",
-    "05AC-828F",
-    "05AC-8290",
-    "05AC-8291",
-    "05AC-8294",
-    "05AC-8296",
-    "05AC-F007",
-    "0A12-0001"
-]
+BluetoothIDs = (
+    AtherosBluetoothIDs
+    + BroadcomBluetoothIDs
+    + IntelBluetoothIDs
+    + [
+        "05AC-1000",
+        "05AC-8203",
+        "05AC-8204",
+        "05AC-8205",
+        "05AC-8206",
+        "05AC-8207",
+        "05AC-820F",
+        "05AC-8210",
+        "05AC-8213",
+        "05AC-8215",
+        "05AC-8216",
+        "05AC-8217",
+        "05AC-8218",
+        "05AC-821A",
+        "05AC-821B",
+        "05AC-821D",
+        "05AC-821F",
+        "05AC-8281",
+        "05AC-8286",
+        "05AC-8289",
+        "05AC-828A",
+        "05AC-828B",
+        "05AC-828C",
+        "05AC-828D",
+        "05AC-828F",
+        "05AC-8290",
+        "05AC-8291",
+        "05AC-8294",
+        "05AC-8296",
+        "05AC-F007",
+        "0A12-0001",
+    ]
+)
 
 InputIDs = [
     # AlpsHID.kext
@@ -311,7 +316,7 @@ InputIDs = [
     "SYNA7500",
     "SYNA7501",
     "SYNA7DAB",
-    "SYNA7DB5"
+    "SYNA7DB5",
 ]
 
 AtherosWiFiIDs = [
@@ -328,7 +333,7 @@ AtherosWiFiIDs = [
     "168C-0033",
     "168C-0034",
     "168C-0036",
-    "168C-0037"
+    "168C-0037",
 ]
 
 BroadcomWiFiIDs = [
@@ -353,7 +358,7 @@ BroadcomWiFiIDs = [
     "14E4-4353",
     "14E4-43A0",
     "14E4-43A3",
-    "14E4-43BA"
+    "14E4-43BA",
 ]
 
 IntelWiFiIDs = [
@@ -444,7 +449,7 @@ IntelWiFiIDs = [
     "8086-7F70",
     "8086-9DF0",
     "8086-A0F0",
-    "8086-A370"
+    "8086-A370",
 ]
 
 WirelessCardIDs = AtherosWiFiIDs + BroadcomWiFiIDs + IntelWiFiIDs
@@ -488,7 +493,7 @@ AppleIGBIDs = [
     "8086-157C",
     "8086-1F40",
     "8086-1F41",
-    "8086-1F45"
+    "8086-1F45",
 ]
 
 AquantiaAqtionIDs = [
@@ -511,7 +516,7 @@ AquantiaAqtionIDs = [
     "1D6A-14C0",
     "1D6A-34C0",
     "1D6A-93C0",
-    "1D6A-94C0"
+    "1D6A-94C0",
 ]
 
 AtherosE2200IDs = [
@@ -522,7 +527,7 @@ AtherosE2200IDs = [
     "1969-10A1",
     "1969-E091",
     "1969-E0A1",
-    "1969-E0B1"
+    "1969-E0B1",
 ]
 
 BroadcomBCM57XXIDs = [
@@ -561,7 +566,7 @@ BroadcomBCM57XXIDs = [
     "14E4-1684",
     "14E4-1686",
     "14E4-16B0",
-    "14E4-16B4"
+    "14E4-16B4",
 ]
 
 IntelI22XIDs = [
@@ -572,7 +577,7 @@ IntelI22XIDs = [
     "8086-125D",
     "8086-15F2",
     "8086-15F3",
-    "8086-15F8"
+    "8086-15F8",
 ]
 
 IntelMausiIDs = [
@@ -635,7 +640,7 @@ IntelMausiIDs = [
     "8086-550E",
     "8086-550F",
     "8086-5510",
-    "8086-5511"
+    "8086-5511",
 ]
 
 IntelX500IDs = [
@@ -685,7 +690,7 @@ IntelX500IDs = [
     "8086-15CE",
     "8086-15D1",
     "8086-15E4",
-    "8086-15E5"
+    "8086-15E5",
 ]
 
 RealtekRTL8100IDs = [
@@ -698,20 +703,31 @@ RealtekRTL8111IDs = [
     "10EC-8168",
     "1186-8168",
     "10EC-2502",
-    "10EC-2600"
+    "10EC-2600",
 ]
 
 RealtekRTL8125IDs = [
     # LucyRTL8125Ethernet.kext
     "10EC-3000",
     "10EC-8125",
-    "1186-8125"
+    "1186-8125",
 ]
 
-EthernetIDs = AppleIGBIDs + AquantiaAqtionIDs + AtherosE2200IDs + BroadcomBCM57XXIDs + IntelI22XIDs + IntelMausiIDs + IntelX500IDs + RealtekRTL8100IDs + RealtekRTL8111IDs + RealtekRTL8125IDs
+EthernetIDs = (
+    AppleIGBIDs
+    + AquantiaAqtionIDs
+    + AtherosE2200IDs
+    + BroadcomBCM57XXIDs
+    + IntelI22XIDs
+    + IntelMausiIDs
+    + IntelX500IDs
+    + RealtekRTL8100IDs
+    + RealtekRTL8111IDs
+    + RealtekRTL8125IDs
+)
 
 WirelessUSBIDs = [
-    # RtWlanU.kext, RtWlanU1827.kext and RT2870USBWirelessDriver.kext 
+    # RtWlanU.kext, RtWlanU1827.kext and RT2870USBWirelessDriver.kext
     "0409-0408",
     "0411-0242",
     "0411-025D",
@@ -1207,7 +1223,7 @@ WirelessUSBIDs = [
     "7392-B711",
     "7392-B720",
     "7392-C711",
-    "F201-5370"
+    "F201-5370",
 ]
 
 RealtekCardReaderIDs = [
@@ -1225,9 +1241,9 @@ RealtekCardReaderIDs = [
     "10EC-525A",
     "10EC-5286",
     "10EC-5287",
-    "10EC-5289"
+    "10EC-5289",
 ]
-    
+
 UnsupportedUSBControllerIDs = [
     "1022-1639",
     # XHCI-unsupported.kext
@@ -1244,9 +1260,9 @@ UnsupportedUSBControllerIDs = [
     "8086-A0ED",
     "8086-A2AF",
     "8086-A36D",
-    "8086-A3AF"
+    "8086-A3AF",
 ]
-    
+
 UnsupportedSATAControllerIDs = [
     "8086-A352",
     "8086-A182",
@@ -1273,49 +1289,46 @@ UnsupportedSATAControllerIDs = [
     "8086-9DD3",
     "8086-A103",
     "8086-A282",
-    "8086-A353"
+    "8086-A353",
 ]
 
-IntelVMDIDs = [
-    "8086-09AB",
-    "8086-467F"
-]
+IntelVMDIDs = ["8086-09AB", "8086-467F"]
 
 # Resource: https://pci-ids.ucw.cz/
 UnsupportedNVMeSSDIDs = [
-    ("144D-A808", ("A811144D")), # Samsung SM981/PM981/PM983"
-    ("1344-5410", ("01001344")), # Micron 2200S
-    ("1C5C-174A", ("174A1C5C")), # SK hynix BC711/PC711
-    ("1C5C-1639", ("16391C5C")), # SK hynix PC611
-    ("1C5C-1627", ("16271C5C")), # SK hynix PC601
-    ("8086-2522", ("00008086", "38028086", "38068086", "38108086", "38118086")), # Intel Optane Memory M10 16GB
-    ("8086-2525", ("380A8086")), # Intel Optane SSD P1600X
-    ("8086-2700", ("39008086", "39018086", "39028086")), # Intel Optane SSD 900P
-    ("8086-0975", ("85108086", "84108086")), # Intel Optane NVME SSD H10
-    ("8086-09AD", ("85108086", "84108086")) # Intel Optane NVME SSD H20
+    ("144D-A808", ("A811144D")),  # Samsung SM981/PM981/PM983"
+    ("1344-5410", ("01001344")),  # Micron 2200S
+    ("1C5C-174A", ("174A1C5C")),  # SK hynix BC711/PC711
+    ("1C5C-1639", ("16391C5C")),  # SK hynix PC611
+    ("1C5C-1627", ("16271C5C")),  # SK hynix PC601
+    ("8086-2522", ("00008086", "38028086", "38068086", "38108086", "38118086")),  # Intel Optane Memory M10 16GB
+    ("8086-2525", ("380A8086")),  # Intel Optane SSD P1600X
+    ("8086-2700", ("39008086", "39018086", "39028086")),  # Intel Optane SSD 900P
+    ("8086-0975", ("85108086", "84108086")),  # Intel Optane NVME SSD H10
+    ("8086-09AD", ("85108086", "84108086")),  # Intel Optane NVME SSD H20
 ]
 
 # Resource: https://pci-ids.ucw.cz/
 SpoofGPUIDs = {
-    "1002-6611": "1002-6610", # AMD Radeon HD 8570 / R5 430 / R7 240/340 / Radeon 520
-    "1002-6613": "1002-6610", # AMD Radeon R7 240/340 / Radeon 520
-    "1002-6617": "1002-6610", # AMD Radeon R7 240
-    "1002-6649": "1002-665C", # AMD FirePro W5100
-    "1002-665C": "1002-6658", # AMD Radeon HD 7790/8770 / R7 360 / R9 260/360
-    "1002-679A": "1002-6798", # AMD Radeon HD 7950/8950 / R9 280
-    "1002-67B1": "1002-67B0", # AMD Radeon R9 290/390
-    "1002-6811": "1002-6810", # AMD Radeon R7 370 / R9 270/370
-    "1002-6819": "1002-6818", # AMD Radeon HD 7850 / R7 265 / R9 270 1024SP
-    "1002-682B": "1002-683D", # AMD Radeon HD 8830M / R7 250
-    "1002-683F": "1002-683D", # AMD Radeon HD 7750/8740 / R7 250E
-    "1002-6930": "1002-6938", # AMD Radeon R9 380
-    "1002-6939": "1002-6938", # AMD Radeon R9 285/380
-    "1002-699F": "1002-67FF", # AMD Radeon RX 550 (Lexa core)
-    "1002-6995": "1002-67FF", # AMD Radeon PRO WX 2100
-    "1002-73EF": "1002-73FF", # AMD Radeon RX 6800S / 6650 XT / 6650M / 6650M XT
-    "1002-73E1": "1002-73E3", # AMD Radeon Pro W6600M
-    "1002-73AF": "1002-73BF", # AMD Radeon RX 6900 XT (XTX/XTXH variant)
-    "1002-73A5": "1002-73BF", # AMD Radeon RX 6950 XT
+    "1002-6611": "1002-6610",  # AMD Radeon HD 8570 / R5 430 / R7 240/340 / Radeon 520
+    "1002-6613": "1002-6610",  # AMD Radeon R7 240/340 / Radeon 520
+    "1002-6617": "1002-6610",  # AMD Radeon R7 240
+    "1002-6649": "1002-665C",  # AMD FirePro W5100
+    "1002-665C": "1002-6658",  # AMD Radeon HD 7790/8770 / R7 360 / R9 260/360
+    "1002-679A": "1002-6798",  # AMD Radeon HD 7950/8950 / R9 280
+    "1002-67B1": "1002-67B0",  # AMD Radeon R9 290/390
+    "1002-6811": "1002-6810",  # AMD Radeon R7 370 / R9 270/370
+    "1002-6819": "1002-6818",  # AMD Radeon HD 7850 / R7 265 / R9 270 1024SP
+    "1002-682B": "1002-683D",  # AMD Radeon HD 8830M / R7 250
+    "1002-683F": "1002-683D",  # AMD Radeon HD 7750/8740 / R7 250E
+    "1002-6930": "1002-6938",  # AMD Radeon R9 380
+    "1002-6939": "1002-6938",  # AMD Radeon R9 285/380
+    "1002-699F": "1002-67FF",  # AMD Radeon RX 550 (Lexa core)
+    "1002-6995": "1002-67FF",  # AMD Radeon PRO WX 2100
+    "1002-73EF": "1002-73FF",  # AMD Radeon RX 6800S / 6650 XT / 6650M / 6650M XT
+    "1002-73E1": "1002-73E3",  # AMD Radeon Pro W6600M
+    "1002-73AF": "1002-73BF",  # AMD Radeon RX 6900 XT (XTX/XTXH variant)
+    "1002-73A5": "1002-73BF",  # AMD Radeon RX 6950 XT
 }
 
 IntelSSTIDs = [
@@ -1341,7 +1354,7 @@ IntelSSTIDs = [
     "8086-A2F0",
     "8086-A348",
     "8086-A3F0",
-    "8086-F0C8"
+    "8086-F0C8",
 ]
 
 ChromebookIDs = {
