@@ -191,8 +191,7 @@ class CompatibilityChecker:
         if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
             print("")
             print("You cannot install macOS without a supported GPU.")
-            url = "https://dortania.github.io/GPU-Buyers-Guide/"
-            webbrowser.open(url)
+            webbrowser.open("https://dortania.github.io/GPU-Buyers-Guide/", new=2)
             print (" ")
             print("Please read Buyer's guide by Dortania before submitting any issues in GitHub.")
             print("If the GPU is not listed there or is listed as unsupported, please don't submit any issues.")
