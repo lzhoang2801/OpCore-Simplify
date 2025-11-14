@@ -1,3 +1,5 @@
+from Scripts import integrity_checker
+from Scripts import utils
 import ssl
 import os
 import json
@@ -15,6 +17,8 @@ else:
     import urllib2
     from urllib2 import urlopen, Request, URLError
 
+MAX_ATTEMPTS = 3
+
 class ResourceFetcher:
     def __init__(self, headers=None):
         self.request_headers = headers or {
@@ -22,6 +26,8 @@ class ResourceFetcher:
         }
         self.buffer_size = 16 * 1024
         self.ssl_context = self.create_ssl_context()
+        self.integrity_checker = integrity_checker.IntegrityChecker()
+        self.utils = utils.Utils()
 
     def create_ssl_context(self):
         try:
@@ -149,22 +155,40 @@ class ResourceFetcher:
             
         print()
 
-    def download_and_save_file(self, resource_url, destination_path):
+    def download_and_save_file(self, resource_url, destination_path, sha256_hash=None):
         attempt = 0
 
-        while attempt < 3:
+        while attempt < MAX_ATTEMPTS:
+            attempt += 1
             response = self._make_request(resource_url)
 
             if not response:
-                attempt += 1
-                print("Failed to download file from {}. Retrying...".format(resource_url))
+                print("Failed to fetch content from {}. Retrying...".format(resource_url))
                 continue
 
-            self._download_with_progress(response, open(destination_path, "wb"))
+            with open(destination_path, "wb") as local_file:
+                self._download_with_progress(response, local_file)
 
             if os.path.exists(destination_path) and os.path.getsize(destination_path) > 0:
-                return True
+                if sha256_hash:
+                    print("Verifying SHA256 checksum...")
+                    downloaded_hash = self.integrity_checker.get_sha256(destination_path)
+                    if downloaded_hash.lower() == sha256_hash.lower():
+                        print("Checksum verified successfully.")
+                        return True
+                    else:
+                        print("Checksum mismatch! Removing file and retrying download...")
+                        os.remove(destination_path)
+                        continue
+                else:
+                    print("No SHA256 hash provided. Downloading file without verification.")
+                    return True
             
-            attempt += 1
+            if os.path.exists(destination_path):
+                os.remove(destination_path)
 
+            if attempt < MAX_ATTEMPTS:
+                print("Download failed for {}. Retrying...".format(resource_url))
+
+        print("Failed to download {} after {} attempts.".format(resource_url, MAX_ATTEMPTS))
         return False

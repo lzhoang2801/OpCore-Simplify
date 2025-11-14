@@ -29,7 +29,7 @@ class SMBIOS:
             if download_history:
                 product_index = self.g.get_product_index(download_history, "OpenCorePkg")
                 
-                if product_index:
+                if product_index is not None:
                     download_history.pop(product_index)
                     self.utils.write_file(self.g.download_history_file, download_history)
 
