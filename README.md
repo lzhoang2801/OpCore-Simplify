@@ -6,4 +6,4 @@
 <p> It is not intended for general use or long-term maintenance. Users are strongly encouraged to use the official repository here https://github.com/lzhoang2801/OpCore-Simplify for stable and trusted releases. </p>
 <p> This fork includes a proof-of-concept patch to mitigate the exploit. If accepted, it should be merged upstream. </p>
 <p>This exploit will be mitigated by adding SHA2 checks. </p>
-<p> This exploit is already in the wild. At least 1-3 gits have exploited this vulnerability.</p>
+<p> This exploit is already in the wild. At least 1-3 gits have exploited this vulnerability to inject malicious kexts into the EFI for persistance.</p>
