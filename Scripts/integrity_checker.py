@@ -64,7 +64,7 @@ class IntegrityChecker:
         for root, _, files in os.walk(folder_path):
             for name in files:
                 file_path = os.path.join(root, name)
-                relative_path = os.path.relpath(file_path, folder_path)
+                relative_path = os.path.relpath(file_path, folder_path).replace('\\', '/')
 
                 if relative_path == os.path.basename(manifest_path):
                     continue

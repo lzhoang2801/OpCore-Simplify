@@ -33,6 +33,7 @@ class gatheringFiles:
         return None
         
     def update_download_database(self, kexts, download_history):
+        download_database = download_history.copy()
         dortania_builds_data = self.fetcher.fetch_and_parse_content(self.dortania_builds_url, "json")
         seen_repos = set()
 
@@ -44,12 +45,12 @@ class gatheringFiles:
                 if not product or not product.get("product_name"):
                     continue
 
-                product_index = self.get_product_index(download_history, product.get("product_name"))
+                product_index = self.get_product_index(download_database, product.get("product_name"))
 
                 if product_index is None:
-                    download_history.append(product)
+                    download_database.append(product)
                 else:
-                    download_history[product_index].update(product)
+                    download_database[product_index].update(product)
 
         for kext in kexts:
             if not kext.checked:
@@ -80,7 +81,7 @@ class gatheringFiles:
             "sha256": dortania_builds_data["OpenCorePkg"]["versions"][0]["hashes"]["release"]["sha256"]
         })
 
-        return sorted(download_history, key=lambda x:x["product_name"])
+        return sorted(download_database, key=lambda x:x["product_name"])
     
     def move_bootloader_kexts_to_product_directory(self, product_name):
         if not os.path.exists(self.temporary_dir):
@@ -215,7 +216,6 @@ class gatheringFiles:
             print("")
             print("Updating" if product_history_index is not None else "Please wait for download", end=" ")
             print("{}...".format(product_name))
-            print("")
             if product_download_url:
                 print("from {}".format(product_download_url))
                 print("")
