@@ -82,32 +82,37 @@ class Github:
         assets = []
 
         in_li_block = False
-        download_link = None
 
         for line in response.splitlines():
 
             if "<li" in line:
                 in_li_block = True
-            elif "</li" in line:
-                in_li_block = False
                 download_link = None
+                sha256 = None
+                asset_id = None
+            elif in_li_block and "</li" in line:
+                if download_link and asset_id:
+                    assets.append({
+                        "product_name": self.extract_asset_name(download_link.split("/")[-1]), 
+                        "id": int(asset_id), 
+                        "url": "https://github.com" + download_link,
+                        "sha256": sha256
+                    })
+                in_li_block = False
 
-            if in_li_block:
-                if "<a" in line and "href=\"" in line and "/releases/download" in line:
+            if in_li_block:  
+                if download_link is None and "<a" in line and "href=\"" in line and "/releases/download" in line:
                     download_link = line.split("href=\"", 1)[1].split("\"", 1)[0]
 
                     if not ("tlwm" in download_link or ("tlwm" not in download_link and "DEBUG" not in download_link.upper())):
                         in_li_block = False
-                        download_link = None
                         continue
 
-                if download_link and "<relative-time" in line:
+                if sha256 is None and "sha256:" in line:
+                    sha256 = line.split("sha256:", 1)[1].split("<", 1)[0]
+
+                if asset_id is None and "<relative-time" in line:
                     asset_id = self._generate_asset_id(line)
-                    assets.append({
-                        "product_name": self.extract_asset_name(download_link.split("/")[-1]), 
-                        "id": int(asset_id), 
-                        "url": "https://github.com" + download_link
-                    })
 
         return assets
 

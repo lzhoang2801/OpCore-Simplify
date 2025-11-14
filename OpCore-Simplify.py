@@ -276,6 +276,9 @@ class OCPE:
             if not tool_path in tool_loaded:
                 files_to_remove.append(os.path.join(tools_directory, tool_path))
 
+        if "manifest.json" in os.listdir(self.result_dir):
+            files_to_remove.append(os.path.join(self.result_dir, "manifest.json"))
+
         for file_path in files_to_remove:
             try:
                 if os.path.isdir(file_path):
@@ -421,7 +424,12 @@ class OCPE:
                     self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
                     continue
 
-                if not self.o.gather_bootloader_kexts(self.k.kexts, macos_version):
+                try:
+                    self.o.gather_bootloader_kexts(self.k.kexts, macos_version)
+                except Exception as e:
+                    print("\033[91mError: {}\033[0m".format(e))
+                    print("")
+                    self.u.request_input("Press Enter to continue...")
                     continue
                 
                 self.build_opencore_efi(customized_hardware, disabled_devices, smbios_model, macos_version, needs_oclp)
