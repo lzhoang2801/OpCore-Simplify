@@ -1,6 +1,9 @@
 from Scripts.datasets import os_data
 import random
-
+import sys
+import os
+import json
+from dataclasses import dataclass
 class KextInfo:
     def __init__(self, name, description, category, required = False, min_darwin_version = (), max_darwin_version = (), requires_kexts = [], conflict_group_id = None, github_repo = {}, download_info = {}):
         self.name = name
@@ -177,41 +180,57 @@ kexts = [
         }
     ),
     KextInfo(
-        name = "corecaptureElCap", 
-        description = "Enable legacy Qualcomm Atheros Wireless cards",
-        category = "Wi-Fi",
-        min_darwin_version = "18.0.0",
-        max_darwin_version = "24.99.99",
-        requires_kexts = ["IO80211ElCap"],
-        download_info = {
-            "id": 348147192, 
+        name="corecaptureElCap",
+        description="Enable legacy Qualcomm Atheros Wireless cards",
+        category="Wi-Fi",
+        min_darwin_version="18.0.0",
+        max_darwin_version="24.99.99",
+        requires_kexts=["IO80211ElCap"],
+        download_info={
+            "id": 348147192,
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Wifi/corecaptureElCap-v1.0.2.zip"
+        },
+        github_repo={
+            "owner": "dortania",
+            "repo": "OpenCore-Legacy-Patcher",
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher"
         }
     ),
     KextInfo(
-        name = "IO80211ElCap", 
-        description = "Enable legacy Qualcomm Atheros Wireless cards",
-        category = "Wi-Fi",
-        min_darwin_version = "18.0.0",
-        max_darwin_version = "24.99.99",
-        requires_kexts = ["corecaptureElCap"],
-        download_info = {
+        name="IO80211ElCap", 
+        description="Enable legacy Qualcomm Atheros Wireless cards",
+        category="Wi-Fi",
+        min_darwin_version="18.0.0",
+        max_darwin_version="24.99.99",
+        requires_kexts=["corecaptureElCap"],
+        download_info={
             "id": 128321732, 
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Wifi/IO80211ElCap-v2.0.1.zip"
+        },
+        github_repo={
+            "owner": "dortania",
+            "repo": "OpenCore-Legacy-Patcher",
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher"
         }
     ),
     KextInfo(
-        name = "IO80211FamilyLegacy", 
-        description = "Enable legacy Apple Wireless adapters",
-        category = "Wi-Fi",
-        min_darwin_version = "23.0.0",
-        max_darwin_version = "24.99.99",
-        requires_kexts = ["AMFIPass", "IOSkywalkFamily"],
-        download_info = {
+        name="IO80211FamilyLegacy", 
+        description="Enable legacy Apple Wireless adapters",
+        category="Wi-Fi",
+        min_darwin_version="23.0.0",
+        max_darwin_version="24.99.99",
+        requires_kexts=["AMFIPass", "IOSkywalkFamily"],
+        download_info={
             "id": 817294638, 
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IO80211FamilyLegacy-v1.0.0.zip"
+        },
+        github_repo={
+            "owner": "dortania",
+            "repo": "OpenCore-Legacy-Patcher",
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher"
         }
     ),
+
     KextInfo(
         name = "IOSkywalkFamily", 
         description = "Enable legacy Apple Wireless adapters",
@@ -222,6 +241,11 @@ kexts = [
         download_info = {
             "id": 926584761, 
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IOSkywalkFamily-v1.2.0.zip"
+        },
+        github_repo={
+            "owner": "dortania",
+            "repo": "OpenCore-Legacy-Patcher",
+            "url": "https://github.com/dortania/OpenCore-Legacy-Patcher"
         }
     ),
     KextInfo(
