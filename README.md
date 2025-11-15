@@ -1,6 +1,6 @@
 <br/>
 <div align="center">
-  <h3 align="center">OpCore Simplify Vulnerability fix that allows attackers to inject malicious kexts</h3>
+  <h3 align="center">OpCore Simplify Vulnerabilities fixes</h3>
 
   <p> ⚠️ Disclaimer: This fork of OpCore-Simplify exists solely to demonstrate and propose a fix for a different vulnerabilities found in this project. </p>
 <p> It is not intended for general use or long-term maintenance. Users are strongly encouraged to use the official repository here https://github.com/lzhoang2801/OpCore-Simplify for stable and trusted releases. </p>
