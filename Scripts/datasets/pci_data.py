@@ -118,6 +118,7 @@ BroadcomBluetoothIDs = [
     "0A5C-21FB",
     "0A5C-21FD",
     "0A5C-21FE",
+    "0A5C-22BE",
     "0A5C-640B",
     "0A5C-6410",
     "0A5C-6412",
@@ -711,7 +712,7 @@ RealtekRTL8125IDs = [
 EthernetIDs = AppleIGBIDs + AquantiaAqtionIDs + AtherosE2200IDs + BroadcomBCM57XXIDs + IntelI22XIDs + IntelMausiIDs + IntelX500IDs + RealtekRTL8100IDs + RealtekRTL8111IDs + RealtekRTL8125IDs
 
 WirelessUSBIDs = [
-    # RtWlanU.kext, RtWlanU1827.kext and RT2870USBWirelessDriver.kext 
+    # RtWlanU.kext, RtWlanU1827.kext and RT2870USBWirelessDriver.kext
     "0409-0408",
     "0411-0242",
     "0411-025D",
@@ -1227,7 +1228,7 @@ RealtekCardReaderIDs = [
     "10EC-5287",
     "10EC-5289"
 ]
-    
+
 UnsupportedUSBControllerIDs = [
     "1022-1639",
     # XHCI-unsupported.kext
@@ -1246,7 +1247,7 @@ UnsupportedUSBControllerIDs = [
     "8086-A36D",
     "8086-A3AF"
 ]
-    
+
 UnsupportedSATAControllerIDs = [
     "8086-A352",
     "8086-A182",
