@@ -53,7 +53,7 @@ class OCPE:
             if user_input.lower() == "e":
                 hardware_sniffer = self.o.gather_hardware_sniffer()
 
-                report_dir = os.path.join(os.getcwd(), "SysReport")
+                report_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport")
 
                 self.u.head("Exporting Hardware Report")
                 print("")
