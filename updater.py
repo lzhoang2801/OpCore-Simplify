@@ -14,6 +14,7 @@ import psutil
 import wmi
 
 system_requirements = {
+    "SSE4_4": None,
     "TPM": None,
     "SecureBoot": None,
     "UEFI": None
