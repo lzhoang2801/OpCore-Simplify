@@ -16,6 +16,68 @@ import re
 import shutil
 import traceback
 import time
+import json
+from jsonschema import validate, ValidationError
+hardware_schema = {
+    "type": "object",
+    "properties": {
+        "CPU": {
+            "type": "object",
+            "properties": {
+                "Vendor": {"type": "string"},
+                "Model": {"type": "string"},
+                "Cores": {"type": "integer"},
+                "Threads": {"type": "integer"},
+                "FrequencyGHz": {"type": "number"}
+            },
+            "required": ["Vendor", "Model", "Cores"]
+        },
+        "GPU": {
+            "type": "object",
+            "properties": {
+                "Vendor": {"type": "string"},
+                "DeviceID": {"type": "string"}
+            },
+            "required": ["Vendor", "DeviceID"]
+        },
+        "RAM": {
+            "type": "object",
+            "properties": {
+                "SizeGB": {"type": "integer"},
+                "Type": {"type": "string"},
+                "SpeedMHz": {"type": "integer"}
+            },
+            "required": ["SizeGB", "Type"]
+        },
+        "Storage": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Type": {"type": "string"},
+                    "CapacityGB": {"type": "integer"},
+                    "Vendor": {"type": "string"}
+                },
+                "required": ["Type", "CapacityGB"]
+            }
+        },
+        "BIOS": {
+            "type": "object",
+            "properties": {
+                "Version": {"type": "string"},
+                "Date": {"type": "string"}
+            },
+            "required": ["Version"]
+        },
+        "Motherboard": {"type": "object"},
+        "ACPI": {"type": "object"},
+        "Network": {"type": "object"},
+        "Bluetooth": {"type": "object"},
+        "Audio": {"type": "object"}
+    },
+    "required": ["CPU", "GPU", "RAM", "Storage", "BIOS", "Motherboard"]
+}
+
 
 class OCPE:
     def __init__(self):
@@ -90,9 +152,42 @@ class OCPE:
                     return report_path, report_data
                 
             path = self.u.normalize_path(user_input)
-            data = self.u.read_file(path)
-            
+            path = os.path.normpath(path)
+            if not path.endswith("Report.json"):
+                raise ValueError("Only Report.json files are allowed")
+            max_size_bytes = 100 * 1024 * 1024  # 100 MB limit
+            if os.path.getsize(path) > max_size_bytes:
+                print("")
+                print("Hardware report exceeds 100 MB limit.")
+                print("")
+                self.u.request_input()
+                continue
+            report_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport")
+            if not os.path.commonpath([path, report_dir]) == report_dir:
+                print("")
+                print("Invalid location. Hardware report must be inside SysReport directory.")
+                print("")
+                self.u.request_input()
+                continue
+            try:
+                data = self.u.read_file(path)
+            except Exception as e:  
+                print(f"Error reading hardware report: {e}. This malformed report could contain malicious software.")
+            try:
+                validate(instance=data, schema=hardware_schema)
+            except ValidationError as e:
+                print("")
+                print(f"Invalid hardware report: {e.message}")
+                print("")
+                self.u.request_input()
+                continue
             if not path or os.path.splitext(path)[1].lower() != ".json" or not isinstance(data, dict):
+                print("")
+                print("Invalid file. Please ensure it is a valid 'Report.json' file.")
+                print("")
+                self.u.request_input()
+                continue
+            elif not path or os.path.splitext(path)[1].lower() != ".json" or not isinstance(data, dict):
                 print("")
                 print("Invalid file. Please ensure it is a valid \"Report.json\" file.")
                 print("")
@@ -108,15 +203,23 @@ class OCPE:
             print("1. OpenCore Legacy Patcher is the only solution to enable dropped GPU and Broadcom WiFi")
             print("   support in newer macOS versions, as well as to bring back AppleHDA for macOS Tahoe 26.")
             print("")
-            print("2. OpenCore Legacy Patcher disables macOS security features including SIP and AMFI, which may")
+            print("2. OpenCore Legacy Patcher may disable macOS security features including SIP and AMFI if needed, which may")
             print("   lead to issues such as requiring full installers for updates, application crashes, and")
             print("   system instability.")
             print("")
             print("3. OpenCore Legacy Patcher is not officially supported for Hackintosh community.")
             print("")
+            print("SIP, the shortened version of System Integrity Protection, is a security feature introduced")
+            print("in OS X 10.11 El Capitan that allows macOS to protect system files from being modified.")
+            print(" ")
+            print("Like this, Apple makes it difficult attackers to mess with critical system files and inject malware there.")
             print("\033[91mImportant:\033[0m")
             print("Please consider these risks carefully before proceeding.")
             print("")
+            print("If your GPU is supported only up until let's say OS X 10.11 El Capitan.")
+            print("Then, it's a less severe vulnerability to run macOS 15 Sequoia and disable SIP than")
+            print("running outdated version of macOS like OS X 10.11 El Capitan or macOS 10.13 High Sierra by far.")
+            print(" ")
             print("\033[1;93mNote:\033[0m")
             print("If you experience black screen after login with OpenCore Legacy Patcher v2.2.0 or newer")
             print("after applying root patches, please revert to version v2.1.2.")
@@ -299,11 +402,17 @@ class OCPE:
         for file_path in files_to_remove:
             try:
                 if os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
+                    if not os.path.commonpath([file_path, self.result_dir]) == self.result_dir:
+                        raise ValueError("Unsafe deletion attempt outside result directory has been prevented.")
+                        sys.exit(3)
+                    if os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
                 else:
                     os.remove(file_path)
+                    sys.exit(3)
             except Exception as e:
                 print("Failed to remove file: {}".format(e))
+                sys.exit(3)
         
         self.u.progress_bar(title, steps, len(steps), done=True)
         
@@ -327,7 +436,40 @@ class OCPE:
             if not resizable_bar_enabled:
                 requirements.append("Enable Above 4G Decoding")
                 requirements.append("Disable Resizable BAR/Smart Access Memory")
-                
+        if firmware_type == "Legacy":
+            cpu_model = hardware_report.get("CPU", {}).get("Model", "").lower()
+            first_gen_keywords = [
+                "i3-3", "i3-5", "i5-7", "i7-9",   # Bloomfield/Lynnfield ranges
+                "i7-8", "i7-7",                   # Lynnfield/Clarksfield
+                "i3-5", "i5-6",                   # Clarkdale
+                "i3-3", "i5-4", "i7-6",           # Arrandale mobile
+                "xeon 55", "xeon 56", "xeon 75"   # Nehalem/Westmere Xeons
+            ]
+            if any(keyword in cpu_model for keyword in first_gen_keywords):
+                print("")
+                print("⚠️ Unsupported Legacy BIOS + First Gen Intel CPU detected.")
+                print(" ")
+                print("OpenCore is unreliable on Nehalem/Westmere systems or earlier unless a third-party BIOS is flashed.")
+                print("Recommendation: Use Clover bootloader instead.")
+                print ("")
+                print("To make it a little bit easier, you can use Unibeast for macOS Catalina and older.")
+                print(" Note that for Unibeast you need to create an account for tonymacx if you don't have such yet.")
+                print("Configuring with Clover can be extremely difficult if you never Hackintoshed ever.")
+                print(" ")
+                print("This is an OpenCore issue that it has nothing to do with OpCore-Simplify.")
+                print("Please don't report this issue in this repo.")
+                print("If you want to report this issue, you need to report it in this repo: https://github.com/acidanthera/OpenCorePkg")
+                choice = input("Do you want to experiment with OpenCore anyway? If you use non-OEM BIOS like TinyCore, answer with y. Otherwise, it's recommended to answer with n and continue with Clover.(y/n): ")
+                if choice.lower() != "n":
+                    print("Thank you for using OpCore-Simplify. Now, you need to reconfigure with Clover instead.")
+                    print(" ")
+                    print("Reminder: This is an OpenCore issue that it has nothing to do with OpCore-Simplify. Please don't report in this repo that issue.")
+                    print("Instead, report it in the following repo if you want: https://github.com/acidanthera/OpenCorePkg")
+                    input("\nPress E to exit...")
+                    if choice.lower() != "E":
+                        sys.exit(1)
+                else:
+                    print("Proceeding with OpenCore experiment... ⚠️ Expect instability or impossibility to boot if using OEM BIOS.")
         return requirements
 
     def before_using_efi(self, org_hardware_report, hardware_report):
