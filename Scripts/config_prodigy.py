@@ -738,5 +738,7 @@ class ConfigProdigy:
         
         config["NVRAM"]["Delete"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"] = list(config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"].keys())
         config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"] = list(config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].keys())
+        if "run-efi-updater" in config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]:
+            config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].remove("run-efi-updater")
 
         return config
