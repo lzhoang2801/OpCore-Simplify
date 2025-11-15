@@ -53,19 +53,36 @@ class OCPE:
             if user_input.lower() == "e":
                 hardware_sniffer = self.o.gather_hardware_sniffer()
 
-                output = self.r.run({
-                    "args":[hardware_sniffer, "-e"]
-                })
+                report_dir = os.path.join(os.getcwd(), "SysReport")
+
+                self.u.head("Exporting Hardware Report")
+                print("")
+                print("Exporting hardware report to {}...".format(report_dir))
                 
+                output = self.r.run({
+                    "args":[hardware_sniffer, "-e", "-o", report_dir]
+                })
+
                 if output[-1] != 0:
+                    error_code = output[-1]
+                    if error_code == 3:
+                        error_message = "Error collecting hardware."
+                    elif error_code == 4:
+                        error_message = "Error generating hardware report."
+                    elif error_code == 5:
+                        error_message = "Error dumping ACPI tables."
+                    else:
+                        error_message = "Unknown error."
+
                     print("")
-                    print("Could not export the hardware report. Please export it manually using Hardware Sniffer.")
+                    print("Could not export the hardware report. {}".format(error_message))
+                    print("Please try again or using Hardware Sniffer manually.")
                     print("")
                     self.u.request_input()
-                    return
+                    continue
                 else:
-                    report_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "Report.json")
-                    acpitables_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport", "ACPI")
+                    report_path = os.path.join(report_dir, "Report.json")
+                    acpitables_dir = os.path.join(report_dir, "ACPI")
 
                     report_data = self.u.read_file(report_path)
                     self.ac.read_acpi_tables(acpitables_dir)
