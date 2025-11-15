@@ -5,8 +5,144 @@ from Scripts import utils
 import os
 import tempfile
 import shutil
+import platform
+import struct
+import subprocess
+import sys
+import webbrowser
+import psutil
+import wmi
 
+system_requirements = {
+    "TPM": None,
+    "SecureBoot": None,
+    "UEFI": None
+}
 class Updater:
+   def tpm_check():
+       try:
+           c = wmi.WMI(namespace="root\\CIMV2\\Security\\MicrosoftTpm")
+           for tpm in c.Win32_Tpm():
+               print(f"TPM Version: {tpm.SpecVersion}")
+               if "2.0" in tpm.SpecVersion:
+                   system_requirements["TPM"] = True
+                   print("✅ TPM 2.0 detected.")
+                else:
+                   system_requirements["TPM"] = False
+                   print("❌ TPM 2.0 is missing. We'll help you to bypass the minimum requirements.")
+    def secure_boot_check():
+      try:
+          c = wmi.WMI(namespace="root\\Microsoft\\Windows\\HardwareManagement")
+          for sb in c.MSFT_SecureBoot():
+              enabled = bool(sb.SecureBootEnabled)
+              print(f"Secure Boot Enabled: {enabled}")
+              system_requirements["SecureBoot"] = True
+        except Exception as e:
+          print(f"⚠️ Secure Boot check failed: {e}. We'll help you to bypass the minimum requirements.")
+          return False
+    def ssse42_check():
+        import cpuinfo
+        subprocess.run(["cmd", "/c", "pip install py-cpuinfo"], check=True)
+        info = cpuinfo.get_cpu_info()
+        flags = info.get("flags", [])
+        if "sse4_2" in flags:
+            print("✅ SSE4.2 supported.")
+            return True
+        else:
+            print("❌ SSE4.2 not supported. For these CPUs, Clover is a must, OpenCore doesn't support those well.")
+            print(" ")
+            input("Press E to exit OpCore-Simplify and continue with Clover.") 
+            if user_input == "e":
+                sys.exit(3)
+    def uefi_check():
+        try:
+            c = wmi.WMI()
+            for cs in c.Win32_ComputerSystem():
+                print(f"Bootup State: {cs.BootupState}")
+            
+    def check_windows11_requirements():
+        print("\n--- Windows 11 Requirements Diagnostics ---")
+        print("Checking Windows 11 requirements...\n")
+        ssse42_check()
+        tpm_check()
+        secure_boot_check()
+
+
+        arch = platform.architecture()[0]
+        print(f"Architecture: {arch}")
+
+     
+    def diagnose_environment_to_updateandfix():
+        system = platform.system()
+        release = platform.release()
+        version = platform.version()
+        arch = struct.calcsize("P") * 8
+
+        print("\n--- OpCore-Simplify Error Diagnostics ---")
+        print(f"OS: {system} {release} ({version}), Architecture: {arch}-bit")
+
+        if arch != 64:
+            print("⚠️ 32-bit environment detected. OpenCore-Simplify requires 64-bit.")
+            print("To upgrade from 32 bit to 64 bit operating system, you need to reinstall the operating system using your flash drive.")
+            print("If your operating system doesn't have 64 bit CPU, it is unsupported by OpCore-Simplify.")
+            print("")
+
+            input("Press E to exit OpCore-Simplify")
+            if user_input == "e":
+                sys.exit(3)
+        if system == "Windows":
+            try:
+                build_number = int(version.split('.')[-1])
+                print(f"Windows build number: {build_number}")
+                if release in ["8", "8.1"]:
+                    print("Windows 8 or 8.1 detected.")
+                    print("This script doesn't support Windows 8.1 or older since it requires Python 3.14 or newer which requires Windows 10 at absolute minimum.")
+                    print("It requires some other libraries that either require the latest version of Windows 10 or Windows 11.")
+                    print("")
+                    print("You need to upgrade to Windows 11 in order to run this script. No automated troubleshooting possible for such an old version of Windows.")
+                    url = "https://www.microsoft.com/en-US/software-download/windows11"
+                    webbrowser.open(url)
+                    input("Press E to exit OpCore-Simplify")
+                    if user_input == "e":
+                        sys.exit(3)
+                elif int(release)<8:
+                    print("Windows 7, Vista, XP or older versions of Windows are detected.")
+                    print("This script doesn't support Windows 8.1 or older since it requires Python 3.14 or newer which requires Windows 10 at absolute minimum.")
+                    print("It requires some other libraries that either require the latest version of Windows 10 or Windows 11.")
+                    print("")
+                    print("You need to upgrade to Windows 11 in order to run this script. No automated troubleshooting possible for such an old version of Windows.")
+                    url = "https://www.microsoft.com/en-US/software-download/windows11"
+                    webbrowser.open(url)
+                    input("Press E to exit OpCore-Simplify") 
+                    if user_input == "e":
+                        sys.exit(3)
+                elif release in ["10"]:
+                    if build <= 19045.5073:
+                        print("⚠️ You're version of Windows 10 is extremely out of date.")
+                        print("We'll update Windows - right now you're exposed to vulnerabilities that you haven't patched yet that were fixed long ago.")
+
+                        try:
+                            print("Checking for updates...")
+                            subprocess.run(["cmd", "/c", "usoclient StartInteractiveScan"], check=True)
+
+                            print("Downloading all available updates...")
+                            subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
+
+                            print("Installing all available updates...")
+                            subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
+                            input("Confirm that your PC is ready to finish installing updates. Answer with y to restart and n to schedule restart in 12 hours.")
+                            if user_input == "y":
+                                print("OK, your PC will finish installing updates now.")
+                                subprocess.run(["cmd", "/c", "shutdown /r /t 0"], check=True) 
+                            else:
+                                print("OK, your PC will restart automatically in 12 hours.")
+                                subprocess.run(["cmd", "/c", "shutdown /r /t 43200"], check=True)
+                                sys.exit(0)
+                    if build >= 19045.5073:
+                        print("You're running a fairly up to date Windows 10. Since Windows 10 is EOS, we'll update your system to a supported version of Windows 11.")
+                        check_windows11_requirements()
+                                              
+    
     def __init__(self):
         self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher()
@@ -30,6 +166,7 @@ class Updater:
         except Exception as e:
             print("Error reading current SHA version: {}".format(str(e)))
             return "error_reading_sha_version"
+            diagnose_environment_to_updateandfix()
 
     def get_latest_sha_version(self):
         print("Fetching latest version from GitHub...")
@@ -38,6 +175,7 @@ class Updater:
             return commits["commitGroups"][0]["commits"][0]["oid"]
         except Exception as e:
             print("Error fetching latest SHA version: {}".format(str(e)))
+            diagnose_environment_to_updateandfix()
         
         return None
 
@@ -68,6 +206,7 @@ class Updater:
                 return False
         except Exception as e:
             print("  Error during download/extraction: {}".format(str(e)))
+            diagnose_environment_to_updateandfix()
             return False
 
     def update_files(self):
@@ -80,6 +219,7 @@ class Updater:
                 
             if not os.path.exists(target_dir):
                 print("  Could not locate extracted files directory")
+                diagnose_environment_to_updateandfix()
                 return False
                 
             file_paths = self.utils.find_matching_paths(target_dir, type_filter="file")
