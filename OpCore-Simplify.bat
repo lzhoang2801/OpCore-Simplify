@@ -1,4 +1,16 @@
 @echo off
+:: Trigger Windows Update scan, download, and install
+:: usoclient is the modern Windows Update client
+echo We'll check for updates for your system to be sure that OpCore-Simplify runs smoothly afterwards.
+usoclient StartInteractiveScan
+usoclient StartDownload
+usoclient StartInstall
+
+:: Trigger Windows Update on outdated versions of Windows with outdated commands
+echo We'll attempt also to use older methods to check for updates in case the system runs outdated Windows versions.
+echo On modern versions of Windows, this will do absolutely nothing.
+:: wuauclt /detectnow /updatenow
+
 REM Source: https://github.com/corpnewt/SSDTTime/blob/97a3963e40a153a8df5ae61a73e150cd7a119b3c/SSDTTime.bat
 REM Get our local path before delayed expansion - allows ! in path
 set "thisDir=%~dp0"
