@@ -1,0 +1,4 @@
+This script requires:
+- Windows 10 64 bit or newer
+- a supported Linux distro with all updates installed
+- macOS
