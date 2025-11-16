@@ -11,6 +11,12 @@ echo We'll attempt also to use older methods to check for updates in case the sy
 echo On modern versions of Windows, this will do absolutely nothing.
 :: wuauclt /detectnow /updatenow
 
+echo Waiting for updates to finish...
+:: Give Windows Update some time (adjust as needed)
+timeout /t 60
+
+echo ### Update check complete. Continuing with script... ###
+
 REM Source: https://github.com/corpnewt/SSDTTime/blob/97a3963e40a153a8df5ae61a73e150cd7a119b3c/SSDTTime.bat
 REM Get our local path before delayed expansion - allows ! in path
 set "thisDir=%~dp0"
