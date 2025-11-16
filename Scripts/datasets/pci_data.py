@@ -118,7 +118,6 @@ BroadcomBluetoothIDs = [
     "0A5C-21FB",
     "0A5C-21FD",
     "0A5C-21FE",
-    "0A5C-22BE",
     "0A5C-640B",
     "0A5C-6410",
     "0A5C-6412",
@@ -206,7 +205,8 @@ BluetoothIDs = AtherosBluetoothIDs + BroadcomBluetoothIDs + IntelBluetoothIDs + 
     "05AC-8294",
     "05AC-8296",
     "05AC-F007",
-    "0A12-0001"
+    "0A12-0001",
+    "0A5C-22BE"
 ]
 
 InputIDs = [
