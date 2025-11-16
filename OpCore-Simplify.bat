@@ -14,7 +14,7 @@ echo On modern versions of Windows, this will do absolutely nothing.
 
 echo Waiting for updates to finish...
 :: Give Windows Update some time (adjust as needed)
-timeout /t 3
+timeout /t 60
 
 echo ### Update check complete. Continuing with script... ###
 
