@@ -11,7 +11,6 @@ import subprocess
 import sys
 import webbrowser
 import psutil
-import wmi
 
 system_requirements = {
     "SSE4_4": None,
@@ -92,6 +91,7 @@ class Updater:
             if user_input == "e":
                 sys.exit(3)
         if system == "Windows":
+            import wmi
             try:
                 build_number = int(version.split('.')[-1])
                 print(f"Windows build number: {build_number}")
