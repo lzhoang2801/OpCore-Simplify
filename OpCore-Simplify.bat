@@ -1,7 +1,7 @@
 @echo off
 :: Trigger Windows Update scan, download, and install
 :: usoclient is the modern Windows Update client
-echo We'll check for updates for your system to be sure that OpCore-Simplify runs smoothly afterwards.
+echo We'll check for updates for your system to be sure that OpCore-Simplify runs reliably afterwards.
 usoclient StartInteractiveScan
 usoclient StartDownload
 usoclient StartInstall
