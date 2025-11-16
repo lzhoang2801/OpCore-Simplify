@@ -84,7 +84,7 @@ class SMBIOS:
         platform = "NUC" if "NUC" in hardware_report.get("Motherboard").get("Name") else hardware_report.get("Motherboard").get("Platform")
         codename = hardware_report.get("CPU").get("Codename")
 
-        smbios_model = "MacBookPro16,3" if "Laptop" in platform else "iMacPro1,1" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("25.0.0") else "MacPro7,1"
+        smbios_model = "MacBookPro16,2" if "Laptop" in platform else "iMacPro1,1" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("25.0.0") else "MacPro7,1"
 
         if codename in ("Lynnfield", "Clarkdale") and "Xeon" not in hardware_report.get("CPU").get("Processor Name") and self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("19.0.0"):
             smbios_model = "iMac11,1" if codename == "Lynnfield" else "iMac11,2"
