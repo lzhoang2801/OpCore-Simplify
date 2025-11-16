@@ -1,4 +1,5 @@
 @echo off
+
 :: Trigger Windows Update scan, download, and install
 :: usoclient is the modern Windows Update client
 echo We'll check for updates for your system to be sure that OpCore-Simplify runs reliably afterwards.
@@ -16,6 +17,29 @@ echo Waiting for updates to finish...
 timeout /t 60
 
 echo ### Update check complete. Continuing with script... ###
+
+echo Checking for Windows version before continuing any further...
+echo These checks are done to increase the reliability of OpCore-Simplify.
+for /f "tokens=4-5 delims=. " %%i in ('ver') do (
+    set "major=%%i"
+    set "minor=%%j"
+)
+
+echo Detected Windows version: %major%.%minor%
+
+:: Windows 10 is version 10.0, Windows 11 also reports 10.0 (with higher build numbers)
+:: Windows 8.1 is 6.3, Windows 8 is 6.2, Windows 7 is 6.1, Vista is 6.0
+
+if %major%==6 (
+    if %minor% LEQ 3 (
+        echo ❌ Unsupported OS detected: Windows 8.1 or older.
+        echo Please upgrade to Windows 10 or Windows 11 before running this script.
+        pause
+        exit /b 1
+    )
+)
+
+echo ✅ Supported OS detected. Continuing...
 
 REM Source: https://github.com/corpnewt/SSDTTime/blob/97a3963e40a153a8df5ae61a73e150cd7a119b3c/SSDTTime.bat
 REM Get our local path before delayed expansion - allows ! in path
