@@ -647,8 +647,9 @@ kexts = [
         min_darwin_version = "20.0.0",
         conflict_group_id = "SATA",
         download_info = {
-            "id": 934285327, 
-            "url": "https://raw.githubusercontent.com/lzhoang2801/lzhoang2801.github.io/refs/heads/main/public/extra-files/CtlnaAHCIPort-v3.4.1.zip"
+            "id": 927362352,
+            "url": "https://raw.githubusercontent.com/lzhoang2801/lzhoang2801.github.io/refs/heads/main/public/extra-files/CtlnaAHCIPort-v3.4.1.zip",
+            "sha256": "c8cf54f8b98995d076f365765025068e3d612f6337e279774203441c06f1a474"
         }
     ),
     KextInfo(
@@ -658,8 +659,9 @@ kexts = [
         max_darwin_version = "19.99.99",
         conflict_group_id = "SATA",
         download_info = {
-            "id": 214351953, 
-            "url": "https://raw.githubusercontent.com/lzhoang2801/lzhoang2801.github.io/refs/heads/main/public/extra-files/SATA-unsupported-v0.9.2.zip"
+            "id": 239471623,
+            "url": "https://raw.githubusercontent.com/lzhoang2801/lzhoang2801.github.io/refs/heads/main/public/extra-files/SATA-unsupported-v0.9.2.zip",
+            "sha256": "942395056afa1e1d0e06fb501ab7c0130bf687d00e08b02c271844769056a57c"
         }
     ),
     KextInfo(
