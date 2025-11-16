@@ -1,4 +1,5 @@
 This script requires:
 - Windows 10 64 bit or newer
 - a supported Linux distro with all updates installed
-- macOS
+- macOS 11 Big Sur or newer
+It requires so not because of OpCore-Simplify's requirements - they are Python requirements so unless OpCore-Simplify's modified, it demands always the latest version of Python.
