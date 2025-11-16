@@ -7,6 +7,9 @@ from Scripts import utils
 import os
 import uuid
 import random
+import platform
+
+os_name = platform.system()
 
 class SMBIOS:
     def __init__(self):
@@ -17,27 +20,36 @@ class SMBIOS:
 
     def check_macserial(self, retry_count=0):
         max_retries = 3
-        macserial_name = "macserial.exe" if os.name == "nt" else "macserial"
-        macserial_path = os.path.join(self.script_dir, macserial_name)
 
-        if not os.path.exists(macserial_path):
-            if retry_count >= max_retries:
-                raise FileNotFoundError("Failed to download macserial after {} attempts".format(max_retries))
-            
-            download_history = self.utils.read_file(self.g.download_history_file)
+        if os_name == "Windows":
+            macserial_binary = ["macserial.exe"]
+        elif os_name == "Linux":
+            macserial_binary = ["macserial.linux", "macserial"]
+        elif os_name == "Darwin":
+            macserial_binary = ["macserial"]
+        else:
+            raise Exception("Unknown OS for macserial")
 
-            if download_history:
-                product_index = self.g.get_product_index(download_history, "OpenCorePkg")
-                
-                if product_index is not None:
-                    download_history.pop(product_index)
-                    self.utils.write_file(self.g.download_history_file, download_history)
+        for binary in macserial_binary:
+            macserial_path = os.path.join(self.script_dir, binary)
+            if os.path.exists(macserial_path):
+                return macserial_path
 
-            self.g.gather_bootloader_kexts([], "")
-            return self.check_macserial(retry_count + 1)
+        if retry_count >= max_retries:
+            raise Exception("Failed to find macserial after {} attempts".format(max_retries))
         
-        return macserial_path
+        download_history = self.utils.read_file(self.g.download_history_file)
 
+        if download_history:
+            product_index = self.g.get_product_index(download_history, "OpenCorePkg")
+            
+            if product_index is not None:
+                download_history.pop(product_index)
+                self.utils.write_file(self.g.download_history_file, download_history)
+
+        self.g.gather_bootloader_kexts([], "")
+        return self.check_macserial(retry_count + 1)
+        
     def generate_random_mac(self):
         random_mac = ''.join([format(random.randint(0, 255), '02X') for _ in range(6)])
         return random_mac
