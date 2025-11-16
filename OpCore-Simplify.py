@@ -18,6 +18,7 @@ import traceback
 import time
 import json
 from jsonschema import validate, ValidationError
+from Scripts.utils_re import is_trusted_repo, RepoError
 hardware_schema = {
     "type": "object",
     "properties": {
@@ -489,12 +490,16 @@ class OCPE:
                 print("")
             
             print("* USB Mapping:")
+            print("If you are unfamiliar what USB port mapping is, it means this: since macOS has a 15 port limit, you need to tell it which ports need to be activated.")
+            print("Otherwise, macOS doesn't know which ports need to be activated and might not work properly unless you tell the bootloader to enable all of them.")
+            print("To this 15 ports limit, it counts here many internal devices like camera, WiFi/Bluetooth, trackpad, keyboard etc.")
+            print("This is done by running the tool USBToolBox which then generates a kernel extension (or in this case: a driver) to tell exactly this.")
+            print("But you don't want to enable fingerprinting devices since they are not supported by macOS.")
             print("    - Use USBToolBox tool to map USB ports.")
             print("    - Add created UTBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
             print("    - Remove UTBDefault.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
             print("    - Edit config.plist:")
-            print("        - Use ProperTree to open your config.plist.")
-            print("        - Run OC Snapshot by pressing Command/Ctrl + R.")
+            print("        - Use OpenCore Configurator to open your config.plist.")
             print("        - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.")
             print("        - Save the file when finished.")
             print("")
@@ -584,9 +589,16 @@ class OCPE:
                     needs_oclp = self.k.select_required_kexts(customized_hardware, macos_version, needs_oclp, self.ac.patches)
                     self.s.smbios_specific_options(customized_hardware, smbios_model, macos_version, self.ac.patches, self.k)
                     continue
-
+                trusted_kexts = [kext.download_info["https://github.com/acidanthera/Lilu, https://github.com/acidanthera/VirtualSMC, https://github.com/acidanthera/WhateverGreen, https://github.com/acidanthera/AppleALC, https://nightly.link/ChefKissInc/SMCRadeonSensors/workflows/main/master/Artifacts.zip, https://nightly.link/ChefKissInc/NootRX/workflows/main/master/Artifacts.zip, https://nightly.link/ChefKissInc/NootedRed/workflows/main/master/Artifacts.zip, https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Wifi/corecaptureElCap-v1.0.2.zip, https://github.com/dortania/OpenCore-Legacy-Patcher, https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Wifi/IO80211ElCap-v2.0.1.zip, https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IO80211FamilyLegacy-v1.0.0.zip, https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IOSkywalkFamily-v1.2.0.zip, https://github.com/lzhoang2801/lzhoang2801.github.io/raw/main/public/extra-files/AppleIGB-v5.11.4.zip, https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Ethernet/CatalinaBCM5701Ethernet-v1.0.2.zip, https://github.com/TomHeaven/HoRNDIS/releases/download/rel9.3_2/Release.zip, https://bitbucket.org/RehabMan/os-x-null-ethernet/downloads/RehabMan-NullEthernet-2016-1220.zip, https://github.com/lzhoang2801/lzhoang2801.github.io/raw/main/public/extra-files/RealtekRTL8100-v2.0.1.zip, https://github.com/Mieze/RTL8111_driver_for_OS_X/releases/download/2.4.2/RealtekRTL8111-V2.4.2.zip, https://github.com/daliansky/OS-X-USB-Inject-All/releases/download/v0.8.0/XHCI-unsupported.kext.zip, https://raw.githubusercontent.com/lzhoang2801/lzhoang2801.github.io/refs/heads/main/public/extra-files/CtlnaAHCIPort-v3.4.1.zip, https://raw.githubusercontent.com/lzhoang2801/lzhoang2801.github.io/refs/heads/main/public/extra-files/SATA-unsupported-v0.9.2.zip, https://github.com/lzhoang2801/lzhoang2801.github.io/raw/refs/heads/main/public/extra-files/VoodooTSCSync-v1.1.zip, https://nightly.link/ChefKissInc/ForgedInvariant/workflows/main/master/Artifacts.zip, https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Acidanthera/AMFIPass-v1.4.1-RELEASE.zip, https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Misc/ASPP-Override-v1.0.1.zip, https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Misc/AppleIntelCPUPowerManagement-v1.0.0.zip, https://github.com/dortania/OpenCore-Legacy-Patcher/raw/refs/heads/main/payloads/Kexts/Misc/AppleIntelCPUPowerManagementClient-v1.0.0.zip, https://github.com/acidanthera/bugtracker/files/3703498/AppleMCEReporterDisabler.kext.zip"]]
+                for kext in self.k.kexts:
+                    try:
+                        is_trusted_repo(kext["download_info"]["url"])
+                        print(f"{kext['name']} repo OK")
+                        trusted_kexts.append(kext)
+                    except RepoError as e:
+                        print(f"{kext['name']} blocked: {e}")
                 try:
-                    self.o.gather_bootloader_kexts(self.k.kexts, macos_version)
+                    self.o.gather_bootloader_kexts(trusted_kexts, macos_version)
                 except Exception as e:
                     print("\033[91mError: {}\033[0m".format(e))
                     print("")
