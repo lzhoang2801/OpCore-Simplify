@@ -47,11 +47,14 @@ class OCPE:
             print("Q. Quit")
             print("")
         
-            user_input = self.u.request_input("Drag and drop your hardware report here (.JSON) or type \"E\" to export: ")
+            user_input = self.u.request_input("Drag and drop your hardware report here (.JSON){}: ".format(" or type \"E\" to export" if os.name == "nt" else ""))
             if user_input.lower() == "q":
                 self.u.exit_program()
             if user_input.lower() == "e":
                 hardware_sniffer = self.o.gather_hardware_sniffer()
+
+                if not hardware_sniffer:
+                    continue
 
                 report_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport")
 
