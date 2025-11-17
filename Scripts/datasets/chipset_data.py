@@ -178,8 +178,6 @@ IntelChipsets = [
     "WM880"
 ]
 
-print(IntelChipsets[27:28])
-
 AMDChipsets = [
     "AMD",
     "AM1",
