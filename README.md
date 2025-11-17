@@ -5,10 +5,9 @@
   <p> ⚠️ Disclaimer: This fork of OpCore-Simplify exists solely to demonstrate and propose a fix for a different vulnerabilities found in this project. </p>
 <p> It is not intended for general use or long-term maintenance. Users are strongly encouraged to use the official repository here https://github.com/lzhoang2801/OpCore-Simplify for stable and trusted releases. </p>
 <p> This fork includes a proof-of-concept patch to mitigate all vulnerabilities. If accepted, it should be merged upstream. </p>
-<p>1 of the exploits will be mitigated by adding SHA2 checks. </p>
-<p> This exploit is already in the wild. At least 1-3 gits have exploited this vulnerability to inject malicious kexts into the EFI for persistance. And no antivirus can flag such a low level malware, which makes this exploit even more dangerous. </p>
-<p> Another exploit found in this project is that it uses an outdated user agent of Google Chrome - Google Chrome 131. This opens also all vulnerabilities that Google has patched in newer versions of Chrome. This exploit is mitigated by changing the user agent to the latest version of Safari - Safari 26.1.</p>
-<p> Other vulnerabilities that are mitigated in this project:.</p>
+<p>Vulnerabilities that are mitigated in this project:</p>
+<p>-an attacker could redirect kext downloads to malicious URLs - which could lead to placing malicious kexts in the EFI partition and then installing kernel level malware. This exploit is already in the wild - OpCore-Simplify2 already exploits this vulnerability. It is mitigated by checking kexts against trusted repos.
+<p>-it uses an outdated user agent of Google Chrome - Google Chrome 131. This opens also all vulnerabilities that Google has patched in newer versions of Chrome. This exploit is mitigated by changing the user agent to the latest version of Safari - Safari 26.1. And this opens also a vulnerability where websites redirect to outdated servers which can lead to even more vulnerabilities.</p>
 <p>- An attacker could upload a maliciously crafted JSON file that could execute files outside the OpCore-Simplify's folder - this is mitigated by not allowing the script to execute outside OpCore-Simplify's workspace</p>
 <p>-An attacker could upload a specially crafted JSON file to crash the project or execute code - this is mitigated by denying uploads of invalid JSON files</p>
 <p>-An attacker could upload an empty JSON file without triggering any warnings - this is mitigated by denying uploads of invalid JSON files</p>
