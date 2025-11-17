@@ -13,6 +13,7 @@ import webbrowser
 import psutil
 import wmi
 import subprocess
+import winreg
 
 system_requirements = {
     "TPM": None,
@@ -85,8 +86,57 @@ def secure_boot_check():
         tpmcheck()
         secure_boot_check()
         uefi_check()
-
-
+        if system_requirements["TPM"] = True:
+            if system_requirements["SecureBoot"] = True:
+                print("Upgrading to Windows 11...")
+                print("Downloading all available updates...")
+                subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
+                print("Installing all available updates...")
+                subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
+                print("Your device is restarting to finish install updates...")
+                usoclient RestartDevice      
+            else:
+                print("Secure Boot is missing or disabled.")
+                print("We'll check whether we can bypass Windows 11's requirements...")
+        elif system_requirements["TPM"] = "TPM1.2":
+            print("We'll check whether we can bypass Windows 11's requirements...")
+            edition = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"), "ProductName")[0]
+            print(f"Detected Windows Edition: {edition}")
+            print(f"System Requirements: {system_requirements}")
+            if "Pro" in edition True or if "Education" in edition or if "Pro N" in edition or if "Education N" in edition or if "Enterprise" in edition or if "Enterprise N" in edition:
+                print("✅ Applying upgrade bypass for Windows 11's requirements...")
+            else:
+                print("❌ Bypass unsupported for this edition.")
+                print("Your computer doesn't meet the minimal requirements for Windows 11, nor we can update it by bypassing the minimum requirements because your edition of Windows doesn't support this bypass techniques.")
+                url = "https://www.microsoft.com/en-US/software-download/windows11"
+                webbrowser.open(url)
+                print("Download a Windows 11 ISO from Microsoft.")
+                print("")
+                print("Then you can bypass Windows 11's requirements with running in CMD D:\ (or the virtual drive's letter) and then setup.exe /product server technique.")
+                print("")
+                print("In the meanwhile, we'll check for remaining Windows 10 updates...")
+                print("Downloading all available updates...")
+                subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
+                print("Installing all available updates...")
+                subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
+                print("Your device is restarting to finish install updates...")
+                usoclient RestartDevice
+        else:
+            print("Your computer doesn't meet the minimal requirements for Windows 11, nor we can update it by bypassing the minimum requirements because TPM is absent.")
+            url = "https://www.microsoft.com/en-US/software-download/windows11"
+            webbrowser.open(url)
+            print("Download a Windows 11 ISO from Microsoft.")
+            print("")
+            print("Then you can bypass Windows 11's requirements with running in CMD D:\ (or the virtual drive's letter) and then setup.exe /product server technique.")
+            print("")
+            print("In the meanwhile, we'll check for remaining Windows 10 updates...")
+            print("Downloading all available updates...")
+            subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
+            print("Installing all available updates...")
+            subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
+            print("Your device is restarting to finish install updates...")
+            usoclient RestartDevice
+            
 def run_linux_updates():
     print("Checking for your Linux distro...")
     distro = ""
@@ -182,7 +232,7 @@ def run_macos_updates():
                         sys.exit(3)
                 elif int(release)<8:
                     print("Windows 7, Vista, XP or older versions of Windows are detected.")
-                    print("This script doesn't support Windows 7 or older since it requires Python 3.14 or newer which requires Windows 10 at absolute minimum.")
+                    print("This script doesn't support Windows 8.1 or older since it requires Python 3.14 or newer which requires Windows 10 at absolute minimum.")
                     print("It requires some other libraries that either require the latest version of Windows 10 or Windows 11.")
                     print("")
                     print("You need to upgrade to Windows 11 in order to run this script. No automated troubleshooting possible for such an old version of Windows.")
@@ -205,16 +255,11 @@ def run_macos_updates():
 
                             print("Installing all available updates...")
                             subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
-                            input("Confirm that your PC is ready to finish installing updates. Answer with y to restart and n to schedule restart in 12 hours.")
-                            if user_input == "y":
-                                print("OK, your PC will finish installing updates now.")
-                                subprocess.run(["cmd", "/c", "shutdown /r /t 0"], check=True) 
-                            else:
-                                print("OK, your PC will restart automatically in 12 hours.")
-                                subprocess.run(["cmd", "/c", "shutdown /r /t 43200"], check=True)
-                                sys.exit(0)
+                            
+                            print("Your device is restarting to finish installing updates...")
+                            usoclient RestartDevice
                     if build >= 19045.5073:
-                        print("You're running a fairly up to date Windows 10. Since Windows 10 is EOS, we'll update your system to a supported version of Windows 11.")
+                        print("You're running a fairly up to date Windows 10. Since Windows 10 is out of support, we'll update your system to a supported version of Windows.")
                         checkwindows11requirements()                                              
     
     def __init__(self):
