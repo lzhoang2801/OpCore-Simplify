@@ -8,4 +8,13 @@
 <p>1 of the exploits will be mitigated by adding SHA2 checks. </p>
 <p> This exploit is already in the wild. At least 1-3 gits have exploited this vulnerability to inject malicious kexts into the EFI for persistance. And no antivirus can flag such a low level malware, which makes this exploit even more dangerous. </p>
 <p> Another exploit found in this project is that it uses an outdated user agent of Google Chrome - Google Chrome 131. This opens also all vulnerabilities that Google has patched in newer versions of Chrome. This exploit is mitigated by changing the user agent to the latest version of Safari - Safari 26.1.</p>
-<p> And it fixes other vulnerabilities as well.</p>
+<p> Other vulnerabilities that are mitigated in this project:.</p>
+<p>- An attacker could upload a maliciously crafted JSON file that could execute files outside the OpCore-Simplify's folder - this is mitigated by not allowing the script to execute outside OpCore-Simplify's workspace</p>
+<p>-An attacker could upload a specially crafted JSON file to crash the project or execute code - this is mitigated by denying uploads of invalid JSON files</p>
+<p>-An attacker could upload an empty JSON file without triggering any warnings - this is mitigated by denying uploads of invalid JSON files</p>
+<p>-An attacker could upload oversized JSON files like 1GB JSON reports - no genuine JSON report is large 1GB - this is mitgated by not allowing JSON reports more than 100MB</p>
+<p>-An attacker could delete files outside OpCore-Simplify's workspace - which could lead to corrupting the operating system or introduce vulnerabilities</p>
+Other fixes:
+<p>Previously OpCore-Simplify if ran on Windows 8 or older versions gave errors that for non-experienced users are hard to understand. This is fixed by checking at the beginning of the batch file to check if that computer runs Windows 10 or newer and if not, to warn the user that this version of Windows is unsupported and stop executing anything.</p>
+<p>On some Windows 10 versions, OpCore-Simplify's project can't execute properly - this is fixed by checking for updates right at the beginning of the batch file.</p>
+<p>To updater.py, it is added an automated troubleshooter if any errors appear but are basic checks - for most OSes, it is for checking updates only, on Windows it is also about to run SFC /scannow and sometimes even check for Windows 11 requirements if they are met. And additional troubleshooter will be added for troubleshooting internet issues.</p>
