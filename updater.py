@@ -11,15 +11,16 @@ import subprocess
 import sys
 import webbrowser
 import psutil
+import wmi
+import subprocess
 
 system_requirements = {
-    "SSE4_4": None,
     "TPM": None,
     "SecureBoot": None,
     "UEFI": None
 }
 class Updater:
-   def tpm_check():
+   def tpmcheck():
        try:
            c = wmi.WMI(namespace="root\\CIMV2\\Security\\MicrosoftTpm")
            for tpm in c.Win32_Tpm():
@@ -27,19 +28,31 @@ class Updater:
                if "2.0" in tpm.SpecVersion:
                    system_requirements["TPM"] = True
                    print("✅ TPM 2.0 detected.")
+                elif "1.2" in tpm.SpecVersion:
+                   system_requirements["TPM"] = "TPM1.2"
+                   print("❌ You have only TPM1.2. Don't worry, we'll help you to bypass the minimum requirements.")
                 else:
-                   system_requirements["TPM"] = False
-                   print("❌ TPM 2.0 is missing. We'll help you to bypass the minimum requirements.")
-    def secure_boot_check():
-      try:
+                    system_requirements["TPM"] = "False"
+                    print("❌ Windows 11 doesn't support this outdated TPM chip. Installing Windows 11 on this system by the time gets harder and harder.")
+                    print("")
+                    print("It'll be makred as if TPM is missing.")
+                    print("")
+                    print("But don't worry, we'll check for remaining updates for the Windows version that is currently running.")
+       except Exception as e:
+            system_requirements["TPM"] = "False"
+            print("❌ Your PC lacks TPM. Installing Windows 11 on this system by the time gets harder and harder.")
+            print("But don't worry, we'll check for remaining updates for the Windows version that is currently running.")
+           
+def secure_boot_check():
+    try:
           c = wmi.WMI(namespace="root\\Microsoft\\Windows\\HardwareManagement")
           for sb in c.MSFT_SecureBoot():
               enabled = bool(sb.SecureBootEnabled)
               print(f"Secure Boot Enabled: {enabled}")
               system_requirements["SecureBoot"] = True
-        except Exception as e:
-          print(f"⚠️ Secure Boot check failed: {e}. We'll help you to bypass the minimum requirements.")
-          return False
+    except Exception as e:
+        print(f"⚠️ Secure Boot check failed: {e}")
+        system_requirements["SecureBoot"] = False
     def ssse42_check():
         import cpuinfo
         subprocess.run(["cmd", "/c", "pip install py-cpuinfo"], check=True)
@@ -55,23 +68,78 @@ class Updater:
             if user_input == "e":
                 sys.exit(3)
     def uefi_check():
-        try:
-            c = wmi.WMI()
-            for cs in c.Win32_ComputerSystem():
-                print(f"Bootup State: {cs.BootupState}")
+        for fw in c.Win32_ComputerSystemFirmware():
+            if fw.FirmwareType == 2:
+                system_requirements["UEFI"] = True
+                print("✅ UEFI supported.")
+            else:
+                system_requirements["UEFI"] = False
+                print("Your system is either running Legacy BIOS or has Legacy CSM enabled.")
+                print("")
+                print("If your system has legacy CSM enabled, I'd recommend go to your BIOS, disable Legacy CSM, save the changes and reinstall Windows since for macOS UEFI is required.")
             
-    def check_windows11_requirements():
+    def checkwindows11requirements():
         print("\n--- Windows 11 Requirements Diagnostics ---")
         print("Checking Windows 11 requirements...\n")
         ssse42_check()
-        tpm_check()
+        tpmcheck()
         secure_boot_check()
+        uefi_check()
 
 
-        arch = platform.architecture()[0]
-        print(f"Architecture: {arch}")
+def run_linux_updates():
+    print("Checking for your Linux distro...")
+    distro = ""
+    try:
+        # Try to detect distribution name
+        with open("/etc/os-release") as f:
+            for line in f:
+                if line.startswith("ID="):
+                    distro = line.strip().split("=")[1].strip('"')
+                    break
+    except Exception:
+        distro = platform.system().lower()
 
-     
+    # Map distro to update command
+    if distro in ["ubuntu", "debian", "zorin", "kali", "raspberrypi", "raspbian", "mx"]:
+        print("Checking and applying updates for your computer...")
+        cmd = "sudo apt update && sudo apt upgrade -y"
+    elif distro in ["fedora", "rhel", "centos"]:
+        print("Checking and applying updates for your computer...")
+        cmd = "sudo dnf upgrade -y"
+    elif distro in ["arch", "manjaro"]:
+        print("Checking and applying updates for your computer...")
+        cmd = "sudo pacman -Syu"
+    elif distro in ["opensuse", "sles"]:
+        print("Checking and applying updates for your computer...")
+        cmd = "sudo zypper update -y"
+    elif distro in ["centos"]:
+        print("Attempting to check for updates using older methods on Cent OS if it still runs Cent OS 7...")
+        cmd = "sudo yum update -y"
+    elif distro in ["gentoo"]:
+        print("Checking and applying updates for Gentoo...")
+        cmd = "sudo emerge --sync && sudo emerge -uD @world"
+    else:
+        print(f"Unsupported distro: {distro}. Automatic diagnostics failed to run. This project may be stuck at a vulnerable version.")
+        return
+
+    # Launch in terminal
+    subprocess.run([
+        "gnome-terminal", "--",
+        "bash", "-c", f"{cmd}; exec bash"
+    ])
+
+def run_macos_updates():
+    print("Checking and applying updates for your computer...")
+    # Open Terminal and run softwareupdate commands
+    # -l lists available updates
+    # -i installs them
+    # -a installs all available updates
+    subprocess.run([
+        "osascript", "-e",
+        'tell application "Terminal" to do script "softwareupdate -l; sudo softwareupdate -ia"'
+    ]) 
+    
     def diagnose_environment_to_updateandfix():
         system = platform.system()
         release = platform.release()
@@ -90,8 +158,14 @@ class Updater:
             input("Press E to exit OpCore-Simplify")
             if user_input == "e":
                 sys.exit(3)
+        if system == "macOS":
+            run_macos_updates()
+        if system == "Linux":
+            run_linux_updates()
         if system == "Windows":
-            import wmi
+            print("Running sfc /scannow...")
+            subprocess.run(["cmd", "/c", "sfc /scannow"], check=True)
+            print("Running checks for Windows version that this PC is running...")
             try:
                 build_number = int(version.split('.')[-1])
                 print(f"Windows build number: {build_number}")
@@ -108,7 +182,7 @@ class Updater:
                         sys.exit(3)
                 elif int(release)<8:
                     print("Windows 7, Vista, XP or older versions of Windows are detected.")
-                    print("This script doesn't support Windows 8.1 or older since it requires Python 3.14 or newer which requires Windows 10 at absolute minimum.")
+                    print("This script doesn't support Windows 7 or older since it requires Python 3.14 or newer which requires Windows 10 at absolute minimum.")
                     print("It requires some other libraries that either require the latest version of Windows 10 or Windows 11.")
                     print("")
                     print("You need to upgrade to Windows 11 in order to run this script. No automated troubleshooting possible for such an old version of Windows.")
@@ -119,7 +193,7 @@ class Updater:
                         sys.exit(3)
                 elif release in ["10"]:
                     if build <= 19045.5073:
-                        print("⚠️ You're version of Windows 10 is extremely out of date.")
+                        print("⚠️ Your version of Windows 10 is extremely out of date.")
                         print("We'll update Windows - right now you're exposed to vulnerabilities that you haven't patched yet that were fixed long ago.")
 
                         try:
@@ -141,8 +215,7 @@ class Updater:
                                 sys.exit(0)
                     if build >= 19045.5073:
                         print("You're running a fairly up to date Windows 10. Since Windows 10 is EOS, we'll update your system to a supported version of Windows 11.")
-                        check_windows11_requirements()
-                                              
+                        checkwindows11requirements()                                              
     
     def __init__(self):
         self.github = github.Github()
