@@ -57,12 +57,12 @@ IntelChipsets = [
     "C224",
     "C226",
     "H81",
-    "Wellsburg",
     "HM97",
     "Z97",
     "QM97",
     "H97",
     "C610/X99",
+    "Wellsburg",
     "Wildcat Point-LP",
     "Sunrise Point-LP",
     "Sunrise Point",
@@ -177,6 +177,8 @@ IntelChipsets = [
     "HM870",
     "WM880"
 ]
+
+print(IntelChipsets[27:28])
 
 AMDChipsets = [
     "AMD",
