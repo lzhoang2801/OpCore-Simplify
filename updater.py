@@ -68,25 +68,25 @@ def secure_boot_check():
             input("Press E to exit OpCore-Simplify and continue with Clover.") 
             if user_input == "e":
                 sys.exit(3)
-    def uefi_check():
-        for fw in c.Win32_ComputerSystemFirmware():
-            if fw.FirmwareType == 2:
+def uefi_check():
+    for fw in c.Win32_ComputerSystemFirmware():
+        if fw.FirmwareType == 2:
                 system_requirements["UEFI"] = True
                 print("✅ UEFI supported.")
-            else:
+        else:
                 system_requirements["UEFI"] = False
                 print("Your system is either running Legacy BIOS or has Legacy CSM enabled.")
                 print("")
                 print("If your system has legacy CSM enabled, I'd recommend go to your BIOS, disable Legacy CSM, save the changes and reinstall Windows since for macOS UEFI is required.")
             
-    def checkwindows11requirements():
-        print("\n--- Windows 11 Requirements Diagnostics ---")
-        print("Checking Windows 11 requirements...\n")
-        ssse42_check()
-        tpmcheck()
-        secure_boot_check()
-        uefi_check()
-        if system_requirements["TPM"] = True:
+def checkwindows11requirements():
+    print("\n--- Windows 11 Requirements Diagnostics ---")
+    print("Checking Windows 11 requirements...\n")
+    ssse42_check()
+    tpmcheck()
+    secure_boot_check()
+    uefi_check()
+    if system_requirements["TPM"] = True:
             if system_requirements["SecureBoot"] = True:
                 print("Upgrading to Windows 11...")
                 print("Downloading all available updates...")
@@ -262,7 +262,7 @@ def diagnose_environment_to_updateandfix():
                         print("You're running a fairly up to date Windows 10. Since Windows 10 is out of support, we'll update your system to a supported version of Windows.")
                         checkwindows11requirements()                                              
     
-    def __init__(self):
+def __init__(self):
         self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher()
         self.run = run.Run().run
@@ -272,7 +272,7 @@ def diagnose_environment_to_updateandfix():
         self.temporary_dir = tempfile.mkdtemp()
         self.current_step = 0
 
-    def get_current_sha_version(self):
+def get_current_sha_version(self):
         print("Checking current version...")
         try:
             current_sha_version = self.utils.read_file(self.sha_version)
@@ -287,7 +287,7 @@ def diagnose_environment_to_updateandfix():
             return "error_reading_sha_version"
             diagnose_environment_to_updateandfix()
 
-    def get_latest_sha_version(self):
+def get_latest_sha_version(self):
         print("Fetching latest version from GitHub...")
         try:
             commits = self.github.get_commits("lzhoang2801", "OpCore-Simplify")
@@ -298,7 +298,7 @@ def diagnose_environment_to_updateandfix():
         
         return None
 
-    def download_update(self):
+def download_update(self):
         self.current_step += 1
         print("")
         print("Step {}: Creating temporary directory...".format(self.current_step))
@@ -328,7 +328,7 @@ def diagnose_environment_to_updateandfix():
             diagnose_environment_to_updateandfix()
             return False
 
-    def update_files(self):
+def update_files(self):
         self.current_step += 1
         print("Step {}: Updating files...".format(self.current_step))
         try:
@@ -379,7 +379,7 @@ def diagnose_environment_to_updateandfix():
             print("  Error during file update: {}".format(str(e)))
             return False
 
-    def save_latest_sha_version(self, latest_sha):
+def save_latest_sha_version(self, latest_sha):
         try:
             self.utils.write_file(self.sha_version, latest_sha.encode())
             self.current_step += 1
@@ -389,7 +389,7 @@ def diagnose_environment_to_updateandfix():
             print("Failed to save version information: {}".format(str(e)))
             return False
 
-    def run_update(self):
+def run_update(self):
         self.utils.head("Check for Updates")
         print("")
         
