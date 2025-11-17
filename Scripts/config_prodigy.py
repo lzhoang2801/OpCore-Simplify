@@ -618,7 +618,7 @@ class ConfigProdigy:
         config["Booter"]["Patch"] = self.add_booter_patch(smbios_model, macos_version)
         config["Booter"]["Quirks"]["AvoidRuntimeDefrag"] = not (hardware_report.get("BIOS").get("Firmware Type") == "Legacy" and self.utils.parse_darwin_version(macos_version) != self.utils.parse_darwin_version("20.0.0"))
         config["Booter"]["Quirks"]["DevirtualiseMmio"] = len(config["Booter"]["MmioWhitelist"]) != 0 or \
-            hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[112:] + chipset_data.IntelChipsets[90:100] or \
+            hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[112:] + chipset_data.IntelChipsets[91:100] or \
             hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[104:112] and ("Desktop" in hardware_report.get("Motherboard").get("Platform") or not "-8" in hardware_report.get("CPU").get("Processor Name")) or \
             hardware_report.get("Motherboard").get("Chipset") == chipset_data.AMDChipsets[16]
         config["Booter"]["Quirks"]["EnableSafeModeSlide"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI"
