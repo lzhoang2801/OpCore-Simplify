@@ -20,5 +20,6 @@
 Other fixes:
 <p>-Previously OpCore-Simplify if ran on Windows 8 or older versions gave errors that for non-experienced users are hard to understand. This is fixed by checking at the beginning of the batch file to check if that computer runs Windows 10 or newer and if not, to warn the user that this version of Windows is unsupported and stop executing anything.</p>
 <p>-On some Windows 10 versions, OpCore-Simplify's project can't execute properly - this is fixed by checking for updates right at the beginning of the batch file.</p>
+<p> Added a placeholder that is called __init__.py to fix Python libraries importing issues.</p>
 <p>-To updater.py, it is added an automated troubleshooter if any errors appear but are basic checks - for most OSes, it is for checking updates only, on Windows it is also about to run SFC /scannow and sometimes even check for Windows 11 requirements if they are met or not and what this PC doesn't meet so the troubleshooter can upgrade if needed. And additional troubleshooter will be added for troubleshooting internet issues.</p>
 <p>-Clarifying the user why their GPU is unsupported and kindly ask not to report issues for unsupported GPUs. And also open OpenCore Buyer's guide when unsupported GPUs detected.</p>
