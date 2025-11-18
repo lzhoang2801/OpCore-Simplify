@@ -54,7 +54,7 @@ def secure_boot_check():
     except Exception as e:
         print(f"⚠️ Secure Boot check failed: {e}")
         system_requirements["SecureBoot"] = False
-    def ssse42_check():
+def ssse42_check():
         import cpuinfo
         subprocess.run(["cmd", "/c", "pip install py-cpuinfo"], check=True)
         info = cpuinfo.get_cpu_info()
