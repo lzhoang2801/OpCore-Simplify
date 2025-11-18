@@ -13,6 +13,10 @@
 <p>-An attacker could upload an empty JSON file without triggering any warnings - this is mitigated by denying uploads of invalid JSON files. CVSS v3.1 Base Score: 5.3</p>
 <p>-An attacker could upload oversized JSON files like 1GB JSON reports - no genuine JSON report is large 1GB - this is mitgated by not allowing JSON reports more than 100MB. CVSS v3.1 Base Score: 6.1.</p>
 <p>-An attacker could delete files outside OpCore-Simplify's workspace - which could lead to corrupting the operating system or introduce vulnerabilities. CVSS v3.1 Base Score: 9.5</p>
+<p> Oversized file uploads (DoS risk) - CVSS v3.1 Base Score: 6.1. This could lead to uploading too large files to exhaust CPU or RAM usage and crash the system. This is mitigated by enforcing 100MB file size limit. </p>
+<p> Unreadable/malicious file crash - CVSS v3.1 Base Score: 5.9. This can lead to crashing the checker, leading to denial of service attacks. This is mitigated by adding try/except around file reads. </p>
+<p> Blind trust in manifest - CVSS v3.1 Base Score: 8.2. This allows attackers to replace the manifest to hide malicious files or bypass detection. This is mitigated by adding HMAC signing of manifests. </p>
+<p> Invalid/empty manifest acceptance - CVSS v3.1 Base Score: 9.1. This allows attackers to place empty or malformed manifests that could bypass integrity checks. This is mitigated by introducing schema validation for manifest structure.</p>
 Other fixes:
 <p>-Previously OpCore-Simplify if ran on Windows 8 or older versions gave errors that for non-experienced users are hard to understand. This is fixed by checking at the beginning of the batch file to check if that computer runs Windows 10 or newer and if not, to warn the user that this version of Windows is unsupported and stop executing anything.</p>
 <p>-On some Windows 10 versions, OpCore-Simplify's project can't execute properly - this is fixed by checking for updates right at the beginning of the batch file.</p>
