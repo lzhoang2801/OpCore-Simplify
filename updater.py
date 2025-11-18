@@ -278,49 +278,49 @@ class Updater:
             print("Your device is restarting to finish install updates...")
             usoclient RestartDevice
             
-def run_linux_updates():
-    print("Checking for your Linux distro...")
-    distro = ""
-    try:
-        # Try to detect distribution name
-        with open("/etc/os-release") as f:
-            for line in f:
-                if line.startswith("ID="):
-                    distro = line.strip().split("=")[1].strip('"')
-                    break
-    except Exception:
-        distro = platform.system().lower()
+    def run_linux_updates():
+        print("Checking for your Linux distro...")
+        distro = ""
+        try:
+            # Try to detect distribution name
+            with open("/etc/os-release") as f:
+                for line in f:
+                    if line.startswith("ID="):
+                        distro = line.strip().split("=")[1].strip('"')
+                        break
+        except Exception:
+            distro = platform.system().lower()
 
-    # Map distro to update command
-    if distro in ["ubuntu", "debian", "zorin", "kali", "raspberrypi", "raspbian", "mx"]:
-        print("Checking and applying updates for your computer...")
-        cmd = "sudo apt update && sudo apt upgrade -y"
-    elif distro in ["fedora", "rhel", "centos"]:
-        print("Checking and applying updates for your computer...")
-        cmd = "sudo dnf upgrade -y"
-    elif distro in ["arch", "manjaro"]:
-        print("Checking and applying updates for your computer...")
-        cmd = "sudo pacman -Syu"
-    elif distro in ["opensuse", "sles"]:
-        print("Checking and applying updates for your computer...")
-        cmd = "sudo zypper update -y"
-    elif distro in ["centos"]:
-        print("Attempting to check for updates using older methods on Cent OS if it still runs Cent OS 7...")
-        cmd = "sudo yum update -y"
-    elif distro in ["gentoo"]:
-        print("Checking and applying updates for Gentoo...")
-        cmd = "sudo emerge --sync && sudo emerge -uD @world"
-    else:
-        print(f"Unsupported distro: {distro}. Automatic diagnostics failed to run. This project may be stuck at a vulnerable version.")
-        return
+        # Map distro to update command
+        if distro in ["ubuntu", "debian", "zorin", "kali", "raspberrypi", "raspbian", "mx"]:
+            print("Checking and applying updates for your computer...")
+            cmd = "sudo apt update && sudo apt upgrade -y"
+        elif distro in ["fedora", "rhel", "centos"]:
+            print("Checking and applying updates for your computer...")
+            cmd = "sudo dnf upgrade -y"
+        elif distro in ["arch", "manjaro"]:
+            print("Checking and applying updates for your computer...")
+            cmd = "sudo pacman -Syu"
+        elif distro in ["opensuse", "sles"]:
+            print("Checking and applying updates for your computer...")
+            cmd = "sudo zypper update -y"
+        elif distro in ["centos"]:
+            print("Attempting to check for updates using older methods on Cent OS if it still runs Cent OS 7...")
+            cmd = "sudo yum update -y"
+        elif distro in ["gentoo"]:
+            print("Checking and applying updates for Gentoo...")
+            cmd = "sudo emerge --sync && sudo emerge -uD @world"
+        else:
+            print(f"Unsupported distro: {distro}. Automatic diagnostics failed to run. This project may be stuck at a vulnerable version.")
+            return
 
-    # Launch in terminal
-    subprocess.run([
+        # Launch in terminal
+        subprocess.run([
         "gnome-terminal", "--",
         "bash", "-c", f"{cmd}; exec bash"
-    ])
+        ])
 
-def run_macos_updates():
+    def run_macos_updates():
     print("Checking and applying updates for your computer...")
     # Open Terminal and run softwareupdate commands
     # -l lists available updates
@@ -331,7 +331,7 @@ def run_macos_updates():
         'tell application "Terminal" to do script "softwareupdate -l; sudo softwareupdate -ia"'
     ]) 
     
-def diagnose_environment_to_updateandfix():
+    def diagnose_environment_to_updateandfix():
     system = platform.system()
     release = platform.release()
     version = platform.version()
@@ -403,7 +403,7 @@ def diagnose_environment_to_updateandfix():
                         print("You're running a fairly up to date Windows 10. Since Windows 10 is out of support, we'll update your system to a supported version of Windows.")
                         checkwindows11requirements()                                              
     
-def __init__(self):
+    def __init__(self):
         self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher()
         self.run = run.Run().run
@@ -413,7 +413,7 @@ def __init__(self):
         self.temporary_dir = tempfile.mkdtemp()
         self.current_step = 0
 
-def get_current_sha_version(self):
+    def get_current_sha_version(self):
         print("Checking current version...")
         try:
             current_sha_version = self.utils.read_file(self.sha_version)
@@ -428,7 +428,7 @@ def get_current_sha_version(self):
             return "error_reading_sha_version"
             diagnose_environment_to_updateandfix()
 
-def get_latest_sha_version(self):
+    def get_latest_sha_version(self):
         print("Fetching latest version from GitHub...")
         try:
             commits = self.github.get_commits("lzhoang2801", "OpCore-Simplify")
@@ -439,7 +439,7 @@ def get_latest_sha_version(self):
         
         return None
 
-def download_update(self):
+    def download_update(self):
         self.current_step += 1
         print("")
         print("Step {}: Creating temporary directory...".format(self.current_step))
@@ -469,7 +469,7 @@ def download_update(self):
             diagnose_environment_to_updateandfix()
             return False
 
-def update_files(self):
+    def update_files(self):
         self.current_step += 1
         print("Step {}: Updating files...".format(self.current_step))
         try:
@@ -520,7 +520,7 @@ def update_files(self):
             print("  Error during file update: {}".format(str(e)))
             return False
 
-def save_latest_sha_version(self, latest_sha):
+    def save_latest_sha_version(self, latest_sha):
         try:
             self.utils.write_file(self.sha_version, latest_sha.encode())
             self.current_step += 1
@@ -530,7 +530,7 @@ def save_latest_sha_version(self, latest_sha):
             print("Failed to save version information: {}".format(str(e)))
             return False
 
-def run_update(self):
+    def run_update(self):
         self.utils.head("Check for Updates")
         print("")
         
