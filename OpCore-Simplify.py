@@ -500,7 +500,7 @@ class OCPE:
             print("    - Remove UTBDefault.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
             print("    - Edit config.plist:")
             print("        - Use OpenCore Configurator to open your config.plist.")
-            print("        - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.")
+            print("        - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch in the OpenCore Configurator app.")
             print("        - Save the file when finished.")
             print("")
             print("Type \"AGREE\" to open the built EFI for you\n")
