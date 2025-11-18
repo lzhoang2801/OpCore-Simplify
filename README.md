@@ -23,4 +23,4 @@ Other fixes:
 <p> Added a placeholder that is called __init__.py to fix Python libraries importing issues.</p>
 <p>-To updater.py, it is added an automated troubleshooter if any errors appear but are basic checks - for most OSes, it is for checking updates only, on Windows it is also about to run SFC /scannow and sometimes even check for Windows 11 requirements if they are met or not and what this PC doesn't meet so the troubleshooter can upgrade if needed. And additional troubleshooter will be added for troubleshooting internet issues.</p>
 <p>-Clarifying the user why their GPU is unsupported and kindly ask not to report issues for unsupported GPUs. And also open OpenCore Buyer's guide when unsupported GPUs detected.</p>
-<p> When this GPU is supported in modern macOS versions only unofficially by OCLP, they'll be clarified that OCLP may disable some macOS protection features like SIP and AMFI when needed.</p>
+<p> -When this GPU is supported in modern macOS versions only unofficially by OCLP, they'll be clarified that OCLP may disable some macOS protection features like SIP and AMFI when needed.</p>
