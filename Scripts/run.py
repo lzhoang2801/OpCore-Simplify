@@ -88,7 +88,7 @@ class SecureRun:
 
         # Warn if sudo is used
         if args[0] == "sudo" or allow_sudo:
-            print("⚠️ Warning: sudo usage may introduce privilege escalation risks.")
+            print("⚠️ Warning: sudo usage may introduce privilege escalation risks if running commands that you don't know what they do.")
 
         p = self._popen(args)
 
