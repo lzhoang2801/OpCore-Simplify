@@ -331,7 +331,7 @@ class Updater:
         'tell application "Terminal" to do script "softwareupdate -l; sudo softwareupdate -ia"'
     ]) 
     
-    def diagnose_environment_to_updateandfix():
+def diagnose_environment_to_updateandfix():
     system = platform.system()
     release = platform.release()
     version = platform.version()
