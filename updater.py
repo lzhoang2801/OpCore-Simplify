@@ -328,22 +328,22 @@ class Updater:
         ]) 
     
     def diagnose_environment_to_updateandfix():
-    system = platform.system()
-    release = platform.release()
-    version = platform.version()
-    arch = struct.calcsize("P") * 8
+        system = platform.system()
+        release = platform.release()
+        version = platform.version()
+        arch = struct.calcsize("P") * 8
 
-    print("\n--- OpCore-Simplify Error Diagnostics ---")
-    print(f"OS: {system} {release} ({version}), Architecture: {arch}-bit")
+        print("\n--- OpCore-Simplify Error Diagnostics ---")
+        print(f"OS: {system} {release} ({version}), Architecture: {arch}-bit")
 
-    if arch != 64:
-        print("⚠️ 32-bit environment detected. OpenCore-Simplify requires 64-bit.")
-        print("To upgrade from 32 bit to 64 bit operating system, you need to reinstall the operating system using your flash drive.")
-        print("If your operating system doesn't have 64 bit CPU, it is unsupported by OpCore-Simplify.")
-        print("")
+        if arch != 64:
+            print("⚠️ 32-bit environment detected. OpenCore-Simplify requires 64-bit.")
+            print("To upgrade from 32 bit to 64 bit operating system, you need to reinstall the operating system using your flash drive.")
+            print("If your operating system doesn't have 64 bit CPU, it is unsupported by OpCore-Simplify.")
+            print("")
 
-        input("Press E to exit OpCore-Simplify")
-        if user_input == "e":
+            input("Press E to exit OpCore-Simplify")
+            if user_input == "e":
             sys.exit(3)
         if system == "macOS":
             run_macos_updates()
