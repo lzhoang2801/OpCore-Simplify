@@ -321,17 +321,13 @@ class Updater:
         ])
 
     def run_macos_updates():
-    print("Checking and applying updates for your computer...")
-    # Open Terminal and run softwareupdate commands
-    # -l lists available updates
-    # -i installs them
-    # -a installs all available updates
-    subprocess.run([
+        print("Checking and applying updates for your computer...")
+        subprocess.run([
         "osascript", "-e",
         'tell application "Terminal" to do script "softwareupdate -l; sudo softwareupdate -ia"'
-    ]) 
+        ]) 
     
-def diagnose_environment_to_updateandfix():
+    def diagnose_environment_to_updateandfix():
     system = platform.system()
     release = platform.release()
     version = platform.version()
@@ -403,7 +399,7 @@ def diagnose_environment_to_updateandfix():
                         print("You're running a fairly up to date Windows 10. Since Windows 10 is out of support, we'll update your system to a supported version of Windows.")
                         checkwindows11requirements()                                              
     
-def __init__(self):
+    def __init__(self):
         self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher()
         self.run = run.Run().run
@@ -413,7 +409,7 @@ def __init__(self):
         self.temporary_dir = tempfile.mkdtemp()
         self.current_step = 0
 
-def get_current_sha_version(self):
+    def get_current_sha_version(self):
         print("Checking current version...")
         try:
             current_sha_version = self.utils.read_file(self.sha_version)
@@ -428,7 +424,7 @@ def get_current_sha_version(self):
             return "error_reading_sha_version"
             diagnose_environment_to_updateandfix()
 
-def get_latest_sha_version(self):
+    def get_latest_sha_version(self):
         print("Fetching latest version from GitHub...")
         try:
             commits = self.github.get_commits("lzhoang2801", "OpCore-Simplify")
@@ -439,7 +435,7 @@ def get_latest_sha_version(self):
         
         return None
 
-def download_update(self):
+    def download_update(self):
         self.current_step += 1
         print("")
         print("Step {}: Creating temporary directory...".format(self.current_step))
@@ -469,7 +465,7 @@ def download_update(self):
             diagnose_environment_to_updateandfix()
             return False
 
-def update_files(self):
+    def update_files(self):
         self.current_step += 1
         print("Step {}: Updating files...".format(self.current_step))
         try:
@@ -530,7 +526,7 @@ def save_latest_sha_version(self, latest_sha):
             print("Failed to save version information: {}".format(str(e)))
             return False
 
-def run_update(self):
+    def run_update(self):
         self.utils.head("Check for Updates")
         print("")
         
