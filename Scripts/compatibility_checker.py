@@ -202,6 +202,7 @@ class CompatibilityChecker:
             print("it would require the user to disable permanently SIP, temporarily disable Gatekeeper and")
             print("permanently enable developer mode to allow unsigned drivers.")
             print(" ")
+            print("If you want anyways to use unsupported by macOS GPUs, expect no graphics accelaration or missing SSDTs.")
             self.utils.request_input()
             self.utils.exit_program()
 
