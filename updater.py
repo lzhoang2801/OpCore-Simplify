@@ -44,17 +44,17 @@ class Updater:
             print("❌ Your PC lacks TPM. Installing Windows 11 on this system by the time gets harder and harder.")
             print("But don't worry, we'll check for remaining updates for the Windows version that is currently running.")
            
-def secure_boot_check():
-    try:
+    def secure_boot_check():
+        try:
           c = wmi.WMI(namespace="root\\Microsoft\\Windows\\HardwareManagement")
           for sb in c.MSFT_SecureBoot():
               enabled = bool(sb.SecureBootEnabled)
               print(f"Secure Boot Enabled: {enabled}")
               system_requirements["SecureBoot"] = True
-    except Exception as e:
-        print(f"⚠️ Secure Boot check failed: {e}")
-        system_requirements["SecureBoot"] = False
-def ssse42_check():
+        except Exception as e:
+            print(f"⚠️ Secure Boot check failed: {e}")
+            system_requirements["SecureBoot"] = False
+    def ssse42_check():
         import cpuinfo
         subprocess.run(["cmd", "/c", "pip install py-cpuinfo"], check=True)
         info = cpuinfo.get_cpu_info()
@@ -68,25 +68,25 @@ def ssse42_check():
             input("Press E to exit OpCore-Simplify and continue with Clover.") 
             if user_input == "e":
                 sys.exit(3)
-def uefi_check():
-    for fw in c.Win32_ComputerSystemFirmware():
-        if fw.FirmwareType == 2:
+    def uefi_check():
+        for fw in c.Win32_ComputerSystemFirmware():
+            if fw.FirmwareType == 2:
                 system_requirements["UEFI"] = True
                 print("✅ UEFI supported.")
-        else:
+            else:
                 system_requirements["UEFI"] = False
                 print("Your system is either running Legacy BIOS or has Legacy CSM enabled.")
                 print("")
                 print("If your system has legacy CSM enabled, I'd recommend go to your BIOS, disable Legacy CSM, save the changes and reinstall Windows since for macOS UEFI is required.")
             
-def checkwindows11requirements():
-    print("\n--- Windows 11 Requirements Diagnostics ---")
-    print("Checking Windows 11 requirements...\n")
-    ssse42_check()
-    tpmcheck()
-    secure_boot_check()
-    uefi_check()
-    if system_requirements["TPM"] = True:
+    def checkwindows11requirements():
+        print("\n--- Windows 11 Requirements Diagnostics ---")
+        print("Checking Windows 11 requirements...\n")
+        ssse42_check()
+        tpmcheck()
+        secure_boot_check()
+        uefi_check()
+        if system_requirements["TPM"] = True:
             if system_requirements["SecureBoot"] = True:
                 print("Upgrading to Windows 11...")
                 print("Downloading all available updates...")
