@@ -403,7 +403,7 @@ class Updater:
                         print("You're running a fairly up to date Windows 10. Since Windows 10 is out of support, we'll update your system to a supported version of Windows.")
                         checkwindows11requirements()                                              
     
-    def __init__(self):
+def __init__(self):
         self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher()
         self.run = run.Run().run
@@ -413,7 +413,7 @@ class Updater:
         self.temporary_dir = tempfile.mkdtemp()
         self.current_step = 0
 
-    def get_current_sha_version(self):
+def get_current_sha_version(self):
         print("Checking current version...")
         try:
             current_sha_version = self.utils.read_file(self.sha_version)
@@ -428,7 +428,7 @@ class Updater:
             return "error_reading_sha_version"
             diagnose_environment_to_updateandfix()
 
-    def get_latest_sha_version(self):
+def get_latest_sha_version(self):
         print("Fetching latest version from GitHub...")
         try:
             commits = self.github.get_commits("lzhoang2801", "OpCore-Simplify")
@@ -439,7 +439,7 @@ class Updater:
         
         return None
 
-    def download_update(self):
+def download_update(self):
         self.current_step += 1
         print("")
         print("Step {}: Creating temporary directory...".format(self.current_step))
@@ -469,7 +469,7 @@ class Updater:
             diagnose_environment_to_updateandfix()
             return False
 
-    def update_files(self):
+def update_files(self):
         self.current_step += 1
         print("Step {}: Updating files...".format(self.current_step))
         try:
@@ -520,7 +520,7 @@ class Updater:
             print("  Error during file update: {}".format(str(e)))
             return False
 
-    def save_latest_sha_version(self, latest_sha):
+def save_latest_sha_version(self, latest_sha):
         try:
             self.utils.write_file(self.sha_version, latest_sha.encode())
             self.current_step += 1
@@ -530,7 +530,7 @@ class Updater:
             print("Failed to save version information: {}".format(str(e)))
             return False
 
-    def run_update(self):
+def run_update(self):
         self.utils.head("Check for Updates")
         print("")
         
