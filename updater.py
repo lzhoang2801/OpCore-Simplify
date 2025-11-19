@@ -30,7 +30,7 @@ class Updater:
                    system_requirements["TPM"] = True
                    print("✅ TPM 2.0 detected.")
                 elif "1.2" in tpm.SpecVersion:
-                   system_requirements["TPM"] = "TPM1.2"
+                   system_requirements["TPM"] == "TPM1.2"
                    print("❌ You have only TPM1.2. Don't worry, we'll help you to bypass the minimum requirements.")
                 else:
                     system_requirements["TPM"] = "False"
@@ -158,7 +158,7 @@ class Updater:
                 subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI22H2" /f"], check=True)
                 print("Deleting the registry key NI21H2 in TargetVersionUpgradeExperienceIndicators")
                 subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI21H2" /f"], check=True)
-        elif system_requirements["TPM"] = "TPM1.2":
+        elif system_requirements["TPM"] == "TPM1.2":
             print("We'll check whether we can bypass Windows 11's requirements...")
             edition = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"), "ProductName")[0]
             print(f"Detected Windows Edition: {edition}")
