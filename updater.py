@@ -34,16 +34,16 @@ class Updater:
             print("❌ Your PC lacks TPM. Installing Windows 11 on this system by the time gets harder and harder.")
             print("But don't worry, we'll check for remaining updates for the Windows version that is currently running.")
            
-    def secure_boot_check():
-        try:
-            c = wmi.WMI(namespace=r"root\Microsoft\Windows\HardwareManagement")
-            for sb in c.MSFT_SecureBoot():
-                enabled = bool(sb.SecureBootEnabled)
-                print(f"Secure Boot Enabled: {enabled}")
-                system_requirements["SecureBoot"] = enabled
-        except Exception as e:
-            print(f"⚠️ Secure Boot check failed: {e}")
-            system_requirements["SecureBoot"] = False
+def secure_boot_check():
+    try:
+        c = wmi.WMI(namespace=r"root\Microsoft\Windows\HardwareManagement")
+        for sb in c.MSFT_SecureBoot():
+            enabled = bool(sb.SecureBootEnabled)
+            print(f"Secure Boot Enabled: {enabled}")
+            system_requirements["SecureBoot"] = enabled
+    except Exception as e:
+        print(f"⚠️ Secure Boot check failed: {e}")
+        system_requirements["SecureBoot"] = False
     def ssse42_check():
         import cpuinfo
         subprocess.run(["cmd", "/c", "pip install py-cpuinfo"], check=True)
