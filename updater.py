@@ -36,14 +36,14 @@ class Updater:
            
     def secure_boot_check():
         try:
-          c = wmi.WMI(namespace="root\\Microsoft\\Windows\\HardwareManagement")
-          for sb in c.MSFT_SecureBoot():
-              enabled = bool(sb.SecureBootEnabled)
-              print(f"Secure Boot Enabled: {enabled}")
-              system_requirements["SecureBoot"] == enabled
+            c = wmi.WMI(namespace=r"root\Microsoft\Windows\HardwareManagement")
+            for sb in c.MSFT_SecureBoot():
+                enabled = bool(sb.SecureBootEnabled)
+                print(f"Secure Boot Enabled: {enabled}")
+                system_requirements["SecureBoot"] = enabled
         except Exception as e:
             print(f"⚠️ Secure Boot check failed: {e}")
-            system_requirements["SecureBoot"] == disabled
+            system_requirements["SecureBoot"] = False
     def ssse42_check():
         import cpuinfo
         subprocess.run(["cmd", "/c", "pip install py-cpuinfo"], check=True)
@@ -77,7 +77,7 @@ class Updater:
         secure_boot_check()
         uefi_check()
         if system_requirements["TPM"] = True:
-            if system_requirements["SecureBoot"] = True:
+            if system_requirements["SecureBoot"] = enabled:
                 print("Upgrading to Windows 11...")
                 print("Downloading all available updates...")
                 subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
