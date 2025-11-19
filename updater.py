@@ -33,20 +33,6 @@ class Updater:
             system_requirements["TPM"] = "False"
             print("❌ Your PC lacks TPM. Installing Windows 11 on this system by the time gets harder and harder.")
             print("But don't worry, we'll check for remaining updates for the Windows version that is currently running.")
-    def ssse42_check():
-        import cpuinfo
-        subprocess.run(["cmd", "/c", "pip install py-cpuinfo"], check=True)
-        info = cpuinfo.get_cpu_info()
-        flags = info.get("flags", [])
-        if "sse4_2" in flags:
-            print("✅ SSE4.2 supported.")
-            return True
-        else:
-            print("❌ SSE4.2 not supported. For these CPUs, Clover is a must, OpenCore doesn't support those well.")
-            print(" ")
-            input("Press E to exit OpCore-Simplify and continue with Clover.") 
-            if user_input == "e":
-                sys.exit(3)
     def uefi_check():
         for fw in c.Win32_ComputerSystemFirmware():
             if fw.FirmwareType == 2:
