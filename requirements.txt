@@ -1,5 +1,7 @@
 This script requires:
 - Windows 10 64 bit or newer
+- Windows 11 is recommended to avoid any issues
+- On Windows, it's best to run the batch file as admin so if any issues the automated troubleshooter can run without issues
 - a supported Linux distro with all updates installed
 - macOS 11 Big Sur or newer
 It requires so not because of OpCore-Simplify's requirements - they are Python requirements so unless OpCore-Simplify's modified, it demands always the latest version of Python.
