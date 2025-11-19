@@ -516,7 +516,7 @@ class Updater:
             print("  Error during file update: {}".format(str(e)))
             return False
 
-def save_latest_sha_version(self, latest_sha):
+    def save_latest_sha_version(self, latest_sha):
         try:
             self.utils.write_file(self.sha_version, latest_sha.encode())
             self.current_step += 1
