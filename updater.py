@@ -11,176 +11,124 @@ import subprocess
 import sys
 import webbrowser
 import psutil
-import wmi
 import subprocess
 import winreg
 
-system_requirements = {
-    "TPM": None,
-    "SecureBoot": None,
-    "UEFI": None
-}
-class Updater:
-   def tpmcheck():
-       try:
-           c = wmi.WMI(namespace="root\\CIMV2\\Security\\MicrosoftTpm")
-           for tpm in c.Win32_Tpm():
-               print(f"TPM Version: {tpm.SpecVersion}")
-               if "2.0" in tpm.SpecVersion:
-                   system_requirements["TPM"] = True
-                   print("✅ TPM 2.0 detected.")
-       except Exception as e:
-            system_requirements["TPM"] = "False"
-            print("❌ Your PC lacks TPM. Installing Windows 11 on this system by the time gets harder and harder.")
-            print("But don't worry, we'll check for remaining updates for the Windows version that is currently running.")
-    def uefi_check():
-        for fw in c.Win32_ComputerSystemFirmware():
-            if fw.FirmwareType == 2:
-                system_requirements["UEFI"] = True
-                print("✅ UEFI supported.")
-            else:
-                system_requirements["UEFI"] = False
-                print("Your system is either running Legacy BIOS or has Legacy CSM enabled.")
-                print("")
-                print("If your system has legacy CSM enabled, I'd recommend go to your BIOS, disable Legacy CSM, save the changes and reinstall Windows since for macOS UEFI is required.")
-            
+class Updater
     def checkwindows11requirements():
         print("\n--- Windows 11 Requirements Diagnostics ---")
         print("Checking Windows 11 requirements...\n")
-        ssse42_check()
-        tpmcheck()
-        secure_boot_check()
-        uefi_check()
-        if system_requirements["TPM"] = True:
-            if system_requirements["SecureBoot"] = enabled:
-                print("Upgrading to Windows 11...")
-                print("Downloading all available updates...")
-                subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
-                print("Installing all available updates...")
-                subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
-                print("Your device is restarting to finish install updates...")
-                usoclient RestartDevice      
-            else:
-                print("Secure Boot is missing or disabled.")
-                print("We'll check whether we can bypass Windows 11's requirements...")
-                 edition = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"), "ProductName")[0]
-                print(f"Detected Windows Edition: {edition}")
-                print(f"System Requirements: {system_requirements}")
-                if "Pro" in edition True or if "Education" in edition or if "Pro N" in edition or if "Education N" in edition or if "Enterprise" in edition or if "Enterprise N" in edition:
-                    print("✅ Applying upgrade bypass for Windows 11's requirements...")
-                    print("Deleting the registry key GE25H2 in CompatMarkers"...")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE25H2" /f"], check=True)
-                    print("Deleting the registry key GE24H2 in CompatMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE24H2" /f"], check=True)
-                    print("Deleting the registry key NI23H2 in CompatMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI23H2" /f"], check=True)
-                    print("Deleting the registry key NI22H2 in CompatMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI22H2" /f"], check=True)
-                    print("Deleting the registry key NI21H2 in CompatMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI21H2" /f"], check=True)
-                    print("Deleting the registry key GE25H2 in Shared > CompatMarkers"...")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE25H2" /f"], check=True)
-                    print("Deleting the registry key GE24H2 in Shared > CompatMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE24H2" /f"], check=True)
-                    print("Deleting the registry key NI23H2 in Shared > CompatMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI23H2" /f"], check=True)
-                    print("Deleting the registry key NI22H2 in Shared > CompatMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI22H2" /f"], check=True)
-                    print("Deleting the registry key NI21H2 in Shared > CompatMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI21H2" /f"], check=True)
-                    print("Deleting the registry key GE25H2 in Shared > GeneralMarkers"...")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE25H2" /f"], check=True)
-                    print("Deleting the registry key GE24H2 in Shared > GeneralMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE24H2" /f"], check=True)
-                    print("Deleting the registry key NI23H2 in Shared > GeneralMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI23H2" /f"], check=True)
-                    print("Deleting the registry key NI22H2 in Shared > GeneralMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI22H2" /f"], check=True)
-                    print("Deleting the registry key NI21H2 in Shared > GeneralMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI21H2" /f"], check=True)
-                    print("Deleting the registry key GE25H2 in Shared > TargetVersionUpgradeExperienceIndicators"...")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE25H2" /f"], check=True)
-                    print("Deleting the registry key GE24H2 in Shared > TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE24H2" /f"], check=True)
-                    print("Deleting the registry key NI23H2 in Shared > TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI23H2" /f"], check=True)
-                    print("Deleting the registry key NI22H2 in Shared > TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI22H2" /f"], check=True)
-                    print("Deleting the registry key NI21H2 in Shared > TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI21H2" /f"], check=True)
-                    print("Deleting the registry key UNV in Shared > CompatMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\UNV" /f"], check=True)
-                    print("Deleting the registry key UNV in Shared > GeneralMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\UNV" /f"], check=True)
-                    print("Deleting the registry key UNV in Shared > TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\UNV" /f"], check=True)
-                    print("Deleting the registry key UNV in TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\UNV" /f"], check=True)
-                    print("Deleting the registry key UNV in GeneralMarkers")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\GeneralMarkers\UNV" /f"], check=True)
-                    print("Deleting the registry key GE25H2 in TargetVersionUpgradeExperienceIndicators"...")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE25H2" /f"], check=True)
-                    print("Deleting the registry key GE24H2 in TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE24H2" /f"], check=True)
-                    print("Deleting the registry key NI23H2 in TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI23H2" /f"], check=True)
-                    print("Deleting the registry key NI22H2 in TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI22H2" /f"], check=True)
-                    print("Deleting the registry key NI21H2 in TargetVersionUpgradeExperienceIndicators")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI21H2" /f"], check=True)
-                    print("Enable upgrades with unsupported TPM or CPU")
-                    subprocess.run(["cmd", "/c", "reg add "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU /t REG_DWORD /d 1 /f" /f"], check=True)
-                    print("Add hardware requirement check bypass variables")
-                    subprocess.run(["cmd", "/c", "reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\HwReqChk" /v HwReqChkVars /t REG_MULTI_SZ /d "SQ_SecureBootCapable=TRUE\0SQ_TpmVersion=2\0SQ_RamMB=4096" /f"], check=True)
-                    print("Add a policy to upgrade to Windows 11 so Windows Update can upgrade to Windows 11 without hardware requirements...")
-                    subprocess.run(["cmd", "/c", "reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersion /t REG_DWORD /d 1 /f"], check=True)
-                    subprocess.run(["cmd", "/c", "reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /t REG_SZ /d "25H2" /f"], check=True)
-                    print("Now we'll apply those policies")
-                    subprocess.run(["cmd", "/c", "gpupdate /force"], check=True)
-                    subprocess.run(["cmd", "/c", "gpupdate /logoff"], check=True)
-                    subprocess.run(["cmd", "/c", "gpupdate /boot"], check=True)
-                    print("Now all bypass tricks are done, now we'll check for Windows 11 upgrades and install those...")
-                    print("Downloading all available updates...")
-                    subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
-                    print("Installing all available updates...")
-                    subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
-                    print("Now reversing the policy changes")
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersion /f"], check=True)
-                    subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /f"], check=True)
-                    print("Your device is restarting to finish install updates...")
-                    usoclient RestartDevice
-                else:
-                    print("❌ Bypass unsupported for this edition.")
-                    print("Your computer doesn't meet the minimal requirements for Windows 11, nor we can update it by bypassing the minimum requirements because your edition of Windows doesn't support this bypass techniques.")
-                    url = "https://www.microsoft.com/en-US/software-download/windows11"
-                    webbrowser.open(url)
-                    print("Download a Windows 11 ISO from Microsoft.")
+        print("Checking for minimal requirements of Windows 11 is done only manually. So you have to answer the following questions:")
+        print("If you don't know what a CPU is or what CPU is used in your computer, open Settings and search info for your CPU.")
+        input("Does your PC use Intel Core 2 Quad or Intel Core 2 Duo processor? (y/n): ")
+        if input == y:
+            print("On these CPUs, it is recommended to use Clover.")
+            sys.exit(3)
+        if input == n:
+            print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 have been passed")
+            input("Does your PC have TPM2.0 enabled? (y/n): ")
+            if input == y:
+                print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 and TPM2.0 have been passed")
+                input("Does your PC have Secure Boot enabled? (y/n): ")
+                if input == y:
+                    print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2, TPM2.0 and Secure Boot have been passed")
+            if input == n:
+                print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 have been passed but the TPM2.0 requirements have been failed:")
+                input("Does your PC have TPM1.2 enabled? (y/n): ")
+                if input == n:
+                    print("OK, our automated bypass tricks will fail then since you don't have any TPM chip at all. What you can do is to download Windows 11 image from https://www.microsoft.com/en-US/software-download/windows11 .")
+                    print("Then mount the ISO, then run CMD as Admin and run D:\ (or your virtual drive's location) and then setup.exe /product server.")
                     print("")
-                    print("Then you can bypass Windows 11's requirements with running in CMD D:\ (or the virtual drive's letter) and then setup.exe /product server technique.")
-                    print("")
-                    print("In the meanwhile, we'll check for remaining Windows 10 updates...")
-                    print("Downloading all available updates...")
-                    subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
-                    print("Installing all available updates...")
-                    subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
-                    print("Your device is restarting to finish install updates...")
-                    usoclient RestartDevice
-        else:
-            print("❌ Your computer doesn't meet the minimal requirements for Windows 11, nor we can update it by bypassing the minimum requirements because TPM is absent.")
-            url = "https://www.microsoft.com/en-US/software-download/windows11"
-            webbrowser.open(url)
-            print("Download a Windows 11 ISO from Microsoft.")
-            print("")
-            print("Then you can bypass Windows 11's requirements with running in CMD D:\ (or the virtual drive's letter) and then setup.exe /product server technique.")
-            print("")
-            print("In the meanwhile, we'll check for remaining Windows 10 updates...")
-            print("Downloading all available updates...")
-            subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
-            print("Installing all available updates...")
-            subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
-            print("Your device is restarting to finish install updates...")
-            usoclient RestartDevice
-            
+                    print("But don't worry, we'll continue to check for updates for Windows 10...")
+                if input == y:
+                    print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 have been passed but the TPM2.0 requirements have been failed:")
+                    input("Does your PC have Pro, Pro N, Education, Education N, Enterprise, Enterprise N installed? (y/n): ")
+                    if input == n:
+                        
+                    if input == y:
+                        print("✅ Applying upgrade bypass for Windows 11's requirements...")
+                        print("Deleting the registry key GE25H2 in CompatMarkers"...")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE25H2" /f"], check=True)
+                        print("Deleting the registry key GE24H2 in CompatMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE24H2" /f"], check=True)
+                        print("Deleting the registry key NI23H2 in CompatMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI23H2" /f"], check=True)
+                        print("Deleting the registry key NI22H2 in CompatMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI22H2" /f"], check=True)
+                        print("Deleting the registry key NI21H2 in CompatMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI21H2" /f"], check=True)
+                        print("Deleting the registry key GE25H2 in Shared > CompatMarkers"...")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE25H2" /f"], check=True)
+                        print("Deleting the registry key GE24H2 in Shared > CompatMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE24H2" /f"], check=True)
+                        print("Deleting the registry key NI23H2 in Shared > CompatMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI23H2" /f"], check=True)
+                        print("Deleting the registry key NI22H2 in Shared > CompatMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI22H2" /f"], check=True)
+                        print("Deleting the registry key NI21H2 in Shared > CompatMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI21H2" /f"], check=True)
+                        print("Deleting the registry key GE25H2 in Shared > GeneralMarkers"...")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE25H2" /f"], check=True)
+                        print("Deleting the registry key GE24H2 in Shared > GeneralMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE24H2" /f"], check=True)
+                        print("Deleting the registry key NI23H2 in Shared > GeneralMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI23H2" /f"], check=True)
+                        print("Deleting the registry key NI22H2 in Shared > GeneralMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI22H2" /f"], check=True)
+                        print("Deleting the registry key NI21H2 in Shared > GeneralMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI21H2" /f"], check=True)
+                        print("Deleting the registry key GE25H2 in Shared > TargetVersionUpgradeExperienceIndicators"...")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE25H2" /f"], check=True)
+                        print("Deleting the registry key GE24H2 in Shared > TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE24H2" /f"], check=True)
+                        print("Deleting the registry key NI23H2 in Shared > TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI23H2" /f"], check=True)
+                        print("Deleting the registry key NI22H2 in Shared > TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI22H2" /f"], check=True)
+                        print("Deleting the registry key NI21H2 in Shared > TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI21H2" /f"], check=True)
+                        print("Deleting the registry key UNV in Shared > CompatMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\UNV" /f"], check=True)
+                        print("Deleting the registry key UNV in Shared > GeneralMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\UNV" /f"], check=True)
+                        print("Deleting the registry key UNV in Shared > TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\UNV" /f"], check=True)
+                        print("Deleting the registry key UNV in TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\UNV" /f"], check=True)
+                        print("Deleting the registry key UNV in GeneralMarkers")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\GeneralMarkers\UNV" /f"], check=True)
+                        print("Deleting the registry key GE25H2 in TargetVersionUpgradeExperienceIndicators"...")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE25H2" /f"], check=True)
+                        print("Deleting the registry key GE24H2 in TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE24H2" /f"], check=True)
+                        print("Deleting the registry key NI23H2 in TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI23H2" /f"], check=True)
+                        print("Deleting the registry key NI22H2 in TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI22H2" /f"], check=True)
+                        print("Deleting the registry key NI21H2 in TargetVersionUpgradeExperienceIndicators")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI21H2" /f"], check=True)
+                        print("Enable upgrades with unsupported TPM or CPU")
+                        subprocess.run(["cmd", "/c", "reg add "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU /t REG_DWORD /d 1 /f" /f"], check=True)
+                        print("Add hardware requirement check bypass variables")
+                        subprocess.run(["cmd", "/c", "reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\HwReqChk" /v HwReqChkVars /t REG_MULTI_SZ /d "SQ_SecureBootCapable=TRUE\0SQ_TpmVersion=2\0SQ_RamMB=4096" /f"], check=True)
+                        print("Add a policy to upgrade to Windows 11 so Windows Update can upgrade to Windows 11 without hardware requirements...")
+                        subprocess.run(["cmd", "/c", "reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersion /t REG_DWORD /d 1 /f"], check=True)
+                        subprocess.run(["cmd", "/c", "reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /t REG_SZ /d "25H2" /f"], check=True)
+                        print("Now we'll apply those policies")
+                        subprocess.run(["cmd", "/c", "gpupdate /force"], check=True)
+                        subprocess.run(["cmd", "/c", "gpupdate /logoff"], check=True)
+                        subprocess.run(["cmd", "/c", "gpupdate /boot"], check=True)
+                        print("Now all bypass tricks are done, now we'll check for Windows 11 upgrades and install those...")
+                        print("Downloading all available updates...")
+                        subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
+                        print("Installing all available updates...")
+                        subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
+                        print("Now reversing the policy changes")
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersion /f"], check=True)
+                        subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /f"], check=True)
+                        print("Your device is restarting to finish install updates...")
+                        usoclient RestartDevice
+
     def run_linux_updates():
         print("Checking for your Linux distro...")
         distro = ""
