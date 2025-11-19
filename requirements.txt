@@ -1,7 +1,11 @@
 This script requires:
+- a supported by macOS GPU, look here: https://dortania.github.io/GPU-Buyers-Guide/#a-quick-refresher-with-nvidia-and-web-drivers
+- 2GB RAM (in order to run macOS via OpCore-Simplify at all)
+- Intel Core i3, i5, i7, Xeon and some AMD CPUs are supported out of the box.
 - Windows 10 64 bit or newer
 - Windows 11 is recommended to avoid any issues
 - On Windows, it's best to run the batch file as admin so if any issues the automated troubleshooter can run without issues
 - a supported Linux distro with all updates installed
+- older versions of Linux distros may work but it's recommended to update to the latest one to have a smoother experience.
 - macOS 11 Big Sur or newer
-It requires so not because of OpCore-Simplify's requirements - they are Python requirements so unless OpCore-Simplify's modified, it demands always the latest version of Python.
+- older macOS versions may work but it's not tested at all and you may run into issues
