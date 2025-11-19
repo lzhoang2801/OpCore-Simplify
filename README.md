@@ -2,7 +2,7 @@
 <div align="center">
   <h3 align="center">OpCore Simplify Vulnerabilities fixes</h3>
 
-  <p> ⚠️ Disclaimer: This fork of OpCore-Simplify exists solely to demonstrate and propose a fix for a different vulnerabilities found in this project. </p>
+  <p> ⚠️ Disclaimer: This fork of OpCore-Simplify exists solely to demonstrate and propose a fix for a different vulnerabilities found in this project. And also it adds minor fixes to this project that can make this project even more user friendly. </p>
 <p> It is not intended for general use or long-term maintenance. Users are strongly encouraged to use the official repository here https://github.com/lzhoang2801/OpCore-Simplify for stable and trusted releases. </p>
 <p> This fork includes a proof-of-concept patch to mitigate all vulnerabilities. If accepted, it should be merged upstream. </p>
 <p>Vulnerabilities that are mitigated in this project:</p>
