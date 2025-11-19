@@ -40,10 +40,10 @@ class Updater:
           for sb in c.MSFT_SecureBoot():
               enabled = bool(sb.SecureBootEnabled)
               print(f"Secure Boot Enabled: {enabled}")
-              system_requirements["SecureBoot"] = True
+              system_requirements["SecureBoot"] == enabled
         except Exception as e:
             print(f"⚠️ Secure Boot check failed: {e}")
-            system_requirements["SecureBoot"] = False
+            system_requirements["SecureBoot"] == disabled
     def ssse42_check():
         import cpuinfo
         subprocess.run(["cmd", "/c", "pip install py-cpuinfo"], check=True)
