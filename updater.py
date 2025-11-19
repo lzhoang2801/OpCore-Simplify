@@ -29,13 +29,6 @@ class Updater:
                if "2.0" in tpm.SpecVersion:
                    system_requirements["TPM"] = True
                    print("✅ TPM 2.0 detected.")
-            else:
-                system_requirements["TPM"] = "False"
-                print("❌ Windows 11 doesn't support this outdated TPM chip. Installing Windows 11 on this system by the time gets harder and harder.")
-                print("")
-                print("It'll be makred as if TPM is missing.")
-                print("")
-                print("But don't worry, we'll check for remaining updates for the Windows version that is currently running.")
        except Exception as e:
             system_requirements["TPM"] = "False"
             print("❌ Your PC lacks TPM. Installing Windows 11 on this system by the time gets harder and harder.")
