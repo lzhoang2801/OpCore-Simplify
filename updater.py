@@ -14,7 +14,7 @@ import psutil
 import socket
 import requests
 
-class Updater
+class Updater:
     def check_internet():
         try:
             # Basic connectivity test (Google DNS)
