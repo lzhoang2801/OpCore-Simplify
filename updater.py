@@ -82,7 +82,7 @@ class Updater:
                         print("Installing all available updates...")
                         subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
                         print("Your device is restarting to finish install updates...")
-                        usoclient RestartDevice
+                        subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True)
                     if input == y:
                         print("✅ Applying upgrade bypass for Windows 11's requirements...")
                         print("Deleting the registry key GE25H2 in CompatMarkers"...")
