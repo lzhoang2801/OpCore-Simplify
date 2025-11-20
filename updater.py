@@ -68,7 +68,7 @@ class Updater:
                     print("Installing all available updates...")
                     subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
                     print("Your device is restarting to finish install updates...")
-                    usoclient RestartDevice
+                    subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True
                 if input == y:
                     print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 have been passed but the TPM2.0 requirements have been failed:")
                     input("Does your PC have Pro, Pro N, Education, Education N, Enterprise, Enterprise N installed? (y/n): ")
