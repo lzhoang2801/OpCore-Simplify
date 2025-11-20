@@ -186,8 +186,14 @@ class Updater:
             "cmd", "/c",
             r'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /f'
         ])
-
-
+	def check_windows11_requirements():
+		print("\n--- Windows 11 Requirements Diagnostics ---\n")
+		if ask_question("Does your PC use Intel Core 2 Quad or Duo processor? (y/n): "):
+			print("❌ Unsupported CPU. Recommended to use Clover bootloader.")
+			sys.exit(3)
+		if ask_question("Does your PC have TPM2.0 enabled? (y/n): "):
+			print("✅ TPM2.0 requirement passed.")
+			
     def diagnose_environment_to_updateandfix():
         system = platform.system()
         release = platform.release()
@@ -202,10 +208,9 @@ class Updater:
             print("To upgrade from 32 bit to 64 bit operating system, you need to reinstall the operating system using your flash drive.")
             print("If your operating system doesn't have 64 bit CPU, it is unsupported by OpCore-Simplify.")
             print("")
-
             input("Press E to exit OpCore-Simplify")
             if user_input == "e":
-            sys.exit(3)
+            	sys.exit(3)
         if system == "macOS":
             run_macos_updates()
         if system == "Linux":
