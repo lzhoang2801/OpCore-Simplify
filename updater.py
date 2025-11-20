@@ -11,10 +11,33 @@ import subprocess
 import sys
 import webbrowser
 import psutil
-import subprocess
-import winreg
+import socket
+import requests
 
 class Updater
+    def check_internet():
+        try:
+            # Basic connectivity test (Google DNS)
+            socket.create_connection(("8.8.8.8", 53), timeout=3)
+            return True
+        except OSError:
+            return False
+    def troubleshoot_connectivity(self):
+        if not self.check_internet():
+            print("❌ No internet connection detected.")
+            print("Please check your Wi-Fi/Ethernet, restart your router, or verify cables.")
+            return False
+        try:
+            r = requests.get("https://github.com", timeout=5)
+            if r.status_code == 200:
+                print("✅ Internet is working, but GitHub API may be blocked.")
+                print("Please check firewall/proxy settings or try again later.")
+                return True
+        except requests.exceptions.SSLError:
+            print("⚠️ SSL error detected. Please check your system clock and certificates.")
+        except requests.exceptions.RequestException:
+            print("⚠️ Could not reach GitHub. Please check firewall/proxy settings.")
+        return False
     def checkwindows11requirements():
         print("\n--- Windows 11 Requirements Diagnostics ---")
         print("Checking Windows 11 requirements...\n")
@@ -39,12 +62,27 @@ class Updater
                     print("OK, our automated bypass tricks will fail then since you don't have any TPM chip at all. What you can do is to download Windows 11 image from https://www.microsoft.com/en-US/software-download/windows11 .")
                     print("Then mount the ISO, then run CMD as Admin and run D:\ (or your virtual drive's location) and then setup.exe /product server.")
                     print("")
-                    print("But don't worry, we'll continue to check for updates for Windows 10...")
+                    print("But don't worry, we'll continue to check for updates for Windows 10...")\
+                    print("Downloading all available updates...")
+                    subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
+                    print("Installing all available updates...")
+                    subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
+                    print("Your device is restarting to finish install updates...")
+                    usoclient RestartDevice
                 if input == y:
                     print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 have been passed but the TPM2.0 requirements have been failed:")
                     input("Does your PC have Pro, Pro N, Education, Education N, Enterprise, Enterprise N installed? (y/n): ")
                     if input == n:
-                        
+                        print("OK, our automated bypass tricks will fail then since you don't have any TPM chip at all. What you can do is to download Windows 11 image from https://www.microsoft.com/en-US/software-download/windows11 .")
+                        print("Then mount the ISO, then run CMD as Admin and run D:\ (or your virtual drive's location) and then setup.exe /product server.")
+                        print("")
+                        print("But don't worry, we'll continue to check for updates for Windows 10...")\
+                        print("Downloading all available updates...")
+                        subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
+                        print("Installing all available updates...")
+                        subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
+                        print("Your device is restarting to finish install updates...")
+                        usoclient RestartDevice
                     if input == y:
                         print("✅ Applying upgrade bypass for Windows 11's requirements...")
                         print("Deleting the registry key GE25H2 in CompatMarkers"...")
@@ -233,7 +271,8 @@ class Updater
                     if build <= 19045.5073:
                         print("⚠️ Your version of Windows 10 is extremely out of date.")
                         print("We'll update Windows - right now you're exposed to vulnerabilities that you haven't patched yet that were fixed long ago.")
-
+                        print("That's why OpCore-Simplify doesn't work properly.")
+               
                         try:
                             print("Checking for updates...")
                             subprocess.run(["cmd", "/c", "usoclient StartInteractiveScan"], check=True)
@@ -389,22 +428,23 @@ class Updater
         if latest_sha_version is None:
             print("Could not verify the latest version from GitHub.")
             print("Current script SHA version: {}".format(current_sha_version))
-            print("Please check your internet connection and try again later.")
+            print("Running connectivity diagnostics...\n")
             print("")
             
-            while True:
-                user_input = self.utils.request_input("Do you want to skip the update process? (yes/No): ").strip().lower()
-                if user_input == "yes":
-                    print("")
-                    print("Update process skipped.")
-                    return False
-                elif user_input == "no":
-                    print("")
-                    print("Continuing with update using default version check...")
-                    latest_sha_version = "update_forced_by_user"
-                    break
-                else:
-                    print("\033[91mInvalid selection, please try again.\033[0m\n\n")
+            if not self.troubleshoot_connectivity():
+                while True:
+                    user_input = self.utils.request_input(
+                        "Do you want to skip the update process? (yes/No): "
+                    ).strip().lower()
+                    if user_input == "yes":
+                        print("\nUpdate process skipped.")
+                        return False
+                    elif user_input == "no":
+                        print("\nContinuing with update using default version check...")
+                        latest_sha_version = "update_forced_by_user"
+                        break
+                    else:
+                        print("\033[91mInvalid selection, please try again.\033[0m\n\n"))
         else:
             print("Current script SHA version: {}".format(current_sha_version))
             print("Latest script SHA version: {}".format(latest_sha_version))
