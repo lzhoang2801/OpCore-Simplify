@@ -69,10 +69,10 @@ class Updater:
                     subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
                     print("Your device is restarting to finish install updates...")
                     subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True
-                if input == y:
+                if input = y:
                     print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 have been passed but the TPM2.0 requirements have been failed:")
                     input("Does your PC have Pro, Pro N, Education, Education N, Enterprise, Enterprise N installed? (y/n): ")
-                    if input == n:
+                    if input = n:
                         print("OK, our automated bypass tricks will fail then since you don't have any TPM chip at all. What you can do is to download Windows 11 image from https://www.microsoft.com/en-US/software-download/windows11 .")
                         print("Then mount the ISO, then run CMD as Admin and run D:\ (or your virtual drive's location) and then setup.exe /product server.")
                         print("")
