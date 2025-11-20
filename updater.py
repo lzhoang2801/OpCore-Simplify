@@ -95,7 +95,99 @@ class Updater:
                 return False
             else:
                 print("Please answer with 'y' or 'n'.")
-    
+    def run_command(command: list):
+        """Run a system command safely with error handling."""
+        try:
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️ Command failed: {command}\nError: {e}")
+    def delete_registry_keys(keys):
+        """Delete a list of registry keys."""
+        for key in keys:
+            print(f"Deleting registry key: {key}")
+            run_command(["cmd", "/c", f'reg delete "{key}" /f'])
+    def apply_bypass():
+        """Apply Windows 11 requirement bypass policies."""
+        print("✅ Applying upgrade bypass for Windows 11's requirements...")
+
+        # Registry cleanup
+        keys_to_delete = [
+            r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE25H2',
+            r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE24H2',
+            r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI23H2',
+            r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI22H2',
+            r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI21H2',
+            r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE25H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE24H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI23H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI22H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI21H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE25H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE24H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI23H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI22H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI21H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE25H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE24H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI23H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI22H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI21H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\UNV’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\UNV’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\UNV’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\GeneralMarkers\UNV’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE25H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE24H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI23H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI22H2’,
+	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI21H2’,
+        ]
+        delete_registry_keys(keys_to_delete)
+
+        # Allow unsupported CPU/TPM
+        run_command([
+            "cmd", "/c",
+            r'reg add "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU /t REG_DWORD /d 1 /f'
+        ])
+
+        # Hardware requirement bypass variables
+        run_command([
+            "cmd", "/c",
+            r'reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\HwReqChk" '
+            r'/v HwReqChkVars /t REG_MULTI_SZ /d "SQ_SecureBootCapable=TRUE\0SQ_TpmVersion=2\0SQ_RamMB=4096" /f'
+        ])
+
+        # Policy to force upgrade
+        run_command([
+            "cmd", "/c",
+            r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersion /t REG_DWORD /d 1 /f'
+        ])
+        run_command([
+            "cmd", "/c",
+            r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /t REG_SZ /d "25H2" /f'
+        ])
+
+        # Apply policies
+        run_command(["cmd", "/c", "gpupdate /force"])
+        run_command(["cmd", "/c", "gpupdate /logoff"])
+        run_command(["cmd", "/c", "gpupdate /boot"])
+
+        print("Bypass applied. Checking for Windows 11 upgrades...")
+        run_command(["cmd", "/c", "usoclient StartDownload"])
+        run_command(["cmd", "/c", "usoclient StartInstall"])
+        run_command(["cmd", "/c", "usoclient RestartDevice"])
+
+        # Reverse policy changes
+        run_command([
+            "cmd", "/c",
+            r'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersion /f'
+        ])
+        run_command([
+            "cmd", "/c",
+            r'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /f'
+        ])
+
+
     def diagnose_environment_to_updateandfix():
         system = platform.system()
         release = platform.release()
@@ -167,6 +259,7 @@ class Updater:
                             usoclient RestartDevice
                     if build >= 19045.5073:
                         print("You're running a fairly up to date Windows 10. Since Windows 10 is out of support, we'll update your system to a supported version of Windows.")
+                        print("Using Windows 10 increases over time the risks of vulnerabilities that attackers can exploit, incompatible scripts, incompatible apps, incompatible websites, incompatible hardware and incompatible modern frameworks.")
                         checkwindows11requirements()
     
     def __init__(self):
