@@ -64,7 +64,7 @@ class Updater:
                         subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
                         print("Your device is restarting to finish install updates...")
                         subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True
-                    elif input == n:
+                    elif input == n:            
                         print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2, TPM2.O and Secure Boot have been passed but CPU have been failed:")
                         input("Does your PC have Pro, Pro N, Education, Education N, Enterprise, Enterprise N installed? (y/n): ")
                         if input == n:
