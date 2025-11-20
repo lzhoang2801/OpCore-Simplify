@@ -44,19 +44,19 @@ class Updater:
         print("Checking for minimal requirements of Windows 11 is done only manually. So you have to answer the following questions:")
         print("If you don't know what a CPU is or what CPU is used in your computer, open Settings and search info for your CPU.")
         input("Does your PC use Intel Core 2 Quad or Intel Core 2 Duo processor? (y/n): ")
-        if input == y:
+        if input == "y":
             print("On these CPUs, it is recommended to use Clover.")
             sys.exit(3)
-        elif input == n:
+        elif input == "n":
             print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 have been passed")
             input("Does your PC have TPM2.0 enabled? (y/n): ")
-            if input == y:
+            if input == "y":
                 print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 and TPM2.0 have been passed")
                 input("Does your PC have Secure Boot enabled? (y/n): ")
-                if input == y:
+                if input == "y":
                     print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2, TPM2.0 and Secure Boot have been passed")
                     input("Does your PC have an officially supported by Windows 11 CPU? (y/n): ")
-                    if input == y:
+                    if input == "y":
                         print("Upgrading to Windows 11...")
                         print("Downloading all available updates...")
                         subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
@@ -64,10 +64,10 @@ class Updater:
                         subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
                         print("Your device is restarting to finish install updates...")
                         subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True
-                    elif input == n:            
+                    elif input == "n":            
                         print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2, TPM2.O and Secure Boot have been passed but CPU have been failed:")
                         input("Does your PC have Pro, Pro N, Education, Education N, Enterprise, Enterprise N installed? (y/n): ")
-                        if input == n:
+                        if input == "n":
                             print("OK, our automated bypass tricks will fail then since you don't have a supported edition at all. What you can do is to download Windows 11 image from https://www.microsoft.com/en-US/software-download/windows11 .")
                             print("Then mount the ISO, then run CMD as Admin and run D:\ (or your virtual drive's location) and then setup.exe /product server.")
                             print("")
@@ -78,7 +78,7 @@ class Updater:
                             subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
                             print("Your device is restarting to finish install updates...")
                             subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True)
-                        elif input == y:
+                        elif input == "y":
                             print("✅ Applying upgrade bypass for Windows 11's requirements...")
                             print("Deleting the registry key GE25H2 in CompatMarkers"...")
                             subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE25H2" /f"], check=True)
@@ -161,10 +161,10 @@ class Updater:
                             subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /f"], check=True)
                             print("Your device is restarting to finish install updates...")
                             subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True
-            elif input == n:
+            elif input == "n":
                 print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 have been passed but the TPM2.0 requirements have been failed:")
                 input("Does your PC have TPM1.2 enabled? (y/n): ")
-                if input == n:
+                if input == "n":
                     print("OK, our automated bypass tricks will fail then since you don't have any TPM chip at all. What you can do is to download Windows 11 image from https://www.microsoft.com/en-US/software-download/windows11 .")
                     print("Then mount the ISO, then run CMD as Admin and run D:\ (or your virtual drive's location) and then setup.exe /product server.")
                     print("")
@@ -175,7 +175,7 @@ class Updater:
                     subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
                     print("Your device is restarting to finish install updates...")
                     subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True
-                elif input = y:
+                elif input = "y":
                     print("Well, we're coming to the next question: - up until now, the requirements for SSE4.2 have been passed but the TPM2.0 requirements have been failed:")
                     input("Does your PC have Pro, Pro N, Education, Education N, Enterprise, Enterprise N installed? (y/n): ")
                     if input = n:
@@ -189,7 +189,7 @@ class Updater:
                         subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
                         print("Your device is restarting to finish install updates...")
                         subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True)
-                    elif input == y:
+                    elif input == "y":
                         print("✅ Applying upgrade bypass for Windows 11's requirements...")
                         print("Deleting the registry key GE25H2 in CompatMarkers"...")
                         subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE25H2" /f"], check=True)
