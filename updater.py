@@ -62,7 +62,7 @@ class Updater:
                     print("OK, our automated bypass tricks will fail then since you don't have any TPM chip at all. What you can do is to download Windows 11 image from https://www.microsoft.com/en-US/software-download/windows11 .")
                     print("Then mount the ISO, then run CMD as Admin and run D:\ (or your virtual drive's location) and then setup.exe /product server.")
                     print("")
-                    print("But don't worry, we'll continue to check for updates for Windows 10...")\
+                    print("But don't worry, we'll continue to check for updates for Windows 10...")
                     print("Downloading all available updates...")
                     subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
                     print("Installing all available updates...")
