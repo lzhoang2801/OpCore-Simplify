@@ -165,7 +165,7 @@ class Updater:
                         subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersion /f"], check=True)
                         subprocess.run(["cmd", "/c", "reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /f"], check=True)
                         print("Your device is restarting to finish install updates...")
-                        usoclient RestartDevice
+                        subprocess.run(["cmd", "/c", "usoclient RestartDevice"], check=True)
 
     def run_linux_updates():
         print("Checking for your Linux distro...")
