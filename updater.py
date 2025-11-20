@@ -5,8 +5,170 @@ from Scripts import utils
 import os
 import tempfile
 import shutil
+import platform
+import struct
+import subprocess
+import sys
+import webbrowser
+import psutil
+import socket
+import requests
 
 class Updater:
+    def check_internet():
+        try:
+            # Basic connectivity test (Google DNS)
+            socket.create_connection(("8.8.8.8", 53), timeout=3)
+            return True
+        except OSError:
+            return False
+    def troubleshoot_connectivity(self):
+        if not self.check_internet():
+            print("❌ No internet connection detected.")
+            print("Please check your Wi-Fi/Ethernet, restart your router, or verify cables.")
+            return False
+        try:
+            r = requests.get("https://github.com", timeout=5)
+            if r.status_code == 200:
+                print("✅ Internet is working, but GitHub API may be blocked.")
+                print("Please check firewall/proxy settings or try again later.")
+                return True
+        except requests.exceptions.SSLError:
+            print("⚠️ SSL error detected. Please check your system clock and certificates.")
+        except requests.exceptions.RequestException:
+            print("⚠️ Could not reach GitHub. Please check firewall/proxy settings.")
+        return False
+    def run_linux_updates():
+        print("Checking for your Linux distro...")
+        distro = ""
+        try:
+            # Try to detect distribution name
+            with open("/etc/os-release") as f:
+                for line in f:
+                    if line.startswith("ID="):
+                        distro = line.strip().split("=")[1].strip('"')
+                        break
+        except Exception:
+            distro = platform.system().lower()
+
+        # Map distro to update command
+        if distro in ["ubuntu", "debian", "zorin", "kali", "raspberrypi", "raspbian", "mx"]:
+            print("Checking and applying updates for your computer...")
+            cmd = "sudo apt update && sudo apt upgrade -y"
+        elif distro in ["fedora", "rhel", "centos"]:
+            print("Checking and applying updates for your computer...")
+            cmd = "sudo dnf upgrade -y"
+        elif distro in ["arch", "manjaro"]:
+            print("Checking and applying updates for your computer...")
+            cmd = "sudo pacman -Syu"
+        elif distro in ["opensuse", "sles"]:
+            print("Checking and applying updates for your computer...")
+            cmd = "sudo zypper update -y"
+        elif distro in ["centos"]:
+            print("Attempting to check for updates using older methods on Cent OS if it still runs Cent OS 7...")
+            cmd = "sudo yum update -y"
+        elif distro in ["gentoo"]:
+            print("Checking and applying updates for Gentoo...")
+            cmd = "sudo emerge --sync && sudo emerge -uD @world"
+        else:
+            print(f"Unsupported distro: {distro}. Automatic diagnostics failed to run. This project may be stuck at a vulnerable version.")
+            return
+
+        # Launch in terminal
+        subprocess.run([
+        "gnome-terminal", "--",
+        "bash", "-c", f"{cmd}; exec bash"
+        ])
+    def run_macos_updates():
+        print("Checking and applying updates for your computer...")
+        subprocess.run([
+        "osascript", "-e",
+        'tell application "Terminal" to do script "softwareupdate -l; sudo softwareupdate -ia"'
+        ]) 
+    def ask_question(prompt: str) -> bool:
+        """Ask a yes/no question and return True for 'y', False for 'n'."""
+        while True:
+            answer = input(prompt).strip().lower()
+            if answer in ("y", "yes"):
+                return True
+            elif answer in ("n", "no"):
+                return False
+            else:
+                print("Please answer with 'y' or 'n'.")
+    
+    def diagnose_environment_to_updateandfix():
+        system = platform.system()
+        release = platform.release()
+        version = platform.version()
+        arch = struct.calcsize("P") * 8
+
+        print("\n--- OpCore-Simplify Error Diagnostics ---")
+        print(f"OS: {system} {release} ({version}), Architecture: {arch}-bit")
+
+        if arch != 64:
+            print("⚠️ 32-bit environment detected. OpenCore-Simplify requires 64-bit.")
+            print("To upgrade from 32 bit to 64 bit operating system, you need to reinstall the operating system using your flash drive.")
+            print("If your operating system doesn't have 64 bit CPU, it is unsupported by OpCore-Simplify.")
+            print("")
+
+            input("Press E to exit OpCore-Simplify")
+            if user_input == "e":
+            sys.exit(3)
+        if system == "macOS":
+            run_macos_updates()
+        if system == "Linux":
+            run_linux_updates()
+        if system == "Windows":
+            print("Running sfc /scannow...")
+            subprocess.run(["cmd", "/c", "sfc /scannow"], check=True)
+            print("Running checks for Windows version that this PC is running...")
+            try:
+                build_number = int(version.split('.')[-1])
+                print(f"Windows build number: {build_number}")
+                if release in ["8", "8.1"]:
+                    print("Windows 8 or 8.1 detected.")
+                    print("This script doesn't support Windows 8.1 or older since it requires Python 3.14 or newer which requires Windows 10 at absolute minimum.")
+                    print("It requires some other libraries that either require the latest version of Windows 10 or Windows 11.")
+                    print("")
+                    print("You need to upgrade to Windows 11 in order to run this script. No automated troubleshooting possible for such an old version of Windows.")
+                    url = "https://www.microsoft.com/en-US/software-download/windows11"
+                    webbrowser.open(url)
+                    input("Press E to exit OpCore-Simplify")
+                    if user_input == "e":
+                        sys.exit(3)
+                elif int(release)<8:
+                    print("Windows 7, Vista, XP or older versions of Windows are detected.")
+                    print("This script doesn't support Windows 8.1 or older since it requires Python 3.14 or newer which requires Windows 10 at absolute minimum.")
+                    print("It requires some other libraries that either require the latest version of Windows 10 or Windows 11.")
+                    print("")
+                    print("You need to upgrade to Windows 11 in order to run this script. No automated troubleshooting possible for such an old version of Windows.")
+                    url = "https://www.microsoft.com/en-US/software-download/windows11"
+                    webbrowser.open(url)
+                    input("Press E to exit OpCore-Simplify") 
+                    if user_input == "e":
+                        sys.exit(3)
+                elif release in ["10"]:
+                    if build <= 19045.5073:
+                        print("⚠️ Your version of Windows 10 is extremely out of date.")
+                        print("We'll update Windows - right now you're exposed to vulnerabilities that you haven't patched yet that were fixed long ago.")
+                        print("That's why OpCore-Simplify doesn't work properly.")
+               
+                        try:
+                            print("Checking for updates...")
+                            subprocess.run(["cmd", "/c", "usoclient StartInteractiveScan"], check=True)
+
+                            print("Downloading all available updates...")
+                            subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
+
+                            print("Installing all available updates...")
+                            subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
+                            
+                            print("Your device is restarting to finish installing updates...")
+                            usoclient RestartDevice
+                    if build >= 19045.5073:
+                        print("You're running a fairly up to date Windows 10. Since Windows 10 is out of support, we'll update your system to a supported version of Windows.")
+                        checkwindows11requirements()
+    
     def __init__(self):
         self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher()
