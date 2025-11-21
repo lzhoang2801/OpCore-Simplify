@@ -17,7 +17,6 @@ import shutil
 import traceback
 import time
 import json
-from jsonschema import validate, ValidationError
 from Scripts.utils_re import is_trusted_repo, RepoError
 hardware_schema = {
     "type": "object",
