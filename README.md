@@ -15,6 +15,7 @@
 <p>-An attacker could delete files outside OpCore-Simplify's workspace - which could lead to corrupting the operating system or introduce vulnerabilities. CVSS v3.1 Base Score: 9.5</p>
 <p> Oversized file uploads (DoS risk) - CVSS v3.1 Base Score: 6.1. This could lead to uploading too large files to exhaust CPU or RAM usage and crash the system. This is mitigated by enforcing 100MB file size limit. </p>
 <p> Unreadable/malicious file crash - CVSS v3.1 Base Score: 5.9. This can lead to crashing the checker, leading to denial of service attacks. This is mitigated by adding try/except around file reads. </p>
+<p>-If the user uses Legacy BIOS and first gen i3/i5/i7 to clarify them that OpenCore is not recommended and to expect instability.</p>
 
 Other fixes:
 <p>-Previously OpCore-Simplify if ran on Windows 8 or older versions gave errors that for non-experienced users are hard to understand. This is fixed by checking at the beginning of the batch file to check if that computer runs Windows 10 or newer and if not, to warn the user that this version of Windows is unsupported and stop executing anything.</p>
