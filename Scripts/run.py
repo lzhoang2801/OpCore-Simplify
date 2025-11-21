@@ -1,126 +1,153 @@
-import sys
-import subprocess
-import shlex
-import os
+# Source: https://github.com/corpnewt/SSDTTime/blob/7b3fb78112bf320a1bc6a7e50dddb2b375cb70b0/Scripts/run.py
 
-class SecureRun:
-    def __init__(self,
-                 allowed_cmds=None,
-                 allowed_args=None,
-                 safe_cwd=None,
-                 safe_env=None,
-                 max_output_bytes=10 * 1024 * 1024,  # 10MB
-                 default_timeout=300  # 5 minutes
-                 ):
-        # Whitelist of command names (no paths unless inside safe_cwd)
-        self.allowed_cmds = set(allowed_cmds or [
-            "ls", "cp", "mv", "mkdir", "rm", "echo", "cat"
-        ])
-        # Optional simple arg whitelist (per command customize as needed)
-        self.allowed_args = allowed_args or {}
-        # Constrain working dir
-        self.safe_cwd = os.path.abspath(safe_cwd) if safe_cwd else None
-        # Minimal environment
-        self.safe_env = safe_env or {
-            "PATH": "/usr/bin:/bin",
-            "LANG": "C",
-            "LC_ALL": "C"
-        }
-        self.max_output_bytes = max_output_bytes
-        self.default_timeout = default_timeout
+import sys, subprocess, time, threading, shlex
+try:
+    from Queue import Queue, Empty
+except:
+    from queue import Queue, Empty
 
-    def _sanitize_args(self, args):
-        if isinstance(args, str):
-            parsed = shlex.split(args, posix=True)
-        elif isinstance(args, list):
-            parsed = list(args)
-        else:
-            raise ValueError("Arguments must be a list or string")
+ON_POSIX = 'posix' in sys.builtin_module_names
 
-        if not parsed:
-            raise ValueError("Empty command")
+class Run:
 
-        cmd = parsed[0]
-        # Reject absolute paths unless inside safe_cwd
-        if os.path.isabs(cmd):
-            if not self.safe_cwd or not os.path.commonpath([self.safe_cwd, os.path.abspath(cmd)]) == self.safe_cwd:
-                raise PermissionError(f"Absolute command path not allowed: {cmd}")
-            cmd_name = os.path.basename(cmd)
-        else:
-            cmd_name = cmd
+    def __init__(self):
+        return
 
-        if cmd_name not in self.allowed_cmds and cmd_name != "sudo":
-            raise PermissionError(f"Command not allowed: {cmd_name}")
-
-        # Basic argument whitelist per command (optional)
-        allowed = self.allowed_args.get(cmd_name)
-        if allowed:
-            for a in parsed[1:]:
-                if a.startswith("-") and a not in allowed:
-                    raise PermissionError(f"Flag not allowed for {cmd_name}: {a}")
-
-        # Reject common shell metacharacters
-        for a in parsed:
-            if any(m in a for m in ["|", "&", ";", ">", "<", "$(", "`"]):
-                raise PermissionError(f"Shell metacharacter not allowed in arg: {a}")
-
-        return parsed
-
-    def _popen(self, args, cwd=None, env=None):
-        return subprocess.Popen(
-            args,
-            shell=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            bufsize=0,
-            universal_newlines=False,
-            close_fds=("posix" in sys.builtin_module_names),
-            cwd=cwd or self.safe_cwd,
-            env=env or self.safe_env
-        )
-
-    def run(self, command,
-            timeout=None,
-            print_stdout=False,
-            print_stderr=False,
-            allow_sudo=False):
-        args = self._sanitize_args(command)
-
-        # Warn if sudo is used
-        if args[0] == "sudo" or allow_sudo:
-            print("⚠️ Warning: sudo usage may introduce privilege escalation risks if running commands that you don't know what they do.")
-
-        p = self._popen(args)
-
-        to = timeout if timeout is not None else self.default_timeout
+    def _read_output(self, pipe, q):
         try:
-            stdout_bytes, stderr_bytes = p.communicate(timeout=to)
-        except subprocess.TimeoutExpired:
-            p.kill()
-            stdout_bytes, stderr_bytes = p.communicate()
-            return "", "Timeout expired", 124
-        except Exception as e:
-            try:
-                p.kill()
-            except Exception:
-                pass
-            return "", f"Execution error: {e}", 1
+            for line in iter(lambda: pipe.read(1), b''):
+                q.put(line)
+        except ValueError:
+            pass
+        pipe.close()
 
-        if len(stdout_bytes) > self.max_output_bytes:
-            stdout_bytes = stdout_bytes[:self.max_output_bytes]
-        if len(stderr_bytes) > self.max_output_bytes:
-            stderr_bytes = stderr_bytes[:self.max_output_bytes]
+    def _create_thread(self, output):
+        # Creates a new queue and thread object to watch based on the output pipe sent
+        q = Queue()
+        t = threading.Thread(target=self._read_output, args=(output, q))
+        t.daemon = True
+        return (q,t)
 
-        def decode_clean(b):
-            s = b.decode("utf-8", errors="replace")
-            return "".join(ch for ch in s if ch.isprintable() or ch in "\n\r\t")
+    def _stream_output(self, comm, shell = False):
+        output = error = ""
+        p = None
+        try:
+            if shell and type(comm) is list:
+                comm = " ".join(shlex.quote(x) for x in comm)
+            if not shell and type(comm) is str:
+                comm = shlex.split(comm)
+            p = subprocess.Popen(comm, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0, universal_newlines=True, close_fds=ON_POSIX)
+            # Setup the stdout thread/queue
+            q,t   = self._create_thread(p.stdout)
+            qe,te = self._create_thread(p.stderr)
+            # Start both threads
+            t.start()
+            te.start()
 
-        stdout = decode_clean(stdout_bytes)
-        stderr = decode_clean(stderr_bytes)
+            while True:
+                c = z = ""
+                try: c = q.get_nowait()
+                except Empty: pass
+                else:
+                    sys.stdout.write(c)
+                    output += c
+                    sys.stdout.flush()
+                try: z = qe.get_nowait()
+                except Empty: pass
+                else:
+                    sys.stderr.write(z)
+                    error += z
+                    sys.stderr.flush()
+                if not c==z=="": continue # Keep going until empty
+                # No output - see if still running
+                p.poll()
+                if p.returncode != None:
+                    # Subprocess ended
+                    break
+                # No output, but subprocess still running - stall for 20ms
+                time.sleep(0.02)
 
-        if print_stdout and stdout:
-            print(stdout)
-        if print_stderr and stderr:
-            print(stderr)
+            o, e = p.communicate()
+            return (output+o, error+e, p.returncode)
+        except:
+            if p:
+                try: o, e = p.communicate()
+                except: o = e = ""
+                return (output+o, error+e, p.returncode)
+            return ("", "Command not found!", 1)
 
-        return stdout, stderr, p.returncode
+    def _decode(self, value, encoding="utf-8", errors="ignore"):
+        # Helper method to only decode if bytes type
+        if sys.version_info >= (3,0) and isinstance(value, bytes):
+            return value.decode(encoding,errors)
+        return value
+
+    def _run_command(self, comm, shell = False):
+        c = None
+        try:
+            if shell and type(comm) is list:
+                comm = " ".join(shlex.quote(x) for x in comm)
+            if not shell and type(comm) is str:
+                comm = shlex.split(comm)
+            p = subprocess.Popen(comm, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            c = p.communicate()
+        except:
+            if c == None:
+                return ("", "Command not found!", 1)
+        return (self._decode(c[0]), self._decode(c[1]), p.returncode)
+
+    def run(self, command_list, leave_on_fail = False):
+        # Command list should be an array of dicts
+        if type(command_list) is dict:
+            # We only have one command
+            command_list = [command_list]
+        output_list = []
+        for comm in command_list:
+            args   = comm.get("args",   [])
+            shell  = comm.get("shell",  False)
+            stream = comm.get("stream", False)
+            sudo   = comm.get("sudo",   False)
+            stdout = comm.get("stdout", False)
+            stderr = comm.get("stderr", False)
+            mess   = comm.get("message", None)
+            show   = comm.get("show",   False)
+            
+            if not mess == None:
+                print(mess)
+
+            if not len(args):
+                # nothing to process
+                continue
+            if sudo:
+                # Check if we have sudo
+                out = self._run_command(["which", "sudo"])
+                if "sudo" in out[0]:
+                    # Can sudo
+                    if type(args) is list:
+                        args.insert(0, out[0].replace("\n", "")) # add to start of list
+                    elif type(args) is str:
+                        args = out[0].replace("\n", "") + " " + args # add to start of string
+            
+            if show:
+                print(" ".join(args))
+
+            if stream:
+                # Stream it!
+                out = self._stream_output(args, shell)
+            else:
+                # Just run and gather output
+                out = self._run_command(args, shell)
+                if stdout and len(out[0]):
+                    print(out[0])
+                if stderr and len(out[1]):
+                    print(out[1])
+            # Append output
+            output_list.append(out)
+            # Check for errors
+            if leave_on_fail and out[2] != 0:
+                # Got an error - leave
+                break
+        if len(output_list) == 1:
+            # We only ran one command - just return that output
+            return output_list[0]
+        return output_list
