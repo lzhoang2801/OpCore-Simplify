@@ -68,7 +68,7 @@ class Updater:
             print(f"⚠ Download failed: {e}")
             self.troubleshoot_directory()
 
-	def unpack_archive(self, zip_path):
+    def unpack_archive(self, zip_path):
         try:
             print("Extracting archive...")
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
