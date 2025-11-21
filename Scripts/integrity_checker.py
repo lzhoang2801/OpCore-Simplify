@@ -4,7 +4,7 @@ import hmac
 from Scripts import utils
 
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
-SECRET_KEY = b'super_secret_key_here'  # Replace with securely stored key
+SECRET_KEY = b'L@_MqL~SlPDlX16a'  # Replace with securely stored key
 
 class IntegrityChecker:
     def __init__(self):
