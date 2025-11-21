@@ -90,14 +90,16 @@ class Updater:
         except Exception as e:
             print(f"⚠ Could not start OpCore-Simplify: {e}")
             self.troubleshoot_directory()	
-	def check_internet():
+	
+		def check_internet():
         try:
             # Basic connectivity test (Google DNS)
             socket.create_connection(("8.8.8.8", 53), timeout=3)
             return True
         except OSError:
             return False
-    def troubleshoot_connectivity(self):
+    
+	def troubleshoot_connectivity(self):
         print("----OpCore-Simplify Error Diagnostics------")
 		if not self.check_internet():
             print("❌ No internet connection detected.")
