@@ -52,7 +52,9 @@ class Updater:
         	self.fallback_to_downloads()
         	self.download_new_copy()
     	else:
-        	print("✔ Directory exists and is accessible.")    def download_new_copy(self):
+        	print("✔ Directory exists and is accessible.")    
+	
+	def download_new_copy(self):
         	try:
             	zip_path = os.path.join(self.extract_dir, "OpCore-Simplify.zip")
             	print(f"Downloading update to {zip_path}...")
