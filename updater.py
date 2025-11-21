@@ -13,9 +13,82 @@ import webbrowser
 import psutil
 import socket
 import requests
+import zipfile
 
 class Updater:
-    def check_internet():
+    def fallback_to_downloads(self):
+        """Switch extract_dir to Downloads as a safe fallback."""
+        downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+        self.extract_dir = os.path.join(downloads, "OpCore-Simplify")
+        print(f"➡ Falling back to: {self.extract_dir}")
+        os.makedirs(self.extract_dir, exist_ok=True)
+
+    def troubleshoot_directory(self):
+		print("----OpCore-Simplify Diagnostics------")
+        """Check home folder and extract_dir, fallback only if safe."""
+    	user_folder = os.path.expanduser("~")
+
+    	# Step 1: Verify home folder readability
+    	if not os.access(user_folder, os.R_OK):
+        	print(f"❌ Cannot read home folder: {user_folder}")
+        	print("Please create a new user account or repair your profile.")
+        	return
+
+    	try:
+        	os.listdir(user_folder)  # test encoding/locale readability
+    	except UnicodeDecodeError as e:
+        	print(f"❌ Home folder contains unreadable names: {e}")
+        	print("Please create a new user account or repair your profile.")
+        	return
+
+    	# Step 2: Verify extract_dir
+    	if not hasattr(self, "extract_dir"):
+        	# If your init doesn’t define extract_dir, set fallback
+        	self.fallback_to_downloads()
+        	return
+
+    	if not os.path.exists(self.extract_dir) or not os.access(self.extract_dir, os.R_OK | os.W_OK):
+        	print(f"⚠ Trouble with directory: {self.extract_dir}")
+        	self.fallback_to_downloads()
+        	self.download_new_copy()
+    	else:
+        	print("✔ Directory exists and is accessible.")    def download_new_copy(self):
+        	try:
+            	zip_path = os.path.join(self.extract_dir, "OpCore-Simplify.zip")
+            	print(f"Downloading update to {zip_path}...")
+            	result = subprocess.run(
+                	["curl", "-L", self.download_repo_url, "-o", zip_path],
+                	check=True, capture_output=True, text=True
+            )
+            print("✔ Download complete")
+            self.unpack_archive(zip_path)
+        except Exception as e:
+            print(f"⚠ Download failed: {e}")
+            self.troubleshoot_directory()
+
+	def unpack_archive(self, zip_path):
+        try:
+            print("Extracting archive...")
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(self.extract_dir)
+            print("✔ Extraction complete")
+            os.remove(zip_path)
+        except Exception as e:
+            print(f"⚠ Extraction failed: {e}")
+            self.troubleshoot_directory()
+
+    def start_opcore(self):
+        exe_path = os.path.join(self.extract_dir, "OpCore-Simplify.exe")
+        try:
+            if os.path.exists(exe_path):
+                subprocess.Popen([exe_path])
+                print("🚀 OpCore-Simplify started")
+            else:
+                raise FileNotFoundError("Executable not found")
+        except Exception as e:
+            print(f"⚠ Could not start OpCore-Simplify: {e}")
+            self.troubleshoot_directory()	
+	def check_internet():
         try:
             # Basic connectivity test (Google DNS)
             socket.create_connection(("8.8.8.8", 53), timeout=3)
@@ -23,7 +96,8 @@ class Updater:
         except OSError:
             return False
     def troubleshoot_connectivity(self):
-        if not self.check_internet():
+        print("----OpCore-Simplify Error Diagnostics------")
+		if not self.check_internet():
             print("❌ No internet connection detected.")
             print("Please check your Wi-Fi/Ethernet, restart your router, or verify cables.")
             return False
@@ -40,6 +114,7 @@ class Updater:
         return False
     def run_linux_updates():
         print("Checking for your Linux distro...")
+		print("To proceed with checking for updates, at some point you may need to enter your password since it runs this command as sudo.")
         distro = ""
         try:
             # Try to detect distribution name
@@ -81,11 +156,15 @@ class Updater:
         ])
     def run_macos_updates():
         print("Checking and applying updates for your computer...")
+		print("To proceed with checking for updates, you may need to enter your password since it runs this command as sudo.")
         subprocess.run([
         "osascript", "-e",
         'tell application "Terminal" to do script "softwareupdate -l; sudo softwareupdate -ia"'
         ]) 
-    def ask_question(prompt: str) -> bool:
+    def __init__(self):
+        print("\n--- Windows 11 Requirements Diagnostics ---\n")
+
+    def ask_question(self, prompt: str) -> bool:
         """Ask a yes/no question and return True for 'y', False for 'n'."""
         while True:
             answer = input(prompt).strip().lower()
@@ -95,104 +174,156 @@ class Updater:
                 return False
             else:
                 print("Please answer with 'y' or 'n'.")
-    def run_command(command: list):
+
+    def run_command(self, command: list):
         """Run a system command safely with error handling."""
         try:
             subprocess.run(command, check=True)
         except subprocess.CalledProcessError as e:
             print(f"⚠️ Command failed: {command}\nError: {e}")
-    def delete_registry_keys(keys):
+
+    def delete_registry_keys(self, keys):
         """Delete a list of registry keys."""
         for key in keys:
             print(f"Deleting registry key: {key}")
-            run_command(["cmd", "/c", f'reg delete "{key}" /f'])
-    def apply_bypass():
+            self.run_command(["cmd", "/c", f'reg delete "{key}" /f'])
+
+    def apply_bypass(self):
         """Apply Windows 11 requirement bypass policies."""
         print("✅ Applying upgrade bypass for Windows 11's requirements...")
 
-        # Registry cleanup
+        # Example registry cleanup (extend list as needed)
         keys_to_delete = [
             r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE25H2',
             r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\GE24H2',
             r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI23H2',
-            r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI22H2',
-            r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI21H2',
-            r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE25H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE24H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI23H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI22H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI21H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE25H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE24H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI23H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI22H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI21H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE25H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE24H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI23H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI22H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI21H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\UNV’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\UNV’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\UNV’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\GeneralMarkers\UNV’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE25H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE24H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI23H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI22H2’,
-	        r’HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI21H2’,
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI22H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\CompatMarkers\NI21H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE25H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\GE24H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI23H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI22H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\NI21H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE25H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\GE24H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI23H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI22H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\NI21H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE25H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\GE24H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI23H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI22H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\NI21H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\CompatMarkers\UNV',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\GeneralMarkers\UNV',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Shared\TargetVersionUpgradeExperienceIndicators\UNV',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\GeneralMarkers\UNV',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE25H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\GE24H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI23H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI22H2',
+			r'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TargetVersionUpgradeExperienceIndicators\NI21H2',
+			
         ]
-        delete_registry_keys(keys_to_delete)
+        self.delete_registry_keys(keys_to_delete)
 
         # Allow unsupported CPU/TPM
-        run_command([
+        self.run_command([
             "cmd", "/c",
             r'reg add "HKLM\SYSTEM\Setup\MoSetup" /v AllowUpgradesWithUnsupportedTPMOrCPU /t REG_DWORD /d 1 /f'
         ])
 
         # Hardware requirement bypass variables
-        run_command([
+        self.run_command([
             "cmd", "/c",
             r'reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\HwReqChk" '
             r'/v HwReqChkVars /t REG_MULTI_SZ /d "SQ_SecureBootCapable=TRUE\0SQ_TpmVersion=2\0SQ_RamMB=4096" /f'
         ])
 
         # Policy to force upgrade
-        run_command([
+        self.run_command([
             "cmd", "/c",
             r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersion /t REG_DWORD /d 1 /f'
         ])
-        run_command([
+        self.run_command([
             "cmd", "/c",
             r'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /t REG_SZ /d "25H2" /f'
         ])
 
         # Apply policies
-        run_command(["cmd", "/c", "gpupdate /force"])
-        run_command(["cmd", "/c", "gpupdate /logoff"])
-        run_command(["cmd", "/c", "gpupdate /boot"])
+        self.run_command(["cmd", "/c", "gpupdate /force"])
+        self.run_command(["cmd", "/c", "gpupdate /logoff"])
+        self.run_command(["cmd", "/c", "gpupdate /boot"])
 
         print("Bypass applied. Checking for Windows 11 upgrades...")
-        run_command(["cmd", "/c", "usoclient StartDownload"])
-        run_command(["cmd", "/c", "usoclient StartInstall"])
-        run_command(["cmd", "/c", "usoclient RestartDevice"])
+        self.run_command(["cmd", "/c", "usoclient ResumeUpdate"])
+		self.run_command(["cmd", "/c", "usoclient StartInteractiveScan"])
+		self.run_command(["cmd", "/c", "usoclient StartDownload"])
+        self.run_command(["cmd", "/c", "usoclient StartInstall"])
+        self.run_command(["cmd", "/c", "usoclient RestartDevice"])
 
         # Reverse policy changes
-        run_command([
+        self.run_command([
             "cmd", "/c",
             r'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersion /f'
         ])
-        run_command([
+        self.run_command([
             "cmd", "/c",
             r'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v TargetReleaseVersionInfo /f'
         ])
-	def check_windows11_requirements():
-		print("\n--- Windows 11 Requirements Diagnostics ---\n")
-		if ask_question("Does your PC use Intel Core 2 Quad or Duo processor? (y/n): "):
-			print("❌ Unsupported CPU. Recommended to use Clover bootloader.")
-			sys.exit(3)
-		if ask_question("Does your PC have TPM2.0 enabled? (y/n): "):
-			print("✅ TPM2.0 requirement passed.")
+
+    def run_windows11_checkrequirements(self):
+        """Main diagnostic flow."""
+		print("----Windows 11 Minimum Requirements check-----")
+		
+        # CPU family check
+        if self.ask_question("Does your PC use Intel Core 2 Quad, Intel Core 2 Duo or Intel Core 2 Extreme processor? (y/n): "):
+            print("❌ Unsupported CPU. Recommended to use Clover bootloader.")
+            sys.exit(3)
+
+        # TPM branch
+        if self.ask_question("Does your PC have TPM2.0 enabled? (y/n): "):
+            print("✅ TPM2.0 requirement passed.")
+
+            # Secure Boot check
+            if self.ask_question("Does your PC have Secure Boot enabled? (y/n): "):
+                print("✅ Secure Boot requirement passed.")
+            else:
+                print("⚠️ Secure Boot disabled. Applying bypass")
+				self.apply_bypass()
+				return
+
+            # CPU support check
+            if self.ask_question("Is your CPU officially supported by Windows 11? (y/n): "):
+                print("🚀 Upgrading to Windows 11...")
+                self.run_command(["cmd", "/c", "usoclient ResumeUpdate"])
+				self.run_command(["cmd", "/c", "usoclient StartDownload"])
+                self.run_command(["cmd", "/c", "usoclient StartInstall"])
+                self.run_command(["cmd", "/c", "usoclient RestartDevice"])
+            else:
+                if self.ask_question("Do you have Pro/Education/Enterprise edition installed? (y/n): "):
+					self.apply_bypass()
+                else:
+                    print("❌ Unsupported edition. Staying on Windows 10 updates...")
+                    self.run_command(["cmd", "/c", "usoclient ResumeUpdate"])
+					self.run_command(["cmd", "/c", "usoclient StartInteractiveScan"])
+					self.run_command(["cmd", "/c", "usoclient StartDownload"])
+                    self.run_command(["cmd", "/c", "usoclient StartInstall"])
+                    self.run_command(["cmd", "/c", "usoclient RestartDevice"])
+
+        elif self.ask_question("Does your PC have TPM1.2 enabled? (y/n): "):
+            print("⚠️ TPM1.2 detected. Applying bypass...")
+            self.apply_bypass()
+            return
+
+        else:
+            print("❌ No TPM detected. Windows 11 upgrade not supported. Staying on Windows 10 updates...")
+            self.run_command(["cmd", "/c", "usoclient ResumeUpdate"])
+			self.run_command(["cmd", "/c", "usoclient StartInteractiveScan"])
+			self.run_command(["cmd", "/c", "usoclient StartDownload"])
+            self.run_command(["cmd", "/c", "usoclient StartInstall"])
+            self.run_command(["cmd", "/c", "usoclient RestartDevice"])
+			return		
 			
     def diagnose_environment_to_updateandfix():
         system = platform.system()
@@ -216,8 +347,14 @@ class Updater:
         if system == "Linux":
             run_linux_updates()
         if system == "Windows":
-            print("Running sfc /scannow...")
+            print("For this troubleshooter to run properly on Windows, you need to run OpCore-Simplify as administrator. Otherwise it won't fix anything - or worse - make more trouble.")
+			print("Running sfc /scannow...")
             subprocess.run(["cmd", "/c", "sfc /scannow"], check=True)
+			print("Removing policies that can block automatic updates so the troubleshooter can fix this issue if preventative policies are present...")
+			self.run_command(["cmd", "/c", "reg delete HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate /v DisableWindowsUpdateAccess /f"])
+			self.run_command(["cmd", "/c", "reg delete HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU /v NoAutoUpdate /f"])
+			self.run_command(["cmd", "/c", "reg delete HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU /v AUOptions /f"])
+			self.run_command(["cmd", "/c", "gpupdate /force"])
             print("Running checks for Windows version that this PC is running...")
             try:
                 build_number = int(version.split('.')[-1])
@@ -251,7 +388,10 @@ class Updater:
                         print("That's why OpCore-Simplify doesn't work properly.")
                
                         try:
-                            print("Checking for updates...")
+                            print("Resuming all updates if paused....")
+							subprocess.run(["cmd", "/c", "usoclient ResumeUpdate"], check=True)
+							
+							print("Checking for updates...")
                             subprocess.run(["cmd", "/c", "usoclient StartInteractiveScan"], check=True)
 
                             print("Downloading all available updates...")
@@ -262,10 +402,30 @@ class Updater:
                             
                             print("Your device is restarting to finish installing updates...")
                             usoclient RestartDevice
-                    if build >= 19045.5073:
+                    elif build >= 19045.5073:
                         print("You're running a fairly up to date Windows 10. Since Windows 10 is out of support, we'll update your system to a supported version of Windows.")
                         print("Using Windows 10 increases over time the risks of vulnerabilities that attackers can exploit, incompatible scripts, incompatible apps, incompatible websites, incompatible hardware and incompatible modern frameworks.")
-                        checkwindows11requirements()
+                        run_windows11_checkrequirements(self)
+				elif release in ["11"]:
+					if build >= 26200.6901:
+						print("Resuming all updates if paused....")
+						subprocess.run(["cmd", "/c", "usoclient ResumeUpdate"], check=True)
+							
+						print("Checking for updates...")
+                        subprocess.run(["cmd", "/c", "usoclient StartInteractiveScan"], check=True)
+
+                        print("Downloading all available updates...")
+                        subprocess.run(["cmd", "/c", "usoclient StartDownload"], check=True)
+
+                        print("Installing all available updates...")
+                        subprocess.run(["cmd", "/c", "usoclient StartInstall"], check=True)
+                            
+                        print("Your device is restarting to finish installing updates...")
+                        usoclient RestartDevice
+				else:
+					print("Your build of Windows 11 might be obsolete. We'll install the latest build.")
+					print("If you are running Windows 11 21H2 for example, this version of Windows 11 is riddled with vulnerabilities.")
+					run_windows11_checkrequirements(self)
     
     def __init__(self):
         self.github = github.Github()
@@ -325,9 +485,11 @@ class Updater:
                 return True
             else:
                 print("  Download failed or file is empty")
+				diagnose_environment_to_updateandfix()
                 return False
         except Exception as e:
             print("  Error during download/extraction: {}".format(str(e)))
+			self.troubleshoot_directory()
             return False
 
     def update_files(self):
@@ -340,6 +502,7 @@ class Updater:
                 
             if not os.path.exists(target_dir):
                 print("  Could not locate extracted files directory")
+				self.troubleshoot_directory()
                 return False
                 
             file_paths = self.utils.find_matching_paths(target_dir, type_filter="file")
@@ -366,6 +529,7 @@ class Updater:
                         })
                 except Exception as e:
                     print("      Failed to update {}: {}".format(path, str(e)))
+					self.troubleshoot_directory()
             
             print("")
             print("  Successfully updated {}/{} files".format(updated_count, total_files))
@@ -388,6 +552,7 @@ class Updater:
             return True
         except Exception as e:
             print("Failed to save version information: {}".format(str(e)))
+			diagnose_environment_to_updateandfix()
             return False
 
     def run_update(self):
