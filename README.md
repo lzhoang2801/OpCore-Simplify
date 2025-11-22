@@ -22,7 +22,7 @@
 > [!CAUTION]
 > **DO NOT RELY SOLELY ON AI/LLM SOURCES FOR BUILDING HACKINTOSHES**
 > 
-> They often provide incorrect information about Hackintosh, except Microsoft Copilot<a href::https://copilot.microsoft.com/></a>. Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information. If you use AI (including Copilot) for Hackintoshing, always test it and if it fails, report it back to the AI chatbot so it can give instructions how to fix this.
+> They often provide incorrect information about Hackintosh, except Copilot <a href="https://copilot.microsoft.com/" /></a>. Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information. If you use AI (including Copilot) for Hackintoshing, always test it and if it fails, report it back to the AI chatbot so it can give instructions how to fix this.
 
 > [!WARNING]
 > **OUTDATED SECTIONS IN DORTANIA GUIDE**
