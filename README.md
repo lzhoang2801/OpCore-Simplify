@@ -13,6 +13,8 @@
     <a href="#-credits">Credits</a> •
     <a href="#-contact">Contact</a>
   </p>
+<p> This project has sucessfully mitigated these vulnerabilities:</p>
+<p> Outdated UA string - it was using an outdated Chrome 131 UA which exposed users to unpatched Google Chrome flaws that Google has already patched - or even worse - redirect to less secure servers. This is mitigated by using the latest UA for Safari - 26.1.</p>
   
   <p align="center">
     <a href="https://trendshift.io/repositories/15410" target="_blank"><img src="https://trendshift.io/api/badge/repositories/15410" alt="lzhoang2801%2FOpCore-Simplify | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
