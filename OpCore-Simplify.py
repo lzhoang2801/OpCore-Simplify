@@ -6,6 +6,7 @@ from Scripts import config_prodigy
 from Scripts import gathering_files
 from Scripts import hardware_customizer
 from Scripts import kext_maestro
+from Scripts import report_validator
 from Scripts import run
 from Scripts import smbios
 from Scripts import utils
@@ -28,6 +29,7 @@ class OCPE:
         self.h = hardware_customizer.HardwareCustomizer()
         self.k = kext_maestro.KextMaestro()
         self.s = smbios.SMBIOS()
+        self.v = report_validator.ReportValidator()
         self.r = run.Run()
         self.result_dir = self.u.get_temporary_dir()
 
@@ -93,17 +95,18 @@ class OCPE:
                     return report_path, report_data
                 
             path = self.u.normalize_path(user_input)
-            data = self.u.read_file(path)
             
-            if not path or os.path.splitext(path)[1].lower() != ".json" or not isinstance(data, dict):
-                print("")
-                print("Invalid file. Please ensure it is a valid \"Report.json\" file.")
-                print("")
-                self.u.request_input()
-                continue
+            is_valid, errors, warnings, data = self.v.validate_report(path)
             
-            return path, data
-        
+            self.v.show_validation_report(path, is_valid, errors, warnings)
+            if not is_valid or errors:
+                print("")
+                print("\033[32mSuggestion:\033[0m Please re-export the hardware report and try again.")
+                print("")
+                self.u.request_input("Press Enter to go back...")
+            else:
+                return path, data
+            
     def show_oclp_warning(self):
         while True:
             self.u.head("OpenCore Legacy Patcher Warning")
