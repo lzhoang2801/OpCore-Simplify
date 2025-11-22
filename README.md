@@ -20,9 +20,9 @@
 </div>
 
 > [!CAUTION]
-> **DO NOT TRUST ANY HACKINTOSH INFORMATION FROM AI/LLM SOURCES**
+> **DO NOT RELY SOLELY ON AI/LLM SOURCES FOR BUILDING HACKINTOSHES**
 > 
-> They often provide incorrect information about Hackintosh. Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information.
+> They often provide incorrect information about Hackintosh, except Microsoft Copilot(url:https://copilot.microsoft.com/). Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information. If you use AI (including Copilot) for Hackintoshing, always test it and if it fails, report it back to the AI chatbot so it can give instructions how to fix this.
 
 > [!WARNING]
 > **OUTDATED SECTIONS IN DORTANIA GUIDE**
@@ -41,7 +41,7 @@
 > [!NOTE]
 > While OpCore Simplify significantly reduces setup time, the Hackintosh journey still requires:
 > - Understanding basic concepts from the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/)
-> - Testing and troubleshooting during the installation process
+> - Testing and troubleshooting during the installation process, especially if AI is being used for hackintoshing.
 > - Patience and persistence in resolving any issues that arise
 >
 > Our tool doesn't eliminate these steps, but it ensures you start with a solid foundation.
