@@ -110,13 +110,19 @@
 
 2. **Running OpCore Simplify**:
    - On **Windows**, run `OpCore-Simplify.bat`.
-   - On **macOS**, run `OpCore-Simplify.command`.
+   - On **macOS**, run `OpCore-Simplify.command`. On macOS 15 Sequoia and macOS 26 Tahoe these extra steps are required:
+1. When you double click the OpCore-Simplify, it'll throw a warning. Click on Done.
+2. Next, go to System Settings > Privacy & Security
+3. Next, scroll down
+4. Next click on Open Anyway
+5. then Open Anyway once again
+6. Then type your admin password and hit enter.
    - On **Linux**, run `OpCore-Simplify.py` with existing Python interpreter.
 
    ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
 
-3. **Selecting hardware report**:
-   - On Windows, there will be an option for `E. Export hardware report`. It's recommended to use this for the best results with your hardware configuration and BIOS at the time of building.
+7. **Selecting hardware report**:
+   - On Windows, there will be an option for `E. Export hardware report`. It's recommended to use this for the best results with your hardware configuration and BIOS at the time of building. This option is unavailable for macOS and Linux.
    - Alternatively, use [**Hardware Sniffer**](https://github.com/lzhoang2801/Hardware-Sniffer) to create a `Report.json` and ACPI dump for configuration manully.
 
    ![Selecting hardware report](https://i.imgur.com/MbRmIGJ.png)
@@ -125,14 +131,14 @@
 
    ![Compatibility Checker](https://i.imgur.com/kuDGMmp.png)
 
-4. **Selecting macOS Version and Customizing OpenCore EFI**:
+8. **Selecting macOS Version and Customizing OpenCore EFI**:
    - By default, the latest compatible macOS version will be selected for your hardware.
    - OpCore Simplify will automatically apply essential ACPI patches and kexts. 
    - You can manually review and customize these settings as needed.
 
    ![OpCore Simplify Menu](https://i.imgur.com/TSk9ejy.png)
 
-5. **Building OpenCore EFI**:
+9. **Building OpenCore EFI**:
    - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
    - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
 
@@ -142,12 +148,12 @@
 
    ![Building OpenCore EFI](https://i.imgur.com/deyj5de.png)
 
-6. **USB Mapping**:
+10. **USB Mapping**:
    - After building your EFI, follow the steps for mapping USB ports.
 
    ![Results](https://i.imgur.com/MIPigPF.png)
 
-7. **Create USB and Install macOS**: 
+11. **Create USB and Install macOS**: 
    - Use [**UnPlugged**](https://github.com/corpnewt/UnPlugged) on Windows to create a USB macOS installer, or follow [this guide](https://dortania.github.io/OpenCore-Install-Guide/installer-guide/mac-install.html) for macOS.
    - For troubleshooting, refer to the [OpenCore Troubleshooting Guide](https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html).
 
