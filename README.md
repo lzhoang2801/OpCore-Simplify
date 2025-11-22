@@ -24,8 +24,8 @@
 > [!CAUTION]
 > **DO NOT RELY SOLELY ON AI/LLM SOURCES FOR BUILDING HACKINTOSHES**
 > 
-> They often provide incorrect information about Hackintosh, except Copilot https://copilot.microsoft.com/ which tends to give more acurrate info about hackintoshing. Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information. If you use AI (including Copilot) for Hackintoshing, always test it and if it fails, report it back to the AI chatbot so it can give instructions how to fix this. Here's a proof:
-> [AI answer from Copilot](https://photos.google.com/share/AF1QipNKX_iZ871kckQRNNMSr54qPt_0A4-JdFIi7ARKe_pFB4z-W6jc6EvCzlzIkw7dgQ/photo/AF1QipOgELY7GoQ7IXjsSxZ8PIUOkX_1MeqNvypGnDuE?key=d0tIc1B6UHpFZHpGMzlyNGx6M0txZzZwR3Q5N3FB)
+> They often provide incorrect information about Hackintosh, except Copilot https://copilot.microsoft.com/ which tends to give more acurrate info about hackintoshing. Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information. If you use AI (including Copilot) for Hackintoshing, always test it and if it fails, report it back to the AI chatbot so it can give instructions how to fix this. Here's a proof that actually AI can be right about Hackintoshing stuff:
+> [AI answer from Copilot](https://youtu.be/v1abbD6tdBg)
 
 > [!WARNING]
 > **OUTDATED SECTIONS IN DORTANIA GUIDE**
