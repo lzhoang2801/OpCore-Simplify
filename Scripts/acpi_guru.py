@@ -3282,7 +3282,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
         if all(network_props.get("Bus Type") == "USB" for network_props in hardware_report.get("Network", {}).values()):
             selected_patches.append("RMNE")
 
-        if hardware_report.get("Motherboard").get("Chipset") in ("C610/X99", "Wellsburg", "X299"):
+        if hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[62:64] + chipset_data.IntelChipsets[90:100]:
             selected_patches.append("RTC0")
 
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[:40]:
@@ -3299,7 +3299,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
                     if "I2C" in device_info.get("Device Type", "None"):
                         selected_patches.append("GPI0")
 
-        if hardware_report.get("Motherboard").get("Chipset") in ("C600/X79", "C610/X99", "Wellsburg"):
+        if hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[27:28] + chipset_data.IntelChipsets[62:64]:
             selected_patches.append("UNC")
         
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[112:]:
