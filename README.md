@@ -55,7 +55,7 @@
 
    | **Component**  | **Supported**                                                                                       |
    |----------------|-----------------------------------------------------------------------------------------------------|
-   | **CPU**        | Intel: Nehalem and Westmere (1st Gen) → Arrow Lake (15th Gen/Core Ultra Series 2) <br> AMD: Ryzen and Threadripper with [AMD Vanilla](https://github.com/AMD-OSX/AMD_Vanilla) |
+   | **CPU**        | Intel: Nehalem and Westmere (1st Gen) (for first gens there are some caveats: on legacy BIOS systems with Nehalem or Westmere architectures, only Clover can run - I tested this) → Arrow Lake (15th Gen/Core Ultra Series 2) <br> AMD: Ryzen and Threadripper with [AMD Vanilla](https://github.com/AMD-OSX/AMD_Vanilla) |
    | **GPU**        | Intel iGPU: Iron Lake (1st Gen) → Ice Lake (10th Gen) <br> AMD APU: The entire Vega Raven ASIC family (Ryzen 1xxx → 5xxx, 7x30 series) <br> AMD dGPU: Navi 23, Navi 22, Navi 21 generations, and older series <br> NVIDIA: Kepler, Pascal, Maxwell, Fermi, Tesla generations |
    | **macOS**      | macOS High Sierra → macOS Tahoe |
 
