@@ -5,7 +5,12 @@
 
 version: 2
 updates:
-  - package-ecosystem: "pip" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "pip"          # Python ecosystem
+    directory: "/"                    # Root of repo; Dependabot scans all subfolders
     schedule:
-      interval: "daily"
+      interval: "daily"               # Check every day
+      time: "04:00"                   # Run at 4 AM
+      timezone: "Europe/Sofia"        # Local timezone for Varna, Bulgaria
+    open-pull-requests-limit: 5       # Optional: limit simultaneous PRs
+    allow:
+      - dependency-type: "all"        # Update both direct and indirect dependencies
