@@ -13,8 +13,6 @@
     <a href="#-credits">Credits</a> •
     <a href="#-contact">Contact</a>
   </p>
-<p> This project has sucessfully mitigated these vulnerabilities:</p>
-<p> Outdated UA string - it was using an outdated Chrome 131 UA which exposed users to unpatched Google Chrome flaws that Google has already patched - or even worse - redirect to less secure servers. This is mitigated by using the latest UA for Safari - 26.1.</p>
   
   <p align="center">
     <a href="https://trendshift.io/repositories/15410" target="_blank"><img src="https://trendshift.io/api/badge/repositories/15410" alt="lzhoang2801%2FOpCore-Simplify | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
@@ -22,10 +20,9 @@
 </div>
 
 > [!CAUTION]
-> **DO NOT RELY SOLELY ON AI/LLM SOURCES FOR BUILDING HACKINTOSHES**
+> **DO NOT TRUST ANY HACKINTOSH INFORMATION FROM AI/LLM SOURCES**
 > 
-> They often provide incorrect information about Hackintosh, except Copilot https://copilot.microsoft.com/ which tends to give more acurrate info about hackintoshing. Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information. If you use AI (including Copilot) for Hackintoshing, always test it and if it fails, report it back to the AI chatbot so it can give instructions how to fix this. Here's a proof that actually AI can be right about Hackintoshing stuff:
-> [AI answer from Copilot](https://youtu.be/v1abbD6tdBg)
+> They often provide incorrect information about Hackintosh. Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information.
 
 > [!WARNING]
 > **OUTDATED SECTIONS IN DORTANIA GUIDE**
@@ -44,7 +41,7 @@
 > [!NOTE]
 > While OpCore Simplify significantly reduces setup time, the Hackintosh journey still requires:
 > - Understanding basic concepts from the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/)
-> - Testing and troubleshooting during the installation process, especially if AI is being used for hackintoshing.
+> - Testing and troubleshooting during the installation process
 > - Patience and persistence in resolving any issues that arise
 >
 > Our tool doesn't eliminate these steps, but it ensures you start with a solid foundation.
@@ -56,7 +53,7 @@
 
    | **Component**  | **Supported**                                                                                       |
    |----------------|-----------------------------------------------------------------------------------------------------|
-   | **CPU**        | Intel: Nehalem and Westmere (1st Gen) (for first gens there are some caveats: on legacy BIOS systems with Nehalem or Westmere architectures, only Clover can run - I tested this) → Arrow Lake (15th Gen/Core Ultra Series 2) <br> AMD: Ryzen and Threadripper with [AMD Vanilla](https://github.com/AMD-OSX/AMD_Vanilla) |
+   | **CPU**        | Intel: Nehalem and Westmere (1st Gen) → Arrow Lake (15th Gen/Core Ultra Series 2) <br> AMD: Ryzen and Threadripper with [AMD Vanilla](https://github.com/AMD-OSX/AMD_Vanilla) |
    | **GPU**        | Intel iGPU: Iron Lake (1st Gen) → Ice Lake (10th Gen) <br> AMD APU: The entire Vega Raven ASIC family (Ryzen 1xxx → 5xxx, 7x30 series) <br> AMD dGPU: Navi 23, Navi 22, Navi 21 generations, and older series <br> NVIDIA: Kepler, Pascal, Maxwell, Fermi, Tesla generations |
    | **macOS**      | macOS High Sierra → macOS Tahoe |
 
@@ -111,19 +108,13 @@
 
 2. **Running OpCore Simplify**:
    - On **Windows**, run `OpCore-Simplify.bat`.
-   - On **macOS**, run `OpCore-Simplify.command`. On macOS 15 Sequoia and macOS 26 Tahoe these extra steps are required:
-1. When you double click the OpCore-Simplify, it'll throw a warning. Click on Done.
-2. Next, go to System Settings > Privacy & Security
-3. Next, scroll down
-4. Next click on Open Anyway
-5. then Open Anyway once again
-6. Then type your admin password and hit enter.
+   - On **macOS**, run `OpCore-Simplify.command`.
    - On **Linux**, run `OpCore-Simplify.py` with existing Python interpreter.
 
    ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
 
-7. **Selecting hardware report**:
-   - On Windows, there will be an option for `E. Export hardware report`. It's recommended to use this for the best results with your hardware configuration and BIOS at the time of building. This option is unavailable for macOS and Linux.
+3. **Selecting hardware report**:
+   - On Windows, there will be an option for `E. Export hardware report`. It's recommended to use this for the best results with your hardware configuration and BIOS at the time of building.
    - Alternatively, use [**Hardware Sniffer**](https://github.com/lzhoang2801/Hardware-Sniffer) to create a `Report.json` and ACPI dump for configuration manully.
 
    ![Selecting hardware report](https://i.imgur.com/MbRmIGJ.png)
@@ -132,14 +123,14 @@
 
    ![Compatibility Checker](https://i.imgur.com/kuDGMmp.png)
 
-8. **Selecting macOS Version and Customizing OpenCore EFI**:
+4. **Selecting macOS Version and Customizing OpenCore EFI**:
    - By default, the latest compatible macOS version will be selected for your hardware.
    - OpCore Simplify will automatically apply essential ACPI patches and kexts. 
    - You can manually review and customize these settings as needed.
 
    ![OpCore Simplify Menu](https://i.imgur.com/TSk9ejy.png)
 
-9. **Building OpenCore EFI**:
+5. **Building OpenCore EFI**:
    - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
    - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
 
@@ -149,12 +140,12 @@
 
    ![Building OpenCore EFI](https://i.imgur.com/deyj5de.png)
 
-10. **USB Mapping**:
+6. **USB Mapping**:
    - After building your EFI, follow the steps for mapping USB ports.
 
    ![Results](https://i.imgur.com/MIPigPF.png)
 
-11. **Create USB and Install macOS**: 
+7. **Create USB and Install macOS**: 
    - Use [**UnPlugged**](https://github.com/corpnewt/UnPlugged) on Windows to create a USB macOS installer, or follow [this guide](https://dortania.github.io/OpenCore-Install-Guide/installer-guide/mac-install.html) for macOS.
    - For troubleshooting, refer to the [OpenCore Troubleshooting Guide](https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html).
 
