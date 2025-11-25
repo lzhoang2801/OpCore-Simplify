@@ -13,7 +13,7 @@ class Updater:
         self.run = run.Run().run
         self.utils = utils.Utils()
         self.sha_version = os.path.join(os.path.dirname(os.path.realpath(__file__)), "sha_version.txt")
-        self.download_repo_url = "https://github.com/albert-robert-schumann/OpCore-Simplify-FixVulnerabilities/archive/refs/heads/main.zip"
+        self.download_repo_url = "https://github.com/lzhoang2801/OpCore-Simplify/archive/refs/heads/main.zip"
         self.temporary_dir = tempfile.mkdtemp()
         self.current_step = 0
 
