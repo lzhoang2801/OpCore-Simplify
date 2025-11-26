@@ -342,7 +342,7 @@ class WifiProfileExtractor:
         print("Index  SSID                             Password")
         print("-------------------------------------------------------")
         for index, (ssid, password) in enumerate(profiles, start=1):
-            print("{:<6} {:<32} {:<8}".format(index, ssid[:31] + "..." if len(ssid) > 31 else ssid, password[:12] + "..." if len(password) > 12 else password))
+            print("{:<6} {:<32} {:<8}".format(index, ssid[:31] + "..." if len(ssid) > 31 else ssid, "******"))
         print("")
         print("Successfully applied {} WiFi profiles.".format(len(profiles)))
         print("")
