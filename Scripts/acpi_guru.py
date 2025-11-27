@@ -10,6 +10,7 @@ from Scripts import run
 from Scripts import utils
 import os
 import binascii
+import hashlib
 import re
 import tempfile
 import shutil
@@ -2356,7 +2357,9 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "PMCR", 0x00001000)
 
     def add_null_ethernet_device(self):
         random_mac_address = self.smbios.generate_random_mac()
-        mac_address_byte = ", ".join([f'0x{random_mac_address[i:i+2]}' for i in range(0, len(random_mac_address), 2)])
+        # Obfuscate the random MAC address by hashing with SHA-256
+        hashed_mac = hashlib.sha256(random_mac_address.encode()).hexdigest()[:12]  # Use first 12 hex-digits (6 bytes)
+        mac_address_byte = ", ".join([f'0x{hashed_mac[i:i+2]}' for i in range(0, len(hashed_mac), 2)])
         
         ssdt_name = "SSDT-RMNE"
         ssdt_content = """
