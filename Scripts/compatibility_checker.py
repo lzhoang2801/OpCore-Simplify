@@ -413,6 +413,9 @@ class CompatibilityChecker:
                 function()
 
         print("")
-        self.utils.request_input()
+        # Only show "Press Enter to continue" prompt in CLI mode
+        # In GUI mode, the results will be displayed automatically in the compatibility page
+        if not self.utils.gui_callback:
+            self.utils.request_input()
 
         return hardware_report, (self.min_native_macos_version, self.max_native_macos_version), self.ocl_patched_macos_version
