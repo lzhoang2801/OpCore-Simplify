@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from ..styles import COLORS, SPACING, get_font
+from ..icons import Icons
 
 
 class CustomizationPage(tk.Frame):

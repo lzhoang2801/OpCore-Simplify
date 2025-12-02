@@ -7,6 +7,7 @@ from tkinter import ttk, scrolledtext, messagebox
 import os
 
 from ..styles import COLORS, SPACING, get_font
+from ..icons import Icons
 
 
 class BuildPage(tk.Frame):
@@ -64,7 +65,7 @@ class BuildPage(tk.Frame):
         self.create_result_actions(container)
         
     def create_build_controls(self, parent):
-        """Create build control buttons with macOS styling"""
+        """Create build control buttons with enhanced macOS styling"""
         card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.X, pady=(0, SPACING['large']))
         
@@ -72,9 +73,12 @@ class BuildPage(tk.Frame):
         content = tk.Frame(card, bg=COLORS['bg_secondary'])
         content.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['large'])
         
-        # Build button (large and prominent with macOS styling)
+        # Build button (large and prominent with enhanced macOS styling)
+        button_container = tk.Frame(content, bg=COLORS['bg_secondary'])
+        button_container.pack(side=tk.LEFT)
+        
         self.controller.build_btn = tk.Button(
-            content,
+            button_container,
             text="🔨  Build OpenCore EFI",
             font=get_font('heading'),
             bg=COLORS['success'],
@@ -83,26 +87,39 @@ class BuildPage(tk.Frame):
             bd=0,
             relief=tk.FLAT,
             cursor='hand2',
-            padx=SPACING['xlarge'],
+            padx=SPACING['xxlarge'],
             pady=SPACING['medium'],
             command=self.controller.build_efi_gui,
             highlightthickness=0
         )
-        self.controller.build_btn.pack(side=tk.LEFT)
+        self.controller.build_btn.pack()
         
-        # Status text next to button
+        # Status text next to button with improved layout
+        status_frame = tk.Frame(content, bg=COLORS['bg_secondary'])
+        status_frame.pack(side=tk.LEFT, padx=SPACING['large'], fill=tk.X, expand=True)
+        
+        status_title = tk.Label(
+            status_frame,
+            text="Ready to Build",
+            font=get_font('body_bold'),
+            bg=COLORS['bg_secondary'],
+            fg=COLORS['text_primary'],
+            anchor=tk.W
+        )
+        status_title.pack(anchor=tk.W)
+        
         status_text = tk.Label(
-            content,
-            text="Ready to build. Ensure configuration is complete before building.",
+            status_frame,
+            text="Ensure your hardware report and configuration are complete before building.",
             font=get_font('body'),
             bg=COLORS['bg_secondary'],
             fg=COLORS['text_secondary'],
             anchor=tk.W,
             wraplength=400
         )
-        status_text.pack(side=tk.LEFT, padx=SPACING['large'], fill=tk.X, expand=True)
+        status_text.pack(anchor=tk.W)
         
-        # macOS-style hover effect for build button
+        # Enhanced macOS-style hover effect for build button
         def on_enter(e):
             if self.controller.build_btn['state'] != tk.DISABLED:
                 self.controller.build_btn.config(bg='#34C759')
@@ -247,7 +264,7 @@ class BuildPage(tk.Frame):
         # Open result folder button
         self.controller.open_result_btn = tk.Button(
             content,
-            text="📁  Open EFI Folder",
+            text=Icons.format_with_text("folder", "Open EFI Folder"),
             font=get_font('body_bold'),
             bg=COLORS['primary'],
             fg='#FFFFFF',
@@ -266,7 +283,7 @@ class BuildPage(tk.Frame):
         # View instructions button
         instructions_btn = tk.Button(
             content,
-            text="📖  View Instructions",
+            text=Icons.format_with_text("book", "View Instructions"),
             font=get_font('body_bold'),
             bg=COLORS['bg_hover'],
             fg=COLORS['text_primary'],
@@ -347,7 +364,7 @@ https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/"""
         # Title
         title = tk.Label(
             info_window,
-            text="📖  Build Instructions",
+            text=Icons.format_with_text("book", "Build Instructions"),
             font=get_font('title'),
             bg=COLORS['bg_main'],
             fg=COLORS['text_primary']
