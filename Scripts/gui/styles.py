@@ -2,37 +2,43 @@
 Centralized styling and theming for OpCore Simplify GUI
 """
 
-# Color palette
+# Color palette - macOS Big Sur/Monterey inspired
 COLORS = {
-    # Primary colors
-    'primary': '#007AFF',           # Bright blue
-    'primary_dark': '#0051D5',      # Darker blue for hover
-    'primary_light': '#4DA3FF',     # Light blue for highlights
+    # Primary colors - macOS system blue
+    'primary': '#007AFF',           # macOS system blue
+    'primary_dark': '#0051D5',      # Darker blue for active state
+    'primary_light': '#5AC8FA',     # Light blue for hover
+    'primary_hover': '#0062CC',     # Hover state blue
     
-    # Background colors
-    'bg_main': '#FFFFFF',           # Main background
-    'bg_sidebar': '#F5F5F7',        # Sidebar background
-    'bg_hover': '#E8E8E8',          # Hover background
+    # Background colors - macOS neutral palette
+    'bg_main': '#FFFFFF',           # Pure white main background
+    'bg_secondary': '#F5F5F7',      # Light gray secondary background
+    'bg_sidebar': '#F2F2F7',        # Sidebar background (slightly darker)
+    'bg_hover': '#E5E5EA',          # Hover background (more subtle)
     'bg_selected': '#007AFF',       # Selected item background
+    'bg_card': '#FAFAFA',           # Card background
     
-    # Text colors
-    'text_primary': '#1D1D1F',      # Main text
-    'text_secondary': '#6E6E73',    # Secondary text
-    'text_sidebar': '#1D1D1F',      # Sidebar text
+    # Text colors - macOS text hierarchy
+    'text_primary': '#000000',      # Pure black for primary text
+    'text_secondary': '#6C6C70',    # Medium gray for secondary text
+    'text_tertiary': '#8E8E93',     # Light gray for tertiary text
+    'text_sidebar': '#000000',      # Sidebar text
     'text_sidebar_selected': '#FFFFFF',  # Selected sidebar text
     
-    # Status colors
-    'success': '#34C759',           # Green for success
-    'warning': '#FF9500',           # Orange for warnings
-    'error': '#FF3B30',             # Red for errors
-    'info': '#5AC8FA',              # Light blue for info
+    # Status colors - macOS system colors
+    'success': '#30D158',           # macOS green
+    'warning': '#FF9F0A',           # macOS orange
+    'error': '#FF453A',             # macOS red
+    'info': '#64D2FF',              # macOS light blue
     
-    # Border colors
+    # Border colors - subtle macOS borders
     'border': '#D1D1D6',
     'border_light': '#E5E5EA',
+    'border_focus': '#007AFF',
     
     # Accent colors
-    'accent': '#5856D6',            # Purple accent
+    'accent': '#5E5CE6',            # macOS purple
+    'accent_secondary': '#FF375F',  # macOS pink
 }
 
 # Font configurations
@@ -68,53 +74,71 @@ def get_font(font_name):
     
     return (family, size, weight)
 
-# Spacing and sizing
+# Spacing and sizing - macOS Human Interface Guidelines
 SPACING = {
     'tiny': 4,
     'small': 8,
     'medium': 12,
     'large': 16,
-    'xlarge': 24,
-    'xxlarge': 32,
+    'xlarge': 20,
+    'xxlarge': 24,
+    'xxxlarge': 32,
 }
 
 SIZES = {
-    'sidebar_width': 200,
-    'sidebar_item_height': 44,
-    'button_height': 32,
+    'sidebar_width': 220,
+    'sidebar_item_height': 40,
+    'button_height': 28,
+    'button_padding_x': 16,
+    'button_padding_y': 6,
     'input_height': 28,
     'icon_size': 16,
 }
 
-# Border radius
+# Border radius - macOS rounded corners
 RADIUS = {
     'small': 4,
-    'medium': 8,
-    'large': 12,
+    'medium': 6,
+    'large': 8,
+    'xlarge': 10,
+    'button': 6,
+    'card': 10,
 }
 
-# Sidebar configuration
+# Sidebar configuration - macOS style
 SIDEBAR_CONFIG = {
     'width': SIZES['sidebar_width'],
     'bg': COLORS['bg_sidebar'],
     'item_height': SIZES['sidebar_item_height'],
     'padding': SPACING['medium'],
     'separator_color': COLORS['border_light'],
+    'item_padding_x': 12,
+    'item_padding_y': 8,
+    'item_radius': 6,
 }
 
-# Button styles
+# Button styles - macOS inspired
 BUTTON_STYLES = {
     'primary': {
         'bg': COLORS['primary'],
         'fg': '#FFFFFF',
         'active_bg': COLORS['primary_dark'],
-        'hover_bg': COLORS['primary_light'],
+        'hover_bg': COLORS['primary_hover'],
+        'border_radius': RADIUS['button'],
     },
     'secondary': {
-        'bg': COLORS['bg_sidebar'],
+        'bg': COLORS['bg_secondary'],
         'fg': COLORS['text_primary'],
         'active_bg': COLORS['bg_hover'],
         'hover_bg': COLORS['bg_hover'],
+        'border_radius': RADIUS['button'],
+    },
+    'success': {
+        'bg': COLORS['success'],
+        'fg': '#FFFFFF',
+        'active_bg': '#28A745',
+        'hover_bg': '#34C759',
+        'border_radius': RADIUS['button'],
     },
 }
 

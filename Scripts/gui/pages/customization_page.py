@@ -104,19 +104,19 @@ class CustomizationPage(tk.Frame):
         tk.Frame(banner, bg=COLORS['warning'], width=SPACING['medium']).pack(side=tk.RIGHT)
         
     def create_acpi_card(self, parent):
-        """Create ACPI patches customization card"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create ACPI patches customization card with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.X, pady=(0, SPACING['large']))
         
         # Card header with icon
-        header_frame = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        header_frame = tk.Frame(card, bg=COLORS['bg_secondary'])
         header_frame.pack(fill=tk.X, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
         
         icon = tk.Label(
             header_frame,
             text="⚡",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['primary']
         )
         icon.pack(side=tk.LEFT, padx=(0, SPACING['small']))
@@ -125,7 +125,7 @@ class CustomizationPage(tk.Frame):
             header_frame,
             text="ACPI Patches",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']
         )
         header.pack(side=tk.LEFT)
@@ -135,7 +135,7 @@ class CustomizationPage(tk.Frame):
             card,
             text="ACPI patches are automatically selected based on your hardware configuration.\nThese patches fix compatibility issues and enable proper hardware support.",
             font=get_font('body'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_secondary'],
             justify=tk.LEFT,
             anchor=tk.W
@@ -143,10 +143,10 @@ class CustomizationPage(tk.Frame):
         desc.pack(anchor=tk.W, padx=SPACING['large'], pady=(0, SPACING['medium']))
         
         # Button frame
-        button_frame = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        button_frame = tk.Frame(card, bg=COLORS['bg_secondary'])
         button_frame.pack(fill=tk.X, padx=SPACING['large'], pady=(0, SPACING['large']))
         
-        # Customize button
+        # Customize button with macOS styling
         customize_btn = tk.Button(
             button_frame,
             text="Customize ACPI Patches",
@@ -158,14 +158,15 @@ class CustomizationPage(tk.Frame):
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['large'],
-            pady=SPACING['medium'],
-            command=self.controller.customize_acpi_gui
+            pady=SPACING['small'],
+            command=self.controller.customize_acpi_gui,
+            highlightthickness=0
         )
         customize_btn.pack(side=tk.LEFT)
         
-        # Hover effect
+        # macOS-style hover effect
         def on_enter(e):
-            customize_btn.config(bg=COLORS['primary_dark'])
+            customize_btn.config(bg=COLORS['primary_hover'])
             
         def on_leave(e):
             customize_btn.config(bg=COLORS['primary'])
@@ -174,19 +175,19 @@ class CustomizationPage(tk.Frame):
         customize_btn.bind('<Leave>', on_leave)
         
     def create_kexts_card(self, parent):
-        """Create Kexts customization card"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create Kexts customization card with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.X, pady=(0, SPACING['large']))
         
         # Card header with icon
-        header_frame = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        header_frame = tk.Frame(card, bg=COLORS['bg_secondary'])
         header_frame.pack(fill=tk.X, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
         
         icon = tk.Label(
             header_frame,
             text="🔌",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['primary']
         )
         icon.pack(side=tk.LEFT, padx=(0, SPACING['small']))
@@ -195,7 +196,7 @@ class CustomizationPage(tk.Frame):
             header_frame,
             text="Kernel Extensions (Kexts)",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']
         )
         header.pack(side=tk.LEFT)
@@ -205,7 +206,7 @@ class CustomizationPage(tk.Frame):
             card,
             text="Kexts provide essential drivers for your hardware.\nThe tool automatically selects required kexts based on your configuration.",
             font=get_font('body'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_secondary'],
             justify=tk.LEFT,
             anchor=tk.W
@@ -213,10 +214,10 @@ class CustomizationPage(tk.Frame):
         desc.pack(anchor=tk.W, padx=SPACING['large'], pady=(0, SPACING['medium']))
         
         # Button frame
-        button_frame = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        button_frame = tk.Frame(card, bg=COLORS['bg_secondary'])
         button_frame.pack(fill=tk.X, padx=SPACING['large'], pady=(0, SPACING['large']))
         
-        # Customize button
+        # Customize button with macOS styling
         customize_btn = tk.Button(
             button_frame,
             text="Customize Kexts",
@@ -228,14 +229,15 @@ class CustomizationPage(tk.Frame):
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['large'],
-            pady=SPACING['medium'],
-            command=self.controller.customize_kexts_gui
+            pady=SPACING['small'],
+            command=self.controller.customize_kexts_gui,
+            highlightthickness=0
         )
         customize_btn.pack(side=tk.LEFT)
         
-        # Hover effect
+        # macOS-style hover effect
         def on_enter(e):
-            customize_btn.config(bg=COLORS['primary_dark'])
+            customize_btn.config(bg=COLORS['primary_hover'])
             
         def on_leave(e):
             customize_btn.config(bg=COLORS['primary'])
@@ -244,19 +246,19 @@ class CustomizationPage(tk.Frame):
         customize_btn.bind('<Leave>', on_leave)
         
     def create_info_card(self, parent):
-        """Create information card"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create information card with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.BOTH, expand=True)
         
         # Card header
-        header_frame = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        header_frame = tk.Frame(card, bg=COLORS['bg_secondary'])
         header_frame.pack(fill=tk.X, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
         
         icon = tk.Label(
             header_frame,
             text="ℹ️",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['info']
         )
         icon.pack(side=tk.LEFT, padx=(0, SPACING['small']))
@@ -265,7 +267,7 @@ class CustomizationPage(tk.Frame):
             header_frame,
             text="About Customization",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']
         )
         header.pack(side=tk.LEFT)
@@ -304,7 +306,7 @@ The CLI version offers more detailed customization options for expert users."""
             card,
             wrap=tk.WORD,
             font=get_font('body'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary'],
             relief=tk.FLAT,
             bd=0,
