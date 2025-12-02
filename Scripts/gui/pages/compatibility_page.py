@@ -81,32 +81,33 @@ class CompatibilityPage(tk.Frame):
         self.create_summary_section(container)
         
     def create_status_card(self, parent):
-        """Create status information card"""
-        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
+        """Create an enhanced status information card with beautiful design"""
+        card = tk.Frame(parent, bg='#E3F2FD', relief=tk.FLAT, bd=0,
+                       highlightbackground='#2196F3', highlightthickness=2)
         card.pack(fill=tk.X, pady=(0, SPACING['large']))
         
-        content = tk.Frame(card, bg=COLORS['bg_secondary'])
+        content = tk.Frame(card, bg='#E3F2FD')
         content.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['large'])
         
         # Icon and status
         icon = tk.Label(
             content,
             text="🔍",
-            font=get_font('heading'),
-            bg=COLORS['bg_secondary'],
-            fg=COLORS['info']
+            font=('Arial', 24),
+            bg='#E3F2FD',
+            fg='#1976D2'
         )
         icon.pack(side=tk.LEFT, padx=(0, SPACING['medium']))
         
-        text_frame = tk.Frame(content, bg=COLORS['bg_secondary'])
+        text_frame = tk.Frame(content, bg='#E3F2FD')
         text_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
         self.status_title = tk.Label(
             text_frame,
             text="Ready to Check Compatibility",
-            font=get_font('body_bold'),
-            bg=COLORS['bg_secondary'],
-            fg=COLORS['text_primary'],
+            font=get_font('heading'),
+            bg='#E3F2FD',
+            fg='#1565C0',
             anchor=tk.W
         )
         self.status_title.pack(anchor=tk.W)
@@ -115,8 +116,8 @@ class CompatibilityPage(tk.Frame):
             text_frame,
             text="Load a hardware report to begin compatibility checking",
             font=get_font('body'),
-            bg=COLORS['bg_secondary'],
-            fg=COLORS['text_secondary'],
+            bg='#E3F2FD',
+            fg='#1976D2',
             anchor=tk.W
         )
         self.status_desc.pack(anchor=tk.W)
@@ -176,162 +177,194 @@ class CompatibilityPage(tk.Frame):
         placeholder.pack(expand=True, pady=SPACING['xxlarge'])
         
     def create_summary_section(self, parent):
-        """Create compatibility summary section"""
+        """Create an enhanced compatibility summary section with beautiful design"""
         card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.X)
         
         content = tk.Frame(card, bg=COLORS['bg_secondary'])
         content.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['large'])
         
-        # Summary title
+        # Summary title with icon
+        header_frame = tk.Frame(content, bg=COLORS['bg_secondary'])
+        header_frame.pack(fill=tk.X, pady=(0, SPACING['medium']))
+        
         header = tk.Label(
-            content,
-            text="📝  Summary",
+            header_frame,
+            text="📊  Compatibility Summary",
             font=get_font('heading'),
             bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']
         )
-        header.pack(anchor=tk.W, pady=(0, SPACING['medium']))
+        header.pack(side=tk.LEFT)
         
-        # Summary stats frame
+        # Summary stats frame with enhanced styling
         stats_frame = tk.Frame(content, bg=COLORS['bg_secondary'])
         stats_frame.pack(fill=tk.X)
         
-        # Compatible devices
-        compatible_frame = tk.Frame(stats_frame, bg=COLORS['bg_main'],
-                                   highlightbackground=COLORS['border_light'],
-                                   highlightthickness=1)
-        compatible_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, 
+        # Compatible devices card
+        compatible_card = tk.Frame(stats_frame, bg='#E8F5E9',
+                                   highlightbackground='#4CAF50',
+                                   highlightthickness=2,
+                                   relief=tk.FLAT)
+        compatible_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, 
                             padx=(0, SPACING['small']))
         
-        compat_content = tk.Frame(compatible_frame, bg=COLORS['bg_main'])
-        compat_content.pack(padx=SPACING['medium'], pady=SPACING['medium'])
+        compat_content = tk.Frame(compatible_card, bg='#E8F5E9')
+        compat_content.pack(padx=SPACING['large'], pady=SPACING['large'])
         
+        # Icon
         tk.Label(
             compat_content,
-            text=Icons.get("check"),
-            font=get_font('heading'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['success']
+            text="✓",
+            font=('Arial', 32, 'bold'),
+            bg='#E8F5E9',
+            fg='#4CAF50'
         ).pack()
         
+        # Count
         self.compatible_count = tk.Label(
             compat_content,
             text="0",
-            font=get_font('heading'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_primary']
+            font=('Arial', 28, 'bold'),
+            bg='#E8F5E9',
+            fg='#2E7D32'
         )
         self.compatible_count.pack()
         
+        # Label
         tk.Label(
             compat_content,
-            text="Compatible",
-            font=get_font('small'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_secondary']
+            text="Compatible Devices",
+            font=get_font('body'),
+            bg='#E8F5E9',
+            fg='#2E7D32'
         ).pack()
         
-        # Incompatible devices
-        incompatible_frame = tk.Frame(stats_frame, bg=COLORS['bg_main'],
-                                      highlightbackground=COLORS['border_light'],
-                                      highlightthickness=1)
-        incompatible_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True,
+        # Incompatible devices card
+        incompatible_card = tk.Frame(stats_frame, bg='#FFEBEE',
+                                      highlightbackground='#F44336',
+                                      highlightthickness=2,
+                                      relief=tk.FLAT)
+        incompatible_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True,
                                padx=(SPACING['small'], 0))
         
-        incompat_content = tk.Frame(incompatible_frame, bg=COLORS['bg_main'])
-        incompat_content.pack(padx=SPACING['medium'], pady=SPACING['medium'])
+        incompat_content = tk.Frame(incompatible_card, bg='#FFEBEE')
+        incompat_content.pack(padx=SPACING['large'], pady=SPACING['large'])
         
+        # Icon
         tk.Label(
             incompat_content,
             text="⚠",
-            font=get_font('heading'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['warning']
+            font=('Arial', 32, 'bold'),
+            bg='#FFEBEE',
+            fg='#F44336'
         ).pack()
         
+        # Count
         self.incompatible_count = tk.Label(
             incompat_content,
             text="0",
-            font=get_font('heading'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_primary']
+            font=('Arial', 28, 'bold'),
+            bg='#FFEBEE',
+            fg='#C62828'
         )
         self.incompatible_count.pack()
         
+        # Label
         tk.Label(
             incompat_content,
             text="Needs Attention",
-            font=get_font('small'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_secondary']
+            font=get_font('body'),
+            bg='#FFEBEE',
+            fg='#C62828'
         ).pack()
         
     def show_compatibility_results(self, hardware_report, native_versions, oclp_versions):
-        """Display compatibility check results"""
+        """Display compatibility check results with amazing visual design"""
         # Clear existing results
         for widget in self.results_frame.winfo_children():
             widget.destroy()
         
-        # Update status
-        self.status_title.config(text="Compatibility Check Complete")
-        self.status_desc.config(text="Review the results below for detailed information")
+        # Update status card to success state
+        self.status_title.config(
+            text="✅  Compatibility Check Complete!",
+            fg='#2E7D32'
+        )
+        self.status_desc.config(
+            text="Review the detailed results below for your hardware configuration",
+            fg='#388E3C'
+        )
+        # Update status card background to success color
+        self.status_title.master.master.config(bg='#E8F5E9', highlightbackground='#4CAF50')
+        self.status_title.master.config(bg='#E8F5E9')
+        self.status_desc.master.config(bg='#E8F5E9')
+        # Update icon parent
+        for child in self.status_title.master.master.winfo_children():
+            if isinstance(child, tk.Frame) and child != self.status_title.master:
+                child.config(bg='#E8F5E9')
         
         # Store results
         self.compatibility_results = {}
         compatible_count = 0
         incompatible_count = 0
         
-        # Device types to check
+        # Device types to check with better display names and emojis
         device_types = [
-            ('CPU', 'Processor'),
-            ('GPU', 'Graphics'),
-            ('Sound', 'Audio'),
-            ('Network', 'Network'),
-            ('Bluetooth', 'Bluetooth'),
-            ('Storage Controllers', 'Storage'),
-            ('Biometric', 'Biometric'),
-            ('SD Controller', 'SD Card')
+            ('CPU', 'Processor', '🔧'),
+            ('GPU', 'Graphics', '🎮'),
+            ('Sound', 'Audio', '🔊'),
+            ('Network', 'Network', '🌐'),
+            ('Bluetooth', 'Bluetooth', '📶'),
+            ('Storage Controllers', 'Storage', '💾'),
+            ('Biometric', 'Biometric', '🔐'),
+            ('SD Controller', 'SD Card', '💳')
         ]
         
         index = 0
-        for device_type, display_name in device_types:
+        for device_type, display_name, emoji in device_types:
             if device_type not in hardware_report:
                 continue
             
             index += 1
             devices = hardware_report[device_type]
             
-            # Create device type section
+            # Create device type section with enhanced header
             section_frame = tk.Frame(self.results_frame, bg=COLORS['bg_main'])
-            section_frame.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['small'])
+            section_frame.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['medium'])
             
-            # Section header
-            header_frame = tk.Frame(section_frame, bg=COLORS['bg_secondary'],
-                                   highlightbackground=COLORS['border_light'],
-                                   highlightthickness=1)
-            header_frame.pack(fill=tk.X, pady=(0, SPACING['tiny']))
+            # Section header with gradient-like background
+            header_frame = tk.Frame(section_frame, bg='#1565C0',
+                                   highlightbackground='#0D47A1',
+                                   highlightthickness=1,
+                                   relief=tk.FLAT)
+            header_frame.pack(fill=tk.X, pady=(0, SPACING['small']))
             
-            header_content = tk.Frame(header_frame, bg=COLORS['bg_secondary'])
+            header_content = tk.Frame(header_frame, bg='#1565C0')
             header_content.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['small'])
             
+            # Section title with emoji
             tk.Label(
                 header_content,
-                text=f"{index}. {display_name}",
-                font=get_font('body_bold'),
-                bg=COLORS['bg_secondary'],
-                fg=COLORS['text_primary'],
+                text=f"{emoji}  {index}. {display_name}",
+                font=get_font('heading'),
+                bg='#1565C0',
+                fg='#FFFFFF',
                 anchor=tk.W
             ).pack(side=tk.LEFT)
             
-            device_count = tk.Label(
-                header_content,
+            # Device count badge
+            count_badge = tk.Frame(header_content, bg='#E3F2FD', relief=tk.FLAT)
+            count_badge.pack(side=tk.RIGHT)
+            
+            tk.Label(
+                count_badge,
                 text=f"{len(devices)} device(s)",
                 font=get_font('small'),
-                bg=COLORS['bg_secondary'],
-                fg=COLORS['text_secondary']
-            )
-            device_count.pack(side=tk.RIGHT)
+                bg='#E3F2FD',
+                fg='#0D47A1',
+                padx=SPACING['small'],
+                pady=2
+            ).pack()
             
             # Device list
             for device_name, device_props in devices.items():
@@ -349,113 +382,205 @@ class CompatibilityPage(tk.Frame):
         self.incompatible_count.config(text=str(incompatible_count))
         
     def create_device_card(self, parent, device_name, device_props):
-        """Create a card for a single device"""
-        card = tk.Frame(parent, bg=COLORS['bg_main'],
-                       highlightbackground=COLORS['border_light'],
-                       highlightthickness=1)
-        card.pack(fill=tk.X, pady=SPACING['tiny'])
-        
-        content = tk.Frame(card, bg=COLORS['bg_main'])
-        content.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['small'])
-        
-        # Device name and status
-        top_frame = tk.Frame(content, bg=COLORS['bg_main'])
-        top_frame.pack(fill=tk.X)
-        
-        # Status icon
+        """Create an enhanced card for a single device with beautiful design"""
+        # Determine compatibility status and colors
         compatibility = device_props.get('Compatibility', (None, None))
         oclp_compat = device_props.get('OCLP Compatibility')
         
         if compatibility[0] and compatibility[1]:
-            status_icon = Icons.get("check")
+            status_icon = "✓"
             status_color = COLORS['success']
             status_text = "Compatible"
+            status_bg = "#E8F5E9"  # Light green background
+            border_color = COLORS['success']
         elif oclp_compat:
-            status_icon = Icons.get("lightning")
+            status_icon = "⚡"
             status_color = COLORS['warning']
             status_text = "Requires OCLP"
+            status_bg = "#FFF3E0"  # Light orange background
+            border_color = COLORS['warning']
         else:
-            status_icon = Icons.get("cross")
+            status_icon = "✗"
             status_color = COLORS['error']
             status_text = "Not Supported"
+            status_bg = "#FFEBEE"  # Light red background
+            border_color = COLORS['error']
         
+        # Main card container with colored left border
+        card_container = tk.Frame(parent, bg=border_color)
+        card_container.pack(fill=tk.X, pady=SPACING['small'])
+        
+        # Left colored indicator (4px wide)
+        indicator = tk.Frame(card_container, bg=border_color, width=4)
+        indicator.pack(side=tk.LEFT, fill=tk.Y)
+        
+        # Card content area
+        card = tk.Frame(card_container, bg=COLORS['bg_main'],
+                       highlightbackground=COLORS['border_light'],
+                       highlightthickness=1)
+        card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        content = tk.Frame(card, bg=COLORS['bg_main'])
+        content.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['medium'])
+        
+        # Top section: Device name and status badge
+        top_frame = tk.Frame(content, bg=COLORS['bg_main'])
+        top_frame.pack(fill=tk.X, pady=(0, SPACING['small']))
+        
+        # Device name with icon
+        name_frame = tk.Frame(top_frame, bg=COLORS['bg_main'])
+        name_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # Large status icon
         tk.Label(
-            top_frame,
+            name_frame,
             text=status_icon,
-            font=get_font('body_bold'),
+            font=('Arial', 16, 'bold'),
             bg=COLORS['bg_main'],
             fg=status_color
         ).pack(side=tk.LEFT, padx=(0, SPACING['small']))
         
+        # Device name
         tk.Label(
-            top_frame,
+            name_frame,
             text=device_name,
-            font=get_font('body'),
+            font=get_font('body_bold'),
             bg=COLORS['bg_main'],
             fg=COLORS['text_primary'],
             anchor=tk.W
-        ).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ).pack(side=tk.LEFT)
+        
+        # Status badge
+        badge_frame = tk.Frame(top_frame, bg=status_bg, relief=tk.FLAT)
+        badge_frame.pack(side=tk.RIGHT, padx=SPACING['tiny'])
         
         tk.Label(
-            top_frame,
+            badge_frame,
             text=status_text,
             font=get_font('small'),
-            bg=COLORS['bg_main'],
-            fg=status_color
-        ).pack(side=tk.RIGHT)
+            bg=status_bg,
+            fg=status_color,
+            padx=SPACING['small'],
+            pady=2
+        ).pack()
         
-        # Device details
-        details_frame = tk.Frame(content, bg=COLORS['bg_main'])
+        # Device details section
+        details_frame = tk.Frame(content, bg=COLORS['bg_secondary'], relief=tk.FLAT)
         details_frame.pack(fill=tk.X, pady=(SPACING['tiny'], 0))
         
-        # Device type and ID
+        details_content = tk.Frame(details_frame, bg=COLORS['bg_secondary'])
+        details_content.pack(fill=tk.X, padx=SPACING['small'], pady=SPACING['small'])
+        
+        # Create a grid for details
+        row = 0
+        
+        # Device Type
         if device_props.get('Device Type'):
-            tk.Label(
-                details_frame,
-                text=f"Type: {device_props['Device Type']}",
-                font=get_font('small'),
-                bg=COLORS['bg_main'],
-                fg=COLORS['text_secondary'],
-                anchor=tk.W
-            ).pack(anchor=tk.W)
+            self._add_detail_row(details_content, "Type:", device_props['Device Type'], row)
+            row += 1
         
+        # Manufacturer
+        if device_props.get('Manufacturer'):
+            self._add_detail_row(details_content, "Manufacturer:", device_props['Manufacturer'], row)
+            row += 1
+        
+        # Device ID
         if device_props.get('Device ID'):
-            tk.Label(
-                details_frame,
-                text=f"ID: {device_props['Device ID']}",
-                font=get_font('small'),
-                bg=COLORS['bg_main'],
-                fg=COLORS['text_secondary'],
-                anchor=tk.W
-            ).pack(anchor=tk.W)
+            self._add_detail_row(details_content, "Device ID:", device_props['Device ID'], row)
+            row += 1
         
-        # macOS version support
+        # Codename (for GPUs)
+        if device_props.get('Codename'):
+            self._add_detail_row(details_content, "Codename:", device_props['Codename'], row)
+            row += 1
+        
+        # Bus Type
+        if device_props.get('Bus Type'):
+            self._add_detail_row(details_content, "Bus:", device_props['Bus Type'], row)
+            row += 1
+        
+        # macOS version support - with visual styling
         if compatibility[0] and compatibility[1]:
             if os_data:
                 min_ver = os_data.get_macos_name_by_darwin(compatibility[1])
                 max_ver = os_data.get_macos_name_by_darwin(compatibility[0])
                 
+                support_frame = tk.Frame(details_content, bg=COLORS['bg_secondary'])
+                support_frame.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=(SPACING['tiny'], 0))
+                
                 tk.Label(
-                    details_frame,
-                    text=f"macOS Support: {min_ver} to {max_ver}",
+                    support_frame,
+                    text="🍎 macOS Support:",
                     font=get_font('small'),
-                    bg=COLORS['bg_main'],
-                    fg=COLORS['text_secondary'],
-                    anchor=tk.W
-                ).pack(anchor=tk.W)
+                    bg=COLORS['bg_secondary'],
+                    fg=COLORS['text_primary']
+                ).pack(side=tk.LEFT, padx=(0, SPACING['tiny']))
+                
+                # Version range in a highlighted box
+                version_box = tk.Frame(support_frame, bg='#E3F2FD', relief=tk.FLAT)
+                version_box.pack(side=tk.LEFT)
+                
+                tk.Label(
+                    version_box,
+                    text=f"{min_ver} → {max_ver}",
+                    font=get_font('small'),
+                    bg='#E3F2FD',
+                    fg='#1976D2',
+                    padx=SPACING['small'],
+                    pady=2
+                ).pack()
+                
         elif oclp_compat:
             if os_data:
                 min_ver = os_data.get_macos_name_by_darwin(oclp_compat[1])
                 max_ver = os_data.get_macos_name_by_darwin(oclp_compat[0])
                 
+                support_frame = tk.Frame(details_content, bg=COLORS['bg_secondary'])
+                support_frame.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=(SPACING['tiny'], 0))
+                
                 tk.Label(
-                    details_frame,
-                    text=f"OCLP Support: {min_ver} to {max_ver}",
+                    support_frame,
+                    text="⚡ OCLP Support:",
                     font=get_font('small'),
-                    bg=COLORS['bg_main'],
-                    fg=COLORS['warning'],
-                    anchor=tk.W
-                ).pack(anchor=tk.W)
+                    bg=COLORS['bg_secondary'],
+                    fg=COLORS['text_primary']
+                ).pack(side=tk.LEFT, padx=(0, SPACING['tiny']))
+                
+                # Version range in a highlighted box
+                version_box = tk.Frame(support_frame, bg='#FFF3E0', relief=tk.FLAT)
+                version_box.pack(side=tk.LEFT)
+                
+                tk.Label(
+                    version_box,
+                    text=f"{min_ver} → {max_ver}",
+                    font=get_font('small'),
+                    bg='#FFF3E0',
+                    fg='#F57C00',
+                    padx=SPACING['small'],
+                    pady=2
+                ).pack()
+    
+    def _add_detail_row(self, parent, label, value, row):
+        """Add a detail row with label and value"""
+        label_widget = tk.Label(
+            parent,
+            text=label,
+            font=get_font('small'),
+            bg=COLORS['bg_secondary'],
+            fg=COLORS['text_secondary'],
+            anchor=tk.W
+        )
+        label_widget.grid(row=row, column=0, sticky=tk.W, padx=(0, SPACING['small']), pady=2)
+        
+        value_widget = tk.Label(
+            parent,
+            text=value,
+            font=get_font('small'),
+            bg=COLORS['bg_secondary'],
+            fg=COLORS['text_primary'],
+            anchor=tk.W
+        )
+        value_widget.grid(row=row, column=1, sticky=tk.W, pady=2)
         
     def refresh(self):
         """Refresh the page content"""

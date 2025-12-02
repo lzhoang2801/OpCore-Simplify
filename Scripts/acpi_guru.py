@@ -144,7 +144,9 @@ class ACPIGuru:
                 print(" - No valid .aml files were found!")
                 print("")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
+                # Only show "Press Enter to continue" prompt in CLI mode
+                if not self.utils.gui_callback:
+                    self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -160,7 +162,9 @@ class ACPIGuru:
                 print("\nOnly one is allowed at a time.  Please remove one of the above and try again.")
                 print("")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
+                # Only show "Press Enter to continue" prompt in CLI mode
+                if not self.utils.gui_callback:
+                    self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -184,7 +188,9 @@ class ACPIGuru:
                 print("\n{} could not be disassembled!".format(os.path.basename(path)))
                 print("")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
+                # Only show "Press Enter to continue" prompt in CLI mode
+                if not self.utils.gui_callback:
+                    self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -198,7 +204,9 @@ class ACPIGuru:
             print("Passed file/folder does not exist!")
             print("")
             #self.u.grab("Press [enter] to return...")
-            self.utils.request_input()
+            # Only show "Press Enter to continue" prompt in CLI mode
+            if not self.utils.gui_callback:
+                self.utils.request_input()
             # Restore any prior tables
             self.acpi.acpi_tables = prior_tables
             return
@@ -250,7 +258,9 @@ class ACPIGuru:
                 print("\n{} could not be disassembled!".format(trouble_dsdt))
                 print("")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
+                # Only show "Press Enter to continue" prompt in CLI mode
+                if not self.utils.gui_callback:
+                    self.utils.request_input()
                 if temp:
                     shutil.rmtree(temp,ignore_errors=True)
                 # Restore any prior tables

@@ -223,7 +223,9 @@ class gatheringFiles:
                 print("")
                 print("Could not find download URL for {}.".format(product_name))
                 print("")
-                self.utils.request_input()
+                # Only show "Press Enter to continue" prompt in CLI mode
+                if not self.utils.gui_callback:
+                    self.utils.request_input()
                 shutil.rmtree(self.temporary_dir, ignore_errors=True)
                 return False
 
@@ -260,7 +262,9 @@ class gatheringFiles:
                     print("")
                     print("Could not download OcBinaryData at this time.")
                     print("Please try again later.\n")
-                    self.utils.request_input()
+                    # Only show "Press Enter to continue" prompt in CLI mode
+                    if not self.utils.gui_callback:
+                        self.utils.request_input()
                     shutil.rmtree(self.temporary_dir, ignore_errors=True)
                     return False
                 
@@ -285,7 +289,9 @@ class gatheringFiles:
             print("")
             print("Please try again later or apply them manually.")
             print("")
-            self.utils.request_input()
+            # Only show "Press Enter to continue" prompt in CLI mode
+            if not self.utils.gui_callback:
+                self.utils.request_input()
             return []
         
     def _update_download_history(self, download_history, product_name, product_id, product_url, sha256_hash):
