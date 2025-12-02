@@ -44,7 +44,7 @@ class ConfigurationPage(tk.Frame):
         
         subtitle_label = tk.Label(
             container,
-            text="Set up your hardware report and macOS preferences",
+            text="Configure your hardware and preferences to build an OpenCore EFI",
             font=get_font('body'),
             bg=COLORS['bg_main'],
             fg=COLORS['text_secondary']
@@ -252,34 +252,27 @@ class ConfigurationPage(tk.Frame):
         # Instructions text
         instructions = """Welcome to OpCore Simplify!
 
-Follow these steps to build your OpenCore EFI:
+Follow these simple steps to build your OpenCore EFI:
 
 1. Select Hardware Report
-   • Choose a hardware report JSON file
-   • Or export one using Hardware Sniffer (Windows only)
-   • The tool will automatically:
-     - Validate the report
-     - Load ACPI tables
-     - Run compatibility checker
-     - Select optimal macOS version and SMBIOS
+   • Load a hardware report JSON file, or
+   • Export one using Hardware Sniffer (Windows only)
+   • The tool will automatically validate, load ACPI tables,
+     run compatibility checks, and select optimal settings
 
-2. Review Compatibility Results
-   • After loading your report, check the Compatibility page
-   • Review which devices are supported
+2. Review Compatibility
+   • Check the Compatibility page for device support status
    • Note any devices requiring OpenCore Legacy Patcher
 
-3. Customize Configuration (Optional)
-   • Adjust macOS version if needed
-   • Customize ACPI patches and kexts
-   • Select different SMBIOS model if desired
+3. Customize (Optional)
+   • Adjust macOS version, ACPI patches, kexts, or SMBIOS model
+   • Most users can skip this step
 
-4. Build Your EFI
-   • Go to the Build EFI page
-   • Click "Build OpenCore EFI"
-   • Follow the USB mapping instructions
+4. Build EFI
+   • Navigate to Build EFI page and click "Build OpenCore EFI"
+   • Follow the USB mapping instructions before use
 
-For more information, visit the Dortania Guide:
-https://dortania.github.io/OpenCore-Install-Guide/"""
+For detailed guides, visit: https://dortania.github.io/OpenCore-Install-Guide/"""
         
         text_widget = tk.Text(
             card,
