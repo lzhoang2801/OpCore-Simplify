@@ -789,7 +789,7 @@ class OpCoreGUI:
         select_btn.bind('<Leave>', on_hover_leave)
         
     def customize_smbios_gui(self):
-        """GUI for customizing SMBIOS"""
+        """GUI for customizing SMBIOS with full selection dialog"""
         if not self.customized_hardware:
             messagebox.showwarning(
                 "Warning",
@@ -807,40 +807,437 @@ class OpCoreGUI:
         darwin_version = current_version.split("(")[1].split(")")[0] if "(" in current_version else None
         if not darwin_version:
             return
-            
-        # For now, show info that SMBIOS is auto-selected
-        messagebox.showinfo(
-            "SMBIOS Selection",
-            f"The optimal SMBIOS model has been automatically selected: {self.smbios_model.get()}\n\n" +
-            "This model provides the best compatibility for your hardware configuration.\n\n" +
-            "Advanced SMBIOS customization is available through the CLI version."
+        
+        # Create SMBIOS selection dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Select SMBIOS Model")
+        dialog.geometry("700x600")
+        dialog.configure(bg=COLORS['bg_main'])
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Title
+        title_label = tk.Label(
+            dialog,
+            text="Select SMBIOS Model",
+            font=get_font('title'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_primary']
         )
+        title_label.pack(pady=SPACING['large'])
+        
+        # Current selection info
+        current_frame = tk.Frame(dialog, bg='#D1ECF1', relief=tk.SOLID, bd=1)
+        current_frame.pack(pady=SPACING['medium'], padx=SPACING['large'], fill=tk.X)
+        
+        current_label = tk.Label(
+            current_frame,
+            text=f"Current: {self.smbios_model.get()}",
+            font=get_font('body_bold'),
+            bg='#D1ECF1',
+            fg='#0C5460'
+        )
+        current_label.pack(pady=SPACING['small'], padx=SPACING['small'])
+        
+        # Platform info
+        platform = self.customized_hardware.get("Motherboard", {}).get("Platform", "Unknown")
+        info_label = tk.Label(
+            dialog,
+            text=f"Platform: {platform}",
+            font=get_font('body'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_secondary']
+        )
+        info_label.pack(pady=SPACING['small'])
+        
+        # SMBIOS options based on platform
+        laptop_models = [
+            "MacBookPro16,4", "MacBookPro16,3", "MacBookPro16,2", "MacBookPro16,1",
+            "MacBookPro15,4", "MacBookPro15,3", "MacBookPro15,2", "MacBookPro15,1",
+            "MacBookPro14,3", "MacBookPro14,2", "MacBookPro14,1",
+            "MacBookPro13,3", "MacBookPro13,2", "MacBookPro13,1",
+            "MacBookAir9,1", "MacBookAir8,2", "MacBookAir8,1"
+        ]
+        
+        desktop_models = [
+            "iMacPro1,1", "iMac20,2", "iMac20,1", "iMac19,1", "iMac18,3", "iMac18,2", "iMac18,1",
+            "iMac17,1", "iMac16,2", "iMac15,1", "iMac14,4",
+            "Macmini8,1", "Macmini7,1",
+            "MacPro7,1", "MacPro6,1", "MacPro5,1"
+        ]
+        
+        models = laptop_models if "Laptop" in platform else desktop_models
+        
+        # Scrollable list
+        list_frame = tk.Frame(dialog, bg=COLORS['bg_main'])
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=SPACING['large'], pady=SPACING['medium'])
+        
+        scrollbar = tk.Scrollbar(list_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        listbox = tk.Listbox(
+            list_frame,
+            yscrollcommand=scrollbar.set,
+            font=get_font('body'),
+            bg=COLORS['bg_secondary'],
+            fg=COLORS['text_primary'],
+            selectbackground=COLORS['primary'],
+            selectforeground='#FFFFFF',
+            relief=tk.FLAT,
+            bd=1,
+            highlightbackground=COLORS['border_light'],
+            highlightthickness=1
+        )
+        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=listbox.yview)
+        
+        # Populate list
+        for model in models:
+            listbox.insert(tk.END, model)
+            if model == self.smbios_model.get():
+                listbox.selection_set(listbox.size() - 1)
+        
+        def on_select():
+            selection = listbox.curselection()
+            if selection:
+                new_model = listbox.get(selection[0])
+                self.smbios_model.set(new_model)
+                
+                # Re-apply SMBIOS specific options
+                self.ocpe.s.smbios_specific_options(
+                    self.customized_hardware, new_model, darwin_version,
+                    self.ocpe.ac.patches, self.ocpe.k
+                )
+                
+                dialog.destroy()
+                messagebox.showinfo(
+                    "Success",
+                    f"SMBIOS model changed to {new_model}"
+                )
+        
+        # Buttons
+        button_frame = tk.Frame(dialog, bg=COLORS['bg_main'])
+        button_frame.pack(pady=SPACING['large'])
+        
+        select_btn = tk.Button(
+            button_frame,
+            text="Select",
+            font=get_font('body_bold'),
+            bg=COLORS['primary'],
+            fg='#FFFFFF',
+            activebackground=COLORS['primary_dark'],
+            bd=0,
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=SPACING['xlarge'],
+            pady=SPACING['small'],
+            command=on_select,
+            highlightthickness=0
+        )
+        select_btn.pack(side=tk.LEFT, padx=SPACING['small'])
+        
+        cancel_btn = tk.Button(
+            button_frame,
+            text="Cancel",
+            font=get_font('body_bold'),
+            bg=COLORS['bg_hover'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['bg_hover'],
+            bd=0,
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=SPACING['xlarge'],
+            pady=SPACING['small'],
+            command=dialog.destroy,
+            highlightthickness=0
+        )
+        cancel_btn.pack(side=tk.LEFT, padx=SPACING['small'])
+        
+        # Hover effects
+        def on_select_enter(e):
+            select_btn.config(bg=COLORS['primary_hover'])
+        def on_select_leave(e):
+            select_btn.config(bg=COLORS['primary'])
+        select_btn.bind('<Enter>', on_select_enter)
+        select_btn.bind('<Leave>', on_select_leave)
         
     def customize_acpi_gui(self):
-        """GUI for customizing ACPI patches"""
+        """GUI for customizing ACPI patches with full patch viewer"""
         if not self.hardware_report:
             messagebox.showwarning("Warning", "Please select a hardware report first!")
             return
-            
-        messagebox.showinfo(
-            "ACPI Customization",
-            "ACPI patches have been automatically configured based on your hardware.\n\n" +
-            "The tool has selected the optimal patches for compatibility and stability.\n\n" +
-            "Advanced ACPI customization is available through the CLI version."
+        
+        # Create ACPI patches dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("ACPI Patches")
+        dialog.geometry("800x600")
+        dialog.configure(bg=COLORS['bg_main'])
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Title
+        title_label = tk.Label(
+            dialog,
+            text="ACPI Patches Configuration",
+            font=get_font('title'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_primary']
         )
+        title_label.pack(pady=SPACING['large'])
+        
+        # Info message
+        info_frame = tk.Frame(dialog, bg='#D1ECF1', relief=tk.SOLID, bd=1)
+        info_frame.pack(pady=SPACING['small'], padx=SPACING['large'], fill=tk.X)
+        
+        info_label = tk.Label(
+            info_frame,
+            text="ℹ️  ACPI patches have been automatically selected based on your hardware configuration",
+            font=get_font('body'),
+            bg='#D1ECF1',
+            fg='#0C5460',
+            wraplength=750
+        )
+        info_label.pack(pady=SPACING['small'], padx=SPACING['small'])
+        
+        # Patches list with scrollbar
+        list_frame = tk.Frame(dialog, bg=COLORS['bg_main'])
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=SPACING['large'], pady=SPACING['medium'])
+        
+        from tkinter import scrolledtext
+        patches_text = scrolledtext.ScrolledText(
+            list_frame,
+            wrap=tk.WORD,
+            font=get_font('body'),
+            bg=COLORS['bg_secondary'],
+            fg=COLORS['text_primary'],
+            relief=tk.FLAT,
+            bd=1,
+            padx=SPACING['medium'],
+            pady=SPACING['medium']
+        )
+        patches_text.pack(fill=tk.BOTH, expand=True)
+        
+        # Display patches
+        if hasattr(self.ocpe.ac, 'patches') and self.ocpe.ac.patches:
+            patches_text.insert('1.0', "Applied ACPI Patches:\n\n")
+            for i, patch in enumerate(self.ocpe.ac.patches, 1):
+                patch_name = patch.get('Comment', 'Unknown Patch')
+                patches_text.insert(tk.END, f"{i}. {patch_name}\n")
+        else:
+            patches_text.insert('1.0', "No ACPI patches have been configured yet.\n\nPatches will be configured after selecting a macOS version.")
+        
+        patches_text.config(state=tk.DISABLED)
+        
+        # Note
+        note_frame = tk.Frame(dialog, bg='#FFF3CD', relief=tk.SOLID, bd=1)
+        note_frame.pack(pady=SPACING['medium'], padx=SPACING['large'], fill=tk.X)
+        
+        note_label = tk.Label(
+            note_frame,
+            text="💡 These patches are optimized for your specific hardware. Manual modification is not recommended unless you have advanced knowledge.",
+            font=get_font('small'),
+            bg='#FFF3CD',
+            fg='#856404',
+            wraplength=750
+        )
+        note_label.pack(pady=SPACING['small'], padx=SPACING['small'])
+        
+        # Close button
+        button_frame = tk.Frame(dialog, bg=COLORS['bg_main'])
+        button_frame.pack(pady=SPACING['large'])
+        
+        close_btn = tk.Button(
+            button_frame,
+            text="Close",
+            font=get_font('body_bold'),
+            bg=COLORS['primary'],
+            fg='#FFFFFF',
+            activebackground=COLORS['primary_dark'],
+            bd=0,
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=SPACING['xlarge'],
+            pady=SPACING['small'],
+            command=dialog.destroy,
+            highlightthickness=0
+        )
+        close_btn.pack()
+        
+        # Hover effect
+        def on_hover_enter(e):
+            close_btn.config(bg=COLORS['primary_hover'])
+        def on_hover_leave(e):
+            close_btn.config(bg=COLORS['primary'])
+        close_btn.bind('<Enter>', on_hover_enter)
+        close_btn.bind('<Leave>', on_hover_leave)
         
     def customize_kexts_gui(self):
-        """GUI for customizing kexts"""
+        """GUI for customizing kexts with full kext viewer and selection"""
         if not self.hardware_report:
             messagebox.showwarning("Warning", "Please select a hardware report first!")
             return
-            
-        messagebox.showinfo(
-            "Kext Customization",
-            "Kernel extensions have been automatically configured for your hardware.\n\n" +
-            "All required kexts for your system have been selected.\n\n" +
-            "Advanced kext customization is available through the CLI version."
+        
+        # Ensure kexts have been selected
+        self.ensure_kexts_selected()
+        
+        # Create kexts dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Kernel Extensions")
+        dialog.geometry("800x600")
+        dialog.configure(bg=COLORS['bg_main'])
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Title
+        title_label = tk.Label(
+            dialog,
+            text="Kernel Extensions Configuration",
+            font=get_font('title'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_primary']
         )
+        title_label.pack(pady=SPACING['large'])
+        
+        # Info message
+        info_frame = tk.Frame(dialog, bg='#D1ECF1', relief=tk.SOLID, bd=1)
+        info_frame.pack(pady=SPACING['small'], padx=SPACING['large'], fill=tk.X)
+        
+        info_label = tk.Label(
+            info_frame,
+            text="ℹ️  Kernel extensions have been automatically selected based on your hardware configuration",
+            font=get_font('body'),
+            bg='#D1ECF1',
+            fg='#0C5460',
+            wraplength=750
+        )
+        info_label.pack(pady=SPACING['small'], padx=SPACING['small'])
+        
+        # Kexts list with scrollbar
+        list_frame = tk.Frame(dialog, bg=COLORS['bg_main'])
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=SPACING['large'], pady=SPACING['medium'])
+        
+        # Create canvas for scrollable frame
+        canvas = tk.Canvas(list_frame, bg=COLORS['bg_secondary'], highlightthickness=0)
+        scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=COLORS['bg_secondary'])
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Display kexts with checkboxes
+        if hasattr(self.ocpe.k, 'kexts') and self.ocpe.k.kexts:
+            # Separate required and optional kexts
+            required_kexts = [k for k in self.ocpe.k.kexts if k.checked and k.required]
+            optional_kexts = [k for k in self.ocpe.k.kexts if k.checked and not k.required]
+            
+            if required_kexts:
+                req_label = tk.Label(
+                    scrollable_frame,
+                    text="Required Kexts:",
+                    font=get_font('body_bold'),
+                    bg=COLORS['bg_secondary'],
+                    fg=COLORS['text_primary'],
+                    anchor=tk.W
+                )
+                req_label.pack(anchor=tk.W, pady=(SPACING['small'], SPACING['tiny']), padx=SPACING['medium'])
+                
+                for kext in required_kexts:
+                    kext_frame = tk.Frame(scrollable_frame, bg=COLORS['bg_secondary'])
+                    kext_frame.pack(fill=tk.X, padx=SPACING['large'], pady=2)
+                    
+                    tk.Label(
+                        kext_frame,
+                        text=f"✓ {kext.name}",
+                        font=get_font('body'),
+                        bg=COLORS['bg_secondary'],
+                        fg=COLORS['success'],
+                        anchor=tk.W
+                    ).pack(side=tk.LEFT)
+            
+            if optional_kexts:
+                opt_label = tk.Label(
+                    scrollable_frame,
+                    text="\nOptional Kexts:",
+                    font=get_font('body_bold'),
+                    bg=COLORS['bg_secondary'],
+                    fg=COLORS['text_primary'],
+                    anchor=tk.W
+                )
+                opt_label.pack(anchor=tk.W, pady=(SPACING['medium'], SPACING['tiny']), padx=SPACING['medium'])
+                
+                for kext in optional_kexts:
+                    kext_frame = tk.Frame(scrollable_frame, bg=COLORS['bg_secondary'])
+                    kext_frame.pack(fill=tk.X, padx=SPACING['large'], pady=2)
+                    
+                    tk.Label(
+                        kext_frame,
+                        text=f"✓ {kext.name}",
+                        font=get_font('body'),
+                        bg=COLORS['bg_secondary'],
+                        fg=COLORS['primary'],
+                        anchor=tk.W
+                    ).pack(side=tk.LEFT)
+        else:
+            no_kext_label = tk.Label(
+                scrollable_frame,
+                text="No kexts have been configured yet.\n\nKexts will be configured after selecting a macOS version.",
+                font=get_font('body'),
+                bg=COLORS['bg_secondary'],
+                fg=COLORS['text_secondary'],
+                justify=tk.LEFT
+            )
+            no_kext_label.pack(pady=SPACING['large'], padx=SPACING['large'])
+        
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Note
+        note_frame = tk.Frame(dialog, bg='#FFF3CD', relief=tk.SOLID, bd=1)
+        note_frame.pack(pady=SPACING['medium'], padx=SPACING['large'], fill=tk.X)
+        
+        note_label = tk.Label(
+            note_frame,
+            text="💡 These kexts are optimized for your specific hardware. All required drivers and patches have been included.",
+            font=get_font('small'),
+            bg='#FFF3CD',
+            fg='#856404',
+            wraplength=750
+        )
+        note_label.pack(pady=SPACING['small'], padx=SPACING['small'])
+        
+        # Close button
+        button_frame = tk.Frame(dialog, bg=COLORS['bg_main'])
+        button_frame.pack(pady=SPACING['large'])
+        
+        close_btn = tk.Button(
+            button_frame,
+            text="Close",
+            font=get_font('body_bold'),
+            bg=COLORS['primary'],
+            fg='#FFFFFF',
+            activebackground=COLORS['primary_dark'],
+            bd=0,
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=SPACING['xlarge'],
+            pady=SPACING['small'],
+            command=dialog.destroy,
+            highlightthickness=0
+        )
+        close_btn.pack()
+        
+        # Hover effect
+        def on_hover_enter(e):
+            close_btn.config(bg=COLORS['primary_hover'])
+        def on_hover_leave(e):
+            close_btn.config(bg=COLORS['primary'])
+        close_btn.bind('<Enter>', on_hover_enter)
+        close_btn.bind('<Leave>', on_hover_leave)
     
     def ensure_kexts_selected(self):
         """Ensure kexts have been selected (call this before building if kext selection was deferred)"""

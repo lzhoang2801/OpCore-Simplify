@@ -244,21 +244,25 @@ class ConfigurationPage(tk.Frame):
         
         options = [
             {
+                'icon': '🍎',
                 'title': 'Change macOS Version',
                 'description': 'Select a different macOS version for your system',
                 'command': self.controller.select_macos_version_gui
             },
             {
+                'icon': '📝',
                 'title': 'Customize ACPI Patches',
                 'description': 'View and modify ACPI patches (for advanced users)',
                 'command': self.controller.customize_acpi_gui
             },
             {
+                'icon': '🔧',
                 'title': 'Customize Kernel Extensions',
                 'description': 'Add or remove kexts (for advanced users)',
                 'command': self.controller.customize_kexts_gui
             },
             {
+                'icon': '💻',
                 'title': 'Change SMBIOS Model',
                 'description': 'Select a different Mac model identifier',
                 'command': self.controller.customize_smbios_gui
@@ -269,7 +273,7 @@ class ConfigurationPage(tk.Frame):
             self.create_option_button(button_container, option)
     
     def create_option_button(self, parent, option):
-        """Create a customization option button"""
+        """Create a customization option button matching upload page style"""
         btn_frame = tk.Frame(
             parent, 
             bg=COLORS['bg_main'],
@@ -280,29 +284,46 @@ class ConfigurationPage(tk.Frame):
         )
         btn_frame.pack(fill=tk.X, pady=SPACING['small'])
         
+        # Make entire frame clickable
+        btn_frame.bind('<Button-1>', lambda e: option['command']())
+        btn_frame.config(cursor='hand2')
+        
         # Inner padding frame
         inner_frame = tk.Frame(btn_frame, bg=COLORS['bg_main'])
-        inner_frame.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['medium'])
+        inner_frame.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['large'])
+        inner_frame.bind('<Button-1>', lambda e: option['command']())
+        inner_frame.config(cursor='hand2')
+        
+        # Icon (using emoji)
+        icon_label = tk.Label(
+            inner_frame,
+            text=option.get('icon', '⚙️'),
+            font=('SF Pro Display', 32),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_primary']
+        )
+        icon_label.pack(side=tk.LEFT, padx=(0, SPACING['large']))
+        icon_label.bind('<Button-1>', lambda e: option['command']())
+        icon_label.config(cursor='hand2')
         
         # Text container
         text_frame = tk.Frame(inner_frame, bg=COLORS['bg_main'])
-        text_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        text_frame.bind('<Button-1>', lambda e: option['command']())
+        text_frame.config(cursor='hand2')
         
-        # Title button
-        title_btn = tk.Button(
+        # Title
+        title_label = tk.Label(
             text_frame,
             text=option['title'],
             font=get_font('body_bold'),
             bg=COLORS['bg_main'],
-            fg=COLORS['primary'],
-            bd=0,
-            relief=tk.FLAT,
-            cursor='hand2',
-            anchor=tk.W,
-            command=option['command'],
-            highlightthickness=0
+            fg=COLORS['text_primary'],
+            anchor=tk.W
         )
-        title_btn.pack(anchor=tk.W)
+        title_label.pack(anchor=tk.W)
+        title_label.bind('<Button-1>', lambda e: option['command']())
+        title_label.config(cursor='hand2')
         
         # Description
         desc_label = tk.Label(
@@ -311,32 +332,21 @@ class ConfigurationPage(tk.Frame):
             font=get_font('small'),
             bg=COLORS['bg_main'],
             fg=COLORS['text_secondary'],
-            anchor=tk.W
+            anchor=tk.W,
+            wraplength=500
         )
         desc_label.pack(anchor=tk.W)
-        
-        # Arrow
-        arrow_label = tk.Label(
-            inner_frame,
-            text="→",
-            font=('SF Pro Display', 16),
-            bg=COLORS['bg_main'],
-            fg=COLORS['primary']
-        )
-        arrow_label.pack(side=tk.RIGHT, padx=(SPACING['medium'], 0))
+        desc_label.bind('<Button-1>', lambda e: option['command']())
+        desc_label.config(cursor='hand2')
         
         # Hover effects
         def on_enter(e):
-            title_btn.config(fg=COLORS['primary_hover'])
-            arrow_label.config(fg=COLORS['primary_hover'])
             btn_frame.config(highlightbackground=COLORS['primary'], highlightthickness=2)
             
         def on_leave(e):
-            title_btn.config(fg=COLORS['primary'])
-            arrow_label.config(fg=COLORS['primary'])
             btn_frame.config(highlightbackground=COLORS['border_light'], highlightthickness=1)
         
-        for widget in [title_btn, btn_frame, inner_frame, text_frame, desc_label, arrow_label]:
+        for widget in [btn_frame, inner_frame, icon_label, text_frame, title_label, desc_label]:
             widget.bind('<Enter>', on_enter)
             widget.bind('<Leave>', on_leave)
         
