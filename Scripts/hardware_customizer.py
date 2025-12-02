@@ -93,7 +93,7 @@ class HardwareCustomizer:
             print("")
             print("All other devices of the same type have been disabled.")
             print("")
-            self.utils.request_input()
+            self.utils.request_input(gui_type='info')
         
         return self.customized_hardware, self.disabled_devices, needs_oclp
 
