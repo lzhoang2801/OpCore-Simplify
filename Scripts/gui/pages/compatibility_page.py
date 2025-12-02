@@ -368,6 +368,10 @@ class CompatibilityPage(tk.Frame):
             
             # Device list
             for device_name, device_props in devices.items():
+                # Skip if device_props is not a dictionary (fix for AttributeError)
+                if not isinstance(device_props, dict):
+                    continue
+                    
                 self.create_device_card(section_frame, device_name, device_props)
                 
                 # Count compatibility

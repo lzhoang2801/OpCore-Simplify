@@ -602,6 +602,9 @@ class OpCoreGUI:
         for device_type in ("GPU", "Network", "Bluetooth", "SD Controller"):
             if device_type in self.hardware_report:
                 for device_name, device_props in self.hardware_report[device_type].items():
+                    # Skip if device_props is not a dictionary (fix for AttributeError)
+                    if not isinstance(device_props, dict):
+                        continue
                     if device_props.get("Compatibility", (None, None)) != (None, None):
                         if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
                             full_device_id = device_props.get("Device ID", "0"*8)
@@ -623,11 +626,16 @@ class OpCoreGUI:
                 suggested_macos_version[2:]
             )
         
-        # Apply this version
-        self.apply_macos_version(suggested_macos_version)
+        # Apply this version (without prompting for kexts during initial load)
+        self.apply_macos_version(suggested_macos_version, defer_kext_selection=True)
         
-    def apply_macos_version(self, version):
-        """Apply a macOS version selection"""
+    def apply_macos_version(self, version, defer_kext_selection=False):
+        """Apply a macOS version selection
+        
+        Args:
+            version: macOS version to apply
+            defer_kext_selection: If True, skip kext selection prompts during initial load
+        """
         try:
             self.update_status("Configuring for macOS version...", 'info')
             
@@ -652,20 +660,23 @@ class OpCoreGUI:
             # Select ACPI patches
             self.ocpe.ac.select_acpi_patches(self.customized_hardware, self.disabled_devices)
             
-            # Select required kexts
-            self.needs_oclp = self.ocpe.k.select_required_kexts(
-                self.customized_hardware, version, self.needs_oclp, self.ocpe.ac.patches
-            )
-            
-            # SMBIOS specific options
-            self.ocpe.s.smbios_specific_options(
-                self.customized_hardware, smbios, version,
-                self.ocpe.ac.patches, self.ocpe.k
-            )
+            # Only select kexts and show prompts if not deferring
+            # This prevents dialogs from appearing before user sees page 2
+            if not defer_kext_selection:
+                # Select required kexts (may show interactive prompts)
+                self.needs_oclp = self.ocpe.k.select_required_kexts(
+                    self.customized_hardware, version, self.needs_oclp, self.ocpe.ac.patches
+                )
+                
+                # SMBIOS specific options
+                self.ocpe.s.smbios_specific_options(
+                    self.customized_hardware, smbios, version,
+                    self.ocpe.ac.patches, self.ocpe.k
+                )
             
             self.update_status("Configuration complete", 'success')
             
-            if self.needs_oclp:
+            if self.needs_oclp and not defer_kext_selection:
                 messagebox.showwarning(
                     "OpenCore Legacy Patcher Required",
                     "Your hardware requires OpenCore Legacy Patcher.\n\n" +
@@ -830,6 +841,25 @@ class OpCoreGUI:
             "All required kexts for your system have been selected.\n\n" +
             "Advanced kext customization is available through the CLI version."
         )
+    
+    def ensure_kexts_selected(self):
+        """Ensure kexts have been selected (call this before building if kext selection was deferred)"""
+        # Check if kexts were already selected by checking if any kext is checked
+        if not hasattr(self.ocpe.k, 'kexts') or not any(kext.checked for kext in self.ocpe.k.kexts):
+            # Kexts not selected yet, select them now with interactive prompts
+            current_version = self.macos_version.get()
+            darwin_version = current_version.split("(")[1].split(")")[0] if "(" in current_version else None
+            if darwin_version and self.customized_hardware:
+                self.needs_oclp = self.ocpe.k.select_required_kexts(
+                    self.customized_hardware, darwin_version, self.needs_oclp, self.ocpe.ac.patches
+                )
+                
+                # SMBIOS specific options
+                smbios = self.smbios_model.get()
+                self.ocpe.s.smbios_specific_options(
+                    self.customized_hardware, smbios, darwin_version,
+                    self.ocpe.ac.patches, self.ocpe.k
+                )
         
     def build_efi_gui(self):
         """Build the EFI in GUI mode"""
@@ -842,6 +872,9 @@ class OpCoreGUI:
                 "3. Select SMBIOS model"
             )
             return
+        
+        # Ensure kexts have been selected (in case they were deferred during initial load)
+        self.ensure_kexts_selected()
             
         # Check OCLP requirement
         if self.needs_oclp:
