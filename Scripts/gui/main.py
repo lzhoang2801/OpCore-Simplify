@@ -645,11 +645,11 @@ class OpCoreGUI:
             return
         
         try:
-            # Run select_required_kexts with auto_select=True
-            # This will use default choices for all interactive prompts except the Kext Compatibility Check
+            # Run select_required_kexts
+            # This will use interactive prompts for all user choices
             self.update_status("Checking kext compatibility...", 'info')
             self.needs_oclp = self.ocpe.k.select_required_kexts(
-                self.customized_hardware, darwin_version, self.needs_oclp, self.ocpe.ac.patches, auto_select=False
+                self.customized_hardware, darwin_version, self.needs_oclp, self.ocpe.ac.patches
             )
             
             # SMBIOS specific options
