@@ -117,22 +117,6 @@ class OpCoreGUI:
         self.pages['wifi'] = None
         self.pages['console'] = None
         
-    def create_pages(self):
-        """Create all page instances (legacy method - now using lazy loading)"""
-        self.pages['config'] = ConfigurationPage(self.content_area, self)
-        self.pages['customize'] = CustomizationPage(self.content_area, self)
-        self.pages['build'] = BuildPage(self.content_area, self)
-        self.pages['wifi'] = WiFiPage(self.content_area, self)
-        self.pages['console'] = ConsolePage(self.content_area, self)
-        
-        # Mark all as initialized
-        self.pages_initialized = {'config', 'customize', 'build', 'wifi', 'console'}
-        
-        # Hide all pages initially
-        for page in self.pages.values():
-            if page:
-                page.pack_forget()
-                
     def ensure_page_created(self, page_id):
         """Ensure a page is created before showing it (lazy loading)"""
         if page_id in self.pages_initialized:

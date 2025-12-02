@@ -26,7 +26,6 @@ class Sidebar(tk.Frame):
         self.selected_id = None
         self.nav_buttons = {}
         self.nav_containers = {}
-        self.hover_animations = {}
         
         # Prevent sidebar from shrinking
         self.pack_propagate(False)

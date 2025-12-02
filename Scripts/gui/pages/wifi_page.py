@@ -31,8 +31,10 @@ class WiFiPage(tk.Frame):
         try:
             from Scripts import wifi_profile_extractor
             self.wifi_extractor = wifi_profile_extractor.WifiProfileExtractor()
-        except ImportError:
+        except (ImportError, AttributeError, ModuleNotFoundError) as e:
+            # WiFi extractor module not available - will show error when used
             self.wifi_extractor = None
+            print(f"Warning: WiFi extractor not available: {e}")
         
         self.extracted_networks = []
         self.is_extracting = False
@@ -360,8 +362,18 @@ class WiFiPage(tk.Frame):
             ))
             
         except Exception as e:
-            self.log_message(f"\nError during extraction: {str(e)}")
-            messagebox.showerror("Extraction Error", f"Failed to extract WiFi profiles:\n\n{str(e)}")
+            self.log_message(f"\nError during extraction: An unexpected error occurred.")
+            import traceback
+            print(f"WiFi extraction error details: {traceback.format_exc()}")
+            messagebox.showerror(
+                "Extraction Error", 
+                "Failed to extract WiFi profiles.\n\n"
+                "This may be due to:\n"
+                "• Insufficient permissions\n"
+                "• System network utilities not available\n"
+                "• Platform not fully supported\n\n"
+                "Please check the console log for details."
+            )
         finally:
             self.is_extracting = False
             self.controller.root.after(0, lambda: self.extract_btn.config(state=tk.NORMAL))
@@ -485,7 +497,17 @@ class WiFiPage(tk.Frame):
             self.log_message(f"\n✓ Exported to: {filename}")
             
         except Exception as e:
-            messagebox.showerror("Export Error", f"Failed to export WiFi profiles:\n\n{str(e)}")
+            import traceback
+            print(f"WiFi export error details: {traceback.format_exc()}")
+            messagebox.showerror(
+                "Export Error", 
+                "Failed to export WiFi profiles.\n\n"
+                "This may be due to:\n"
+                "• Insufficient file write permissions\n"
+                "• Invalid file path\n"
+                "• Disk space issue\n\n"
+                "Please try a different location or check permissions."
+            )
     
     def refresh(self):
         """Refresh the page content"""
