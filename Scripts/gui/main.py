@@ -854,21 +854,23 @@ class OpCoreGUI:
         # Get all Mac models from dataset and filter by platform type
         is_laptop = "Laptop" in platform
         
-        if is_laptop:
-            # Filter for laptop models (MacBookPro, MacBookAir, MacBook)
-            models = [
-                device.name for device in mac_model_data.mac_devices 
-                if device.name.startswith(('MacBookPro', 'MacBookAir', 'MacBook'))
-            ]
-        else:
-            # Filter for desktop models (iMac, iMacPro, Macmini, MacPro)
-            models = [
-                device.name for device in mac_model_data.mac_devices 
-                if device.name.startswith(('iMac', 'Macmini', 'MacPro'))
-            ]
+        # Filter models efficiently in a single pass
+        models = []
+        for device in mac_model_data.mac_devices:
+            if is_laptop:
+                # Include laptop models
+                if device.name.startswith(('MacBookPro', 'MacBookAir', 'MacBook')):
+                    models.append(device.name)
+            else:
+                # Include desktop models
+                if device.name.startswith(('iMac', 'Macmini', 'MacPro')):
+                    models.append(device.name)
         
         # Sort models in reverse order (newest first)
         models.sort(reverse=True)
+        
+        # Create device lookup for display info (cache to avoid repeated lookups)
+        device_lookup = {device.name: device for device in mac_model_data.mac_devices}
         
         # Scrollable list
         list_frame = tk.Frame(dialog, bg=COLORS['bg_main'])
@@ -893,9 +895,9 @@ class OpCoreGUI:
         listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=listbox.yview)
         
-        # Populate list with model details from dataset
+        # Populate list with model details from dataset (using cached lookup)
         for model in models:
-            mac_device = mac_model_data.get_mac_device_by_name(model)
+            mac_device = device_lookup.get(model)
             if mac_device:
                 # Show model with CPU generation info
                 display_text = f"{model} ({mac_device.cpu_generation})"
@@ -1254,8 +1256,9 @@ class OpCoreGUI:
     def ensure_kexts_selected(self):
         """Ensure kexts have been selected (call this before building if kext selection was deferred)"""
         # Check if kexts were already selected by checking if any kext is checked
-        # Handle empty list case explicitly
-        if not hasattr(self.ocpe.k, 'kexts') or not self.ocpe.k.kexts or not any(kext.checked for kext in self.ocpe.k.kexts):
+        # Handle empty list case and missing checked attribute
+        if not hasattr(self.ocpe.k, 'kexts') or not self.ocpe.k.kexts or \
+           not any(hasattr(kext, 'checked') and kext.checked for kext in self.ocpe.k.kexts):
             # Kexts not selected yet, select them now with interactive prompts
             current_version = self.macos_version.get()
             darwin_version = current_version.split("(")[1].split(")")[0] if "(" in current_version else None
