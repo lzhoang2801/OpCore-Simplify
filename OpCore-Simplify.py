@@ -480,8 +480,8 @@ if __name__ == '__main__':
     if use_gui:
         # Run GUI mode
         try:
-            from Scripts import gui
-            app = gui.OpCoreGUI(o)
+            from Scripts.gui import OpCoreGUI
+            app = OpCoreGUI(o)
             app.run()
         except ImportError as e:
             print("Error: Could not import GUI module. Falling back to CLI mode.")

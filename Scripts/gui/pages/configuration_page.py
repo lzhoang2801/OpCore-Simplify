@@ -1,0 +1,277 @@
+"""
+Configuration page for hardware report and macOS version selection
+"""
+
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+import os
+
+from ..styles import COLORS, SPACING, FONTS, get_font
+
+
+class ConfigurationPage(tk.Frame):
+    """Configuration page for hardware report and initial setup"""
+    
+    def __init__(self, parent, app_controller, **kwargs):
+        """
+        Initialize configuration page
+        
+        Args:
+            parent: Parent widget
+            app_controller: Reference to main application controller
+        """
+        super().__init__(parent, bg=COLORS['bg_main'], **kwargs)
+        self.controller = app_controller
+        
+        self.setup_ui()
+        
+    def setup_ui(self):
+        """Setup the configuration page UI"""
+        # Main container with padding
+        container = tk.Frame(self, bg=COLORS['bg_main'])
+        container.pack(fill=tk.BOTH, expand=True, padx=SPACING['xxlarge'], 
+                      pady=SPACING['xlarge'])
+        
+        # Title section
+        title_label = tk.Label(
+            container,
+            text="Configuration",
+            font=get_font('title'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_primary']
+        )
+        title_label.pack(anchor=tk.W, pady=(0, SPACING['small']))
+        
+        subtitle_label = tk.Label(
+            container,
+            text="Set up your hardware report and macOS preferences",
+            font=get_font('body'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_secondary']
+        )
+        subtitle_label.pack(anchor=tk.W, pady=(0, SPACING['xlarge']))
+        
+        # Current Configuration Card
+        self.create_config_card(container)
+        
+        # Actions Card
+        self.create_actions_card(container)
+        
+        # Instructions Card
+        self.create_instructions_card(container)
+        
+    def create_config_card(self, parent):
+        """Create current configuration display card"""
+        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        card.pack(fill=tk.X, pady=(0, SPACING['large']))
+        
+        # Card header
+        header = tk.Label(
+            card,
+            text="Current Configuration",
+            font=get_font('heading'),
+            bg=COLORS['bg_sidebar'],
+            fg=COLORS['text_primary']
+        )
+        header.pack(anchor=tk.W, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
+        
+        # Configuration items
+        config_items = [
+            ("Hardware Report:", "hardware_report_path"),
+            ("macOS Version:", "macos_version"),
+            ("SMBIOS Model:", "smbios_model"),
+            ("Disabled Devices:", "disabled_devices_text"),
+        ]
+        
+        for label_text, var_name in config_items:
+            item_frame = tk.Frame(card, bg=COLORS['bg_sidebar'])
+            item_frame.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['small'])
+            
+            label = tk.Label(
+                item_frame,
+                text=label_text,
+                font=get_font('body_bold'),
+                bg=COLORS['bg_sidebar'],
+                fg=COLORS['text_secondary'],
+                width=18,
+                anchor=tk.W
+            )
+            label.pack(side=tk.LEFT)
+            
+            value = tk.Label(
+                item_frame,
+                textvariable=getattr(self.controller, var_name),
+                font=get_font('body'),
+                bg=COLORS['bg_sidebar'],
+                fg=COLORS['primary'],
+                anchor=tk.W,
+                wraplength=500
+            )
+            value.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # Add padding at bottom
+        tk.Frame(card, bg=COLORS['bg_sidebar'], height=SPACING['large']).pack()
+        
+    def create_actions_card(self, parent):
+        """Create action buttons card"""
+        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        card.pack(fill=tk.X, pady=(0, SPACING['large']))
+        
+        # Card header
+        header = tk.Label(
+            card,
+            text="Quick Actions",
+            font=get_font('heading'),
+            bg=COLORS['bg_sidebar'],
+            fg=COLORS['text_primary']
+        )
+        header.pack(anchor=tk.W, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
+        
+        # Button container
+        button_container = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        button_container.pack(fill=tk.X, padx=SPACING['large'], pady=(0, SPACING['large']))
+        
+        # Action buttons with descriptions
+        actions = [
+            {
+                'number': '1',
+                'title': 'Select Hardware Report',
+                'description': 'Choose your hardware report JSON file or export one',
+                'command': self.controller.select_hardware_report_gui
+            },
+            {
+                'number': '2',
+                'title': 'Select macOS Version',
+                'description': 'Choose the macOS version you want to install',
+                'command': self.controller.select_macos_version_gui
+            },
+            {
+                'number': '3',
+                'title': 'Customize SMBIOS Model',
+                'description': 'Select the appropriate Mac model for your hardware',
+                'command': self.controller.customize_smbios_gui
+            }
+        ]
+        
+        for action in actions:
+            self.create_action_button(button_container, action)
+            
+    def create_action_button(self, parent, action):
+        """Create an action button with description"""
+        btn_frame = tk.Frame(parent, bg=COLORS['bg_main'], relief=tk.FLAT, bd=0)
+        btn_frame.pack(fill=tk.X, pady=SPACING['small'])
+        
+        # Number badge
+        number_label = tk.Label(
+            btn_frame,
+            text=action['number'],
+            font=get_font('body_bold'),
+            bg=COLORS['primary'],
+            fg='#FFFFFF',
+            width=3,
+            height=2
+        )
+        number_label.pack(side=tk.LEFT, padx=(0, SPACING['medium']))
+        
+        # Text container
+        text_frame = tk.Frame(btn_frame, bg=COLORS['bg_main'])
+        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Title button
+        title_btn = tk.Button(
+            text_frame,
+            text=action['title'],
+            font=get_font('body_bold'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['primary'],
+            bd=0,
+            relief=tk.FLAT,
+            cursor='hand2',
+            anchor=tk.W,
+            command=action['command']
+        )
+        title_btn.pack(anchor=tk.W)
+        
+        # Description
+        desc_label = tk.Label(
+            text_frame,
+            text=action['description'],
+            font=get_font('small'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_secondary'],
+            anchor=tk.W
+        )
+        desc_label.pack(anchor=tk.W)
+        
+        # Hover effects
+        def on_enter(e):
+            title_btn.config(fg=COLORS['primary_dark'])
+            
+        def on_leave(e):
+            title_btn.config(fg=COLORS['primary'])
+            
+        title_btn.bind('<Enter>', on_enter)
+        title_btn.bind('<Leave>', on_leave)
+        
+    def create_instructions_card(self, parent):
+        """Create instructions card"""
+        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        card.pack(fill=tk.BOTH, expand=True)
+        
+        # Card header
+        header = tk.Label(
+            card,
+            text="Getting Started",
+            font=get_font('heading'),
+            bg=COLORS['bg_sidebar'],
+            fg=COLORS['text_primary']
+        )
+        header.pack(anchor=tk.W, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
+        
+        # Instructions text
+        instructions = """Welcome to OpCore Simplify!
+
+Follow these steps to build your OpenCore EFI:
+
+1. Select Hardware Report
+   • Choose a hardware report JSON file
+   • Or export one using Hardware Sniffer (Windows only)
+   • The report will be automatically validated
+
+2. Select macOS Version
+   • The tool will suggest the best version for your hardware
+   • You can choose a different version if needed
+   • Some versions may require OpenCore Legacy Patcher
+
+3. Customize SMBIOS (Optional)
+   • The tool automatically selects the best SMBIOS model
+   • Advanced users can customize if needed
+
+4. Build Your EFI
+   • Go to the Build EFI page
+   • Click "Build OpenCore EFI"
+   • Follow the USB mapping instructions
+
+For more information, visit the Dortania Guide:
+https://dortania.github.io/OpenCore-Install-Guide/"""
+        
+        text_widget = tk.Text(
+            card,
+            wrap=tk.WORD,
+            font=get_font('body'),
+            bg=COLORS['bg_sidebar'],
+            fg=COLORS['text_primary'],
+            relief=tk.FLAT,
+            bd=0,
+            padx=SPACING['large'],
+            pady=SPACING['medium'],
+            height=18
+        )
+        text_widget.pack(fill=tk.BOTH, expand=True, padx=SPACING['large'], pady=(0, SPACING['large']))
+        text_widget.insert('1.0', instructions)
+        text_widget.config(state=tk.DISABLED)
+        
+    def refresh(self):
+        """Refresh the page content"""
+        # This can be called when configuration changes
+        pass
