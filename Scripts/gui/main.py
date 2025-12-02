@@ -76,6 +76,9 @@ class OpCoreGUI:
         self.ocpe.u.gui_callback = self.handle_gui_prompt
         self.ocpe.h.utils.gui_callback = self.handle_gui_prompt
         self.ocpe.k.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.c.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.o.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.ac.utils.gui_callback = self.handle_gui_prompt
         
         self.setup_ui()
         
