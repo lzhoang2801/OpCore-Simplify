@@ -578,6 +578,10 @@ class OpCoreGUI:
             self.log_message("Auto-selecting macOS version...")
             self.auto_select_macos_version()
             
+            # Run Kext Compatibility Check right away after upload
+            self.log_message("Running Kext Compatibility Check...")
+            self.run_kext_compatibility_check()
+            
             self.log_message("Hardware report loaded successfully!")
             self.update_status("Hardware report loaded", 'success')
             
@@ -628,6 +632,39 @@ class OpCoreGUI:
         
         # Apply this version (without prompting for kexts during initial load)
         self.apply_macos_version(suggested_macos_version, defer_kext_selection=True)
+        
+    def run_kext_compatibility_check(self):
+        """Run Kext Compatibility Check right after upload with auto-select for interactive prompts"""
+        if not self.customized_hardware or not self.macos_version.get():
+            return
+        
+        # Extract darwin version from display string
+        current_version = self.macos_version.get()
+        darwin_version = current_version.split("(")[1].split(")")[0] if "(" in current_version else None
+        if not darwin_version:
+            return
+        
+        try:
+            # Run select_required_kexts with auto_select=True
+            # This will use default choices for all interactive prompts except the Kext Compatibility Check
+            self.update_status("Checking kext compatibility...", 'info')
+            self.needs_oclp = self.ocpe.k.select_required_kexts(
+                self.customized_hardware, darwin_version, self.needs_oclp, self.ocpe.ac.patches, auto_select=True
+            )
+            
+            # SMBIOS specific options
+            smbios = self.smbios_model.get()
+            self.ocpe.s.smbios_specific_options(
+                self.customized_hardware, smbios, darwin_version,
+                self.ocpe.ac.patches, self.ocpe.k
+            )
+            
+            self.update_status("Kext compatibility check complete", 'success')
+            
+        except Exception as e:
+            self.log_message(f"Error during kext compatibility check: {str(e)}")
+            # Don't show error dialog - this is not critical during initial load
+            self.update_status("Kext compatibility check failed", 'warning')
         
     def apply_macos_version(self, version, defer_kext_selection=False):
         """Apply a macOS version selection

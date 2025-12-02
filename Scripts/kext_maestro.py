@@ -95,7 +95,7 @@ class KextMaestro:
                 if other_kext.conflict_group_id == kext.conflict_group_id and other_kext.name != kext.name:
                     other_kext.checked = False
 
-    def select_required_kexts(self, hardware_report, macos_version, needs_oclp, acpi_patches):
+    def select_required_kexts(self, hardware_report, macos_version, needs_oclp, acpi_patches, auto_select=False):
         self.utils.head("Select Required Kernel Extensions")
         print("")
         print("Checking for required kernel extensions...")
@@ -129,37 +129,41 @@ class KextMaestro:
                     print("2. \033[1mVoodooHDA\033[0m - Lower audio quality, manual injection to /Library/Extensions")
                     print("")
                     
-                    gui_options = {
-                        'title': 'Select Audio Kext',
-                        'message': 'Since macOS Tahoe 26, Apple has removed AppleHDA.\n\nChoose your audio solution:',
-                        'choices': [
-                            {
-                                'value': '1',
-                                'label': 'AppleALC - High quality (Requires OCLP)',
-                                'description': 'Requires AppleHDA rollback with OpenCore Legacy Patcher'
-                            },
-                            {
-                                'value': '2',
-                                'label': 'VoodooHDA - Manual installation',
-                                'description': 'Lower audio quality, manual injection to /Library/Extensions'
-                            }
-                        ],
-                        'default': '1',
-                        'warning': 'AppleALC requires OpenCore Legacy Patcher for AppleHDA rollback'
-                    }
+                    # Auto-select AppleALC when auto_select is True
+                    if auto_select:
+                        kext_option = "1"
+                    else:
+                        gui_options = {
+                            'title': 'Select Audio Kext',
+                            'message': 'Since macOS Tahoe 26, Apple has removed AppleHDA.\n\nChoose your audio solution:',
+                            'choices': [
+                                {
+                                    'value': '1',
+                                    'label': 'AppleALC - High quality (Requires OCLP)',
+                                    'description': 'Requires AppleHDA rollback with OpenCore Legacy Patcher'
+                                },
+                                {
+                                    'value': '2',
+                                    'label': 'VoodooHDA - Manual installation',
+                                    'description': 'Lower audio quality, manual injection to /Library/Extensions'
+                                }
+                            ],
+                            'default': '1',
+                            'warning': 'AppleALC requires OpenCore Legacy Patcher for AppleHDA rollback'
+                        }
+                        
+                        while True:
+                            kext_option = self.utils.request_input("Select audio kext for your system: ",
+                                                                 gui_type='choice',
+                                                                 gui_options=gui_options).strip()
+                            if kext_option == "1" or kext_option == "2":
+                                break
+                            else:
+                                print("\033[91mInvalid selection, please try again.\033[0m\n\n")
                     
-                    while True:
-                        kext_option = self.utils.request_input("Select audio kext for your system: ",
-                                                             gui_type='choice',
-                                                             gui_options=gui_options).strip()
-                        if kext_option == "1":
-                            needs_oclp = True
-                            selected_kexts.append("AppleALC")
-                            break
-                        elif kext_option == "2":
-                            break
-                        else:
-                            print("\033[91mInvalid selection, please try again.\033[0m\n\n")
+                    if kext_option == "1":
+                        needs_oclp = True
+                        selected_kexts.append("AppleALC")
                 else:
                     selected_kexts.append("AppleALC")
         
@@ -248,17 +252,21 @@ class KextMaestro:
                             'description': 'No GPU kext will be installed'
                         })
                     
-                    gui_options = {
-                        'title': 'Select AMD GPU Kext',
-                        'message': f'Select kext for your AMD {gpu_props.get("Codename")} GPU:',
-                        'choices': gui_choices,
-                        'default': str(recommended_option),
-                        'warning': 'If you experience black screen after verbose mode, remove "-v debug=0x100 keepsyms=1" from boot-args in config.plist'
-                    }
-                    
-                    kext_option = self.utils.request_input("Select kext for your AMD {} GPU (default: {}): ".format(gpu_props.get("Codename"), recommended_name),
-                                                          gui_type='choice',
-                                                          gui_options=gui_options).strip() or str(recommended_option)
+                    # Auto-select recommended option when auto_select is True
+                    if auto_select:
+                        kext_option = str(recommended_option)
+                    else:
+                        gui_options = {
+                            'title': 'Select AMD GPU Kext',
+                            'message': f'Select kext for your AMD {gpu_props.get("Codename")} GPU:',
+                            'choices': gui_choices,
+                            'default': str(recommended_option),
+                            'warning': 'If you experience black screen after verbose mode, remove "-v debug=0x100 keepsyms=1" from boot-args in config.plist'
+                        }
+                        
+                        kext_option = self.utils.request_input("Select kext for your AMD {} GPU (default: {}): ".format(gpu_props.get("Codename"), recommended_name),
+                                                              gui_type='choice',
+                                                              gui_options=gui_options).strip() or str(recommended_option)
                     
                     if kext_option.isdigit() and 0 < int(kext_option) < max_option + 1:
                         selected_option = int(kext_option)
@@ -347,28 +355,32 @@ class KextMaestro:
                         self.utils.request_input("Press Enter to continue...")
                     selected_option = recommended_option
                 else:
-                    # Build GUI options
-                    gui_options = {
-                        'title': 'Select WiFi Kext',
-                        'message': 'Intel WiFi devices have two available kext options:',
-                        'choices': [
-                            {
-                                'value': '1',
-                                'label': 'AirportItlwm - Uses native WiFi settings menu',
-                                'description': 'Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support. Supports enterprise-level security.'
-                            },
-                            {
-                                'value': '2',
-                                'label': 'itlwm - More stable overall',
-                                'description': 'Works with HeliPort app. No Apple Continuity features. Can connect to Hidden Networks.'
-                            }
-                        ],
-                        'default': str(recommended_option),
-                        'note': 'Since macOS Sonoma 14, iServices may not work with AirportItlwm unless using OCLP root patch' if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else None
-                    }
-                    kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name), 
-                                                          gui_type='choice', 
-                                                          gui_options=gui_options).strip() or str(recommended_option)
+                    # Auto-select recommended option when auto_select is True
+                    if auto_select:
+                        kext_option = str(recommended_option)
+                    else:
+                        # Build GUI options
+                        gui_options = {
+                            'title': 'Select WiFi Kext',
+                            'message': 'Intel WiFi devices have two available kext options:',
+                            'choices': [
+                                {
+                                    'value': '1',
+                                    'label': 'AirportItlwm - Uses native WiFi settings menu',
+                                    'description': 'Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support. Supports enterprise-level security.'
+                                },
+                                {
+                                    'value': '2',
+                                    'label': 'itlwm - More stable overall',
+                                    'description': 'Works with HeliPort app. No Apple Continuity features. Can connect to Hidden Networks.'
+                                }
+                            ],
+                            'default': str(recommended_option),
+                            'note': 'Since macOS Sonoma 14, iServices may not work with AirportItlwm unless using OCLP root patch' if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else None
+                        }
+                        kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name), 
+                                                              gui_type='choice', 
+                                                              gui_options=gui_options).strip() or str(recommended_option)
                     
                     if kext_option.isdigit() and 0 < int(kext_option) < 3:
                         selected_option = int(kext_option)
@@ -388,23 +400,27 @@ class KextMaestro:
                         print("\033[1;93mNote:\033[0m Since macOS Sonoma 14, iServices won't work with AirportItlwm without patches")
                         print("")
                         
-                        gui_options = {
-                            'title': 'Apply OCLP Root Patch',
-                            'message': 'Since macOS Sonoma 14, iServices won\'t work with AirportItlwm without patches.\n\nDo you want to apply OpenCore Legacy Patcher root patch to fix iServices?',
-                            'default': 'no'
-                        }
+                        # Auto-select "no" when auto_select is True
+                        if auto_select:
+                            option = "no"
+                        else:
+                            gui_options = {
+                                'title': 'Apply OCLP Root Patch',
+                                'message': 'Since macOS Sonoma 14, iServices won\'t work with AirportItlwm without patches.\n\nDo you want to apply OpenCore Legacy Patcher root patch to fix iServices?',
+                                'default': 'no'
+                            }
+                            
+                            while True:
+                                option = self.utils.request_input("Apply OCLP root patch to fix iServices? (yes/No): ", 
+                                                                gui_type='confirm',
+                                                                gui_options=gui_options).strip().lower()
+                                if option == "yes" or option == "no":
+                                    break
+                                else:
+                                    print("\033[91mInvalid selection, please try again.\033[0m\n\n")
                         
-                        while True:
-                            option = self.utils.request_input("Apply OCLP root patch to fix iServices? (yes/No): ", 
-                                                            gui_type='confirm',
-                                                            gui_options=gui_options).strip().lower()
-                            if option == "yes":
-                                selected_kexts.append("IOSkywalkFamily")
-                                break
-                            elif option == "no":
-                                break
-                            else:
-                                print("\033[91mInvalid selection, please try again.\033[0m\n\n")
+                        if option == "yes":
+                            selected_kexts.append("IOSkywalkFamily")
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 selected_kexts.append("corecaptureElCap")
                 if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.99.99"):
