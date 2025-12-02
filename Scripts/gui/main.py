@@ -18,7 +18,7 @@ import sys
 scripts_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if scripts_path not in sys.path:
     sys.path.insert(0, scripts_path)
-from datasets import os_data
+from datasets import os_data, mac_model_data
 
 
 class OpCoreGUI:
@@ -850,23 +850,25 @@ class OpCoreGUI:
         )
         info_label.pack(pady=SPACING['small'])
         
-        # SMBIOS options based on platform
-        laptop_models = [
-            "MacBookPro16,4", "MacBookPro16,3", "MacBookPro16,2", "MacBookPro16,1",
-            "MacBookPro15,4", "MacBookPro15,3", "MacBookPro15,2", "MacBookPro15,1",
-            "MacBookPro14,3", "MacBookPro14,2", "MacBookPro14,1",
-            "MacBookPro13,3", "MacBookPro13,2", "MacBookPro13,1",
-            "MacBookAir9,1", "MacBookAir8,2", "MacBookAir8,1"
-        ]
+        # SMBIOS options based on platform - using mac_model_data dataset
+        # Get all Mac models from dataset and filter by platform type
+        is_laptop = "Laptop" in platform
         
-        desktop_models = [
-            "iMacPro1,1", "iMac20,2", "iMac20,1", "iMac19,1", "iMac18,3", "iMac18,2", "iMac18,1",
-            "iMac17,1", "iMac16,2", "iMac15,1", "iMac14,4",
-            "Macmini8,1", "Macmini7,1",
-            "MacPro7,1", "MacPro6,1", "MacPro5,1"
-        ]
+        if is_laptop:
+            # Filter for laptop models (MacBookPro, MacBookAir, MacBook)
+            models = [
+                device.name for device in mac_model_data.mac_devices 
+                if device.name.startswith(('MacBookPro', 'MacBookAir', 'MacBook'))
+            ]
+        else:
+            # Filter for desktop models (iMac, iMacPro, Macmini, MacPro)
+            models = [
+                device.name for device in mac_model_data.mac_devices 
+                if device.name.startswith(('iMac', 'Macmini', 'MacPro'))
+            ]
         
-        models = laptop_models if "Laptop" in platform else desktop_models
+        # Sort models in reverse order (newest first)
+        models.sort(reverse=True)
         
         # Scrollable list
         list_frame = tk.Frame(dialog, bg=COLORS['bg_main'])
@@ -891,16 +893,26 @@ class OpCoreGUI:
         listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=listbox.yview)
         
-        # Populate list
+        # Populate list with model details from dataset
         for model in models:
-            listbox.insert(tk.END, model)
+            mac_device = mac_model_data.get_mac_device_by_name(model)
+            if mac_device:
+                # Show model with CPU generation info
+                display_text = f"{model} ({mac_device.cpu_generation})"
+                listbox.insert(tk.END, display_text)
+            else:
+                listbox.insert(tk.END, model)
+                
+            # Select current model
             if model == self.smbios_model.get():
                 listbox.selection_set(listbox.size() - 1)
         
         def on_select():
             selection = listbox.curselection()
             if selection:
-                new_model = listbox.get(selection[0])
+                selected_text = listbox.get(selection[0])
+                # Extract model name (before the parenthesis)
+                new_model = selected_text.split(' (')[0] if ' (' in selected_text else selected_text
                 self.smbios_model.set(new_model)
                 
                 # Re-apply SMBIOS specific options
