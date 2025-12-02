@@ -386,12 +386,14 @@ class OpCoreGUI:
             listbox_frame,
             yscrollcommand=scrollbar.set,
             font=get_font('body'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_main'],
             fg=COLORS['text_primary'],
             selectbackground=COLORS['primary'],
             selectforeground='#FFFFFF',
             relief=tk.FLAT,
-            bd=0
+            bd=1,
+            highlightbackground=COLORS['border_light'],
+            highlightthickness=1
         )
         version_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=version_listbox.yview)
@@ -438,10 +440,19 @@ class OpCoreGUI:
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['xlarge'],
-            pady=SPACING['medium'],
-            command=on_select
+            pady=SPACING['small'],
+            command=on_select,
+            highlightthickness=0
         )
         select_btn.pack()
+        
+        # macOS-style hover effect
+        def on_hover_enter(e):
+            select_btn.config(bg=COLORS['primary_hover'])
+        def on_hover_leave(e):
+            select_btn.config(bg=COLORS['primary'])
+        select_btn.bind('<Enter>', on_hover_enter)
+        select_btn.bind('<Leave>', on_hover_leave)
         
     def customize_smbios_gui(self):
         """GUI for customizing SMBIOS"""
@@ -636,7 +647,7 @@ class OpCoreGUI:
             info_window,
             wrap=tk.WORD,
             font=get_font('body'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_main'],
             fg=COLORS['text_primary'],
             relief=tk.FLAT,
             bd=0,
@@ -699,8 +710,9 @@ class OpCoreGUI:
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['xlarge'],
-            pady=SPACING['medium'],
-            command=lambda: [self.open_result_folder(), info_window.destroy()]
+            pady=SPACING['small'],
+            command=lambda: [self.open_result_folder(), info_window.destroy()],
+            highlightthickness=0
         )
         open_btn.pack(side=tk.LEFT, padx=SPACING['small'])
         
@@ -709,17 +721,33 @@ class OpCoreGUI:
             button_frame,
             text="Close",
             font=get_font('body_bold'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_hover'],
             fg=COLORS['text_primary'],
             activebackground=COLORS['bg_hover'],
             bd=0,
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['xlarge'],
-            pady=SPACING['medium'],
-            command=info_window.destroy
+            pady=SPACING['small'],
+            command=info_window.destroy,
+            highlightthickness=0
         )
         close_btn.pack(side=tk.LEFT, padx=SPACING['small'])
+        
+        # macOS-style hover effects
+        def on_open_enter(e):
+            open_btn.config(bg=COLORS['primary_hover'])
+        def on_open_leave(e):
+            open_btn.config(bg=COLORS['primary'])
+        def on_close_enter(e):
+            close_btn.config(bg=COLORS['bg_hover'])
+        def on_close_leave(e):
+            close_btn.config(bg=COLORS['bg_hover'])
+        
+        open_btn.bind('<Enter>', on_open_enter)
+        open_btn.bind('<Leave>', on_open_leave)
+        close_btn.bind('<Enter>', on_close_enter)
+        close_btn.bind('<Leave>', on_close_leave)
         
     def open_result_folder(self):
         """Open the result folder"""

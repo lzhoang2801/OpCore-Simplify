@@ -86,15 +86,19 @@ class Sidebar(tk.Frame):
         footer_label.pack(anchor=tk.W)
         
     def create_nav_item(self, parent, item):
-        """Create a navigation item button"""
+        """Create a navigation item button with macOS styling"""
         item_id = item['id']
         emoji = item.get('emoji', '')
         label = item.get('label', '')
         display_text = f"{emoji}  {label}" if emoji else label
         
-        # Create button frame for better control
+        # Create container frame for rounded corners effect
+        item_container = tk.Frame(parent, bg=SIDEBAR_CONFIG['bg'])
+        item_container.pack(fill=tk.X, pady=3, padx=8)
+        
+        # Create button with macOS-style appearance
         button = tk.Button(
-            parent,
+            item_container,
             text=display_text,
             font=get_font('sidebar'),
             bg=SIDEBAR_CONFIG['bg'],
@@ -105,11 +109,12 @@ class Sidebar(tk.Frame):
             relief=tk.FLAT,
             cursor='hand2',
             anchor=tk.W,
-            padx=SPACING['medium'],
-            pady=SPACING['medium'],
-            command=lambda: self.select_item(item_id)
+            padx=SIDEBAR_CONFIG['item_padding_x'],
+            pady=SIDEBAR_CONFIG['item_padding_y'],
+            command=lambda: self.select_item(item_id),
+            highlightthickness=0
         )
-        button.pack(fill=tk.X, pady=2)
+        button.pack(fill=tk.X)
         
         # Store button reference
         self.nav_buttons[item_id] = button
@@ -119,7 +124,7 @@ class Sidebar(tk.Frame):
         button.bind('<Leave>', lambda e, btn=button: self.on_hover_leave(btn, item_id))
         
     def on_hover_enter(self, button, item_id):
-        """Handle mouse enter event"""
+        """Handle mouse enter event with subtle macOS-style hover"""
         if self.selected_id != item_id:
             button.config(bg=COLORS['bg_hover'])
             

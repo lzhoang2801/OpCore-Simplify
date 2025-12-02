@@ -61,8 +61,8 @@ class ConfigurationPage(tk.Frame):
         self.create_instructions_card(container)
         
     def create_config_card(self, parent):
-        """Create current configuration display card"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create current configuration display card with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.X, pady=(0, SPACING['large']))
         
         # Card header
@@ -70,7 +70,7 @@ class ConfigurationPage(tk.Frame):
             card,
             text="Current Configuration",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']
         )
         header.pack(anchor=tk.W, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
@@ -84,14 +84,14 @@ class ConfigurationPage(tk.Frame):
         ]
         
         for label_text, var_name in config_items:
-            item_frame = tk.Frame(card, bg=COLORS['bg_sidebar'])
+            item_frame = tk.Frame(card, bg=COLORS['bg_secondary'])
             item_frame.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['small'])
             
             label = tk.Label(
                 item_frame,
                 text=label_text,
                 font=get_font('body_bold'),
-                bg=COLORS['bg_sidebar'],
+                bg=COLORS['bg_secondary'],
                 fg=COLORS['text_secondary'],
                 width=18,
                 anchor=tk.W
@@ -102,19 +102,19 @@ class ConfigurationPage(tk.Frame):
                 item_frame,
                 textvariable=getattr(self.controller, var_name),
                 font=get_font('body'),
-                bg=COLORS['bg_sidebar'],
-                fg=COLORS['primary'],
+                bg=COLORS['bg_secondary'],
+                fg=COLORS['text_primary'],
                 anchor=tk.W,
                 wraplength=500
             )
             value.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
         # Add padding at bottom
-        tk.Frame(card, bg=COLORS['bg_sidebar'], height=SPACING['large']).pack()
+        tk.Frame(card, bg=COLORS['bg_secondary'], height=SPACING['large']).pack()
         
     def create_actions_card(self, parent):
-        """Create action buttons card"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create action buttons card with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.X, pady=(0, SPACING['large']))
         
         # Card header
@@ -122,13 +122,13 @@ class ConfigurationPage(tk.Frame):
             card,
             text="Quick Actions",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']
         )
         header.pack(anchor=tk.W, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
         
         # Button container
-        button_container = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        button_container = tk.Frame(card, bg=COLORS['bg_secondary'])
         button_container.pack(fill=tk.X, padx=SPACING['large'], pady=(0, SPACING['large']))
         
         # Action buttons with descriptions
@@ -157,24 +157,29 @@ class ConfigurationPage(tk.Frame):
             self.create_action_button(button_container, action)
             
     def create_action_button(self, parent, action):
-        """Create an action button with description"""
-        btn_frame = tk.Frame(parent, bg=COLORS['bg_main'], relief=tk.FLAT, bd=0)
+        """Create an action button with description and macOS styling"""
+        btn_frame = tk.Frame(parent, bg=COLORS['bg_main'], relief=tk.FLAT, bd=0, 
+                            highlightbackground=COLORS['border_light'], highlightthickness=1)
         btn_frame.pack(fill=tk.X, pady=SPACING['small'])
         
-        # Number badge
+        # Inner padding frame
+        inner_frame = tk.Frame(btn_frame, bg=COLORS['bg_main'])
+        inner_frame.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['medium'])
+        
+        # Number badge with macOS styling
         number_label = tk.Label(
-            btn_frame,
+            inner_frame,
             text=action['number'],
             font=get_font('body_bold'),
             bg=COLORS['primary'],
             fg='#FFFFFF',
             width=3,
-            height=2
+            height=1
         )
         number_label.pack(side=tk.LEFT, padx=(0, SPACING['medium']))
         
         # Text container
-        text_frame = tk.Frame(btn_frame, bg=COLORS['bg_main'])
+        text_frame = tk.Frame(inner_frame, bg=COLORS['bg_main'])
         text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         # Title button
@@ -188,7 +193,8 @@ class ConfigurationPage(tk.Frame):
             relief=tk.FLAT,
             cursor='hand2',
             anchor=tk.W,
-            command=action['command']
+            command=action['command'],
+            highlightthickness=0
         )
         title_btn.pack(anchor=tk.W)
         
@@ -203,19 +209,23 @@ class ConfigurationPage(tk.Frame):
         )
         desc_label.pack(anchor=tk.W)
         
-        # Hover effects
+        # macOS-style hover effects
         def on_enter(e):
-            title_btn.config(fg=COLORS['primary_dark'])
+            title_btn.config(fg=COLORS['primary_hover'])
+            btn_frame.config(highlightbackground=COLORS['primary'])
             
         def on_leave(e):
             title_btn.config(fg=COLORS['primary'])
+            btn_frame.config(highlightbackground=COLORS['border_light'])
             
         title_btn.bind('<Enter>', on_enter)
         title_btn.bind('<Leave>', on_leave)
+        btn_frame.bind('<Enter>', on_enter)
+        btn_frame.bind('<Leave>', on_leave)
         
     def create_instructions_card(self, parent):
-        """Create instructions card"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create instructions card with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.BOTH, expand=True)
         
         # Card header
@@ -223,7 +233,7 @@ class ConfigurationPage(tk.Frame):
             card,
             text="Getting Started",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']
         )
         header.pack(anchor=tk.W, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
@@ -259,7 +269,7 @@ https://dortania.github.io/OpenCore-Install-Guide/"""
             card,
             wrap=tk.WORD,
             font=get_font('body'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary'],
             relief=tk.FLAT,
             bd=0,

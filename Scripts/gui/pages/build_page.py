@@ -64,28 +64,29 @@ class BuildPage(tk.Frame):
         self.create_result_actions(container)
         
     def create_build_controls(self, parent):
-        """Create build control buttons"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create build control buttons with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.X, pady=(0, SPACING['large']))
         
         # Card content with padding
-        content = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        content = tk.Frame(card, bg=COLORS['bg_secondary'])
         content.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['large'])
         
-        # Build button (large and prominent)
+        # Build button (large and prominent with macOS styling)
         self.controller.build_btn = tk.Button(
             content,
             text="🔨  Build OpenCore EFI",
             font=get_font('heading'),
             bg=COLORS['success'],
             fg='#FFFFFF',
-            activebackground='#2DA44E',
+            activebackground='#28A745',
             bd=0,
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['xlarge'],
-            pady=SPACING['large'],
-            command=self.controller.build_efi_gui
+            pady=SPACING['medium'],
+            command=self.controller.build_efi_gui,
+            highlightthickness=0
         )
         self.controller.build_btn.pack(side=tk.LEFT)
         
@@ -94,17 +95,17 @@ class BuildPage(tk.Frame):
             content,
             text="Ready to build. Ensure configuration is complete before building.",
             font=get_font('body'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_secondary'],
             anchor=tk.W,
             wraplength=400
         )
         status_text.pack(side=tk.LEFT, padx=SPACING['large'], fill=tk.X, expand=True)
         
-        # Hover effect for build button
+        # macOS-style hover effect for build button
         def on_enter(e):
             if self.controller.build_btn['state'] != tk.DISABLED:
-                self.controller.build_btn.config(bg='#2DA44E')
+                self.controller.build_btn.config(bg='#34C759')
             
         def on_leave(e):
             if self.controller.build_btn['state'] != tk.DISABLED:
@@ -114,11 +115,11 @@ class BuildPage(tk.Frame):
         self.controller.build_btn.bind('<Leave>', on_leave)
         
     def create_progress_section(self, parent):
-        """Create progress bar and status"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create progress bar and status with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.X, pady=(0, SPACING['large']))
         
-        content = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        content = tk.Frame(card, bg=COLORS['bg_secondary'])
         content.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['large'])
         
         # Progress label
@@ -126,7 +127,7 @@ class BuildPage(tk.Frame):
             content,
             text="Build Progress",
             font=get_font('body_bold'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary'],
             anchor=tk.W
         )
@@ -135,16 +136,17 @@ class BuildPage(tk.Frame):
         # Progress bar
         self.controller.progress_var = tk.DoubleVar()
         
-        # Custom styled progress bar
+        # Custom styled progress bar with macOS appearance
         style = ttk.Style()
         style.theme_use('default')
         style.configure(
             "Custom.Horizontal.TProgressbar",
             troughcolor=COLORS['border_light'],
-            background=COLORS['success'],
+            background=COLORS['primary'],
             bordercolor=COLORS['border_light'],
-            lightcolor=COLORS['success'],
-            darkcolor=COLORS['success']
+            lightcolor=COLORS['primary'],
+            darkcolor=COLORS['primary'],
+            thickness=8
         )
         
         self.controller.progress_bar = ttk.Progressbar(
@@ -161,7 +163,7 @@ class BuildPage(tk.Frame):
             content,
             text="0%",
             font=get_font('small'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_secondary'],
             anchor=tk.E
         )
@@ -175,41 +177,50 @@ class BuildPage(tk.Frame):
         self.controller.progress_var.trace('w', update_percent)
         
     def create_log_section(self, parent):
-        """Create build log viewer"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create build log viewer with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.BOTH, expand=True, pady=(0, SPACING['large']))
         
         # Header
-        header_frame = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        header_frame = tk.Frame(card, bg=COLORS['bg_secondary'])
         header_frame.pack(fill=tk.X, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
         
         header = tk.Label(
             header_frame,
             text="📝  Build Log",
             font=get_font('heading'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']
         )
         header.pack(side=tk.LEFT)
         
-        # Clear log button
+        # Clear log button with macOS styling
         clear_btn = tk.Button(
             header_frame,
             text="Clear",
-            font=get_font('small'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_secondary'],
+            font=get_font('body'),
+            bg=COLORS['bg_hover'],
+            fg=COLORS['text_primary'],
             bd=0,
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['medium'],
             pady=SPACING['small'],
-            command=self.clear_log
+            command=self.clear_log,
+            highlightthickness=0
         )
         clear_btn.pack(side=tk.RIGHT)
         
+        # Hover effect for clear button
+        def on_clear_enter(e):
+            clear_btn.config(bg=COLORS['bg_hover'])
+        def on_clear_leave(e):
+            clear_btn.config(bg=COLORS['bg_secondary'])
+        clear_btn.bind('<Enter>', on_clear_enter)
+        clear_btn.bind('<Leave>', on_clear_leave)
+        
         # Log text area
-        log_frame = tk.Frame(card, bg=COLORS['bg_main'])
+        log_frame = tk.Frame(card, bg=COLORS['bg_main'], highlightbackground=COLORS['border_light'], highlightthickness=1)
         log_frame.pack(fill=tk.BOTH, expand=True, padx=SPACING['large'], pady=(0, SPACING['large']))
         
         self.controller.build_log = scrolledtext.ScrolledText(
@@ -226,11 +237,11 @@ class BuildPage(tk.Frame):
         self.controller.build_log.pack(fill=tk.BOTH, expand=True)
         
     def create_result_actions(self, parent):
-        """Create action buttons for after build"""
-        card = tk.Frame(parent, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        """Create action buttons for after build with macOS styling"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.X)
         
-        content = tk.Frame(card, bg=COLORS['bg_sidebar'])
+        content = tk.Frame(card, bg=COLORS['bg_secondary'])
         content.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['large'])
         
         # Open result folder button
@@ -245,9 +256,10 @@ class BuildPage(tk.Frame):
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['large'],
-            pady=SPACING['medium'],
+            pady=SPACING['small'],
             state=tk.DISABLED,
-            command=self.controller.open_result_folder
+            command=self.controller.open_result_folder,
+            highlightthickness=0
         )
         self.controller.open_result_btn.pack(side=tk.LEFT, padx=(0, SPACING['medium']))
         
@@ -256,22 +268,23 @@ class BuildPage(tk.Frame):
             content,
             text="📖  View Instructions",
             font=get_font('body_bold'),
-            bg=COLORS['bg_main'],
+            bg=COLORS['bg_hover'],
             fg=COLORS['text_primary'],
             activebackground=COLORS['bg_hover'],
             bd=0,
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['large'],
-            pady=SPACING['medium'],
-            command=self.show_instructions
+            pady=SPACING['small'],
+            command=self.show_instructions,
+            highlightthickness=0
         )
         instructions_btn.pack(side=tk.LEFT)
         
-        # Hover effects
+        # macOS-style hover effects
         def on_result_enter(e):
             if self.controller.open_result_btn['state'] != tk.DISABLED:
-                self.controller.open_result_btn.config(bg=COLORS['primary_dark'])
+                self.controller.open_result_btn.config(bg=COLORS['primary_hover'])
             
         def on_result_leave(e):
             if self.controller.open_result_btn['state'] != tk.DISABLED:
@@ -281,7 +294,7 @@ class BuildPage(tk.Frame):
             instructions_btn.config(bg=COLORS['bg_hover'])
             
         def on_inst_leave(e):
-            instructions_btn.config(bg=COLORS['bg_main'])
+            instructions_btn.config(bg=COLORS['bg_hover'])
             
         self.controller.open_result_btn.bind('<Enter>', on_result_enter)
         self.controller.open_result_btn.bind('<Leave>', on_result_leave)

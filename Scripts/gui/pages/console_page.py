@@ -49,52 +49,54 @@ class ConsolePage(tk.Frame):
         button_frame = tk.Frame(header_frame, bg=COLORS['bg_main'])
         button_frame.pack(side=tk.RIGHT)
         
-        # Clear button
+        # Clear button with macOS styling
         clear_btn = tk.Button(
             button_frame,
             text="🗑️  Clear",
             font=get_font('body'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_hover'],
             fg=COLORS['text_primary'],
             activebackground=COLORS['bg_hover'],
             bd=0,
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['large'],
-            pady=SPACING['medium'],
-            command=self.clear_console
+            pady=SPACING['small'],
+            command=self.clear_console,
+            highlightthickness=0
         )
         clear_btn.pack(side=tk.LEFT, padx=(0, SPACING['small']))
         
-        # Export button
+        # Export button with macOS styling
         export_btn = tk.Button(
             button_frame,
             text="💾  Export",
             font=get_font('body'),
-            bg=COLORS['bg_sidebar'],
+            bg=COLORS['bg_hover'],
             fg=COLORS['text_primary'],
             activebackground=COLORS['bg_hover'],
             bd=0,
             relief=tk.FLAT,
             cursor='hand2',
             padx=SPACING['large'],
-            pady=SPACING['medium'],
-            command=self.export_console
+            pady=SPACING['small'],
+            command=self.export_console,
+            highlightthickness=0
         )
         export_btn.pack(side=tk.LEFT)
         
-        # Hover effects
+        # macOS-style hover effects
         def on_clear_enter(e):
             clear_btn.config(bg=COLORS['bg_hover'])
             
         def on_clear_leave(e):
-            clear_btn.config(bg=COLORS['bg_sidebar'])
+            clear_btn.config(bg=COLORS['bg_hover'])
             
         def on_export_enter(e):
             export_btn.config(bg=COLORS['bg_hover'])
             
         def on_export_leave(e):
-            export_btn.config(bg=COLORS['bg_sidebar'])
+            export_btn.config(bg=COLORS['bg_hover'])
             
         clear_btn.bind('<Enter>', on_clear_enter)
         clear_btn.bind('<Leave>', on_clear_leave)
@@ -111,12 +113,12 @@ class ConsolePage(tk.Frame):
         )
         subtitle_label.pack(anchor=tk.W, pady=(0, SPACING['large']))
         
-        # Console log area in a card
-        card = tk.Frame(container, bg=COLORS['bg_sidebar'], relief=tk.FLAT, bd=0)
+        # Console log area in a card with macOS styling
+        card = tk.Frame(container, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
         card.pack(fill=tk.BOTH, expand=True)
         
-        # Log text area
-        log_frame = tk.Frame(card, bg='#1E1E1E')  # Dark background for console
+        # Log text area with dark theme (macOS Terminal style)
+        log_frame = tk.Frame(card, bg='#1E1E1E', highlightbackground=COLORS['border_light'], highlightthickness=1)
         log_frame.pack(fill=tk.BOTH, expand=True, padx=SPACING['medium'], pady=SPACING['medium'])
         
         self.controller.console_log = scrolledtext.ScrolledText(
