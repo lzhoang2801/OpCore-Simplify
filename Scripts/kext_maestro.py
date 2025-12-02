@@ -222,7 +222,9 @@ class KextMaestro:
                         print("\033[91mImportant:\033[0m NootRX kext is not compatible with Intel GPUs")
                         print("Automatically selecting WhateverGreen kext due to Intel GPU compatibility")
                         print("")
-                        self.utils.request_input("Press Enter to continue...", gui_type='info')
+                        # Skip "Press Enter" prompt in GUI mode
+                        if not self.utils.gui_callback:
+                            self.utils.request_input("Press Enter to continue...")
                         continue
 
                     # Build GUI options
@@ -278,7 +280,9 @@ class KextMaestro:
                     print("The current recommendation is to not use WhateverGreen.")
                     print("However, you can still try adding it to see if it works on your system.")
                     print("")
-                    self.utils.request_input("Press Enter to continue...", gui_type='info')
+                    # Skip "Press Enter" prompt in GUI mode
+                    if not self.utils.gui_callback:
+                        self.utils.request_input("Press Enter to continue...")
                     break
 
                 selected_kexts.append("WhateverGreen")
@@ -331,12 +335,16 @@ class KextMaestro:
                 if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
                     print("\033[91mImportant:\033[0m For macOS Beta versions, only itlwm kext is supported")
                     print("")
-                    self.utils.request_input("Press Enter to continue...", gui_type='info')
+                    # Skip "Press Enter" prompt in GUI mode - just use recommended option
+                    if not self.utils.gui_callback:
+                        self.utils.request_input("Press Enter to continue...")
                     selected_option = recommended_option
                 elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
                     print("\033[91mImportant:\033[0m For macOS Tahoe 26, only itlwm kext is supported")
                     print("")
-                    self.utils.request_input("Press Enter to continue...", gui_type='info')
+                    # Skip "Press Enter" prompt in GUI mode - just use recommended option
+                    if not self.utils.gui_callback:
+                        self.utils.request_input("Press Enter to continue...")
                     selected_option = recommended_option
                 else:
                     # Build GUI options
