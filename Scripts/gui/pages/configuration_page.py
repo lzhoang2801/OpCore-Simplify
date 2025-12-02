@@ -157,7 +157,7 @@ class ConfigurationPage(tk.Frame):
             self.create_action_button(button_container, action)
             
     def create_action_button(self, parent, action):
-        """Create an action button with description and macOS styling"""
+        """Create an action button with description and enhanced macOS styling"""
         btn_frame = tk.Frame(parent, bg=COLORS['bg_main'], relief=tk.FLAT, bd=0, 
                             highlightbackground=COLORS['border_light'], highlightthickness=1)
         btn_frame.pack(fill=tk.X, pady=SPACING['small'])
@@ -166,17 +166,24 @@ class ConfigurationPage(tk.Frame):
         inner_frame = tk.Frame(btn_frame, bg=COLORS['bg_main'])
         inner_frame.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['medium'])
         
-        # Number badge with macOS styling
-        number_label = tk.Label(
+        # Number badge with modern macOS styling
+        number_frame = tk.Frame(
             inner_frame,
+            bg=COLORS['primary'],
+            width=36,
+            height=36
+        )
+        number_frame.pack(side=tk.LEFT, padx=(0, SPACING['medium']))
+        number_frame.pack_propagate(False)
+        
+        number_label = tk.Label(
+            number_frame,
             text=action['number'],
             font=get_font('body_bold'),
             bg=COLORS['primary'],
-            fg='#FFFFFF',
-            width=3,
-            height=1
+            fg='#FFFFFF'
         )
-        number_label.pack(side=tk.LEFT, padx=(0, SPACING['medium']))
+        number_label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
         
         # Text container
         text_frame = tk.Frame(inner_frame, bg=COLORS['bg_main'])
@@ -209,19 +216,23 @@ class ConfigurationPage(tk.Frame):
         )
         desc_label.pack(anchor=tk.W)
         
-        # macOS-style hover effects
+        # Enhanced macOS-style hover effects with smooth transition
         def on_enter(e):
             title_btn.config(fg=COLORS['primary_hover'])
-            btn_frame.config(highlightbackground=COLORS['primary'])
+            btn_frame.config(highlightbackground=COLORS['primary'], highlightthickness=2)
+            number_frame.config(bg=COLORS['primary_hover'])
+            number_label.config(bg=COLORS['primary_hover'])
             
         def on_leave(e):
             title_btn.config(fg=COLORS['primary'])
-            btn_frame.config(highlightbackground=COLORS['border_light'])
+            btn_frame.config(highlightbackground=COLORS['border_light'], highlightthickness=1)
+            number_frame.config(bg=COLORS['primary'])
+            number_label.config(bg=COLORS['primary'])
             
-        title_btn.bind('<Enter>', on_enter)
-        title_btn.bind('<Leave>', on_leave)
-        btn_frame.bind('<Enter>', on_enter)
-        btn_frame.bind('<Leave>', on_leave)
+        # Bind to all interactive elements
+        for widget in [title_btn, btn_frame, inner_frame, number_frame, number_label]:
+            widget.bind('<Enter>', on_enter)
+            widget.bind('<Leave>', on_leave)
         
     def create_instructions_card(self, parent):
         """Create instructions card with macOS styling"""
