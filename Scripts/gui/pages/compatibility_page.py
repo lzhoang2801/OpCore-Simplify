@@ -10,11 +10,12 @@ import time
 from ..styles import COLORS, SPACING, get_font
 from ..icons import Icons
 
-# Import os_data at module level for efficiency
+# Import os_data and pci_data at module level for efficiency
 try:
-    from Scripts.datasets import os_data
+    from Scripts.datasets import os_data, pci_data
 except ImportError:
     os_data = None
+    pci_data = None
 
 
 class CompatibilityPage(tk.Frame):
@@ -654,8 +655,7 @@ class CompatibilityPage(tk.Frame):
                 ).pack()
         
         # Add Continuity Support for WiFi devices
-        if device_props.get('Device ID'):
-            from Scripts.datasets import pci_data
+        if device_props.get('Device ID') and pci_data:
             device_id = device_props.get('Device ID')
             
             if device_id in pci_data.BroadcomWiFiIDs:

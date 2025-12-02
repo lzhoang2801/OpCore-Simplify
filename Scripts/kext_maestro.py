@@ -164,6 +164,7 @@ class KextMaestro:
                     if kext_option == "1":
                         needs_oclp = True
                         selected_kexts.append("AppleALC")
+                    # Option "2" (VoodooHDA) requires manual installation, so no kext is added here
                 else:
                     selected_kexts.append("AppleALC")
         
