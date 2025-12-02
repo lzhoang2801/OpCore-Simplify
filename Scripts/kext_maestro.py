@@ -95,7 +95,7 @@ class KextMaestro:
                 if other_kext.conflict_group_id == kext.conflict_group_id and other_kext.name != kext.name:
                     other_kext.checked = False
 
-    def select_required_kexts(self, hardware_report, macos_version, needs_oclp, acpi_patches, auto_select=False):
+    def select_required_kexts(self, hardware_report, macos_version, needs_oclp, acpi_patches):
         self.utils.head("Select Required Kernel Extensions")
         print("")
         print("Checking for required kernel extensions...")
