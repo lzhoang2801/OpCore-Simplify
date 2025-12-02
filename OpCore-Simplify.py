@@ -471,11 +471,34 @@ if __name__ == '__main__':
         os.execv(sys.executable, ['python3'] + sys.argv)
 
     o = OCPE()
-    while True:
+    
+    # Check if GUI mode is requested (default is GUI mode)
+    use_gui = True
+    if len(sys.argv) > 1 and sys.argv[1] == '--cli':
+        use_gui = False
+    
+    if use_gui:
+        # Run GUI mode
         try:
-            o.main()
+            from Scripts import gui
+            app = gui.OpCoreGUI(o)
+            app.run()
+        except ImportError as e:
+            print("Error: Could not import GUI module. Falling back to CLI mode.")
+            print(f"Details: {e}")
+            use_gui = False
         except Exception as e:
-            o.u.head("An Error Occurred")
-            print("")
-            print(traceback.format_exc())
-            o.u.request_input()
+            print(f"Error starting GUI: {e}")
+            print("Falling back to CLI mode...")
+            use_gui = False
+    
+    if not use_gui:
+        # Run CLI mode
+        while True:
+            try:
+                o.main()
+            except Exception as e:
+                o.u.head("An Error Occurred")
+                print("")
+                print(traceback.format_exc())
+                o.u.request_input()
