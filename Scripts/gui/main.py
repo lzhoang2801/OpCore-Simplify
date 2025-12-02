@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
 import threading
+import time
 
 from .styles import COLORS, SPACING, SIDEBAR_CONFIG, get_font
 from .widgets import Sidebar, StatusBar, ConsoleRedirector
@@ -320,7 +321,6 @@ class OpCoreGUI:
         # Wait for result
         while result_container[0] is None:
             self.root.update()
-            import time
             time.sleep(0.01)
         
         return result_container[0]
@@ -334,7 +334,7 @@ class OpCoreGUI:
         dialog.transient(self.root)
         dialog.grab_set()
         
-        # Make dialog modal
+        # Make dialog modal - prevent closing via window manager
         dialog.protocol("WM_DELETE_WINDOW", lambda: None)
         
         # Title

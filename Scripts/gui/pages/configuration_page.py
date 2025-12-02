@@ -196,7 +196,7 @@ class ConfigurationPage(tk.Frame):
         # Value
         value = tk.Label(
             text_frame,
-            textvariable=getattr(self.controller, item['var']),
+            textvariable=getattr(self.controller, item['var'], tk.StringVar(value="Not available")),
             font=get_font('body_bold'),
             bg=COLORS['bg_main'],
             fg=COLORS['text_primary'],
