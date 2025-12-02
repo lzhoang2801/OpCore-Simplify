@@ -3,7 +3,6 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 import os
 import sys
 import threading
-import queue
 from Scripts import utils
 from Scripts.datasets import os_data
 
@@ -639,14 +638,14 @@ what you're doing."""
         """Run the actual build process"""
         try:
             self.log_message("Starting EFI build process...")
-            self.update_status("Building EFI...")
+            self.root.after(0, lambda: self.update_status("Building EFI..."))
             
             # Gather bootloader and kexts
             self.log_message("Gathering bootloader and kexts...")
-            self.progress_var.set(10)
+            self.root.after(0, lambda: self.progress_var.set(10))
             self.ocpe.o.gather_bootloader_kexts(self.ocpe.k.kexts, macos_version)
             
-            self.progress_var.set(30)
+            self.root.after(0, lambda: self.progress_var.set(30))
             
             # Build OpenCore EFI
             self.log_message("Building OpenCore EFI...")
@@ -663,8 +662,7 @@ what you're doing."""
             for i, step in enumerate(steps):
                 self.log_message(f"Step {i+1}/{len(steps)}: {step}")
                 progress = 30 + ((i + 1) / len(steps)) * 60
-                self.progress_var.set(progress)
-                self.root.update_idletasks()
+                self.root.after(0, lambda p=progress: self.progress_var.set(p))
             
             # Actually build the EFI
             self.ocpe.build_opencore_efi(
@@ -675,28 +673,29 @@ what you're doing."""
                 self.needs_oclp
             )
             
-            self.progress_var.set(100)
+            self.root.after(0, lambda: self.progress_var.set(100))
             self.log_message("\nBuild completed successfully!")
             self.log_message(f"\nEFI has been built at: {self.ocpe.result_dir}")
             
-            # Show USB mapping instructions
-            self.show_before_using_efi()
+            # Schedule GUI updates on main thread
+            self.root.after(0, self.show_before_using_efi)
+            self.root.after(0, lambda: self.open_result_btn.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.update_status("Build completed!"))
             
-            # Enable open folder button
-            self.open_result_btn.config(state=tk.NORMAL)
-            self.update_status("Build completed!")
-            
-            messagebox.showinfo("Build Complete",
+            # Show success message on main thread
+            self.root.after(0, lambda: messagebox.showinfo("Build Complete",
                               f"OpenCore EFI has been built successfully!\n\n" +
                               f"Location: {self.ocpe.result_dir}\n\n" +
-                              "Please follow the USB mapping instructions.")
+                              "Please follow the USB mapping instructions."))
             
         except Exception as e:
             self.log_message(f"\nError during build: {str(e)}")
-            messagebox.showerror("Build Error", f"Failed to build EFI:\n\n{str(e)}")
-            self.update_status("Build failed")
+            # Schedule error dialog on main thread
+            self.root.after(0, lambda: messagebox.showerror("Build Error", 
+                              f"Failed to build EFI:\n\n{str(e)}"))
+            self.root.after(0, lambda: self.update_status("Build failed"))
         finally:
-            self.build_btn.config(state=tk.NORMAL)
+            self.root.after(0, lambda: self.build_btn.config(state=tk.NORMAL))
             
     def show_before_using_efi(self):
         """Show instructions before using the EFI"""
