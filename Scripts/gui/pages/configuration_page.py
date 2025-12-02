@@ -5,12 +5,8 @@ Configuration page for hardware report and macOS version selection
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
-import sys
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from styles import COLORS, SPACING, FONTS, get_font
-from Scripts.datasets import os_data
+from ..styles import COLORS, SPACING, FONTS, get_font
 
 
 class ConfigurationPage(tk.Frame):

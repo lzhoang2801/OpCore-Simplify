@@ -178,10 +178,9 @@ class OpCoreGUI:
                 self.update_status("Hardware Sniffer not found", 'error')
                 return
                 
-            report_dir = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-                "SysReport"
-            )
+            # Get the Scripts directory and construct report path
+            scripts_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+            report_dir = os.path.join(scripts_dir, "..", "SysReport")
             
             output = self.ocpe.r.run({
                 "args": [hardware_sniffer, "-e", "-o", report_dir]

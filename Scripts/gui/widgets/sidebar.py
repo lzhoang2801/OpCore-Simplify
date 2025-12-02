@@ -4,12 +4,8 @@ Sidebar navigation widget for OpCore Simplify GUI
 
 import tkinter as tk
 from tkinter import ttk
-import sys
-import os
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from styles import COLORS, FONTS, SIDEBAR_CONFIG, NAVIGATION_ITEMS, SPACING, get_font
+from ..styles import COLORS, FONTS, SIDEBAR_CONFIG, NAVIGATION_ITEMS, SPACING, get_font
 
 
 class Sidebar(tk.Frame):
@@ -92,11 +88,14 @@ class Sidebar(tk.Frame):
     def create_nav_item(self, parent, item):
         """Create a navigation item button"""
         item_id = item['id']
+        emoji = item.get('emoji', '')
+        label = item.get('label', '')
+        display_text = f"{emoji}  {label}" if emoji else label
         
         # Create button frame for better control
         button = tk.Button(
             parent,
-            text=item['label'],
+            text=display_text,
             font=get_font('sidebar'),
             bg=SIDEBAR_CONFIG['bg'],
             fg=COLORS['text_sidebar'],

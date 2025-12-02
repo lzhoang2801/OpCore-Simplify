@@ -120,8 +120,8 @@ BUTTON_STYLES = {
 
 # Navigation items with emojis
 NAVIGATION_ITEMS = [
-    {'id': 'config', 'label': '⚙️  Configuration', 'emoji': '⚙️'},
-    {'id': 'customize', 'label': '🔧  Customization', 'emoji': '🔧'},
-    {'id': 'build', 'label': '🔨  Build EFI', 'emoji': '🔨'},
-    {'id': 'console', 'label': '📋  Console Log', 'emoji': '📋'},
+    {'id': 'config', 'label': 'Configuration', 'emoji': '⚙️'},
+    {'id': 'customize', 'label': 'Customization', 'emoji': '🔧'},
+    {'id': 'build', 'label': 'Build EFI', 'emoji': '🔨'},
+    {'id': 'console', 'label': 'Console Log', 'emoji': '📋'},
 ]

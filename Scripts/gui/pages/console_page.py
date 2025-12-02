@@ -4,12 +4,9 @@ Console log page for viewing system messages and debug information
 
 import tkinter as tk
 from tkinter import scrolledtext
-import sys
 import os
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from styles import COLORS, SPACING, get_font
+from ..styles import COLORS, SPACING, get_font
 
 
 class ConsolePage(tk.Frame):

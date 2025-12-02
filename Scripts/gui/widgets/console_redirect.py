@@ -36,7 +36,7 @@ class ConsoleRedirector:
             self.text_widget.insert('end', message)
             self.text_widget.see('end')
             self.text_widget.update_idletasks()
-        except (Exception, RuntimeError, AttributeError):
+        except (tk.TclError, RuntimeError, AttributeError):
             # Ignore errors if widget is destroyed or no longer accessible
             pass
         
