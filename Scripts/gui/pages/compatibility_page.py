@@ -328,6 +328,14 @@ class CompatibilityPage(tk.Frame):
             index += 1
             devices = hardware_report[device_type]
             
+            # Special handling for CPU (single device, not dict of devices)
+            if device_type == 'CPU':
+                # CPU is stored as a single dict, not a dict of dicts
+                # Convert it to the expected format temporarily
+                if isinstance(devices, dict) and 'Processor Name' in devices:
+                    cpu_name = devices.get('Processor Name', 'CPU')
+                    devices = {cpu_name: devices}
+            
             # Create device type section with enhanced header
             section_frame = tk.Frame(self.results_frame, bg=COLORS['bg_main'])
             section_frame.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['medium'])

@@ -68,6 +68,9 @@ class ConfigurationPage(tk.Frame):
         # Current configuration card
         self.create_config_card(container)
         
+        # Kext status card (new)
+        self.create_kext_status_card(container)
+        
         # Customization options card
         self.create_customization_card(container)
         
@@ -204,6 +207,165 @@ class ConfigurationPage(tk.Frame):
             wraplength=700
         )
         value.pack(anchor=tk.W)
+        
+    def create_kext_status_card(self, parent):
+        """Create kext status card showing how many kexts will be applied"""
+        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
+        card.pack(fill=tk.X, pady=(0, SPACING['large']))
+        
+        # Card header
+        header_frame = tk.Frame(card, bg=COLORS['bg_secondary'])
+        header_frame.pack(fill=tk.X, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
+        
+        header = tk.Label(
+            header_frame,
+            text="🔧  Kernel Extensions (Kexts)",
+            font=get_font('heading'),
+            bg=COLORS['bg_secondary'],
+            fg=COLORS['text_primary']
+        )
+        header.pack(side=tk.LEFT)
+        
+        # Card content
+        content_frame = tk.Frame(card, bg=COLORS['bg_main'])
+        content_frame.pack(fill=tk.X, padx=SPACING['large'], pady=(0, SPACING['large']))
+        
+        inner_frame = tk.Frame(content_frame, bg=COLORS['bg_main'])
+        inner_frame.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['medium'])
+        
+        # Status icon and text
+        status_container = tk.Frame(inner_frame, bg=COLORS['bg_main'])
+        status_container.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # Icon
+        icon_label = tk.Label(
+            status_container,
+            text="📦",
+            font=('SF Pro Display', 24),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_primary']
+        )
+        icon_label.pack(side=tk.LEFT, padx=(0, SPACING['medium']))
+        
+        # Text container
+        text_frame = tk.Frame(status_container, bg=COLORS['bg_main'])
+        text_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # Kext status label
+        self.kext_status_label = tk.Label(
+            text_frame,
+            text="Kexts will be automatically selected before build",
+            font=get_font('body'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_secondary'],
+            anchor=tk.W
+        )
+        self.kext_status_label.pack(anchor=tk.W)
+        
+        # Kext count label (initially hidden)
+        self.kext_count_label = tk.Label(
+            text_frame,
+            text="",
+            font=get_font('body_bold'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['primary'],
+            anchor=tk.W
+        )
+        self.kext_count_label.pack(anchor=tk.W)
+        
+        # Check kexts button
+        check_btn = tk.Button(
+            inner_frame,
+            text="Check Kexts",
+            font=get_font('body_bold'),
+            bg=COLORS['primary'],
+            fg='#FFFFFF',
+            activebackground=COLORS['primary_dark'],
+            bd=0,
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=SPACING['large'],
+            pady=SPACING['small'],
+            command=self.check_kexts,
+            highlightthickness=0
+        )
+        check_btn.pack(side=tk.RIGHT, padx=SPACING['small'])
+        
+        # View kexts button (initially hidden)
+        self.view_kexts_btn = tk.Button(
+            inner_frame,
+            text="View Details",
+            font=get_font('body_bold'),
+            bg=COLORS['bg_hover'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['bg_hover'],
+            bd=0,
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=SPACING['large'],
+            pady=SPACING['small'],
+            command=self.controller.customize_kexts_gui,
+            highlightthickness=0
+        )
+        # Don't pack yet, will be shown after check
+        
+        # Hover effects
+        def on_check_enter(e):
+            check_btn.config(bg=COLORS['primary_hover'])
+        def on_check_leave(e):
+            check_btn.config(bg=COLORS['primary'])
+        def on_view_enter(e):
+            self.view_kexts_btn.config(bg=COLORS['bg_hover'])
+        def on_view_leave(e):
+            self.view_kexts_btn.config(bg=COLORS['bg_hover'])
+        
+        check_btn.bind('<Enter>', on_check_enter)
+        check_btn.bind('<Leave>', on_check_leave)
+        self.view_kexts_btn.bind('<Enter>', on_view_enter)
+        self.view_kexts_btn.bind('<Leave>', on_view_leave)
+    
+    def check_kexts(self):
+        """Check how many kexts will be applied"""
+        if not self.controller.hardware_report:
+            messagebox.showwarning("Warning", "Please select a hardware report first!")
+            return
+        
+        try:
+            # Ensure kexts have been selected
+            self.controller.ensure_kexts_selected()
+            
+            # Count the kexts
+            required_kexts = []
+            optional_kexts = []
+            
+            if hasattr(self.controller.ocpe.k, 'kexts') and self.controller.ocpe.k.kexts:
+                required_kexts = [k for k in self.controller.ocpe.k.kexts if k.checked and k.required]
+                optional_kexts = [k for k in self.controller.ocpe.k.kexts if k.checked and not k.required]
+            
+            total_kexts = len(required_kexts) + len(optional_kexts)
+            
+            # Update the status labels
+            if total_kexts > 0:
+                self.kext_status_label.config(
+                    text=f"✅  Kexts have been analyzed and selected",
+                    fg=COLORS['success']
+                )
+                self.kext_count_label.config(
+                    text=f"Total: {total_kexts} kexts ({len(required_kexts)} required, {len(optional_kexts)} optional)"
+                )
+                
+                # Show the view button
+                if not self.view_kexts_btn.winfo_ismapped():
+                    self.view_kexts_btn.pack(side=tk.RIGHT, padx=SPACING['small'])
+            else:
+                self.kext_status_label.config(
+                    text="⚠️  No kexts were selected",
+                    fg=COLORS['warning']
+                )
+                self.kext_count_label.config(text="")
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to check kexts: {str(e)}")
         
     def create_customization_card(self, parent):
         """Create customization options card"""
