@@ -315,7 +315,7 @@ class ConfigurationPage(tk.Frame):
         def on_check_leave(e):
             check_btn.config(bg=COLORS['primary'])
         def on_view_enter(e):
-            self.view_kexts_btn.config(bg=COLORS['bg_hover'])
+            self.view_kexts_btn.config(bg=COLORS['border_light'])
         def on_view_leave(e):
             self.view_kexts_btn.config(bg=COLORS['bg_hover'])
         
@@ -333,7 +333,11 @@ class ConfigurationPage(tk.Frame):
         try:
             # Ensure kexts have been selected
             self.controller.ensure_kexts_selected()
-            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to select kexts: {str(e)}")
+            return
+        
+        try:
             # Count the kexts
             required_kexts = []
             optional_kexts = []
@@ -365,7 +369,7 @@ class ConfigurationPage(tk.Frame):
                 self.kext_count_label.config(text="")
                 
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to check kexts: {str(e)}")
+            messagebox.showerror("Error", f"Failed to count kexts: {str(e)}")
         
     def create_customization_card(self, parent):
         """Create customization options card"""
