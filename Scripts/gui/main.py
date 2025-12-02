@@ -9,7 +9,7 @@ import threading
 
 from .styles import COLORS, SPACING, SIDEBAR_CONFIG, get_font
 from .widgets import Sidebar, StatusBar, ConsoleRedirector
-from .pages import ConfigurationPage, CompatibilityPage, CustomizationPage, BuildPage, ConsolePage, WiFiPage
+from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, WiFiPage
 from .icons import Icons
 
 # Import from Scripts package
@@ -104,8 +104,8 @@ class OpCoreGUI:
         self.init_page_placeholders()
         
         # Show initial page
-        self.sidebar.set_selected('config')
-        self.show_page('config')
+        self.sidebar.set_selected('upload')
+        self.show_page('upload')
         
         # Set up console redirection after console page is created
         if self.console_log:
@@ -117,13 +117,13 @@ class OpCoreGUI:
     def init_page_placeholders(self):
         """Initialize page placeholders for lazy loading"""
         # Create placeholders but don't build full UI yet
-        # Only the config page is created immediately for fast startup
-        self.pages['config'] = ConfigurationPage(self.content_area, self)
-        self.pages_initialized.add('config')
+        # Only the upload page is created immediately for fast startup
+        self.pages['upload'] = UploadPage(self.content_area, self)
+        self.pages_initialized.add('upload')
         
         # Other pages will be created on first access
         self.pages['compatibility'] = None
-        self.pages['customize'] = None
+        self.pages['configuration'] = None
         self.pages['build'] = None
         self.pages['wifi'] = None
         self.pages['console'] = None
@@ -136,8 +136,8 @@ class OpCoreGUI:
         # Create the page on first access
         if page_id == 'compatibility':
             self.pages['compatibility'] = CompatibilityPage(self.content_area, self)
-        elif page_id == 'customize':
-            self.pages['customize'] = CustomizationPage(self.content_area, self)
+        elif page_id == 'configuration':
+            self.pages['configuration'] = ConfigurationPage(self.content_area, self)
         elif page_id == 'build':
             self.pages['build'] = BuildPage(self.content_area, self)
         elif page_id == 'wifi':
