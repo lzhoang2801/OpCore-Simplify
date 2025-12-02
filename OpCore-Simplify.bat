@@ -304,7 +304,6 @@ REM Python found
 cls
 set "args=%*"
 set "args=!args:"=!"
-REM Run in GUI mode by default, unless --cli is passed
 if "!args!"=="" (
     "!pypath!" "!thisDir!!script_name!"
 ) else (

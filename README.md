@@ -107,28 +107,15 @@
    ![Download OpCore Simplify](https://i.imgur.com/mcE7OSX.png)
 
 2. **Running OpCore Simplify**:
-   
-   **GUI Mode (Default - Recommended for beginners):**
    - On **Windows**, run `OpCore-Simplify.bat`.
    - On **macOS**, run `OpCore-Simplify.command`.
    - On **Linux**, run `OpCore-Simplify.py` with existing Python interpreter.
-   
-   The GUI provides an intuitive, user-friendly interface with tabs for Configuration, Customization, and Building your EFI.
-   
-   **CLI Mode (For advanced users):**
-   - Add `--cli` argument when launching:
-     - Windows: `OpCore-Simplify.bat --cli`
-     - macOS/Linux: `./OpCore-Simplify.command --cli` or `python3 OpCore-Simplify.py --cli`
 
-   ![OpCore Simplify GUI](https://i.imgur.com/vTr1V9D.png)
+   ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
 
-3. **Selecting hardware report** (GUI Mode):
-   - Click "Select Hardware Report" button
-   - On Windows, you can choose to export a hardware report directly using Hardware Sniffer
-   - Alternatively, browse for an existing `Report.json` file
-   - The tool will automatically validate your hardware report
-   
-   (In CLI mode, follow the on-screen prompts)
+3. **Selecting hardware report**:
+   - On Windows, there will be an option for `E. Export hardware report`. It's recommended to use this for the best results with your hardware configuration and BIOS at the time of building.
+   - Alternatively, use [**Hardware Sniffer**](https://github.com/lzhoang2801/Hardware-Sniffer) to create a `Report.json` and ACPI dump for configuration manully.
 
    ![Selecting hardware report](https://i.imgur.com/MbRmIGJ.png)
 
@@ -136,19 +123,16 @@
 
    ![Compatibility Checker](https://i.imgur.com/kuDGMmp.png)
 
-4. **Selecting macOS Version and Customizing OpenCore EFI** (GUI Mode):
-   - The tool automatically selects the best macOS version for your hardware
-   - You can change the version using "Select macOS Version" button
-   - Customize SMBIOS model if needed using "Customize SMBIOS Model" button
-   - Advanced users can customize ACPI patches and Kexts in the "Customization" tab
+4. **Selecting macOS Version and Customizing OpenCore EFI**:
+   - By default, the latest compatible macOS version will be selected for your hardware.
+   - OpCore Simplify will automatically apply essential ACPI patches and kexts. 
+   - You can manually review and customize these settings as needed.
 
    ![OpCore Simplify Menu](https://i.imgur.com/TSk9ejy.png)
 
-5. **Building OpenCore EFI** (GUI Mode):
-   - Switch to the "Build EFI" tab
-   - Click "Build OpenCore EFI" button
-   - The tool will show real-time progress and logs
-   - Download of bootloader and kexts happens automatically (may take a few minutes)
+5. **Building OpenCore EFI**:
+   - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
+   - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
 
    ![WiFi Profile Extractor](https://i.imgur.com/71TkJkD.png)
 
@@ -157,9 +141,7 @@
    ![Building OpenCore EFI](https://i.imgur.com/deyj5de.png)
 
 6. **USB Mapping**:
-   - After building, a dialog will show instructions for USB mapping
-   - Click "Open EFI Folder" to access your built EFI
-   - Follow the displayed instructions carefully
+   - After building your EFI, follow the steps for mapping USB ports.
 
    ![Results](https://i.imgur.com/MIPigPF.png)
 
@@ -171,8 +153,6 @@
 > 1. After a successful installation, if OpenCore Legacy Patcher is required, simply apply root patches to activate the missing features (such as modern Broadcom Wi-Fi card and graphics acceleration).
 > 
 > 2. For AMD GPUs, after applying root patches from OpenCore Legacy Patcher, you need to remove the boot argument `-radvesa`/`-amd_no_dgpu_accel` for graphics acceleration to work.
->
-> 3. **GUI Mode vs CLI Mode**: GUI mode is now the default and recommended for most users. It provides a more intuitive experience with visual feedback. Advanced users can still use CLI mode by adding the `--cli` argument.
 
 ## 🤝 **Contributing**
 
