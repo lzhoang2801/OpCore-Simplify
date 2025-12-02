@@ -1242,7 +1242,8 @@ class OpCoreGUI:
     def ensure_kexts_selected(self):
         """Ensure kexts have been selected (call this before building if kext selection was deferred)"""
         # Check if kexts were already selected by checking if any kext is checked
-        if not hasattr(self.ocpe.k, 'kexts') or not any(kext.checked for kext in self.ocpe.k.kexts):
+        # Handle empty list case explicitly
+        if not hasattr(self.ocpe.k, 'kexts') or not self.ocpe.k.kexts or not any(kext.checked for kext in self.ocpe.k.kexts):
             # Kexts not selected yet, select them now with interactive prompts
             current_version = self.macos_version.get()
             darwin_version = current_version.split("(")[1].split(")")[0] if "(" in current_version else None
