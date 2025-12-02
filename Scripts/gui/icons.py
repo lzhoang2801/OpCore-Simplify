@@ -30,6 +30,7 @@ class Icons:
     # These work across different icon fonts
     ICONS = {
         # Navigation icons
+        'upload': '\u2B06',        # ⬆ Upload arrow
         'settings': '\u2699',      # ⚙ Settings gear
         'search': '\u2315',        # ⌕ Search/magnifying glass  
         'wrench': '\u1F527',       # 🔧 Wrench/tools
@@ -65,6 +66,7 @@ class Icons:
     
     # Alternative text-based icons for better compatibility
     TEXT_ICONS = {
+        'upload': '📤',
         'settings': '⚙',
         'search': '🔍', 
         'wrench': '🔧',

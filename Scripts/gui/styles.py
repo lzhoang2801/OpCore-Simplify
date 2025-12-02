@@ -152,10 +152,10 @@ from .icons import get_nav_icon
 
 # Navigation items with icons
 NAVIGATION_ITEMS = [
-    {'id': 'config', 'label': 'Configuration', 'icon': 'settings', 'section': 'main'},
-    {'id': 'compatibility', 'label': 'Compatibility', 'icon': 'search', 'section': 'main'},
-    {'id': 'customize', 'label': 'Customization', 'icon': 'wrench', 'section': 'main'},
-    {'id': 'build', 'label': 'Build EFI', 'icon': 'hammer', 'section': 'main'},
+    {'id': 'upload', 'label': '1. Upload Report', 'icon': 'upload', 'section': 'main'},
+    {'id': 'compatibility', 'label': '2. Compatibility', 'icon': 'search', 'section': 'main'},
+    {'id': 'configuration', 'label': '3. Configuration', 'icon': 'settings', 'section': 'main'},
+    {'id': 'build', 'label': '4. Build EFI', 'icon': 'hammer', 'section': 'main'},
     {'id': 'wifi', 'label': 'WiFi Profiles', 'icon': 'wifi', 'section': 'tools'},
     {'id': 'console', 'label': 'Console Log', 'icon': 'clipboard', 'section': 'tools'},
 ]

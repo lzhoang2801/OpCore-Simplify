@@ -42,10 +42,20 @@ class CompatibilityPage(tk.Frame):
         container.pack(fill=tk.BOTH, expand=True, padx=SPACING['xxlarge'], 
                       pady=SPACING['xlarge'])
         
+        # Step indicator
+        step_label = tk.Label(
+            container,
+            text="STEP 2 OF 4",
+            font=get_font('small'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['primary']
+        )
+        step_label.pack(anchor=tk.W, pady=(0, SPACING['tiny']))
+        
         # Title section
         title_label = tk.Label(
             container,
-            text="Hardware Compatibility Checker",
+            text="Hardware Compatibility",
             font=get_font('title'),
             bg=COLORS['bg_main'],
             fg=COLORS['text_primary']
@@ -54,7 +64,7 @@ class CompatibilityPage(tk.Frame):
         
         subtitle_label = tk.Label(
             container,
-            text="Verify your hardware compatibility with macOS",
+            text="Review your hardware compatibility with macOS",
             font=get_font('body'),
             bg=COLORS['bg_main'],
             fg=COLORS['text_secondary']

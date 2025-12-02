@@ -6,10 +6,11 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
 import threading
+import time
 
 from .styles import COLORS, SPACING, SIDEBAR_CONFIG, get_font
 from .widgets import Sidebar, StatusBar, ConsoleRedirector
-from .pages import ConfigurationPage, CompatibilityPage, CustomizationPage, BuildPage, ConsolePage, WiFiPage
+from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, WiFiPage
 from .icons import Icons
 
 # Import from Scripts package
@@ -71,6 +72,11 @@ class OpCoreGUI:
         # Set up GUI callback for ACPI folder selection
         self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
         
+        # Set up GUI callback for interactive prompts
+        self.ocpe.u.gui_callback = self.handle_gui_prompt
+        self.ocpe.h.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.k.utils.gui_callback = self.handle_gui_prompt
+        
         self.setup_ui()
         
     def setup_ui(self):
@@ -99,8 +105,8 @@ class OpCoreGUI:
         self.init_page_placeholders()
         
         # Show initial page
-        self.sidebar.set_selected('config')
-        self.show_page('config')
+        self.sidebar.set_selected('upload')
+        self.show_page('upload')
         
         # Set up console redirection after console page is created
         if self.console_log:
@@ -112,13 +118,13 @@ class OpCoreGUI:
     def init_page_placeholders(self):
         """Initialize page placeholders for lazy loading"""
         # Create placeholders but don't build full UI yet
-        # Only the config page is created immediately for fast startup
-        self.pages['config'] = ConfigurationPage(self.content_area, self)
-        self.pages_initialized.add('config')
+        # Only the upload page is created immediately for fast startup
+        self.pages['upload'] = UploadPage(self.content_area, self)
+        self.pages_initialized.add('upload')
         
         # Other pages will be created on first access
         self.pages['compatibility'] = None
-        self.pages['customize'] = None
+        self.pages['configuration'] = None
         self.pages['build'] = None
         self.pages['wifi'] = None
         self.pages['console'] = None
@@ -131,8 +137,8 @@ class OpCoreGUI:
         # Create the page on first access
         if page_id == 'compatibility':
             self.pages['compatibility'] = CompatibilityPage(self.content_area, self)
-        elif page_id == 'customize':
-            self.pages['customize'] = CustomizationPage(self.content_area, self)
+        elif page_id == 'configuration':
+            self.pages['configuration'] = ConfigurationPage(self.content_area, self)
         elif page_id == 'build':
             self.pages['build'] = BuildPage(self.content_area, self)
         elif page_id == 'wifi':
@@ -264,6 +270,261 @@ class OpCoreGUI:
             title="Select ACPI Tables Folder"
         )
         return folder_path if folder_path else None
+    
+    def handle_gui_prompt(self, prompt_type, prompt_text, options=None):
+        """
+        Handle interactive prompts from backend code in GUI mode.
+        
+        Args:
+            prompt_type: Type of prompt ('choice', 'confirm', 'info')
+            prompt_text: The prompt message
+            options: Additional options dict with keys like 'title', 'choices', 'default', etc.
+        
+        Returns:
+            User's response as string
+        """
+        if options is None:
+            options = {}
+        
+        # Use root.after to ensure GUI calls happen on main thread
+        result_container = [None]
+        
+        def show_dialog():
+            if prompt_type == 'info':
+                # Just show info and wait for user to acknowledge
+                messagebox.showinfo(
+                    options.get('title', 'Information'),
+                    prompt_text
+                )
+                result_container[0] = ""
+                
+            elif prompt_type == 'confirm':
+                # Yes/No confirmation dialog
+                title = options.get('title', 'Confirmation')
+                message = options.get('message', prompt_text)
+                warning = options.get('warning', '')
+                
+                full_message = message
+                if warning:
+                    full_message += f"\n\n⚠️ {warning}"
+                
+                result = messagebox.askyesno(title, full_message)
+                result_container[0] = "yes" if result else "no"
+                
+            elif prompt_type == 'choice':
+                # Multiple choice dialog
+                self.show_choice_dialog(prompt_text, options, result_container)
+        
+        # Schedule on main thread and wait
+        self.root.after(0, show_dialog)
+        
+        # Wait for result
+        while result_container[0] is None:
+            self.root.update()
+            time.sleep(0.01)
+        
+        return result_container[0]
+    
+    def show_choice_dialog(self, prompt_text, options, result_container):
+        """Show a choice dialog with multiple options"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(options.get('title', 'Select Option'))
+        dialog.geometry("700x600")
+        dialog.configure(bg=COLORS['bg_main'])
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Make dialog modal - prevent closing via window manager
+        dialog.protocol("WM_DELETE_WINDOW", lambda: None)
+        
+        # Title
+        title_label = tk.Label(
+            dialog,
+            text=options.get('title', 'Select Option'),
+            font=get_font('title'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_primary']
+        )
+        title_label.pack(pady=SPACING['large'])
+        
+        # Message
+        message_label = tk.Label(
+            dialog,
+            text=options.get('message', prompt_text),
+            font=get_font('body'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['text_primary'],
+            wraplength=650,
+            justify=tk.LEFT
+        )
+        message_label.pack(pady=SPACING['medium'], padx=SPACING['large'])
+        
+        # Warning if present
+        if options.get('warning'):
+            warning_frame = tk.Frame(dialog, bg='#FFF3CD', relief=tk.SOLID, bd=1)
+            warning_frame.pack(pady=SPACING['small'], padx=SPACING['large'], fill=tk.X)
+            
+            warning_label = tk.Label(
+                warning_frame,
+                text=f"⚠️ {options['warning']}",
+                font=get_font('body'),
+                bg='#FFF3CD',
+                fg='#856404',
+                wraplength=630,
+                justify=tk.LEFT
+            )
+            warning_label.pack(pady=SPACING['small'], padx=SPACING['small'])
+        
+        # Note if present
+        if options.get('note'):
+            note_frame = tk.Frame(dialog, bg='#D1ECF1', relief=tk.SOLID, bd=1)
+            note_frame.pack(pady=SPACING['small'], padx=SPACING['large'], fill=tk.X)
+            
+            note_label = tk.Label(
+                note_frame,
+                text=f"ℹ️ {options['note']}",
+                font=get_font('body'),
+                bg='#D1ECF1',
+                fg='#0C5460',
+                wraplength=630,
+                justify=tk.LEFT
+            )
+            note_label.pack(pady=SPACING['small'], padx=SPACING['small'])
+        
+        # Choices
+        choices = options.get('choices', [])
+        default = options.get('default', '')
+        
+        selected_var = tk.StringVar(value=default)
+        
+        # Create scrollable frame for choices
+        canvas = tk.Canvas(dialog, bg=COLORS['bg_main'], highlightthickness=0)
+        scrollbar = tk.Scrollbar(dialog, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=COLORS['bg_main'])
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Add radio buttons for each choice
+        for choice in choices:
+            choice_value = choice.get('value', '')
+            choice_label = choice.get('label', choice_value)
+            choice_desc = choice.get('description', '')
+            
+            # Frame for each choice
+            choice_frame = tk.Frame(
+                scrollable_frame,
+                bg=COLORS['bg_card'],
+                relief=tk.SOLID,
+                bd=1
+            )
+            choice_frame.pack(pady=SPACING['small'], padx=SPACING['large'], fill=tk.X)
+            
+            # Radio button with label
+            radio = tk.Radiobutton(
+                choice_frame,
+                text=choice_label,
+                variable=selected_var,
+                value=choice_value,
+                font=get_font('body_bold'),
+                bg=COLORS['bg_card'],
+                fg=COLORS['text_primary'],
+                selectcolor=COLORS['bg_card'],
+                activebackground=COLORS['bg_card'],
+                activeforeground=COLORS['primary'],
+                bd=0,
+                highlightthickness=0,
+                padx=SPACING['medium'],
+                pady=SPACING['small']
+            )
+            radio.pack(anchor=tk.W, fill=tk.X)
+            
+            # Description if present
+            if choice_desc:
+                desc_label = tk.Label(
+                    choice_frame,
+                    text=choice_desc,
+                    font=get_font('caption'),
+                    bg=COLORS['bg_card'],
+                    fg=COLORS['text_secondary'],
+                    wraplength=600,
+                    justify=tk.LEFT
+                )
+                desc_label.pack(anchor=tk.W, padx=SPACING['xlarge'], pady=(0, SPACING['small']))
+        
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(SPACING['large'], 0), pady=SPACING['medium'])
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, SPACING['large']), pady=SPACING['medium'])
+        
+        # Button frame
+        button_frame = tk.Frame(dialog, bg=COLORS['bg_main'])
+        button_frame.pack(pady=SPACING['large'])
+        
+        def on_select():
+            result_container[0] = selected_var.get()
+            dialog.destroy()
+        
+        def on_cancel():
+            result_container[0] = default
+            dialog.destroy()
+        
+        # Select button
+        select_btn = tk.Button(
+            button_frame,
+            text="Select",
+            font=get_font('body_bold'),
+            bg=COLORS['primary'],
+            fg='#FFFFFF',
+            activebackground=COLORS['primary_dark'],
+            bd=0,
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=SPACING['xlarge'],
+            pady=SPACING['small'],
+            command=on_select,
+            highlightthickness=0
+        )
+        select_btn.pack(side=tk.LEFT, padx=SPACING['small'])
+        
+        # Cancel button
+        cancel_btn = tk.Button(
+            button_frame,
+            text="Cancel",
+            font=get_font('body_bold'),
+            bg=COLORS['bg_hover'],
+            fg=COLORS['text_primary'],
+            activebackground=COLORS['bg_hover'],
+            bd=0,
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=SPACING['xlarge'],
+            pady=SPACING['small'],
+            command=on_cancel,
+            highlightthickness=0
+        )
+        cancel_btn.pack(side=tk.LEFT, padx=SPACING['small'])
+        
+        # Hover effects
+        def on_select_enter(e):
+            select_btn.config(bg=COLORS['primary_hover'])
+        def on_select_leave(e):
+            select_btn.config(bg=COLORS['primary'])
+        def on_cancel_enter(e):
+            cancel_btn.config(bg=COLORS['bg_hover'])
+        def on_cancel_leave(e):
+            cancel_btn.config(bg=COLORS['bg_hover'])
+        
+        select_btn.bind('<Enter>', on_select_enter)
+        select_btn.bind('<Leave>', on_select_leave)
+        cancel_btn.bind('<Enter>', on_cancel_enter)
+        cancel_btn.bind('<Leave>', on_cancel_leave)
+        
+        # Wait for dialog to close
+        dialog.wait_window()
             
     def load_hardware_report(self, path, data=None):
         """Load and validate hardware report - follows CLI flow"""
