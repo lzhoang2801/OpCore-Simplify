@@ -10,6 +10,7 @@ import platform
 import threading
 
 from ..styles import COLORS, SPACING, get_font
+from ..icons import Icons
 
 
 class WiFiPage(tk.Frame):
@@ -172,7 +173,7 @@ class WiFiPage(tk.Frame):
         # Extract button
         self.extract_btn = tk.Button(
             button_frame,
-            text="📡  Extract WiFi Profiles",
+            text=Icons.format_with_text("wifi", "Extract WiFi Profiles"),
             font=get_font('body_bold'),
             bg=COLORS['primary'],
             fg='#FFFFFF',
@@ -236,7 +237,7 @@ class WiFiPage(tk.Frame):
         
         header = tk.Label(
             header_frame,
-            text="📋  Extracted Networks",
+            text=Icons.format_with_text("clipboard", "Extracted Networks"),
             font=get_font('heading'),
             bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']

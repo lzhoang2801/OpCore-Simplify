@@ -7,6 +7,7 @@ from tkinter import scrolledtext
 import os
 
 from ..styles import COLORS, SPACING, get_font
+from ..icons import Icons
 
 
 class ConsolePage(tk.Frame):
@@ -70,7 +71,7 @@ class ConsolePage(tk.Frame):
         # Export button with macOS styling
         export_btn = tk.Button(
             button_frame,
-            text="💾  Export",
+            text=Icons.format_with_text("save", "Export"),
             font=get_font('body'),
             bg=COLORS['bg_hover'],
             fg=COLORS['text_primary'],

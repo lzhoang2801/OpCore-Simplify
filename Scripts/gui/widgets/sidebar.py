@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from ..styles import COLORS, FONTS, SIDEBAR_CONFIG, NAVIGATION_ITEMS, SPACING, ANIMATION, get_font
+from ..icons import get_nav_icon
 
 
 class Sidebar(tk.Frame):
@@ -123,9 +124,12 @@ class Sidebar(tk.Frame):
     def create_nav_item(self, parent, item):
         """Create a navigation item button with enhanced macOS styling and animations"""
         item_id = item['id']
-        emoji = item.get('emoji', '')
+        icon_name = item.get('icon', '')
         label = item.get('label', '')
-        display_text = f"{emoji}  {label}" if emoji else label
+        
+        # Get icon character from icon system
+        icon = get_nav_icon(icon_name) if icon_name else ''
+        display_text = f"{icon}  {label}" if icon else label
         
         # Create container frame with rounded corners effect
         item_container = tk.Frame(parent, bg=SIDEBAR_CONFIG['bg'])

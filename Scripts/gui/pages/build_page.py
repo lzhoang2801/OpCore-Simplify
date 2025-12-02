@@ -7,6 +7,7 @@ from tkinter import ttk, scrolledtext, messagebox
 import os
 
 from ..styles import COLORS, SPACING, get_font
+from ..icons import Icons
 
 
 class BuildPage(tk.Frame):
@@ -263,7 +264,7 @@ class BuildPage(tk.Frame):
         # Open result folder button
         self.controller.open_result_btn = tk.Button(
             content,
-            text="📁  Open EFI Folder",
+            text=Icons.format_with_text("folder", "Open EFI Folder"),
             font=get_font('body_bold'),
             bg=COLORS['primary'],
             fg='#FFFFFF',
@@ -282,7 +283,7 @@ class BuildPage(tk.Frame):
         # View instructions button
         instructions_btn = tk.Button(
             content,
-            text="📖  View Instructions",
+            text=Icons.format_with_text("book", "View Instructions"),
             font=get_font('body_bold'),
             bg=COLORS['bg_hover'],
             fg=COLORS['text_primary'],
@@ -363,7 +364,7 @@ https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/"""
         # Title
         title = tk.Label(
             info_window,
-            text="📖  Build Instructions",
+            text=Icons.format_with_text("book", "Build Instructions"),
             font=get_font('title'),
             bg=COLORS['bg_main'],
             fg=COLORS['text_primary']

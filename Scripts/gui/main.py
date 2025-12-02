@@ -10,6 +10,7 @@ import threading
 from .styles import COLORS, SPACING, SIDEBAR_CONFIG, get_font
 from .widgets import Sidebar, StatusBar, ConsoleRedirector
 from .pages import ConfigurationPage, CompatibilityPage, CustomizationPage, BuildPage, ConsolePage, WiFiPage
+from .icons import Icons
 
 # Import from Scripts package
 import sys
@@ -750,7 +751,7 @@ class OpCoreGUI:
         # Open EFI folder button
         open_btn = tk.Button(
             button_frame,
-            text="📁  Open EFI Folder",
+            text=Icons.format_with_text("folder", "Open EFI Folder"),
             font=get_font('body_bold'),
             bg=COLORS['primary'],
             fg='#FFFFFF',

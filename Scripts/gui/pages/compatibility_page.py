@@ -8,6 +8,7 @@ import threading
 import time
 
 from ..styles import COLORS, SPACING, get_font
+from ..icons import Icons
 
 # Import os_data at module level for efficiency
 try:
@@ -121,7 +122,7 @@ class CompatibilityPage(tk.Frame):
         
         header = tk.Label(
             header_frame,
-            text="📊  Compatibility Results",
+            text=Icons.format_with_text("chart", "Compatibility Results"),
             font=get_font('heading'),
             bg=COLORS['bg_secondary'],
             fg=COLORS['text_primary']
@@ -198,7 +199,7 @@ class CompatibilityPage(tk.Frame):
         
         tk.Label(
             compat_content,
-            text="✓",
+            text=Icons.get("check"),
             font=get_font('heading'),
             bg=COLORS['bg_main'],
             fg=COLORS['success']
@@ -356,15 +357,15 @@ class CompatibilityPage(tk.Frame):
         oclp_compat = device_props.get('OCLP Compatibility')
         
         if compatibility[0] and compatibility[1]:
-            status_icon = "✓"
+            status_icon = Icons.get("check")
             status_color = COLORS['success']
             status_text = "Compatible"
         elif oclp_compat:
-            status_icon = "⚡"
+            status_icon = Icons.get("lightning")
             status_color = COLORS['warning']
             status_text = "Requires OCLP"
         else:
-            status_icon = "✗"
+            status_icon = Icons.get("cross")
             status_color = COLORS['error']
             status_text = "Not Supported"
         

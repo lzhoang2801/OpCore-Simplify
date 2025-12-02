@@ -147,14 +147,17 @@ BUTTON_STYLES = {
     },
 }
 
-# Navigation items with emojis
+# Import icon system
+from .icons import get_nav_icon
+
+# Navigation items with icons
 NAVIGATION_ITEMS = [
-    {'id': 'config', 'label': 'Configuration', 'emoji': '⚙️', 'section': 'main'},
-    {'id': 'compatibility', 'label': 'Compatibility', 'emoji': '🔍', 'section': 'main'},
-    {'id': 'customize', 'label': 'Customization', 'emoji': '🔧', 'section': 'main'},
-    {'id': 'build', 'label': 'Build EFI', 'emoji': '🔨', 'section': 'main'},
-    {'id': 'wifi', 'label': 'WiFi Profiles', 'emoji': '📡', 'section': 'tools'},
-    {'id': 'console', 'label': 'Console Log', 'emoji': '📋', 'section': 'tools'},
+    {'id': 'config', 'label': 'Configuration', 'icon': 'settings', 'section': 'main'},
+    {'id': 'compatibility', 'label': 'Compatibility', 'icon': 'search', 'section': 'main'},
+    {'id': 'customize', 'label': 'Customization', 'icon': 'wrench', 'section': 'main'},
+    {'id': 'build', 'label': 'Build EFI', 'icon': 'hammer', 'section': 'main'},
+    {'id': 'wifi', 'label': 'WiFi Profiles', 'icon': 'wifi', 'section': 'tools'},
+    {'id': 'console', 'label': 'Console Log', 'icon': 'clipboard', 'section': 'tools'},
 ]
 
 # Animation settings
