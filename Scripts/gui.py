@@ -398,7 +398,9 @@ what you're doing."""
                 for device_name, device_props in self.hardware_report[device_type].items():
                     if device_props.get("Compatibility", (None, None)) != (None, None):
                         if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
-                            device_id = device_props.get("Device ID", "0"*8)[5:]
+                            full_device_id = device_props.get("Device ID", "0"*8)
+                            # Safely extract device ID suffix (last 3+ characters)
+                            device_id = full_device_id[5:] if len(full_device_id) >= 6 else full_device_id
                             
                             if device_props.get("Manufacturer") == "AMD" or device_id.startswith(("59", "87C0")):
                                 suggested_macos_version = "22.99.99"
@@ -784,8 +786,8 @@ class ConsoleRedirector:
             self.text_widget.insert(tk.END, message)
             self.text_widget.see(tk.END)
             self.text_widget.update_idletasks()
-        except:
-            # Ignore errors if widget is destroyed
+        except (tk.TclError, RuntimeError, AttributeError):
+            # Ignore errors if widget is destroyed or no longer accessible
             pass
         
     def flush(self):
