@@ -19,19 +19,6 @@
   </p>
 </div>
 
-> [!TIP]
-> **🎉 NEW: GUI Mode Available!**
-> 
-> OpCore Simplify now features a user-friendly graphical interface! The GUI mode is now the default, making it easier than ever to build your OpenCore EFI. Features include:
-> - Intuitive tab-based interface
-> - Visual progress indicators
-> - Real-time build logs
-> - File dialogs for easy hardware report selection
-> - One-click folder access
->
-> CLI mode is still available for advanced users by adding `--cli` flag.
-> See [GUI_GUIDE.md](GUI_GUIDE.md) for detailed information.
-
 > [!CAUTION]
 > **DO NOT TRUST ANY HACKINTOSH INFORMATION FROM AI/LLM SOURCES**
 > 
