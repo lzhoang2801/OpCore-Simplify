@@ -399,7 +399,7 @@ what you're doing."""
                 for device_name, device_props in self.hardware_report[device_type].items():
                     if device_props.get("Compatibility", (None, None)) != (None, None):
                         if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
-                            device_id = device_props.get("Device ID", ""*8)[5:]
+                            device_id = device_props.get("Device ID", "0"*8)[5:]
                             
                             if device_props.get("Manufacturer") == "AMD" or device_id.startswith(("59", "87C0")):
                                 suggested_macos_version = "22.99.99"
