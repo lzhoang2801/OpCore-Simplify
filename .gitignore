@@ -163,4 +163,5 @@ cython_debug/
 OCK_Files
 Scripts/gui_old.py.bak
 */iasl-*
+Scripts/iasl
 sha_version.txt
