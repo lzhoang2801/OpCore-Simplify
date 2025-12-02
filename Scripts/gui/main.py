@@ -9,7 +9,7 @@ import threading
 
 from .styles import COLORS, SPACING, SIDEBAR_CONFIG, get_font
 from .widgets import Sidebar, StatusBar, ConsoleRedirector
-from .pages import ConfigurationPage, CustomizationPage, BuildPage, ConsolePage, WiFiPage
+from .pages import ConfigurationPage, CompatibilityPage, CustomizationPage, BuildPage, ConsolePage, WiFiPage
 
 # Import from Scripts package
 import sys
@@ -112,6 +112,7 @@ class OpCoreGUI:
         self.pages_initialized.add('config')
         
         # Other pages will be created on first access
+        self.pages['compatibility'] = None
         self.pages['customize'] = None
         self.pages['build'] = None
         self.pages['wifi'] = None
@@ -123,7 +124,9 @@ class OpCoreGUI:
             return
         
         # Create the page on first access
-        if page_id == 'customize':
+        if page_id == 'compatibility':
+            self.pages['compatibility'] = CompatibilityPage(self.content_area, self)
+        elif page_id == 'customize':
             self.pages['customize'] = CustomizationPage(self.content_area, self)
         elif page_id == 'build':
             self.pages['build'] = BuildPage(self.content_area, self)
@@ -295,7 +298,17 @@ class OpCoreGUI:
             self.log_message("Hardware report loaded successfully!")
             self.update_status("Hardware report loaded", 'success')
             
-            messagebox.showinfo("Success", "Hardware report loaded successfully!")
+            # Show success and ask if user wants to see compatibility report
+            result = messagebox.askyesno(
+                "Hardware Report Loaded",
+                "Hardware report loaded successfully!\n\n"
+                "Would you like to view the compatibility check results?"
+            )
+            
+            if result:
+                # Switch to compatibility page
+                self.sidebar.set_selected('compatibility')
+                self.show_page('compatibility')
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load hardware report: {str(e)}")

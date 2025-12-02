@@ -150,6 +150,7 @@ BUTTON_STYLES = {
 # Navigation items with emojis
 NAVIGATION_ITEMS = [
     {'id': 'config', 'label': 'Configuration', 'emoji': '⚙️', 'section': 'main'},
+    {'id': 'compatibility', 'label': 'Compatibility', 'emoji': '🔍', 'section': 'main'},
     {'id': 'customize', 'label': 'Customization', 'emoji': '🔧', 'section': 'main'},
     {'id': 'build', 'label': 'Build EFI', 'emoji': '🔨', 'section': 'main'},
     {'id': 'wifi', 'label': 'WiFi Profiles', 'emoji': '📡', 'section': 'tools'},
