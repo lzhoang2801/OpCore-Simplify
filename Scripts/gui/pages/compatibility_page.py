@@ -559,11 +559,6 @@ class CompatibilityPage(tk.Frame):
                     padx=SPACING['small'],
                     pady=2
                 ).pack()
-        
-        # Connected Monitors (for GPUs)
-        if 'Monitor' in str(device_props):
-            # This would need to be passed from the parent
-            pass
     
     def _add_detail_row(self, parent, label, value, row):
         """Add a detail row with label and value"""
