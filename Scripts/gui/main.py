@@ -261,8 +261,7 @@ class OpCoreGUI:
     def select_acpi_folder_gui(self):
         """GUI method to select ACPI tables folder"""
         folder_path = filedialog.askdirectory(
-            title="Select ACPI Tables Folder",
-            mustexist=True
+            title="Select ACPI Tables Folder"
         )
         return folder_path if folder_path else None
             
