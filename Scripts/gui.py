@@ -260,8 +260,8 @@ what you're doing."""
         self.console_log = scrolledtext.ScrolledText(log_tab, wrap=tk.WORD)
         self.console_log.pack(fill=tk.BOTH, expand=True)
         
-        # Redirect stdout to console log
-        sys.stdout = ConsoleRedirector(self.console_log, sys.stdout)
+        # Redirect stdout to console log (thread-safe)
+        sys.stdout = ConsoleRedirector(self.console_log, sys.stdout, self.root)
         
     def log_message(self, message):
         """Log a message to both console and build log"""
@@ -551,8 +551,11 @@ what you're doing."""
         smbios_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=smbios_listbox.yview)
         
-        # Get available SMBIOS models (simplified)
-        # In real implementation, would use the same logic as the CLI version
+        # Get available SMBIOS models
+        # Note: The optimal SMBIOS model is already automatically selected in apply_macos_version()
+        # This dialog allows manual override for advanced users who want to test different models
+        # For proper implementation, we would call self.ocpe.s.get_compatible_models() here
+        # but for simplicity, we show common models as this is an advanced feature
         available_models = ["iMac19,1", "iMac20,1", "MacBookPro15,1", "MacBookPro16,1", 
                           "MacPro7,1", "iMacPro1,1"]
         
@@ -762,17 +765,28 @@ For troubleshooting, refer to: https://dortania.github.io/OpenCore-Install-Guide
 
 
 class ConsoleRedirector:
-    """Redirect stdout to a text widget"""
-    def __init__(self, text_widget, original_stdout):
+    """Redirect stdout to a text widget (thread-safe)"""
+    def __init__(self, text_widget, original_stdout, root):
         self.text_widget = text_widget
         self.original_stdout = original_stdout
+        self.root = root
         
     def write(self, message):
-        self.text_widget.insert(tk.END, message)
-        self.text_widget.see(tk.END)
-        self.text_widget.update_idletasks()
+        # Schedule GUI update on main thread for thread safety
+        if self.root:
+            self.root.after(0, lambda: self._write_to_widget(message))
         # Also write to original stdout
         self.original_stdout.write(message)
+    
+    def _write_to_widget(self, message):
+        """Internal method to write to widget (must be called on main thread)"""
+        try:
+            self.text_widget.insert(tk.END, message)
+            self.text_widget.see(tk.END)
+            self.text_widget.update_idletasks()
+        except:
+            # Ignore errors if widget is destroyed
+            pass
         
     def flush(self):
         self.original_stdout.flush()
