@@ -2,7 +2,7 @@
 Centralized styling and theming for OpCore Simplify GUI
 """
 
-# Color palette - macOS Big Sur/Monterey inspired
+# Color palette - macOS Big Sur/Monterey inspired with enhanced gradient support
 COLORS = {
     # Primary colors - macOS system blue
     'primary': '#007AFF',           # macOS system blue
@@ -13,16 +13,20 @@ COLORS = {
     # Background colors - macOS neutral palette
     'bg_main': '#FFFFFF',           # Pure white main background
     'bg_secondary': '#F5F5F7',      # Light gray secondary background
-    'bg_sidebar': '#F2F2F7',        # Sidebar background (slightly darker)
-    'bg_hover': '#E5E5EA',          # Hover background (more subtle)
+    'bg_sidebar': '#F8F8F8',        # Sidebar background (lighter)
+    'bg_sidebar_gradient_start': '#FAFAFA',  # Gradient start
+    'bg_sidebar_gradient_end': '#F0F0F0',    # Gradient end
+    'bg_hover': '#E8E8ED',          # Hover background (more subtle)
     'bg_selected': '#007AFF',       # Selected item background
+    'bg_selected_hover': '#0062CC', # Selected item hover
     'bg_card': '#FAFAFA',           # Card background
     
     # Text colors - macOS text hierarchy
     'text_primary': '#000000',      # Pure black for primary text
     'text_secondary': '#6C6C70',    # Medium gray for secondary text
     'text_tertiary': '#8E8E93',     # Light gray for tertiary text
-    'text_sidebar': '#000000',      # Sidebar text
+    'text_sidebar': '#1C1C1E',      # Sidebar text (slightly softer black)
+    'text_sidebar_hover': '#000000', # Sidebar text on hover
     'text_sidebar_selected': '#FFFFFF',  # Selected sidebar text
     
     # Status colors - macOS system colors
@@ -35,6 +39,7 @@ COLORS = {
     'border': '#D1D1D6',
     'border_light': '#E5E5EA',
     'border_focus': '#007AFF',
+    'shadow': '#00000015',          # Very subtle shadow
     
     # Accent colors
     'accent': '#5E5CE6',            # macOS purple
@@ -144,8 +149,16 @@ BUTTON_STYLES = {
 
 # Navigation items with emojis
 NAVIGATION_ITEMS = [
-    {'id': 'config', 'label': 'Configuration', 'emoji': '⚙️'},
-    {'id': 'customize', 'label': 'Customization', 'emoji': '🔧'},
-    {'id': 'build', 'label': 'Build EFI', 'emoji': '🔨'},
-    {'id': 'console', 'label': 'Console Log', 'emoji': '📋'},
+    {'id': 'config', 'label': 'Configuration', 'emoji': '⚙️', 'section': 'main'},
+    {'id': 'customize', 'label': 'Customization', 'emoji': '🔧', 'section': 'main'},
+    {'id': 'build', 'label': 'Build EFI', 'emoji': '🔨', 'section': 'main'},
+    {'id': 'wifi', 'label': 'WiFi Profiles', 'emoji': '📡', 'section': 'tools'},
+    {'id': 'console', 'label': 'Console Log', 'emoji': '📋', 'section': 'tools'},
 ]
+
+# Animation settings
+ANIMATION = {
+    'transition_speed': 150,  # milliseconds
+    'hover_delay': 50,        # milliseconds
+    'fade_steps': 10,         # number of steps in fade animation
+}

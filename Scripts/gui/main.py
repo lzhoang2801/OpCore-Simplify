@@ -9,7 +9,7 @@ import threading
 
 from .styles import COLORS, SPACING, SIDEBAR_CONFIG, get_font
 from .widgets import Sidebar, StatusBar, ConsoleRedirector
-from .pages import ConfigurationPage, CustomizationPage, BuildPage, ConsolePage
+from .pages import ConfigurationPage, CustomizationPage, BuildPage, ConsolePage, WiFiPage
 
 # Import from Scripts package
 import sys
@@ -56,6 +56,7 @@ class OpCoreGUI:
         # Current page
         self.current_page = None
         self.pages = {}
+        self.pages_initialized = set()  # Track which pages have been created
         
         # Placeholder for widgets that will be created by pages
         self.build_btn = None
@@ -89,8 +90,8 @@ class OpCoreGUI:
         self.status_bar = StatusBar(right_container)
         self.status_bar.pack(fill=tk.X, side=tk.BOTTOM)
         
-        # Create all pages
-        self.create_pages()
+        # Initialize page placeholders (lazy loading for performance)
+        self.init_page_placeholders()
         
         # Show initial page
         self.sidebar.set_selected('config')
@@ -103,34 +104,83 @@ class OpCoreGUI:
         # Set initial status
         self.status_bar.set_ready()
         
+    def init_page_placeholders(self):
+        """Initialize page placeholders for lazy loading"""
+        # Create placeholders but don't build full UI yet
+        # Only the config page is created immediately for fast startup
+        self.pages['config'] = ConfigurationPage(self.content_area, self)
+        self.pages_initialized.add('config')
+        
+        # Other pages will be created on first access
+        self.pages['customize'] = None
+        self.pages['build'] = None
+        self.pages['wifi'] = None
+        self.pages['console'] = None
+        
     def create_pages(self):
-        """Create all page instances"""
+        """Create all page instances (legacy method - now using lazy loading)"""
         self.pages['config'] = ConfigurationPage(self.content_area, self)
         self.pages['customize'] = CustomizationPage(self.content_area, self)
         self.pages['build'] = BuildPage(self.content_area, self)
+        self.pages['wifi'] = WiFiPage(self.content_area, self)
         self.pages['console'] = ConsolePage(self.content_area, self)
+        
+        # Mark all as initialized
+        self.pages_initialized = {'config', 'customize', 'build', 'wifi', 'console'}
         
         # Hide all pages initially
         for page in self.pages.values():
-            page.pack_forget()
+            if page:
+                page.pack_forget()
+                
+    def ensure_page_created(self, page_id):
+        """Ensure a page is created before showing it (lazy loading)"""
+        if page_id in self.pages_initialized:
+            return
+        
+        # Create the page on first access
+        if page_id == 'customize':
+            self.pages['customize'] = CustomizationPage(self.content_area, self)
+        elif page_id == 'build':
+            self.pages['build'] = BuildPage(self.content_area, self)
+        elif page_id == 'wifi':
+            self.pages['wifi'] = WiFiPage(self.content_area, self)
+        elif page_id == 'console':
+            self.pages['console'] = ConsolePage(self.content_area, self)
+            # Set up console redirection if this is console page
+            if self.console_log and not hasattr(sys.stdout, 'console_text'):
+                sys.stdout = ConsoleRedirector(self.console_log, sys.stdout, self.root)
+        
+        self.pages_initialized.add(page_id)
             
     def on_nav_select(self, item_id):
         """Handle navigation item selection"""
         self.show_page(item_id)
         
     def show_page(self, page_id):
-        """Show a specific page"""
+        """Show a specific page with optimized loading"""
+        # Show loading indicator for better UX
+        self.status_bar.set_status(f"Loading {page_id}...", 'info')
+        
         # Hide current page
-        if self.current_page:
-            self.pages[self.current_page].pack_forget()
+        if self.current_page and self.current_page in self.pages:
+            current_page_widget = self.pages[self.current_page]
+            if current_page_widget:
+                current_page_widget.pack_forget()
+        
+        # Ensure the page is created (lazy loading)
+        self.ensure_page_created(page_id)
         
         # Show new page
-        if page_id in self.pages:
+        if page_id in self.pages and self.pages[page_id]:
             self.pages[page_id].pack(fill=tk.BOTH, expand=True)
             self.current_page = page_id
             
-            # Refresh page content
-            self.pages[page_id].refresh()
+            # Refresh page content (deferred to improve responsiveness)
+            self.root.after(10, lambda: self.pages[page_id].refresh())
+            
+        # Update status
+        self.root.after(50, lambda: self.status_bar.set_ready())
             
     def log_message(self, message):
         """Log a message to both console and build log"""
