@@ -256,7 +256,7 @@ class OpCoreGUI:
             self.update_status("Export failed", 'error')
             
     def load_hardware_report(self, path, data=None):
-        """Load and validate hardware report"""
+        """Load and validate hardware report - follows CLI flow"""
         try:
             self.log_message(f"Loading hardware report from: {path}")
             self.update_status("Validating hardware report...", 'info')
@@ -278,18 +278,14 @@ class OpCoreGUI:
                 self.update_status("Validation failed", 'error')
                 return
                 
-            # Store report
+            # Store report path
             self.hardware_report_path.set(os.path.basename(path))
             self.hardware_report_data = data
             
-            # Check compatibility
-            self.hardware_report, self.native_macos_version, self.ocl_patched_macos_version = \
-                self.ocpe.c.check_compatibility(data)
-            
-            # Auto-select macOS version
-            self.auto_select_macos_version()
-            
             # Read ACPI tables if not already loaded
+            self.update_status("Loading ACPI tables...", 'info')
+            self.log_message("Loading ACPI tables...")
+            
             if not self.ocpe.ac.ensure_dsdt():
                 acpi_dir = os.path.join(os.path.dirname(path), "ACPI")
                 if os.path.exists(acpi_dir):
@@ -298,20 +294,23 @@ class OpCoreGUI:
                     # Prompt for ACPI tables
                     self.ocpe.ac.select_acpi_tables()
             
+            # Check compatibility (follows CLI behavior - check_compatibility modifies the data)
+            self.update_status("Checking hardware compatibility...", 'info')
+            self.log_message("Checking hardware compatibility...")
+            self.hardware_report, self.native_macos_version, self.ocl_patched_macos_version = \
+                self.ocpe.c.check_compatibility(data)
+            
+            # Auto-select macOS version (follows CLI behavior)
+            self.log_message("Auto-selecting macOS version...")
+            self.auto_select_macos_version()
+            
             self.log_message("Hardware report loaded successfully!")
             self.update_status("Hardware report loaded", 'success')
             
-            # Show success and ask if user wants to see compatibility report
-            result = messagebox.askyesno(
-                "Hardware Report Loaded",
-                "Hardware report loaded successfully!\n\n"
-                "Would you like to view the compatibility check results?"
-            )
-            
-            if result:
-                # Switch to compatibility page
-                self.sidebar.set_selected('compatibility')
-                self.show_page('compatibility')
+            # Automatically show compatibility results (like CLI does)
+            # Switch to compatibility page to show results
+            self.sidebar.set_selected('compatibility')
+            self.show_page('compatibility')
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load hardware report: {str(e)}")

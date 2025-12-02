@@ -136,7 +136,7 @@ class ConfigurationPage(tk.Frame):
             {
                 'number': '1',
                 'title': 'Select Hardware Report',
-                'description': 'Choose your hardware report JSON file or export one',
+                'description': 'Load hardware report and run compatibility checker',
                 'command': self.controller.select_hardware_report_gui
             },
             {
@@ -257,16 +257,21 @@ Follow these steps to build your OpenCore EFI:
 1. Select Hardware Report
    • Choose a hardware report JSON file
    • Or export one using Hardware Sniffer (Windows only)
-   • The report will be automatically validated
+   • The tool will automatically:
+     - Validate the report
+     - Load ACPI tables
+     - Run compatibility checker
+     - Select optimal macOS version and SMBIOS
 
-2. Select macOS Version
-   • The tool will suggest the best version for your hardware
-   • You can choose a different version if needed
-   • Some versions may require OpenCore Legacy Patcher
+2. Review Compatibility Results
+   • After loading your report, check the Compatibility page
+   • Review which devices are supported
+   • Note any devices requiring OpenCore Legacy Patcher
 
-3. Customize SMBIOS (Optional)
-   • The tool automatically selects the best SMBIOS model
-   • Advanced users can customize if needed
+3. Customize Configuration (Optional)
+   • Adjust macOS version if needed
+   • Customize ACPI patches and kexts
+   • Select different SMBIOS model if desired
 
 4. Build Your EFI
    • Go to the Build EFI page
