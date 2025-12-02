@@ -9,6 +9,12 @@ import time
 
 from ..styles import COLORS, SPACING, get_font
 
+# Import os_data at module level for efficiency
+try:
+    from Scripts.datasets import os_data
+except ImportError:
+    os_data = None
+
 
 class CompatibilityPage(tk.Frame):
     """Hardware compatibility checking page"""
@@ -414,31 +420,31 @@ class CompatibilityPage(tk.Frame):
         
         # macOS version support
         if compatibility[0] and compatibility[1]:
-            from Scripts.datasets import os_data
-            min_ver = os_data.get_macos_name_by_darwin(compatibility[1])
-            max_ver = os_data.get_macos_name_by_darwin(compatibility[0])
-            
-            tk.Label(
-                details_frame,
-                text=f"macOS Support: {min_ver} to {max_ver}",
-                font=get_font('small'),
-                bg=COLORS['bg_main'],
-                fg=COLORS['text_secondary'],
-                anchor=tk.W
-            ).pack(anchor=tk.W)
+            if os_data:
+                min_ver = os_data.get_macos_name_by_darwin(compatibility[1])
+                max_ver = os_data.get_macos_name_by_darwin(compatibility[0])
+                
+                tk.Label(
+                    details_frame,
+                    text=f"macOS Support: {min_ver} to {max_ver}",
+                    font=get_font('small'),
+                    bg=COLORS['bg_main'],
+                    fg=COLORS['text_secondary'],
+                    anchor=tk.W
+                ).pack(anchor=tk.W)
         elif oclp_compat:
-            from Scripts.datasets import os_data
-            min_ver = os_data.get_macos_name_by_darwin(oclp_compat[1])
-            max_ver = os_data.get_macos_name_by_darwin(oclp_compat[0])
-            
-            tk.Label(
-                details_frame,
-                text=f"OCLP Support: {min_ver} to {max_ver}",
-                font=get_font('small'),
-                bg=COLORS['bg_main'],
-                fg=COLORS['warning'],
-                anchor=tk.W
-            ).pack(anchor=tk.W)
+            if os_data:
+                min_ver = os_data.get_macos_name_by_darwin(oclp_compat[1])
+                max_ver = os_data.get_macos_name_by_darwin(oclp_compat[0])
+                
+                tk.Label(
+                    details_frame,
+                    text=f"OCLP Support: {min_ver} to {max_ver}",
+                    font=get_font('small'),
+                    bg=COLORS['bg_main'],
+                    fg=COLORS['warning'],
+                    anchor=tk.W
+                ).pack(anchor=tk.W)
         
     def refresh(self):
         """Refresh the page content"""

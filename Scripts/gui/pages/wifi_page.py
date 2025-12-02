@@ -333,7 +333,11 @@ class WiFiPage(tk.Frame):
                 if self.os_name == 'Darwin':
                     self.log_message("  → Requesting keychain access...")
                 
-                password = get_password_func(ssid)
+                try:
+                    password = get_password_func(ssid)
+                except Exception as pwd_error:
+                    self.log_message(f"  ✗ Error retrieving password: {type(pwd_error).__name__}")
+                    password = None
                 
                 if password is not None:
                     self.extracted_networks.append((ssid, password))
@@ -362,17 +366,21 @@ class WiFiPage(tk.Frame):
             ))
             
         except Exception as e:
-            self.log_message(f"\nError during extraction: An unexpected error occurred.")
             import traceback
-            print(f"WiFi extraction error details: {traceback.format_exc()}")
+            error_type = type(e).__name__
+            error_details = traceback.format_exc()
+            
+            self.log_message(f"\nError during extraction: {error_type}")
+            print(f"WiFi extraction error details:\n{error_details}")
+            
             messagebox.showerror(
                 "Extraction Error", 
-                "Failed to extract WiFi profiles.\n\n"
+                f"Failed to extract WiFi profiles ({error_type}).\n\n"
                 "This may be due to:\n"
                 "• Insufficient permissions\n"
                 "• System network utilities not available\n"
                 "• Platform not fully supported\n\n"
-                "Please check the console log for details."
+                "Please check the console log for detailed error information."
             )
         finally:
             self.is_extracting = False

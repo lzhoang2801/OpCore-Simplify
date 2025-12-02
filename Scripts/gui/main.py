@@ -57,6 +57,7 @@ class OpCoreGUI:
         self.current_page = None
         self.pages = {}
         self.pages_initialized = set()  # Track which pages have been created
+        self.console_redirected = False  # Track console redirection state
         
         # Placeholder for widgets that will be created by pages
         self.build_btn = None
@@ -134,9 +135,10 @@ class OpCoreGUI:
             self.pages['wifi'] = WiFiPage(self.content_area, self)
         elif page_id == 'console':
             self.pages['console'] = ConsolePage(self.content_area, self)
-            # Set up console redirection if this is console page
-            if self.console_log and not hasattr(sys.stdout, 'console_text'):
+            # Set up console redirection if not already done
+            if self.console_log and not self.console_redirected:
                 sys.stdout = ConsoleRedirector(self.console_log, sys.stdout, self.root)
+                self.console_redirected = True
         
         self.pages_initialized.add(page_id)
             
