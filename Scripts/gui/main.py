@@ -68,6 +68,9 @@ class OpCoreGUI:
         self.open_result_btn = None
         self.console_log = None
         
+        # Set up GUI callback for ACPI folder selection
+        self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
+        
         self.setup_ui()
         
     def setup_ui(self):
@@ -254,6 +257,13 @@ class OpCoreGUI:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to export hardware report: {str(e)}")
             self.update_status("Export failed", 'error')
+            
+    def select_acpi_folder_gui(self):
+        """GUI method to select ACPI tables folder"""
+        folder_path = filedialog.askdirectory(
+            title="Select ACPI Tables Folder"
+        )
+        return folder_path if folder_path else None
             
     def load_hardware_report(self, path, data=None):
         """Load and validate hardware report - follows CLI flow"""
