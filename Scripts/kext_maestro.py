@@ -128,8 +128,30 @@ class KextMaestro:
                     print("1. \033[1mAppleALC\033[0m - Requires AppleHDA rollback with \033[1;93mOpenCore Legacy Patcher\033[0m")
                     print("2. \033[1mVoodooHDA\033[0m - Lower audio quality, manual injection to /Library/Extensions")
                     print("")
+                    
+                    gui_options = {
+                        'title': 'Select Audio Kext',
+                        'message': 'Since macOS Tahoe 26, Apple has removed AppleHDA.\n\nChoose your audio solution:',
+                        'choices': [
+                            {
+                                'value': '1',
+                                'label': 'AppleALC - High quality (Requires OCLP)',
+                                'description': 'Requires AppleHDA rollback with OpenCore Legacy Patcher'
+                            },
+                            {
+                                'value': '2',
+                                'label': 'VoodooHDA - Manual installation',
+                                'description': 'Lower audio quality, manual injection to /Library/Extensions'
+                            }
+                        ],
+                        'default': '1',
+                        'warning': 'AppleALC requires OpenCore Legacy Patcher for AppleHDA rollback'
+                    }
+                    
                     while True:
-                        kext_option = self.utils.request_input("Select audio kext for your system: ").strip()
+                        kext_option = self.utils.request_input("Select audio kext for your system: ",
+                                                             gui_type='choice',
+                                                             gui_options=gui_options).strip()
                         if kext_option == "1":
                             needs_oclp = True
                             selected_kexts.append("AppleALC")
@@ -200,10 +222,41 @@ class KextMaestro:
                         print("\033[91mImportant:\033[0m NootRX kext is not compatible with Intel GPUs")
                         print("Automatically selecting WhateverGreen kext due to Intel GPU compatibility")
                         print("")
-                        self.utils.request_input("Press Enter to continue...")
+                        self.utils.request_input("Press Enter to continue...", gui_type='info')
                         continue
 
-                    kext_option = self.utils.request_input("Select kext for your AMD {} GPU (default: {}): ".format(gpu_props.get("Codename"), recommended_name)).strip() or str(recommended_option)
+                    # Build GUI options
+                    gui_choices = [
+                        {
+                            'value': '1',
+                            'label': 'NootRX - Uses latest GPU firmware',
+                            'description': 'Modern kext with latest GPU firmware'
+                        },
+                        {
+                            'value': '2',
+                            'label': 'WhateverGreen - Uses original Apple firmware',
+                            'description': 'Traditional kext with original Apple firmware'
+                        }
+                    ]
+                    
+                    if max_option == 3:
+                        gui_choices.append({
+                            'value': '3',
+                            'label': 'Don\'t use any kext',
+                            'description': 'No GPU kext will be installed'
+                        })
+                    
+                    gui_options = {
+                        'title': 'Select AMD GPU Kext',
+                        'message': f'Select kext for your AMD {gpu_props.get("Codename")} GPU:',
+                        'choices': gui_choices,
+                        'default': str(recommended_option),
+                        'warning': 'If you experience black screen after verbose mode, remove "-v debug=0x100 keepsyms=1" from boot-args in config.plist'
+                    }
+                    
+                    kext_option = self.utils.request_input("Select kext for your AMD {} GPU (default: {}): ".format(gpu_props.get("Codename"), recommended_name),
+                                                          gui_type='choice',
+                                                          gui_options=gui_options).strip() or str(recommended_option)
                     
                     if kext_option.isdigit() and 0 < int(kext_option) < max_option + 1:
                         selected_option = int(kext_option)
@@ -225,7 +278,7 @@ class KextMaestro:
                     print("The current recommendation is to not use WhateverGreen.")
                     print("However, you can still try adding it to see if it works on your system.")
                     print("")
-                    self.utils.request_input("Press Enter to continue...")
+                    self.utils.request_input("Press Enter to continue...", gui_type='info')
                     break
 
                 selected_kexts.append("WhateverGreen")
@@ -278,15 +331,36 @@ class KextMaestro:
                 if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
                     print("\033[91mImportant:\033[0m For macOS Beta versions, only itlwm kext is supported")
                     print("")
-                    self.utils.request_input("Press Enter to continue...")
+                    self.utils.request_input("Press Enter to continue...", gui_type='info')
                     selected_option = recommended_option
                 elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
                     print("\033[91mImportant:\033[0m For macOS Tahoe 26, only itlwm kext is supported")
                     print("")
-                    self.utils.request_input("Press Enter to continue...")
+                    self.utils.request_input("Press Enter to continue...", gui_type='info')
                     selected_option = recommended_option
                 else:
-                    kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name)).strip() or str(recommended_option)
+                    # Build GUI options
+                    gui_options = {
+                        'title': 'Select WiFi Kext',
+                        'message': 'Intel WiFi devices have two available kext options:',
+                        'choices': [
+                            {
+                                'value': '1',
+                                'label': 'AirportItlwm - Uses native WiFi settings menu',
+                                'description': 'Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support. Supports enterprise-level security.'
+                            },
+                            {
+                                'value': '2',
+                                'label': 'itlwm - More stable overall',
+                                'description': 'Works with HeliPort app. No Apple Continuity features. Can connect to Hidden Networks.'
+                            }
+                        ],
+                        'default': str(recommended_option),
+                        'note': 'Since macOS Sonoma 14, iServices may not work with AirportItlwm unless using OCLP root patch' if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else None
+                    }
+                    kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name), 
+                                                          gui_type='choice', 
+                                                          gui_options=gui_options).strip() or str(recommended_option)
                     
                     if kext_option.isdigit() and 0 < int(kext_option) < 3:
                         selected_option = int(kext_option)
@@ -305,8 +379,17 @@ class KextMaestro:
                         print("")
                         print("\033[1;93mNote:\033[0m Since macOS Sonoma 14, iServices won't work with AirportItlwm without patches")
                         print("")
+                        
+                        gui_options = {
+                            'title': 'Apply OCLP Root Patch',
+                            'message': 'Since macOS Sonoma 14, iServices won\'t work with AirportItlwm without patches.\n\nDo you want to apply OpenCore Legacy Patcher root patch to fix iServices?',
+                            'default': 'no'
+                        }
+                        
                         while True:
-                            option = self.utils.request_input("Apply OCLP root patch to fix iServices? (yes/No): ").strip().lower()
+                            option = self.utils.request_input("Apply OCLP root patch to fix iServices? (yes/No): ", 
+                                                            gui_type='confirm',
+                                                            gui_options=gui_options).strip().lower()
                             if option == "yes":
                                 selected_kexts.append("IOSkywalkFamily")
                                 break
@@ -656,7 +739,20 @@ class KextMaestro:
             print("- Forcing unsupported kexts can cause system instability. \033[0;31mProceed with caution.\033[0m")
             print("")
             
-            option = self.utils.request_input("Do you want to force load {} on the unsupported macOS version? (yes/No): ".format("these kexts" if len(incompatible_kexts) > 1 else "this kext"))
+            # Build list of kext names for GUI
+            kext_list = "\n".join([f"  • {kext_name}{' (Lilu Plugin)' if is_lilu else ''}" 
+                                  for kext_name, is_lilu in incompatible_kexts])
+            
+            gui_options = {
+                'title': 'Kext Compatibility Warning',
+                'message': f'The following kexts are incompatible with macOS version {target_darwin_version}:\n\n{kext_list}\n\nWith Lilu plugins, using the "-lilubetaall" boot argument will force them to load.\n\nForcing unsupported kexts can cause system instability. Proceed with caution.\n\nDo you want to force load {"these kexts" if len(incompatible_kexts) > 1 else "this kext"} on the unsupported macOS version?',
+                'default': 'no',
+                'warning': 'This may cause system instability!'
+            }
+            
+            option = self.utils.request_input("Do you want to force load {} on the unsupported macOS version? (yes/No): ".format("these kexts" if len(incompatible_kexts) > 1 else "this kext"),
+                                            gui_type='confirm',
+                                            gui_options=gui_options)
             
             if option.lower() == "yes":
                 return True

@@ -35,8 +35,16 @@ class HardwareCustomizer:
                     print("You can still proceed with Legacy if you prefer.")
                     print("")
 
+                    gui_options = {
+                        'title': 'Firmware Type Selection',
+                        'message': 'Your BIOS Firmware Type is not UEFI.\n\nDo you want to build the EFI for UEFI?\n\nIf yes, please make sure to update your BIOS and enable UEFI Boot Mode in your BIOS settings.\nYou can still proceed with Legacy if you prefer.',
+                        'default': 'yes'
+                    }
+
                     while True:
-                        answer = self.utils.request_input("Build EFI for UEFI? (Yes/no): ").strip().lower()
+                        answer = self.utils.request_input("Build EFI for UEFI? (Yes/no): ",
+                                                        gui_type='confirm',
+                                                        gui_options=gui_options).strip().lower()
                         if answer == "yes":
                             self.customized_hardware[device_type]["Firmware Type"] = "UEFI"
                             break
