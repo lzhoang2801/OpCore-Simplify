@@ -5,16 +5,18 @@ Main GUI application with sidebar navigation
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
-import sys
 import threading
 
-# Add Scripts directory to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from .styles import COLORS, SPACING, SIDEBAR_CONFIG, get_font
+from .widgets import Sidebar, StatusBar, ConsoleRedirector
+from .pages import ConfigurationPage, CustomizationPage, BuildPage, ConsolePage
 
-from gui.styles import COLORS, SPACING, SIDEBAR_CONFIG, get_font
-from gui.widgets import Sidebar, StatusBar, ConsoleRedirector
-from gui.pages import ConfigurationPage, CustomizationPage, BuildPage, ConsolePage
-from Scripts.datasets import os_data
+# Import from Scripts package
+import sys
+scripts_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if scripts_path not in sys.path:
+    sys.path.insert(0, scripts_path)
+from datasets import os_data
 
 
 class OpCoreGUI:

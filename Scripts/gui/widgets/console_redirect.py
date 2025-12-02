@@ -3,6 +3,7 @@ Console output redirection for GUI
 """
 
 import sys
+import tkinter as tk
 
 
 class ConsoleRedirector:
