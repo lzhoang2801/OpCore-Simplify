@@ -33,6 +33,16 @@ class BuildPage(tk.Frame):
         container.pack(fill=tk.BOTH, expand=True, padx=SPACING['xxlarge'], 
                       pady=SPACING['xlarge'])
         
+        # Step indicator
+        step_label = tk.Label(
+            container,
+            text="STEP 4 OF 4",
+            font=get_font('small'),
+            bg=COLORS['bg_main'],
+            fg=COLORS['primary']
+        )
+        step_label.pack(anchor=tk.W, pady=(0, SPACING['tiny']))
+        
         # Title section
         title_label = tk.Label(
             container,
