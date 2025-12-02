@@ -374,6 +374,28 @@ class CompatibilityPage(tk.Frame):
                 pady=2
             ).pack()
             
+            # Add special note for Biometric devices
+            if device_type == 'Biometric':
+                note_frame = tk.Frame(section_frame, bg='#FFF3CD',
+                                     highlightbackground='#FFA726',
+                                     highlightthickness=1,
+                                     relief=tk.FLAT)
+                note_frame.pack(fill=tk.X, pady=(0, SPACING['small']))
+                
+                note_content = tk.Frame(note_frame, bg='#FFF3CD')
+                note_content.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['small'])
+                
+                tk.Label(
+                    note_content,
+                    text="ℹ️  Note: Biometric authentication in macOS requires Apple T2 Chip, which is not available for Hackintosh systems.",
+                    font=get_font('body'),
+                    bg='#FFF3CD',
+                    fg='#856404',
+                    anchor=tk.W,
+                    wraplength=700,
+                    justify=tk.LEFT
+                ).pack(anchor=tk.W)
+            
             # Device list
             for device_name, device_props in devices.items():
                 # Skip if device_props is not a dictionary (fix for AttributeError)
@@ -511,6 +533,65 @@ class CompatibilityPage(tk.Frame):
             self._add_detail_row(details_content, "Bus:", device_props['Bus Type'], row)
             row += 1
         
+        # Connected Monitors (for GPUs)
+        if parent.master.master == self.results_frame:  # Check if we're showing GPU
+            hw_report = self.controller.hardware_report
+            if hw_report and 'Monitor' in hw_report:
+                connected_monitors = []
+                for monitor_name, monitor_info in hw_report.get('Monitor', {}).items():
+                    if monitor_info.get('Connected GPU') == device_name:
+                        connector_type = monitor_info.get('Connector Type', 'Unknown')
+                        connected_monitors.append(f"{monitor_name} ({connector_type})")
+                
+                if connected_monitors:
+                    monitor_label = tk.Label(
+                        details_content,
+                        text="Monitor(s):",
+                        font=get_font('small'),
+                        bg=COLORS['bg_secondary'],
+                        fg=COLORS['text_secondary'],
+                        anchor=tk.W
+                    )
+                    monitor_label.grid(row=row, column=0, sticky=tk.W, padx=(0, SPACING['small']), pady=2)
+                    
+                    monitor_value = tk.Label(
+                        details_content,
+                        text=", ".join(connected_monitors),
+                        font=get_font('small'),
+                        bg=COLORS['bg_secondary'],
+                        fg=COLORS['text_primary'],
+                        anchor=tk.W,
+                        wraplength=400
+                    )
+                    monitor_value.grid(row=row, column=1, sticky=tk.W, pady=2)
+                    row += 1
+        
+        # Audio Endpoints (for Sound devices)
+        if device_props.get('Audio Endpoints'):
+            endpoints = device_props['Audio Endpoints']
+            if endpoints:
+                endpoint_label = tk.Label(
+                    details_content,
+                    text="Endpoints:",
+                    font=get_font('small'),
+                    bg=COLORS['bg_secondary'],
+                    fg=COLORS['text_secondary'],
+                    anchor=tk.W
+                )
+                endpoint_label.grid(row=row, column=0, sticky=tk.W, padx=(0, SPACING['small']), pady=2)
+                
+                endpoint_value = tk.Label(
+                    details_content,
+                    text=", ".join(endpoints),
+                    font=get_font('small'),
+                    bg=COLORS['bg_secondary'],
+                    fg=COLORS['text_primary'],
+                    anchor=tk.W,
+                    wraplength=400
+                )
+                endpoint_value.grid(row=row, column=1, sticky=tk.W, pady=2)
+                row += 1
+        
         # macOS version support - with visual styling
         if compatibility[0] and compatibility[1]:
             if os_data:
@@ -571,6 +652,98 @@ class CompatibilityPage(tk.Frame):
                     padx=SPACING['small'],
                     pady=2
                 ).pack()
+        
+        # Add Continuity Support for WiFi devices
+        if device_props.get('Device ID'):
+            from Scripts.datasets import pci_data
+            device_id = device_props.get('Device ID')
+            
+            if device_id in pci_data.BroadcomWiFiIDs:
+                continuity_frame = tk.Frame(details_content, bg='#E8F5E9')
+                continuity_frame.grid(row=row, column=0, columnspan=2, sticky=tk.EW, pady=(SPACING['small'], 0))
+                
+                continuity_content = tk.Frame(continuity_frame, bg='#E8F5E9')
+                continuity_content.pack(fill=tk.X, padx=SPACING['small'], pady=SPACING['tiny'])
+                
+                tk.Label(
+                    continuity_content,
+                    text="✨ Continuity Support: Full",
+                    font=get_font('small'),
+                    bg='#E8F5E9',
+                    fg='#2E7D32',
+                    anchor=tk.W
+                ).pack(anchor=tk.W)
+                
+                tk.Label(
+                    continuity_content,
+                    text="AirDrop, Handoff, Universal Clipboard, Instant Hotspot supported",
+                    font=get_font('caption'),
+                    bg='#E8F5E9',
+                    fg='#388E3C',
+                    anchor=tk.W
+                ).pack(anchor=tk.W)
+                row += 1
+                
+            elif device_id in pci_data.IntelWiFiIDs:
+                continuity_frame = tk.Frame(details_content, bg='#FFF3E0')
+                continuity_frame.grid(row=row, column=0, columnspan=2, sticky=tk.EW, pady=(SPACING['small'], 0))
+                
+                continuity_content = tk.Frame(continuity_frame, bg='#FFF3E0')
+                continuity_content.pack(fill=tk.X, padx=SPACING['small'], pady=SPACING['tiny'])
+                
+                tk.Label(
+                    continuity_content,
+                    text="⚡ Continuity Support: Partial",
+                    font=get_font('small'),
+                    bg='#FFF3E0',
+                    fg='#F57C00',
+                    anchor=tk.W
+                ).pack(anchor=tk.W)
+                
+                tk.Label(
+                    continuity_content,
+                    text="Handoff and Universal Clipboard with AirportItlwm",
+                    font=get_font('caption'),
+                    bg='#FFF3E0',
+                    fg='#EF6C00',
+                    anchor=tk.W
+                ).pack(anchor=tk.W)
+                
+                tk.Label(
+                    continuity_content,
+                    text="⚠️ Note: AirDrop, Instant Hotspot not available",
+                    font=get_font('caption'),
+                    bg='#FFF3E0',
+                    fg='#E65100',
+                    anchor=tk.W
+                ).pack(anchor=tk.W)
+                row += 1
+                
+            elif device_id in pci_data.AtherosWiFiIDs:
+                continuity_frame = tk.Frame(details_content, bg='#FFEBEE')
+                continuity_frame.grid(row=row, column=0, columnspan=2, sticky=tk.EW, pady=(SPACING['small'], 0))
+                
+                continuity_content = tk.Frame(continuity_frame, bg='#FFEBEE')
+                continuity_content.pack(fill=tk.X, padx=SPACING['small'], pady=SPACING['tiny'])
+                
+                tk.Label(
+                    continuity_content,
+                    text="❌ Continuity Support: Limited",
+                    font=get_font('small'),
+                    bg='#FFEBEE',
+                    fg='#C62828',
+                    anchor=tk.W
+                ).pack(anchor=tk.W)
+                
+                tk.Label(
+                    continuity_content,
+                    text="⚠️ No Continuity features available. Not recommended for macOS",
+                    font=get_font('caption'),
+                    bg='#FFEBEE',
+                    fg='#B71C1C',
+                    anchor=tk.W
+                ).pack(anchor=tk.W)
+                row += 1
     
     def _add_detail_row(self, parent, label, value, row):
         """Add a detail row with label and value"""

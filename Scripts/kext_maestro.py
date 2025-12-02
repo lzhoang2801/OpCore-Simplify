@@ -156,7 +156,7 @@ class KextMaestro:
                             kext_option = self.utils.request_input("Select audio kext for your system: ",
                                                                  gui_type='choice',
                                                                  gui_options=gui_options).strip()
-                            if kext_option == "1" or kext_option == "2":
+                            if kext_option in ['1', '2']:
                                 break
                             else:
                                 print("\033[91mInvalid selection, please try again.\033[0m\n\n")
