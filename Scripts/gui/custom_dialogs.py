@@ -991,7 +991,6 @@ class MacOSVersionDialog(QDialog):
     def calculate_suggested_version(self):
         """Calculate suggested macOS version based on hardware compatibility"""
         from ..datasets import os_data
-        import re
         
         suggested_macos_version = self.native_macos_version[1]
         
@@ -1001,7 +1000,7 @@ class MacOSVersionDialog(QDialog):
                 for device_name, device_props in self.hardware_report[device_type].items():
                     if device_props.get("Compatibility", (None, None)) != (None, None):
                         if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
-                            device_id = device_props.get("Device ID", "" * 8)[5:]
+                            device_id = device_props.get("Device ID", "00000000")[5:]
 
                             if device_props.get("Manufacturer") == "AMD" or device_id.startswith(("59", "87C0")):
                                 suggested_macos_version = "22.99.99"
@@ -1011,7 +1010,7 @@ class MacOSVersionDialog(QDialog):
                         if self.utils.parse_darwin_version(suggested_macos_version) > self.utils.parse_darwin_version(device_props.get("Compatibility")[0]):
                             suggested_macos_version = device_props.get("Compatibility")[0]
         
-        # Avoid beta versions
+        # Avoid beta versions by decrementing to previous major version
         while True:
             if "Beta" in os_data.get_macos_name_by_darwin(suggested_macos_version):
                 suggested_macos_version = "{}{}".format(int(suggested_macos_version[:2]) - 1, suggested_macos_version[2:])
