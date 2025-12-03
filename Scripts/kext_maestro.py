@@ -280,11 +280,6 @@ class KextMaestro:
                     print("")
                     self.utils.request_input("Press Enter to continue...")
                     selected_option = recommended_option
-                elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                    print("\033[91mImportant:\033[0m For macOS Tahoe 26, only itlwm kext is supported")
-                    print("")
-                    self.utils.request_input("Press Enter to continue...")
-                    selected_option = recommended_option
                 else:
                     kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name)).strip() or str(recommended_option)
                     

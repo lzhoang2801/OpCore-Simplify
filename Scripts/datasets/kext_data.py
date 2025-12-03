@@ -169,7 +169,6 @@ kexts = [
         name = "AirportItlwm", 
         description = "Intel Wi-Fi drivers support the native macOS Wi-Fi interface",
         category = "Wi-Fi",
-        max_darwin_version = "24.99.99",
         conflict_group_id = "IntelWiFi",
         github_repo = {
             "owner": "OpenIntelWireless",
@@ -205,7 +204,6 @@ kexts = [
         description = "Enable legacy Apple Wireless adapters",
         category = "Wi-Fi",
         min_darwin_version = "23.0.0",
-        max_darwin_version = "24.99.99",
         requires_kexts = ["AMFIPass", "IOSkywalkFamily"],
         download_info = {
             "id": 817294638, 
@@ -217,7 +215,6 @@ kexts = [
         description = "Enable legacy Apple Wireless adapters",
         category = "Wi-Fi",
         min_darwin_version = "23.0.0",
-        max_darwin_version = "24.99.99",
         requires_kexts = ["AMFIPass", "IO80211FamilyLegacy"],
         download_info = {
             "id": 926584761, 
