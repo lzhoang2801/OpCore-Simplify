@@ -139,7 +139,7 @@ class ConfigurationPage(QWidget):
         current_model = self.controller.smbios_model_text
         default_model = self.controller.ocpe.s.select_smbios_model(
             self.controller.customized_hardware,
-            self.controller.macos_version_text
+            self.controller.macos_version  # Use Darwin version
         )
         is_laptop = "Laptop" == self.controller.customized_hardware.get("Motherboard").get("Platform")
 
@@ -149,7 +149,7 @@ class ConfigurationPage(QWidget):
             mac_devices,
             current_model,
             default_model,
-            self.controller.macos_version_text,
+            self.controller.macos_version,  # Use Darwin version
             is_laptop,
             self.controller.ocpe.u
         )
@@ -162,7 +162,7 @@ class ConfigurationPage(QWidget):
             self.controller.ocpe.s.smbios_specific_options(
                 self.controller.customized_hardware,
                 selected_model,
-                self.controller.macos_version_text,
+                self.controller.macos_version,  # Use Darwin version
                 self.controller.ocpe.ac.patches,
                 self.controller.ocpe.k
             )

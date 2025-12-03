@@ -85,6 +85,7 @@ class OpCoreGUI(FluentWindow):
         # Variables for tracking state
         self.hardware_report_path = "Not selected"
         self.macos_version_text = "Not selected"
+        self.macos_version = None  # Darwin version format (e.g., "22.0.0")
         self.smbios_model_text = "Not selected"
         self.disabled_devices_text = "None"
 
@@ -318,6 +319,7 @@ class OpCoreGUI(FluentWindow):
 
     def apply_macos_version(self, version, defer_kext_selection=False):
         """Apply selected macOS version and configure system"""
+        self.macos_version = version  # Store Darwin version
         self.macos_version_text = os_data.get_macos_name_by_darwin(version)
 
         # Perform hardware customization
@@ -427,18 +429,18 @@ class OpCoreGUI(FluentWindow):
         # Run build in background thread
         def build_thread():
             try:
-                # Gather bootloader and kexts
+                # Gather bootloader and kexts (uses Darwin version)
                 self.update_status("Gathering bootloader and kexts...", 'info')
                 self.ocpe.o.gather_bootloader_kexts(
-                    self.ocpe.k.kexts, self.macos_version_text)
+                    self.ocpe.k.kexts, self.macos_version)
 
-                # Build EFI
+                # Build EFI (uses Darwin version)
                 self.update_status("Building OpenCore EFI...", 'info')
                 self.ocpe.build_opencore_efi(
                     self.customized_hardware,
                     self.disabled_devices,
                     self.smbios_model_text,
-                    self.macos_version_text,
+                    self.macos_version,
                     self.needs_oclp
                 )
 
