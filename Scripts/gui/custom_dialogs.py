@@ -2,6 +2,7 @@
 Custom dialog implementations using qfluentwidgets
 """
 
+from PyQt6.QtWidgets import QDialog
 from qfluentwidgets import Dialog, MessageBox, LineEdit, ComboBox
 
 
@@ -109,5 +110,5 @@ def show_question_dialog(parent, title: str, content: str):
     dialog.yesButton.setText("Yes")
     dialog.cancelButton.setText("No")
     
-    # exec() returns 1 for accept (OK/Yes) and 0 for reject (Cancel/No)
-    return dialog.exec() == 1
+    # exec() returns QDialog.Accepted (1) for accept and QDialog.Rejected (0) for reject
+    return dialog.exec() == QDialog.DialogCode.Accepted

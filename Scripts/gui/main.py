@@ -16,7 +16,7 @@ from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QTimer
 from PyQt6.QtGui import QIcon, QFont
 from qfluentwidgets import (
     FluentWindow, NavigationItemPosition, FluentIcon, 
-    setTheme, Theme, InfoBar, InfoBarPosition, MessageBox
+    setTheme, Theme, InfoBar, InfoBarPosition
 )
 
 from .styles import COLORS, SPACING
