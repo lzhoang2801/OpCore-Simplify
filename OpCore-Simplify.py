@@ -472,48 +472,11 @@ if __name__ == '__main__':
         os.execv(sys.executable, ['python3'] + sys.argv)
 
     o = OCPE()
-    
-    # Check if GUI mode is requested (default is GUI mode)
-    use_gui = True
-    if len(sys.argv) > 1 and sys.argv[1] == '--cli':
-        use_gui = False
-    
-    if use_gui:
-        # Run GUI mode
+    while True:
         try:
-            from PyQt6.QtWidgets import QApplication
-            from Scripts.gui import OpCoreGUI
-            
-            # Create QApplication instance
-            app = QApplication(sys.argv)
-            
-            # Create and show main window
-            window = OpCoreGUI(o)
-            window.show()
-            
-            # Start event loop
-            sys.exit(app.exec())
-            
-        except ImportError as e:
-            print("Error: Could not import GUI module. Falling back to CLI mode.")
-            print(f"Details: {e}")
-            print("Make sure PyQt6 and PyQt6-Fluent-Widgets are installed:")
-            print("  pip install PyQt6 PyQt6-Fluent-Widgets")
-            use_gui = False
+            o.main()
         except Exception as e:
-            print(f"Error starting GUI: {e}")
-            print("Falling back to CLI mode...")
-            import traceback
-            traceback.print_exc()
-            use_gui = False
-    
-    if not use_gui:
-        # Run CLI mode
-        while True:
-            try:
-                o.main()
-            except Exception as e:
-                o.u.head("An Error Occurred")
-                print("")
-                print(traceback.format_exc())
-                o.u.request_input()
+            o.u.head("An Error Occurred")
+            print("")
+            print(traceback.format_exc())
+            o.u.request_input()
