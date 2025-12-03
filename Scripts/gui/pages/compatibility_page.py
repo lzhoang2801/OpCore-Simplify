@@ -68,6 +68,21 @@ def add_group_with_indent(card, icon, title, content, widget=None, indent_level=
     return group
 
 
+def get_compatibility_icon(compat_tuple):
+    """
+    Get the appropriate FluentIcon based on compatibility status.
+    
+    Args:
+        compat_tuple: Compatibility tuple (max_version, min_version) or (None, None)
+    
+    Returns:
+        FluentIcon: ACCEPT for supported, CANCEL for unsupported
+    """
+    if not compat_tuple or compat_tuple == (None, None):
+        return FluentIcon.CANCEL  # Unsupported
+    return FluentIcon.ACCEPT  # Supported
+
+
 class CompatibilityPage(QWidget):
     """Step 2: View hardware compatibility"""
     
@@ -89,14 +104,47 @@ class CompatibilityPage(QWidget):
         step_label.setStyleSheet("color: #0078D4; font-weight: bold;")
         main_layout.addWidget(step_label)
         
-        # Title
+        # Header section with title on left and macOS version card on right
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(SPACING['large'])
+        
+        # Left side: Title and subtitle
+        title_container = QWidget()
+        title_layout = QVBoxLayout(title_container)
+        title_layout.setContentsMargins(0, 0, 0, 0)
+        title_layout.setSpacing(SPACING['tiny'])
+        
         title_label = SubtitleLabel("Hardware Compatibility")
-        main_layout.addWidget(title_label)
+        title_layout.addWidget(title_label)
         
         subtitle_label = BodyLabel("Review hardware compatibility with macOS")
         subtitle_label.setStyleSheet("color: #605E5C;")
-        main_layout.addWidget(subtitle_label)
+        title_layout.addWidget(subtitle_label)
         
+        header_layout.addWidget(title_container)
+        header_layout.addStretch()
+        
+        # Right side: macOS version support card (will be populated in update_display)
+        self.macos_version_card = CardWidget()
+        self.macos_version_card.setFixedWidth(320)
+        self.macos_version_card.setVisible(False)  # Hidden until data is loaded
+        
+        version_card_layout = QVBoxLayout(self.macos_version_card)
+        version_card_layout.setContentsMargins(SPACING['medium'], SPACING['medium'], 
+                                               SPACING['medium'], SPACING['medium'])
+        version_card_layout.setSpacing(SPACING['small'])
+        
+        self.version_card_title = StrongBodyLabel("macOS Version Support")
+        self.version_card_title.setStyleSheet(f"color: {COLORS['primary']}; font-size: 14px;")
+        version_card_layout.addWidget(self.version_card_title)
+        
+        self.version_card_content = QVBoxLayout()
+        self.version_card_content.setSpacing(SPACING['small'])
+        version_card_layout.addLayout(self.version_card_content)
+        
+        header_layout.addWidget(self.macos_version_card)
+        
+        main_layout.addLayout(header_layout)
         main_layout.addSpacing(SPACING['medium'])
         
         # Scrollable area for cards
@@ -120,6 +168,80 @@ class CompatibilityPage(QWidget):
         
         scroll_area.setWidget(container)
         main_layout.addWidget(scroll_area)
+    
+    def update_macos_version_card(self):
+        """Update the macOS version support card in the header"""
+        # Clear existing content
+        while self.version_card_content.count() > 0:
+            item = self.version_card_content.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        if not self.controller.native_macos_version:
+            self.macos_version_card.setVisible(False)
+            return
+        
+        # Show the card
+        self.macos_version_card.setVisible(True)
+        
+        # native_macos_version tuple format: (min_version, max_version)
+        # Index [0] = earliest supported version
+        # Index [-1] = latest supported version
+        min_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[0])
+        max_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[-1])
+        
+        # Native support row
+        native_row = QHBoxLayout()
+        native_row.setSpacing(SPACING['small'])
+        
+        native_icon = IconWidget(FluentIcon.ACCEPT)
+        native_icon.setFixedSize(20, 20)
+        native_row.addWidget(native_icon)
+        
+        native_label = BodyLabel("Native Support")
+        native_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-weight: 500;")
+        native_row.addWidget(native_label)
+        native_row.addStretch()
+        
+        native_row_widget = QWidget()
+        native_row_widget.setLayout(native_row)
+        self.version_card_content.addWidget(native_row_widget)
+        
+        native_versions = StrongBodyLabel(f"{min_ver_name} to {max_ver_name}")
+        native_versions.setStyleSheet(f"color: {COLORS['success']}; font-size: 13px; padding-left: 28px;")
+        self.version_card_content.addWidget(native_versions)
+        
+        # Add OCLP info if available
+        if self.controller.ocl_patched_macos_version:
+            self.version_card_content.addSpacing(SPACING['small'])
+            
+            # ocl_patched_macos_version tuple format: (max_version, min_version)
+            # Index [0] = latest supported version
+            # Index [-1] = earliest supported version
+            oclp_max_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
+            oclp_min_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
+            
+            # OCLP support row
+            oclp_row = QHBoxLayout()
+            oclp_row.setSpacing(SPACING['small'])
+            
+            oclp_icon = IconWidget(FluentIcon.IOT)
+            oclp_icon.setFixedSize(20, 20)
+            oclp_row.addWidget(oclp_icon)
+            
+            oclp_label = BodyLabel("OCLP Extended")
+            oclp_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-weight: 500;")
+            oclp_row.addWidget(oclp_label)
+            oclp_row.addStretch()
+            
+            oclp_row_widget = QWidget()
+            oclp_row_widget.setLayout(oclp_row)
+            self.version_card_content.addWidget(oclp_row_widget)
+            
+            # Display as earliest to latest for consistency
+            oclp_versions = StrongBodyLabel(f"{oclp_min_name} to {oclp_max_name}")
+            oclp_versions.setStyleSheet(f"color: {COLORS['primary']}; font-size: 13px; padding-left: 28px;")
+            self.version_card_content.addWidget(oclp_versions)
     
     def format_compatibility(self, compat_tuple):
         """
@@ -184,7 +306,7 @@ class CompatibilityPage(QWidget):
                 compat_text, compat_color = self.format_compatibility(compat)
                 add_group_with_indent(
                     cpu_card,
-                    FluentIcon.ACCEPT,
+                    get_compatibility_icon(compat),
                     "macOS Compatibility",
                     compat_text,
                     create_info_widget("", compat_color),
@@ -229,7 +351,7 @@ class CompatibilityPage(QWidget):
                 compat_text, compat_color = self.format_compatibility(compat)
                 add_group_with_indent(
                     gpu_card,
-                    FluentIcon.ACCEPT,
+                    get_compatibility_icon(compat),
                     "macOS Compatibility",
                     compat_text,
                     create_info_widget("", compat_color),
@@ -287,7 +409,7 @@ class CompatibilityPage(QWidget):
                 compat_text, compat_color = self.format_compatibility(compat)
                 add_group_with_indent(
                     sound_card,
-                    FluentIcon.ACCEPT,
+                    get_compatibility_icon(compat),
                     "macOS Compatibility",
                     compat_text,
                     create_info_widget("", compat_color),
@@ -326,7 +448,7 @@ class CompatibilityPage(QWidget):
                 compat_text, compat_color = self.format_compatibility(compat)
                 add_group_with_indent(
                     network_card,
-                    FluentIcon.ACCEPT,
+                    get_compatibility_icon(compat),
                     "macOS Compatibility",
                     compat_text,
                     create_info_widget("", compat_color),
@@ -393,7 +515,7 @@ class CompatibilityPage(QWidget):
                 compat_text, compat_color = self.format_compatibility(compat)
                 add_group_with_indent(
                     storage_card,
-                    FluentIcon.ACCEPT,
+                    get_compatibility_icon(compat),
                     "macOS Compatibility",
                     compat_text,
                     create_info_widget("", compat_color),
@@ -421,7 +543,7 @@ class CompatibilityPage(QWidget):
                 compat_text, compat_color = self.format_compatibility(compat)
                 add_group_with_indent(
                     bluetooth_card,
-                    FluentIcon.ACCEPT,
+                    get_compatibility_icon(compat),
                     "macOS Compatibility",
                     compat_text,
                     create_info_widget("", compat_color),
@@ -435,57 +557,31 @@ class CompatibilityPage(QWidget):
             bio_card = GroupHeaderCardWidget("Biometric", self)
             
             for bio_device, bio_props in report['Biometric'].items():
-                # Biometric Device group (main item - no indent, unsupported warning included)
+                # Biometric Device group (main item - no indent)
                 add_group_with_indent(
                     bio_card,
                     FluentIcon.FINGERPRINT,
                     bio_device,
                     "Unsupported",
-                    create_info_widget("⚠️ Biometric authentication requires Apple T2 Chip - Not available for Hackintosh systems", COLORS['warning']),
                     indent_level=0
+                )
+                
+                # Compatibility group (child item - indent level 1)
+                compat = bio_props.get('Compatibility', (None, None))
+                compat_text, compat_color = self.format_compatibility(compat)
+                add_group_with_indent(
+                    bio_card,
+                    get_compatibility_icon(compat),
+                    "macOS Compatibility",
+                    compat_text,
+                    create_info_widget("⚠️ Biometric authentication requires Apple T2 Chip - Not available for Hackintosh systems", COLORS['warning']),
+                    indent_level=1
                 )
             
             self.cards_layout.addWidget(bio_card)
         
-        # macOS Version Support Summary Card
-        if self.controller.native_macos_version:
-            version_card = GroupHeaderCardWidget("macOS Version Support", self)
-            
-            # native_macos_version tuple format: (min_version, max_version)
-            # This is the ONLY tuple with this ordering - all device compatibility tuples are (max, min)
-            # Index [0] = earliest supported version
-            # Index [-1] = latest supported version
-            min_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[0])
-            max_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[-1])
-            
-            add_group_with_indent(
-                version_card,
-                FluentIcon.HISTORY,
-                "Native Support Range",
-                f"{min_ver_name} to {max_ver_name}",
-                create_info_widget("Fully supported macOS versions for your hardware", COLORS['success']),
-                indent_level=0
-            )
-            
-            # Add OCLP info if available
-            if self.controller.ocl_patched_macos_version:
-                # ocl_patched_macos_version tuple format: (max_version, min_version)
-                # Same as device compatibility tuples
-                # Index [0] = latest supported version
-                # Index [-1] = earliest supported version
-                oclp_max_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
-                oclp_min_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
-                # Display as earliest to latest for consistency
-                add_group_with_indent(
-                    version_card,
-                    FluentIcon.IOT,
-                    "OCLP Extended Support",
-                    f"{oclp_min_name} to {oclp_max_name}",
-                    create_info_widget("Additional macOS versions supported with OpenCore Legacy Patcher", COLORS['primary']),
-                    indent_level=0
-                )
-            
-            self.cards_layout.addWidget(version_card)
+        # Update the macOS version card in the header
+        self.update_macos_version_card()
         
         # Add stretch at the end
         self.cards_layout.addStretch()
