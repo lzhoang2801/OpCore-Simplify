@@ -231,17 +231,34 @@ class OpCoreGUI(FluentWindow):
             return ""
         
         elif prompt_type == 'choice':
-            # Choice dialog with options
+            # Choice dialog with structured options
             if options:
-                item, ok = show_choice_dialog(self, "Select Option", prompt_text, options)
+                # Extract title, message, and choices from options dict
+                title = options.get('title', 'Select Option')
+                message = options.get('message', prompt_text)
+                choices = options.get('choices', [])
+                default = options.get('default', None)
+                warning = options.get('warning', None)
+                note = options.get('note', None)
+                
+                value, ok = show_choice_dialog(self, title, message, choices, default, warning, note)
                 if ok:
-                    return item
+                    return value
             return None
         
         elif prompt_type == 'confirm':
-            # Yes/No confirmation dialog
-            result = show_question_dialog(self, "Confirmation", prompt_text)
-            return result
+            # Yes/No confirmation dialog with structured options
+            if options:
+                title = options.get('title', 'Confirmation')
+                message = options.get('message', prompt_text)
+                default = options.get('default', 'no')
+                warning = options.get('warning', None)
+                
+                result = show_question_dialog(self, title, message, default, warning)
+                return "yes" if result else "no"
+            else:
+                result = show_question_dialog(self, "Confirmation", prompt_text)
+                return "yes" if result else "no"
         
         return None
     
