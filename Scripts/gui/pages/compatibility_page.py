@@ -14,9 +14,12 @@ from ..styles import COLORS, SPACING
 # Import os_data and pci_data for version names and device checks
 import sys
 import os
-scripts_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if scripts_path not in sys.path:
-    sys.path.insert(0, scripts_path)
+from pathlib import Path
+
+# Add Scripts directory to path for dataset imports
+scripts_path = Path(__file__).parent.parent.parent
+if str(scripts_path) not in sys.path:
+    sys.path.insert(0, str(scripts_path))
 from datasets import os_data, pci_data
 
 
@@ -336,8 +339,10 @@ class CompatibilityPage(QWidget):
         if self.controller.native_macos_version:
             version_card = HardwareCard("macOS Version Support", FluentIcon.HISTORY)
             
-            # native_macos_version is a tuple: (min_version, max_version)
-            # Index [0] is the minimum (earliest) version, [-1] is the maximum (latest) version
+            # native_macos_version tuple format: (min_version, max_version)
+            # This is the ONLY tuple with this ordering - all device compatibility tuples are (max, min)
+            # Index [0] = earliest supported version
+            # Index [-1] = latest supported version
             min_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[0])
             max_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[-1])
             
@@ -345,10 +350,13 @@ class CompatibilityPage(QWidget):
             
             # Add OCLP info if available
             if self.controller.ocl_patched_macos_version:
-                # ocl_patched_macos_version is a tuple: (max_version, min_version) - note reversed from native
-                # Index [0] is the maximum (latest) version, [-1] is the minimum (earliest) version
+                # ocl_patched_macos_version tuple format: (max_version, min_version)
+                # Same as device compatibility tuples
+                # Index [0] = latest supported version
+                # Index [-1] = earliest supported version
                 oclp_max_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
                 oclp_min_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
+                # Display as earliest to latest for consistency
                 version_card.add_item("OCLP Extended:", f"{oclp_min_name} to {oclp_max_name}", color="#0078D4")
                 version_card.add_detail("With OpenCore Legacy Patcher support", indent=1, color="#605E5C")
             
