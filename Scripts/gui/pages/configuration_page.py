@@ -7,8 +7,7 @@ from PyQt6.QtCore import Qt
 from qfluentwidgets import (
     PushButton, SubtitleLabel, BodyLabel, CardWidget,
     StrongBodyLabel, ComboBox, PrimaryPushButton, FluentIcon,
-    IconWidget, GroupHeaderCardWidget, ToolTip, InfoBadge,
-    InfoBadgePosition, ScrollArea
+    GroupHeaderCardWidget, ScrollArea
 )
 
 from ..styles import COLORS, SPACING
@@ -75,7 +74,7 @@ class ConfigurationPage(QWidget):
         macos_widget_layout.addStretch()
         
         config_card.addGroup(
-            FluentIcon.GLOBE,
+            FluentIcon.SYSTEM,
             "macOS Version",
             "Target operating system version",
             macos_widget
