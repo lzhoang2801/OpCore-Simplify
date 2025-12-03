@@ -19,32 +19,22 @@
   </p>
 </div>
 
-> [!CAUTION]
-> **DO NOT TRUST ANY HACKINTOSH INFORMATION FROM AI/LLM SOURCES**
+> [!NOTE]
+> **OpenCore Legacy Patcher 3.0.0 – Now Supports macOS Tahoe 26!**
 > 
-> They often provide incorrect information about Hackintosh. Always rely on official sources like the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/) and the Hackintosh community for accurate information.
+> The long awaited version 3.0.0 of OpenCore Legacy Patcher is here, bringing **initial support for macOS Tahoe 26** to the community!
+> 
+> 🚨 **Please Note:**  
+> - Only OpenCore-Patcher 3.0.0 **from the [lzhoang2801/OpenCore-Legacy-Patcher](https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0)** repository provides support for macOS Tahoe 26 with early patches.
+> - Official Dortania releases or older patches **will NOT work** with macOS Tahoe 26.  
 
 > [!WARNING]
-> **OUTDATED SECTIONS IN DORTANIA GUIDE**
-> 
-> While the Dortania Guide is a valuable resource, some sections may be outdated. Always:
-> - Verify information with the Hackintosh community
-> - Test configurations yourself
-> - Prefer reading documentation directly from the GitHub repositories of bootloaders and kexts you plan to use
-
-> [!IMPORTANT]
-> If the installation process is successful using OpCore Simplify, please confirm it at [Successful Hackintosh Setup with OpCore Simplify](https://github.com/lzhoang2801/OpCore-Simplify/discussions/23). 
-> This will greatly assist others in the community.
->
-> OpCore Simplify is the ONLY tool that builds OpenCore EFI based on your complete hardware configuration, not just predefined options. This fundamental difference sets us apart from other tools in the Hackintosh community.
-
-> [!NOTE]
 > While OpCore Simplify significantly reduces setup time, the Hackintosh journey still requires:
 > - Understanding basic concepts from the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/)
 > - Testing and troubleshooting during the installation process
 > - Patience and persistence in resolving any issues that arise
 >
-> Our tool doesn't eliminate these steps, but it ensures you start with a solid foundation.
+> Our tool does not guarantee a successful installation in the first attempt, but it should help you get started.
 
 ## ✨ **Features**
 
