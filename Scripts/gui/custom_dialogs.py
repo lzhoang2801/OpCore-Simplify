@@ -12,35 +12,35 @@ from .styles import COLORS
 
 class InputMessageBox(MessageBoxBase):
     """Input dialog using qfluentwidgets MessageBoxBase pattern"""
-    
+
     def __init__(self, title: str, content: str, placeholder: str = "", parent=None):
         super().__init__(parent)
         self.title = title
         self.content = content
         self.placeholder = placeholder
-        
+
         self.titleLabel = QLabel(title, self.widget)
         self.contentLabel = QLabel(content, self.widget)
         self.inputLineEdit = LineEdit(self.widget)
-        
+
         if placeholder:
             self.inputLineEdit.setPlaceholderText(placeholder)
-        
+
         # Setup UI
         self.titleLabel.setObjectName("titleLabel")
         self.contentLabel.setObjectName("contentLabel")
         self.contentLabel.setWordWrap(True)
-        
+
         self.viewLayout.addWidget(self.titleLabel)
         self.viewLayout.addWidget(self.contentLabel)
         self.viewLayout.addWidget(self.inputLineEdit)
-        
+
         # Set fixed width for the dialog
         self.widget.setMinimumWidth(400)
-        
+
         # Focus on input field
         self.inputLineEdit.setFocus()
-        
+
     def getText(self):
         """Get the entered text"""
         return self.inputLineEdit.text()
@@ -48,13 +48,13 @@ class InputMessageBox(MessageBoxBase):
 
 class ChoiceMessageBox(MessageBoxBase):
     """Choice/dropdown dialog using qfluentwidgets MessageBoxBase pattern"""
-    
-    def __init__(self, title: str, content: str, choices: list, 
-                 default_value: str = None, warning: str = None, 
+
+    def __init__(self, title: str, content: str, choices: list,
+                 default_value: str = None, warning: str = None,
                  note: str = None, parent=None):
         """
         Initialize choice dialog
-        
+
         Args:
             title: Dialog title
             content: Dialog message
@@ -67,17 +67,17 @@ class ChoiceMessageBox(MessageBoxBase):
         super().__init__(parent)
         self.choices = choices
         self.choice_values = []
-        
+
         # Create UI elements
         self.titleLabel = QLabel(title, self.widget)
         self.contentLabel = QLabel(content, self.widget)
         self.comboBox = ComboBox(self.widget)
-        
+
         # Setup title and content
         self.titleLabel.setObjectName("titleLabel")
         self.contentLabel.setObjectName("contentLabel")
         self.contentLabel.setWordWrap(True)
-        
+
         # Populate combo box and build descriptions text
         descriptions_text = []
         if choices:
@@ -86,11 +86,11 @@ class ChoiceMessageBox(MessageBoxBase):
                 # Get the display text (label)
                 label = choice.get('label', choice.get('value', str(idx)))
                 self.comboBox.addItem(label)
-                
+
                 # Store the value for later retrieval
                 value = choice.get('value', str(idx))
                 self.choice_values.append(value)
-                
+
                 # Build description text if available
                 description = choice.get('description')
                 if description:
@@ -100,45 +100,49 @@ class ChoiceMessageBox(MessageBoxBase):
                     else:
                         # First description - no leading newline
                         descriptions_text.append(f"{label}:\n{description}")
-                
+
                 # Set default if matches
                 if default_value and value == default_value:
                     default_index = idx
-            
+
             self.comboBox.setCurrentIndex(default_index)
-        
+
         # Add widgets to layout
         self.viewLayout.addWidget(self.titleLabel)
         self.viewLayout.addWidget(self.contentLabel)
         self.viewLayout.addWidget(self.comboBox)
-        
+
         # Add descriptions if available
         if descriptions_text:
-            self.descriptionsLabel = QLabel('\n'.join(descriptions_text), self.widget)
+            self.descriptionsLabel = QLabel(
+                '\n'.join(descriptions_text), self.widget)
             self.descriptionsLabel.setWordWrap(True)
-            self.descriptionsLabel.setStyleSheet(f"color: {COLORS['text_secondary']}; margin-top: 10px; font-size: 12px;")
+            self.descriptionsLabel.setStyleSheet(
+                f"color: {COLORS['text_secondary']}; margin-top: 10px; font-size: 12px;")
             self.viewLayout.addWidget(self.descriptionsLabel)
-        
+
         # Add warning or note if provided
         if warning:
             self.warningLabel = QLabel(f"⚠️ {warning}", self.widget)
             self.warningLabel.setWordWrap(True)
             # Using theme-aware warning color
-            self.warningLabel.setStyleSheet(f"color: {COLORS['warning']}; margin-top: 10px; font-weight: 500;")
+            self.warningLabel.setStyleSheet(
+                f"color: {COLORS['warning']}; margin-top: 10px; font-weight: 500;")
             self.viewLayout.addWidget(self.warningLabel)
         elif note:
             self.noteLabel = QLabel(f"ℹ️ {note}", self.widget)
             self.noteLabel.setWordWrap(True)
             # Using theme-aware info color
-            self.noteLabel.setStyleSheet(f"color: {COLORS['info']}; margin-top: 10px; font-weight: 500;")
+            self.noteLabel.setStyleSheet(
+                f"color: {COLORS['info']}; margin-top: 10px; font-weight: 500;")
             self.viewLayout.addWidget(self.noteLabel)
-        
+
         # Set minimum width for the dialog
         self.widget.setMinimumWidth(500)
-        
+
         # Focus on combo box
         self.comboBox.setFocus()
-        
+
     def getSelectedValue(self):
         """Get the value of the selected item"""
         selected_index = self.comboBox.currentIndex()
@@ -149,35 +153,35 @@ class ChoiceMessageBox(MessageBoxBase):
 
 class InfoMessageBox(MessageBoxBase):
     """Info dialog using qfluentwidgets MessageBoxBase pattern with better support for long content"""
-    
+
     def __init__(self, title: str, content: str, parent=None):
         """
         Initialize info dialog
-        
+
         Args:
             title: Dialog title
             content: Dialog message (can be multi-line)
             parent: Parent widget
         """
         super().__init__(parent)
-        
+
         # Create UI elements
         self.titleLabel = QLabel(title, self.widget)
         self.contentLabel = QLabel(content, self.widget)
-        
+
         # Setup title and content
         self.titleLabel.setObjectName("titleLabel")
         self.contentLabel.setObjectName("contentLabel")
         self.contentLabel.setWordWrap(True)
         self.contentLabel.setTextFormat(Qt.TextFormat.PlainText)
-        
+
         # Add widgets to layout
         self.viewLayout.addWidget(self.titleLabel)
         self.viewLayout.addWidget(self.contentLabel)
-        
+
         # Set minimum width for the dialog to handle longer content
         self.widget.setMinimumWidth(600)
-        
+
         # Hide cancel button for info dialogs
         self.cancelButton.hide()
         self.yesButton.setText("OK")
@@ -186,13 +190,13 @@ class InfoMessageBox(MessageBoxBase):
 def show_input_dialog(parent, title: str, content: str, placeholder: str = ""):
     """
     Show an input dialog and return the entered text
-    
+
     Args:
         parent: Parent widget
         title: Dialog title
         content: Dialog content/prompt
         placeholder: Placeholder text for input field
-        
+
     Returns:
         tuple: (text, ok) where text is the entered text and ok is True if OK was clicked
     """
@@ -202,11 +206,11 @@ def show_input_dialog(parent, title: str, content: str, placeholder: str = ""):
     return "", False
 
 
-def show_choice_dialog(parent, title: str, content: str, choices: list, 
+def show_choice_dialog(parent, title: str, content: str, choices: list,
                        default_value: str = None, warning: str = None, note: str = None):
     """
     Show a choice dialog and return the selected value
-    
+
     Args:
         parent: Parent widget
         title: Dialog title
@@ -215,14 +219,15 @@ def show_choice_dialog(parent, title: str, content: str, choices: list,
         default_value: Default value to select
         warning: Warning message to display
         note: Note message to display
-        
+
     Returns:
         tuple: (value, ok) where value is the selected value and ok is True if OK was clicked
     """
     if not choices:
         return None, False
-        
-    dialog = ChoiceMessageBox(title, content, choices, default_value, warning, note, parent)
+
+    dialog = ChoiceMessageBox(title, content, choices,
+                              default_value, warning, note, parent)
     if dialog.exec():
         return dialog.getSelectedValue(), True
     return None, False
@@ -231,25 +236,25 @@ def show_choice_dialog(parent, title: str, content: str, choices: list,
 def show_question_dialog(parent, title: str, content: str, default: str = 'no', warning: str = None):
     """
     Show a yes/no question dialog
-    
+
     Args:
         parent: Parent widget
         title: Dialog title
         content: Dialog content/question
         default: Default option ('yes' or 'no')
         warning: Optional warning message to append
-        
+
     Returns:
         bool: True if Yes was clicked, False otherwise
     """
     # Add warning to content if provided
     if warning:
         content = f"{content}\n\n⚠️ {warning}"
-    
+
     dialog = MessageBox(title, content, parent)
     dialog.yesButton.setText("Yes")
     dialog.cancelButton.setText("No")
-    
+
     # exec() returns QDialog.DialogCode.Accepted if Yes is clicked, Rejected otherwise
     return dialog.exec() == QDialog.DialogCode.Accepted
 
@@ -257,17 +262,15 @@ def show_question_dialog(parent, title: str, content: str, default: str = 'no', 
 def show_info_dialog(parent, title: str, content: str):
     """
     Show an informational dialog with OK button
-    
+
     Args:
         parent: Parent widget
         title: Dialog title
         content: Dialog content/message
-        
+
     Returns:
         str: Empty string for consistency with request_input
     """
     dialog = InfoMessageBox(title, content, parent)
     dialog.exec()
     return ""
-
-

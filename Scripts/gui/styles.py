@@ -11,7 +11,7 @@ COLORS = {
     'primary_dark': '#005A9E',
     'primary_light': '#4CC2FF',
     'primary_hover': '#106EBE',
-    
+
     # Background colors
     'bg_main': '#FFFFFF',
     'bg_secondary': '#F3F3F3',
@@ -19,20 +19,20 @@ COLORS = {
     'bg_hover': '#E8E8E8',
     'bg_selected': '#0078D4',
     'bg_card': '#FAFAFA',
-    
+
     # Text colors
     'text_primary': '#000000',
     'text_secondary': '#605E5C',
     'text_tertiary': '#8A8886',
     'text_sidebar': '#201F1E',
     'text_sidebar_selected': '#FFFFFF',
-    
+
     # Status colors
     'success': '#107C10',
     'warning': '#FF8C00',
     'error': '#E81123',
     'info': '#0078D4',
-    
+
     # Border colors
     'border': '#D1D1D1',
     'border_light': '#EDEBE9',

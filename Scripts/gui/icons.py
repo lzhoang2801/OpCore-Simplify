@@ -6,9 +6,11 @@ qfluentwidgets provides FluentIcon enum with built-in icons
 from qfluentwidgets import FluentIcon
 
 # Icon mapping for backward compatibility
+
+
 class Icons:
     """Icon provider using qfluentwidgets FluentIcon"""
-    
+
     @staticmethod
     def get_icon(name):
         """Get FluentIcon by name"""
