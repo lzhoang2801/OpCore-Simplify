@@ -94,7 +94,12 @@ class ChoiceMessageBox(MessageBoxBase):
                 # Build description text if available
                 description = choice.get('description')
                 if description:
-                    descriptions_text.append(f"\n{label}:\n{description}")
+                    if descriptions_text:
+                        # Add separator between descriptions
+                        descriptions_text.append(f"\n{label}:\n{description}")
+                    else:
+                        # First description - no leading newline
+                        descriptions_text.append(f"{label}:\n{description}")
                 
                 # Set default if matches
                 if default_value and value == default_value:

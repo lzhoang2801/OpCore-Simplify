@@ -79,10 +79,7 @@ class CompatibilityPage(QWidget):
             if isinstance(cpu_info, dict):
                 report_text.append(f"Name: {cpu_info.get('Processor Name', 'Unknown')}")
                 compat = cpu_info.get('Compatibility', ('Unknown', 'Unknown'))
-                if isinstance(compat, tuple) and len(compat) == 2:
-                    report_text.append(f"Compatibility: {compat[0]} - {compat[1]}")
-                else:
-                    report_text.append(f"Compatibility: Unknown")
+                report_text.append(f"Compatibility: {compat[0]} - {compat[1]}" if len(compat) == 2 else "Compatibility: Unknown")
         
         # GPU Compatibility
         if 'GPU' in self.controller.hardware_report:
