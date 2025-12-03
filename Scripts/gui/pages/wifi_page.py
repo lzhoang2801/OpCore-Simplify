@@ -17,6 +17,7 @@ class WiFiPage(QWidget):
     
     def __init__(self, parent):
         super().__init__(parent)
+        self.setObjectName("wifiPage")
         self.controller = parent
         self.setup_ui()
     

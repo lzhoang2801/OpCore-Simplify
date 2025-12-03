@@ -17,6 +17,7 @@ class BuildPage(QWidget):
     
     def __init__(self, parent):
         super().__init__(parent)
+        self.setObjectName("buildPage")
         self.controller = parent
         self.setup_ui()
     

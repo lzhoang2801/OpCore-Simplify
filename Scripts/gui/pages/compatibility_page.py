@@ -17,6 +17,7 @@ class CompatibilityPage(QWidget):
     
     def __init__(self, parent):
         super().__init__(parent)
+        self.setObjectName("compatibilityPage")
         self.controller = parent
         self.setup_ui()
     

@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QFileDialog, QMessageBox, QTextEdit
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QTimer
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QFont
 from qfluentwidgets import (
     FluentWindow, NavigationItemPosition, FluentIcon, 
     setTheme, Theme, InfoBar, InfoBarPosition
@@ -62,6 +62,20 @@ class OpCoreGUI(FluentWindow):
         self.setWindowTitle("OpCore Simplify")
         self.resize(1200, 800)
         self.setMinimumSize(1000, 700)
+        
+        # Set cross-platform font with fallbacks
+        font = QFont()
+        # Use platform-appropriate fonts with fallbacks
+        import platform
+        if platform.system() == "Windows":
+            font.setFamily("Segoe UI")
+        elif platform.system() == "Darwin":  # macOS
+            font.setFamily("SF Pro Display")
+        else:  # Linux and others
+            font.setFamily("Ubuntu")
+        # Set fallback fonts
+        font.setStyleHint(QFont.StyleHint.SansSerif)
+        self.setFont(font)
         
         # Use light theme by default
         setTheme(Theme.LIGHT)
