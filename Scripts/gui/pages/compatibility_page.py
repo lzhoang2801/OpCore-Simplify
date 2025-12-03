@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayo
 from PyQt6.QtCore import Qt
 from qfluentwidgets import (
     PushButton, SubtitleLabel, BodyLabel, CardWidget, TextEdit,
-    StrongBodyLabel, ScrollArea, FluentIcon, IconWidget
+    StrongBodyLabel, ScrollArea, FluentIcon, IconWidget, GroupHeaderCardWidget
 )
 
 from ..styles import COLORS, SPACING
@@ -23,76 +23,13 @@ if str(scripts_path) not in sys.path:
 from datasets import os_data, pci_data
 
 
-class HardwareCard(CardWidget):
-    """Card widget for displaying hardware component information"""
-    
-    def __init__(self, title, icon, parent=None):
-        super().__init__(parent)
-        self.setObjectName("hardwareCard")
-        
-        # Main layout
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(SPACING['large'], SPACING['large'], 
-                                 SPACING['large'], SPACING['large'])
-        layout.setSpacing(SPACING['medium'])
-        
-        # Header with icon and title
-        header_layout = QHBoxLayout()
-        header_layout.setSpacing(SPACING['small'])
-        
-        # Icon
-        icon_widget = IconWidget(icon, self)
-        icon_widget.setFixedSize(24, 24)
-        header_layout.addWidget(icon_widget)
-        
-        # Title
-        title_label = StrongBodyLabel(title)
-        title_label.setStyleSheet("font-size: 14px; font-weight: 600;")
-        header_layout.addWidget(title_label)
-        header_layout.addStretch()
-        
-        layout.addLayout(header_layout)
-        
-        # Content area
-        self.content_layout = QVBoxLayout()
-        self.content_layout.setSpacing(SPACING['small'])
-        layout.addLayout(self.content_layout)
-        
-    def add_item(self, name, value, indent=0, color=None):
-        """Add an information item to the card"""
-        item_layout = QHBoxLayout()
-        item_layout.setContentsMargins(indent * 20, 0, 0, 0)
-        
-        # Name label
-        name_label = BodyLabel(name)
-        name_label.setStyleSheet("color: #323130; font-weight: 500;")
-        item_layout.addWidget(name_label)
-        
-        item_layout.addStretch()
-        
-        # Value label
-        value_label = BodyLabel(str(value))
-        if color:
-            value_label.setStyleSheet(f"color: {color}; font-weight: 500;")
-        else:
-            value_label.setStyleSheet("color: #605E5C;")
-        item_layout.addWidget(value_label)
-        
-        self.content_layout.addLayout(item_layout)
-    
-    def add_detail(self, text, indent=1, color=None):
-        """Add a detail text line"""
-        label = BodyLabel(text)
-        label.setWordWrap(True)
-        if color:
-            label.setStyleSheet(f"color: {color}; font-size: 12px; margin-left: {indent * 20}px;")
-        else:
-            label.setStyleSheet(f"color: #605E5C; font-size: 12px; margin-left: {indent * 20}px;")
-        self.content_layout.addWidget(label)
-    
-    def add_spacing(self):
-        """Add vertical spacing"""
-        self.content_layout.addSpacing(SPACING['small'])
+def create_info_widget(text, color=None):
+    """Create a simple label widget for displaying information"""
+    label = BodyLabel(text)
+    label.setWordWrap(True)
+    if color:
+        label.setStyleSheet(f"color: {color};")
+    return label
 
 
 class CompatibilityPage(QWidget):
@@ -173,7 +110,7 @@ class CompatibilityPage(QWidget):
         return "Unknown", "#605E5C"  # Gray
     
     def update_display(self):
-        """Update compatibility display with rich UI"""
+        """Update compatibility display with GroupHeaderCardWidget for better organization"""
         # Clear existing cards
         while self.cards_layout.count() > 0:
             item = self.cards_layout.takeAt(0)
@@ -192,44 +129,80 @@ class CompatibilityPage(QWidget):
         
         # CPU Card
         if 'CPU' in report:
-            cpu_card = HardwareCard("CPU", FluentIcon.DEVELOPER_TOOLS)
+            cpu_card = GroupHeaderCardWidget("CPU", self)
             cpu_info = report['CPU']
             
             if isinstance(cpu_info, dict):
-                cpu_card.add_item("Name:", cpu_info.get('Processor Name', 'Unknown'), indent=0)
+                # Processor Name group
+                name = cpu_info.get('Processor Name', 'Unknown')
+                cpu_card.addGroup(
+                    FluentIcon.TAG,
+                    "Processor",
+                    name,
+                    QWidget()
+                )
                 
+                # Compatibility group
                 compat = cpu_info.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                cpu_card.add_item("Compatibility:", compat_text, color=compat_color)
+                cpu_card.addGroup(
+                    FluentIcon.ACCEPT,
+                    "macOS Compatibility",
+                    compat_text,
+                    create_info_widget("", compat_color)
+                )
                 
-                # Additional CPU details
+                # Additional details group if available
+                details = []
                 if cpu_info.get('Codename'):
-                    cpu_card.add_detail(f"Codename: {cpu_info.get('Codename')}", indent=1)
+                    details.append(f"Codename: {cpu_info.get('Codename')}")
                 if cpu_info.get('Core Count'):
-                    cpu_card.add_detail(f"Cores: {cpu_info.get('Core Count')}", indent=1)
+                    details.append(f"Cores: {cpu_info.get('Core Count')}")
+                
+                if details:
+                    cpu_card.addGroup(
+                        FluentIcon.INFO,
+                        "Details",
+                        " • ".join(details),
+                        QWidget()
+                    )
             
             self.cards_layout.addWidget(cpu_card)
         
         # GPU Card
         if 'GPU' in report and report['GPU']:
-            gpu_card = HardwareCard("Graphics", FluentIcon.PHOTO)
+            gpu_card = GroupHeaderCardWidget("Graphics", self)
             
-            for gpu_name, gpu_info in report['GPU'].items():
-                gpu_card.add_spacing()
-                gpu_card.add_item("Name:", gpu_name, indent=0)
-                
+            for idx, (gpu_name, gpu_info) in enumerate(report['GPU'].items()):
+                # GPU Name and Type group
                 device_type = gpu_info.get('Device Type', 'Unknown')
-                gpu_card.add_detail(f"Type: {device_type}", indent=1)
+                gpu_card.addGroup(
+                    FluentIcon.PHOTO,
+                    gpu_name,
+                    f"Type: {device_type}",
+                    QWidget()
+                )
                 
+                # Compatibility group
                 compat = gpu_info.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                gpu_card.add_item("Compatibility:", compat_text, indent=1, color=compat_color)
+                gpu_card.addGroup(
+                    FluentIcon.ACCEPT,
+                    "macOS Compatibility",
+                    compat_text,
+                    create_info_widget("", compat_color)
+                )
                 
                 # OCLP Compatibility if available
                 if 'OCLP Compatibility' in gpu_info:
                     oclp_compat = gpu_info.get('OCLP Compatibility')
                     oclp_text, oclp_color = self.format_compatibility(oclp_compat)
-                    gpu_card.add_item("OCLP Compat:", oclp_text, indent=1, color=oclp_color)
+                    gpu_card.addGroup(
+                        FluentIcon.IOT,
+                        "OCLP Compatibility",
+                        oclp_text,
+                        create_info_widget("Extended support with OpenCore Legacy Patcher", "#605E5C")
+                    )
                 
                 # Connected monitors
                 if 'Monitor' in report:
@@ -240,104 +213,178 @@ class CompatibilityPage(QWidget):
                             connected_monitors.append(f"{monitor_name} ({connector})")
                     
                     if connected_monitors:
-                        gpu_card.add_detail(f"Monitors: {', '.join(connected_monitors)}", indent=1, color="#0078D4")
+                        gpu_card.addGroup(
+                            FluentIcon.VIEW,
+                            "Connected Displays",
+                            ", ".join(connected_monitors),
+                            QWidget()
+                        )
             
             self.cards_layout.addWidget(gpu_card)
         
         # Sound Card
         if 'Sound' in report and report['Sound']:
-            sound_card = HardwareCard("Audio", FluentIcon.MUSIC)
+            sound_card = GroupHeaderCardWidget("Audio", self)
             
             for audio_device, audio_props in report['Sound'].items():
-                sound_card.add_spacing()
-                sound_card.add_item("Name:", audio_device, indent=0)
+                # Audio Device group
+                sound_card.addGroup(
+                    FluentIcon.MUSIC,
+                    audio_device,
+                    "",
+                    QWidget()
+                )
                 
+                # Compatibility group
                 compat = audio_props.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                sound_card.add_item("Compatibility:", compat_text, indent=1, color=compat_color)
+                sound_card.addGroup(
+                    FluentIcon.ACCEPT,
+                    "macOS Compatibility",
+                    compat_text,
+                    create_info_widget("", compat_color)
+                )
                 
                 # Audio endpoints
                 endpoints = audio_props.get('Audio Endpoints', [])
                 if endpoints:
-                    sound_card.add_detail(f"Endpoints: {', '.join(endpoints)}", indent=1)
+                    sound_card.addGroup(
+                        FluentIcon.HEADPHONE,
+                        "Audio Endpoints",
+                        ", ".join(endpoints),
+                        QWidget()
+                    )
             
             self.cards_layout.addWidget(sound_card)
         
         # Network Card
         if 'Network' in report and report['Network']:
-            network_card = HardwareCard("Network", FluentIcon.WIFI)
+            network_card = GroupHeaderCardWidget("Network", self)
             
             for device_name, device_props in report['Network'].items():
-                network_card.add_spacing()
-                network_card.add_item("Name:", device_name, indent=0)
+                # Network Device group
+                network_card.addGroup(
+                    FluentIcon.WIFI,
+                    device_name,
+                    "",
+                    QWidget()
+                )
                 
+                # Compatibility group
                 compat = device_props.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                network_card.add_item("Compatibility:", compat_text, indent=1, color=compat_color)
+                network_card.addGroup(
+                    FluentIcon.ACCEPT,
+                    "macOS Compatibility",
+                    compat_text,
+                    create_info_widget("", compat_color)
+                )
                 
                 # OCLP Compatibility if available
                 if 'OCLP Compatibility' in device_props:
                     oclp_compat = device_props.get('OCLP Compatibility')
                     oclp_text, oclp_color = self.format_compatibility(oclp_compat)
-                    network_card.add_item("OCLP Compat:", oclp_text, indent=1, color=oclp_color)
+                    network_card.addGroup(
+                        FluentIcon.IOT,
+                        "OCLP Compatibility",
+                        oclp_text,
+                        create_info_widget("Extended support with OpenCore Legacy Patcher", "#605E5C")
+                    )
                 
                 # Continuity support information (from compatibility_checker.py logic)
                 device_id = device_props.get('Device ID', '')
                 if device_id:
+                    continuity_info = ""
+                    continuity_color = "#605E5C"
+                    
                     if device_id in pci_data.BroadcomWiFiIDs:
-                        network_card.add_detail("Continuity: Full support (AirDrop, Handoff, etc.)", indent=1, color="#107C10")
+                        continuity_info = "Full support (AirDrop, Handoff, etc.)"
+                        continuity_color = "#107C10"
                     elif device_id in pci_data.IntelWiFiIDs:
-                        network_card.add_detail("Continuity: Partial (Handoff with AirportItlwm)", indent=1, color="#FDB913")
-                        network_card.add_detail("Note: AirDrop, Instant Hotspot not available", indent=1, color="#605E5C")
+                        continuity_info = "Partial (Handoff with AirportItlwm) - AirDrop, Instant Hotspot not available"
+                        continuity_color = "#FDB913"
                     elif device_id in pci_data.AtherosWiFiIDs:
-                        network_card.add_detail("Continuity: Limited", indent=1, color="#D13438")
+                        continuity_info = "Limited support"
+                        continuity_color = "#D13438"
+                    
+                    if continuity_info:
+                        network_card.addGroup(
+                            FluentIcon.SYNC,
+                            "Continuity Features",
+                            continuity_info,
+                            create_info_widget("", continuity_color)
+                        )
             
             self.cards_layout.addWidget(network_card)
         
         # Storage Controllers Card
         if 'Storage Controllers' in report and report['Storage Controllers']:
-            storage_card = HardwareCard("Storage", FluentIcon.FOLDER)
+            storage_card = GroupHeaderCardWidget("Storage", self)
             
             for controller_name, controller_props in report['Storage Controllers'].items():
-                storage_card.add_spacing()
-                storage_card.add_item("Name:", controller_name, indent=0)
+                # Storage Controller group
+                storage_card.addGroup(
+                    FluentIcon.FOLDER,
+                    controller_name,
+                    "",
+                    QWidget()
+                )
                 
+                # Compatibility group
                 compat = controller_props.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                storage_card.add_item("Compatibility:", compat_text, indent=1, color=compat_color)
+                storage_card.addGroup(
+                    FluentIcon.ACCEPT,
+                    "macOS Compatibility",
+                    compat_text,
+                    create_info_widget("", compat_color)
+                )
             
             self.cards_layout.addWidget(storage_card)
         
         # Bluetooth Card
         if 'Bluetooth' in report and report['Bluetooth']:
-            bluetooth_card = HardwareCard("Bluetooth", FluentIcon.BLUETOOTH)
+            bluetooth_card = GroupHeaderCardWidget("Bluetooth", self)
             
             for bluetooth_name, bluetooth_props in report['Bluetooth'].items():
-                bluetooth_card.add_spacing()
-                bluetooth_card.add_item("Name:", bluetooth_name, indent=0)
+                # Bluetooth Device group
+                bluetooth_card.addGroup(
+                    FluentIcon.BLUETOOTH,
+                    bluetooth_name,
+                    "",
+                    QWidget()
+                )
                 
+                # Compatibility group
                 compat = bluetooth_props.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                bluetooth_card.add_item("Compatibility:", compat_text, indent=1, color=compat_color)
+                bluetooth_card.addGroup(
+                    FluentIcon.ACCEPT,
+                    "macOS Compatibility",
+                    compat_text,
+                    create_info_widget("", compat_color)
+                )
             
             self.cards_layout.addWidget(bluetooth_card)
         
         # Biometric Card (if exists)
         if 'Biometric' in report and report['Biometric']:
-            bio_card = HardwareCard("Biometric", FluentIcon.FINGERPRINT)
-            bio_card.add_detail("⚠️ Biometric authentication requires Apple T2 Chip", indent=0, color="#FDB913")
-            bio_card.add_detail("Not available for Hackintosh systems", indent=0, color="#605E5C")
+            bio_card = GroupHeaderCardWidget("Biometric", self)
             
             for bio_device, bio_props in report['Biometric'].items():
-                bio_card.add_spacing()
-                bio_card.add_item("Name:", bio_device, indent=0)
-                bio_card.add_item("Compatibility:", "Unsupported", indent=1, color="#D13438")
+                # Biometric Device group
+                bio_card.addGroup(
+                    FluentIcon.FINGERPRINT,
+                    bio_device,
+                    "Unsupported",
+                    create_info_widget("⚠️ Biometric authentication requires Apple T2 Chip - Not available for Hackintosh systems", "#FDB913")
+                )
             
             self.cards_layout.addWidget(bio_card)
         
         # macOS Version Support Summary Card
         if self.controller.native_macos_version:
-            version_card = HardwareCard("macOS Version Support", FluentIcon.HISTORY)
+            version_card = GroupHeaderCardWidget("macOS Version Support", self)
             
             # native_macos_version tuple format: (min_version, max_version)
             # This is the ONLY tuple with this ordering - all device compatibility tuples are (max, min)
@@ -346,7 +393,12 @@ class CompatibilityPage(QWidget):
             min_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[0])
             max_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[-1])
             
-            version_card.add_item("Supported Range:", f"{min_ver_name} to {max_ver_name}", color="#107C10")
+            version_card.addGroup(
+                FluentIcon.HISTORY,
+                "Native Support Range",
+                f"{min_ver_name} to {max_ver_name}",
+                create_info_widget("Fully supported macOS versions for your hardware", "#107C10")
+            )
             
             # Add OCLP info if available
             if self.controller.ocl_patched_macos_version:
@@ -357,8 +409,12 @@ class CompatibilityPage(QWidget):
                 oclp_max_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
                 oclp_min_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
                 # Display as earliest to latest for consistency
-                version_card.add_item("OCLP Extended:", f"{oclp_min_name} to {oclp_max_name}", color="#0078D4")
-                version_card.add_detail("With OpenCore Legacy Patcher support", indent=1, color="#605E5C")
+                version_card.addGroup(
+                    FluentIcon.IOT,
+                    "OCLP Extended Support",
+                    f"{oclp_min_name} to {oclp_max_name}",
+                    create_info_widget("Additional macOS versions supported with OpenCore Legacy Patcher", "#0078D4")
+                )
             
             self.cards_layout.addWidget(version_card)
         
