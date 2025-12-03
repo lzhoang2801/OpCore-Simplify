@@ -511,3 +511,279 @@ def show_smbios_dialog(parent, mac_devices, selected_model, default_model, macos
     if dialog.exec() == QDialog.DialogCode.Accepted:
         return dialog.get_selected_model(), True
     return selected_model, False
+
+
+class KextsDialog(QDialog):
+    """Custom dialog for Kext selection with checkboxes and categorization"""
+
+    def __init__(self, kext_maestro, macos_version, parent=None):
+        """
+        Initialize Kexts dialog
+
+        Args:
+            kext_maestro: KextMaestro instance with kexts list
+            macos_version: Target macOS version (Darwin format)
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.kext_maestro = kext_maestro
+        self.kexts = kext_maestro.kexts
+        self.macos_version = macos_version
+        self.utils = kext_maestro.utils
+        self.checkboxes = []  # Store references to checkboxes
+        self.original_state = {}  # Store original checked state
+
+        # Store original state
+        for idx, kext in enumerate(self.kexts):
+            self.original_state[idx] = kext.checked
+
+        self.setWindowTitle("Customize Kernel Extensions")
+        self.setMinimumSize(1000, 700)
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Setup the dialog UI"""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+
+        # Title
+        title_label = QLabel("Customize Kernel Extensions")
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        layout.addWidget(title_label)
+
+        # Description
+        desc_label = BodyLabel(
+            f"Select kernel extensions (kexts) for your system. "
+            f"Grayed-out items are not supported by macOS version {self.macos_version}."
+        )
+        desc_label.setWordWrap(True)
+        desc_label.setStyleSheet("color: #605E5C;")
+        layout.addWidget(desc_label)
+
+        # Scroll area for kexts
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                border: 1px solid #E1DFDD;
+                border-radius: 4px;
+                background-color: white;
+            }
+        """)
+
+        # Container widget for scroll area
+        scroll_widget = QWidget()
+        self.scroll_layout = QVBoxLayout(scroll_widget)
+        self.scroll_layout.setSpacing(5)
+        self.scroll_layout.setContentsMargins(10, 10, 10, 10)
+
+        self.populate_kexts()
+
+        scroll.setWidget(scroll_widget)
+        layout.addWidget(scroll, 1)  # Give it stretch factor
+
+        # Note
+        note_label = BodyLabel(
+            "ℹ️ Note: When a plugin of a kext is selected, the entire kext will be automatically "
+            "selected. Required kexts cannot be unchecked."
+        )
+        note_label.setWordWrap(True)
+        note_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 11px; padding: 5px;")
+        layout.addWidget(note_label)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+        button_layout.addStretch()
+
+        # Cancel and OK buttons
+        cancel_btn = PushButton("Cancel")
+        cancel_btn.clicked.connect(self.cancel)
+        button_layout.addWidget(cancel_btn)
+
+        ok_btn = PrimaryPushButton("OK")
+        ok_btn.clicked.connect(self.accept)
+        button_layout.addWidget(ok_btn)
+
+        layout.addLayout(button_layout)
+
+    def populate_kexts(self):
+        """Populate the kexts list with checkboxes"""
+        from PyQt6.QtWidgets import QCheckBox
+
+        current_category = None
+
+        for index, kext in enumerate(self.kexts):
+            # Check if kext is supported
+            is_supported = (
+                self.utils.parse_darwin_version(kext.min_darwin_version) <=
+                self.utils.parse_darwin_version(self.macos_version) <=
+                self.utils.parse_darwin_version(kext.max_darwin_version)
+            )
+
+            # Add category header if changed
+            if kext.category != current_category:
+                current_category = kext.category
+                if self.scroll_layout.count() > 0:  # Add spacing before category
+                    self.scroll_layout.addSpacing(10)
+
+                category_label = QLabel(f"Category: {current_category if current_category else 'Uncategorized'}")
+                category_label.setStyleSheet(
+                    "font-weight: bold; font-size: 13px; color: #323130; "
+                    "border-bottom: 2px solid #0078D4; padding: 5px 0px;"
+                )
+                self.scroll_layout.addWidget(category_label)
+
+            # Create checkbox for kext
+            display_text = f"{kext.name} - {kext.description}"
+            checkbox = QCheckBox(display_text)
+            checkbox.setChecked(kext.checked)
+            checkbox.setProperty("kext_index", index)
+
+            # Style based on support status and checked state
+            if kext.checked:
+                if kext.required:
+                    checkbox.setStyleSheet(
+                        "font-weight: bold; color: #107C10; padding: 5px;"
+                    )
+                    checkbox.setEnabled(False)  # Required kexts can't be unchecked
+                else:
+                    checkbox.setStyleSheet(
+                        "font-weight: bold; color: #107C10; padding: 5px;"
+                    )
+            elif not is_supported:
+                checkbox.setStyleSheet(
+                    "color: #A19F9D; padding: 5px;"
+                )
+            else:
+                checkbox.setStyleSheet("padding: 5px;")
+
+            # Connect checkbox to handler
+            checkbox.stateChanged.connect(lambda state, idx=index: self.on_kext_toggled(idx, state))
+
+            self.checkboxes.append(checkbox)
+            self.scroll_layout.addWidget(checkbox)
+
+        self.scroll_layout.addStretch()
+
+    def on_kext_toggled(self, index, state):
+        """Handle kext checkbox toggle"""
+        from PyQt6.QtCore import Qt
+
+        kext = self.kexts[index]
+        
+        if state == Qt.CheckState.Checked.value:
+            # Check the kext and verify compatibility
+            allow_unsupported = self.verify_single_kext_compatibility(index)
+            self.kext_maestro.check_kext(index, self.macos_version, allow_unsupported)
+        else:
+            # Uncheck the kext if it's not required
+            if not kext.required:
+                self.kext_maestro.uncheck_kext(index)
+
+        # Update all checkboxes to reflect dependencies
+        self.update_checkboxes()
+
+    def verify_single_kext_compatibility(self, index):
+        """Verify compatibility for a single kext and prompt user if needed"""
+        kext = self.kexts[index]
+        
+        # Check if kext is compatible
+        is_compatible = (
+            self.utils.parse_darwin_version(kext.min_darwin_version) <=
+            self.utils.parse_darwin_version(self.macos_version) <=
+            self.utils.parse_darwin_version(kext.max_darwin_version)
+        )
+        
+        if is_compatible:
+            return False
+        
+        # Kext is incompatible - ask user
+        # Check if Lilu is in the exact list of required kexts (not substring match)
+        is_lilu_dependent = "Lilu" in kext.requires_kexts
+        
+        message = (
+            f"The kext '{kext.name}' is incompatible with macOS version {self.macos_version}.\n\n"
+        )
+        
+        if is_lilu_dependent:
+            message += (
+                "This is a Lilu plugin. Using the '-lilubetaall' boot argument will force it to load.\n\n"
+            )
+        
+        message += (
+            "Forcing unsupported kexts can cause system instability. Proceed with caution.\n\n"
+            "Do you want to force load this kext on the unsupported macOS version?"
+        )
+        
+        result = show_question_dialog(
+            self,
+            "Kext Compatibility Warning",
+            message,
+            default='no',
+            warning='This may cause system instability!'
+        )
+        
+        return result
+
+    def update_checkboxes(self):
+        """Update all checkboxes to reflect current state"""
+        for index, checkbox in enumerate(self.checkboxes):
+            kext = self.kexts[index]
+            
+            # Block signals while updating to avoid recursion
+            checkbox.blockSignals(True)
+            checkbox.setChecked(kext.checked)
+            checkbox.blockSignals(False)
+            
+            # Update style
+            is_supported = (
+                self.utils.parse_darwin_version(kext.min_darwin_version) <=
+                self.utils.parse_darwin_version(self.macos_version) <=
+                self.utils.parse_darwin_version(kext.max_darwin_version)
+            )
+            
+            if kext.checked:
+                if kext.required:
+                    checkbox.setStyleSheet(
+                        "font-weight: bold; color: #107C10; padding: 5px;"
+                    )
+                    checkbox.setEnabled(False)
+                else:
+                    checkbox.setStyleSheet(
+                        "font-weight: bold; color: #107C10; padding: 5px;"
+                    )
+                    checkbox.setEnabled(True)
+            elif not is_supported:
+                checkbox.setStyleSheet(
+                    "color: #A19F9D; padding: 5px;"
+                )
+                checkbox.setEnabled(True)
+            else:
+                checkbox.setStyleSheet("padding: 5px;")
+                checkbox.setEnabled(True)
+
+    def cancel(self):
+        """Handle cancel button - restore original state"""
+        # Restore original checked state
+        for idx, original_checked in self.original_state.items():
+            self.kexts[idx].checked = original_checked
+        
+        self.reject()
+
+
+def show_kexts_dialog(parent, kext_maestro, macos_version):
+    """
+    Show Kexts selection dialog
+
+    Args:
+        parent: Parent widget
+        kext_maestro: KextMaestro instance with kexts list
+        macos_version: Target macOS version (Darwin format)
+
+    Returns:
+        bool: True if OK was clicked, False if canceled
+    """
+    dialog = KextsDialog(kext_maestro, macos_version, parent)
+    return dialog.exec() == QDialog.DialogCode.Accepted
