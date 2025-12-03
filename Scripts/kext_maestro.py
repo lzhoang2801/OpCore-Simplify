@@ -125,23 +125,31 @@ class KextMaestro:
                     print("\n\033[1;93mNote:\033[0m Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext and uses the Apple T2 chip for audio management.")
                     print("To use AppleALC, you must rollback AppleHDA. Alternatively, you can use VoodooHDA.")
                     print("")
-                    print("1. \033[1mAppleALC\033[0m - Requires AppleHDA rollback with \033[1;93mOpenCore Legacy Patcher\033[0m")
-                    print("2. \033[1mVoodooHDA\033[0m - Lower audio quality, manual injection to /Library/Extensions")
+                    print("1. \033[1mAppleALC\033[0m")
+                    print("   • High quality native audio")
+                    print("   • Requires AppleHDA rollback with \033[1;93mOpenCore Legacy Patcher\033[0m")
+                    print("   • Recommended for best audio experience")
+                    print("")
+                    print("2. \033[1mVoodooHDA\033[0m")
+                    print("   • Lower audio quality")
+                    print("   • Manual injection to /Library/Extensions required")
+                    print("   • No OCLP dependency")
+                    print("   • Alternative if OCLP is not desired")
                     print("")
                     
                     gui_options = {
                         'title': 'Select Audio Kext',
-                        'message': 'Since macOS Tahoe 26, Apple has removed AppleHDA.\n\nChoose your audio solution:',
+                        'message': 'Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext and uses the Apple T2 chip for audio management.\n\nChoose your audio solution:',
                         'choices': [
                             {
                                 'value': '1',
-                                'label': 'AppleALC - High quality (Requires OCLP)',
-                                'description': 'Requires AppleHDA rollback with OpenCore Legacy Patcher'
+                                'label': 'AppleALC',
+                                'description': '• High quality native audio\n• Requires AppleHDA rollback with OpenCore Legacy Patcher\n• Recommended for best audio experience'
                             },
                             {
                                 'value': '2',
-                                'label': 'VoodooHDA - Manual installation',
-                                'description': 'Lower audio quality, manual injection to /Library/Extensions'
+                                'label': 'VoodooHDA',
+                                'description': '• Lower audio quality\n• Manual injection to /Library/Extensions required\n• No OCLP dependency\n• Alternative if OCLP is not desired'
                             }
                         ],
                         'default': '1',
@@ -204,9 +212,19 @@ class KextMaestro:
                         print("\033[1;93mNote:\033[0m Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD {} GPUs.".format(gpu_props.get("Codename")))
                         print("To avoid this, you can use NootRX or choose not to install a GPU kext.")
                         print("")
-                        print("1. \033[1mNootRX\033[0m - Uses latest GPU firmware")
-                        print("2. \033[1mWhateverGreen\033[0m - Uses original Apple firmware")
+                        print("1. \033[1mNootRX\033[0m")
+                        print("   • Uses latest GPU firmware")
+                        print("   • Modern kext with better support")
+                        print("   • Recommended for most systems")
+                        print("")
+                        print("2. \033[1mWhateverGreen\033[0m")
+                        print("   • Uses original Apple firmware")
+                        print("   • Traditional/legacy kext")
+                        print("   • May have connector patching issues on macOS Tahoe 26")
+                        print("")
                         print("3. \033[1mDon't use any kext\033[0m")
+                        print("   • No GPU kext will be installed")
+                        print("   • May work for some systems without GPU acceleration")
                     else:
                         recommended_option = 2
                         recommended_name = "WhateverGreen"
@@ -215,8 +233,14 @@ class KextMaestro:
                         print("- AMD {} GPUs have two available kext options:".format(gpu_props.get("Codename")))
                         print("- You can try different kexts after installation to find the best one for your system")
                         print("")
-                        print("1. \033[1mNootRX\033[0m - Uses latest GPU firmware")
-                        print("2. \033[1mWhateverGreen\033[0m - Uses original Apple firmware")
+                        print("1. \033[1mNootRX\033[0m")
+                        print("   • Uses latest GPU firmware")
+                        print("   • Modern kext with better support")
+                        print("   • Recommended for most systems")
+                        print("")
+                        print("2. \033[1mWhateverGreen\033[0m")
+                        print("   • Uses original Apple firmware")
+                        print("   • Traditional/legacy kext")
                     print("")
 
                     if any(other_gpu_props.get("Manufacturer") == "Intel" for other_gpu_props in hardware_report.get("GPU", {}).values()):
@@ -232,13 +256,13 @@ class KextMaestro:
                     gui_choices = [
                         {
                             'value': '1',
-                            'label': 'NootRX - Uses latest GPU firmware',
-                            'description': 'Modern kext with latest GPU firmware'
+                            'label': 'NootRX',
+                            'description': '• Uses latest GPU firmware\n• Modern kext with better support\n• Recommended for most systems'
                         },
                         {
                             'value': '2',
-                            'label': 'WhateverGreen - Uses original Apple firmware',
-                            'description': 'Traditional kext with original Apple firmware'
+                            'label': 'WhateverGreen',
+                            'description': '• Uses original Apple firmware\n• Traditional/legacy kext\n• May have connector patching issues on macOS Tahoe 26'
                         }
                     ]
                     
@@ -246,12 +270,12 @@ class KextMaestro:
                         gui_choices.append({
                             'value': '3',
                             'label': 'Don\'t use any kext',
-                            'description': 'No GPU kext will be installed'
+                            'description': '• No GPU kext will be installed\n• May work for some systems without GPU acceleration'
                         })
                     
                     gui_options = {
                         'title': 'Select AMD GPU Kext',
-                        'message': f'Select kext for your AMD {gpu_props.get("Codename")} GPU:',
+                        'message': f'Select kext for your AMD {gpu_props.get("Codename")} GPU.\n\nNote: Since macOS Tahoe 26, WhateverGreen has known connector patching issues.',
                         'choices': gui_choices,
                         'default': str(recommended_option),
                         'warning': 'If you experience black screen after verbose mode, remove "-v debug=0x100 keepsyms=1" from boot-args in config.plist'
@@ -314,7 +338,8 @@ class KextMaestro:
                 print("")
                 print("\033[1;93mNote:\033[0m Intel WiFi devices have two available kext options:")
                 print("")
-                print("1. \033[1mAirportItlwm\033[0m - Uses native WiFi settings menu")
+                print("1. \033[1mAirportItlwm\033[0m")
+                print("   • Uses native WiFi settings menu")
                 print("   • Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support")
                 print("   • Supports enterprise-level security")
 
@@ -324,7 +349,8 @@ class KextMaestro:
                     print("   • \033[91mOn macOS Sonoma 14\033[0m: iServices won't work unless using OCLP root patch")
                 
                 print("")
-                print("2. \033[1mitlwm\033[0m - More stable overall")
+                print("2. \033[1mitlwm\033[0m")
+                print("   • More stable overall")
                 print("   • Works with HeliPort app instead of native WiFi settings menu")
                 print("   • No Apple Continuity features and enterprise-level security")
                 print("   • Can connect to Hidden Networks")
@@ -351,17 +377,17 @@ class KextMaestro:
                     # Build GUI options
                     gui_options = {
                         'title': 'Select WiFi Kext',
-                        'message': 'Intel WiFi devices have two available kext options:',
+                        'message': 'Intel WiFi devices have two available kext options.\n\nChoose the one that best fits your needs:',
                         'choices': [
                             {
                                 'value': '1',
-                                'label': 'AirportItlwm - Uses native WiFi settings menu',
-                                'description': 'Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support. Supports enterprise-level security.'
+                                'label': 'AirportItlwm',
+                                'description': '• Uses native WiFi settings menu\n• Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot\n• Supports enterprise-level security\n• Note: Since macOS Sonoma 14, iServices may not work without OCLP root patch'
                             },
                             {
                                 'value': '2',
-                                'label': 'itlwm - More stable overall',
-                                'description': 'Works with HeliPort app. No Apple Continuity features. Can connect to Hidden Networks.'
+                                'label': 'itlwm',
+                                'description': '• More stable overall\n• Works with HeliPort app (not native WiFi menu)\n• No Apple Continuity features\n• No enterprise-level security support\n• Can connect to Hidden Networks'
                             }
                         ],
                         'default': str(recommended_option),
