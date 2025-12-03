@@ -7,6 +7,8 @@ from PyQt6.QtWidgets import QLabel, QDialog
 from PyQt6.QtCore import Qt
 from qfluentwidgets import MessageBoxBase, LineEdit, ComboBox, MessageBox
 
+from ..styles import COLORS
+
 
 class InputMessageBox(MessageBoxBase):
     """Input dialog using qfluentwidgets MessageBoxBase pattern"""
@@ -76,7 +78,8 @@ class ChoiceMessageBox(MessageBoxBase):
         self.contentLabel.setObjectName("contentLabel")
         self.contentLabel.setWordWrap(True)
         
-        # Populate combo box
+        # Populate combo box and build descriptions text
+        descriptions_text = []
         if choices:
             default_index = 0
             for idx, choice in enumerate(choices):
@@ -87,6 +90,16 @@ class ChoiceMessageBox(MessageBoxBase):
                 # Store the value for later retrieval
                 value = choice.get('value', str(idx))
                 self.choice_values.append(value)
+                
+                # Build description text if available
+                description = choice.get('description')
+                if description:
+                    if descriptions_text:
+                        # Add separator between descriptions
+                        descriptions_text.append(f"\n{label}:\n{description}")
+                    else:
+                        # First description - no leading newline
+                        descriptions_text.append(f"{label}:\n{description}")
                 
                 # Set default if matches
                 if default_value and value == default_value:
@@ -99,18 +112,25 @@ class ChoiceMessageBox(MessageBoxBase):
         self.viewLayout.addWidget(self.contentLabel)
         self.viewLayout.addWidget(self.comboBox)
         
+        # Add descriptions if available
+        if descriptions_text:
+            self.descriptionsLabel = QLabel('\n'.join(descriptions_text), self.widget)
+            self.descriptionsLabel.setWordWrap(True)
+            self.descriptionsLabel.setStyleSheet(f"color: {COLORS['text_secondary']}; margin-top: 10px; font-size: 12px;")
+            self.viewLayout.addWidget(self.descriptionsLabel)
+        
         # Add warning or note if provided
         if warning:
             self.warningLabel = QLabel(f"⚠️ {warning}", self.widget)
             self.warningLabel.setWordWrap(True)
             # Using theme-aware warning color
-            self.warningLabel.setStyleSheet("color: #ff9800; margin-top: 10px; font-weight: 500;")
+            self.warningLabel.setStyleSheet(f"color: {COLORS['warning']}; margin-top: 10px; font-weight: 500;")
             self.viewLayout.addWidget(self.warningLabel)
         elif note:
             self.noteLabel = QLabel(f"ℹ️ {note}", self.widget)
             self.noteLabel.setWordWrap(True)
             # Using theme-aware info color
-            self.noteLabel.setStyleSheet("color: #2196F3; margin-top: 10px; font-weight: 500;")
+            self.noteLabel.setStyleSheet(f"color: {COLORS['info']}; margin-top: 10px; font-weight: 500;")
             self.viewLayout.addWidget(self.noteLabel)
         
         # Set minimum width for the dialog
