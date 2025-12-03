@@ -365,16 +365,22 @@ class KextMaestro:
                 if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
                     print("\033[91mImportant:\033[0m For macOS Beta versions, only itlwm kext is supported")
                     print("")
-                    # Skip "Press Enter" prompt in GUI mode - just use recommended option
-                    if not self.utils.gui_callback:
-                        self.utils.request_input("Press Enter to continue...")
+                    # Show info dialog in GUI mode, press enter in CLI mode
+                    gui_options = {
+                        'title': 'Intel WiFi Kext - Beta Version',
+                        'message': 'For macOS Beta versions, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
+                    }
+                    self.utils.request_input("Press Enter to continue...", gui_type='info', gui_options=gui_options)
                     selected_option = recommended_option
                 elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
                     print("\033[91mImportant:\033[0m For macOS Tahoe 26, only itlwm kext is supported")
                     print("")
-                    # Skip "Press Enter" prompt in GUI mode - just use recommended option
-                    if not self.utils.gui_callback:
-                        self.utils.request_input("Press Enter to continue...")
+                    # Show info dialog in GUI mode, press enter in CLI mode
+                    gui_options = {
+                        'title': 'Intel WiFi Kext - macOS Tahoe 26',
+                        'message': 'For macOS Tahoe 26, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
+                    }
+                    self.utils.request_input("Press Enter to continue...", gui_type='info', gui_options=gui_options)
                     selected_option = recommended_option
                 else:
                     # Build GUI options
