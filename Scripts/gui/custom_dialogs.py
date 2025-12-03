@@ -3,7 +3,7 @@ Custom dialog implementations using qfluentwidgets.
 Following qfluentwidgets design patterns by extending MessageBoxBase.
 """
 
-from PyQt6.QtWidgets import QLabel, QDialog, QTextEdit
+from PyQt6.QtWidgets import QLabel, QDialog
 from PyQt6.QtCore import Qt
 from qfluentwidgets import MessageBoxBase, LineEdit, ComboBox, MessageBox
 
