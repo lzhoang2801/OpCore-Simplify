@@ -120,8 +120,25 @@ class ConfigurationPage(QWidget):
 
     def customize_kexts(self):
         """Customize kexts"""
-        self.controller.update_status(
-            "Kext customization not yet implemented in GUI", 'info')
+        # Check if hardware report is loaded
+        if not self.controller.customized_hardware:
+            self.controller.update_status(
+                "Please load a hardware report first", 'warning')
+            return
+
+        # Import the kexts dialog
+        from ..custom_dialogs import show_kexts_dialog
+
+        # Show the kexts dialog
+        ok = show_kexts_dialog(
+            self.controller,
+            self.controller.ocpe.k,
+            self.controller.macos_version  # Use Darwin version
+        )
+
+        if ok:
+            self.controller.update_status(
+                "Kext configuration updated successfully", 'success')
 
     def customize_smbios(self):
         """Customize SMBIOS model"""
