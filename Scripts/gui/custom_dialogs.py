@@ -792,13 +792,13 @@ def show_kexts_dialog(parent, kext_maestro, macos_version):
 class ACPIPatchesDialog(QDialog):
     """Custom dialog for ACPI Patch selection with checkboxes"""
 
-    def __init__(self, parent, acpi_guru):
+    def __init__(self, acpi_guru, parent=None):
         """
         Initialize ACPI Patches dialog
 
         Args:
-            parent: Parent widget
             acpi_guru: ACPIGuru instance with patches list
+            parent: Parent widget
         """
         super().__init__(parent)
         self.acpi_guru = acpi_guru
@@ -913,7 +913,7 @@ class ACPIPatchesDialog(QDialog):
         from PyQt6.QtCore import Qt
 
         patch = self.patches[index]
-        patch.checked = (state == Qt.CheckState.Checked.value)
+        patch.checked = state == Qt.CheckState.Checked.value
 
         # Update checkbox style
         self.update_checkbox_style(index)
@@ -956,5 +956,5 @@ def show_acpi_patches_dialog(parent, acpi_guru):
     Returns:
         bool: True if OK was clicked, False if canceled
     """
-    dialog = ACPIPatchesDialog(parent, acpi_guru)
+    dialog = ACPIPatchesDialog(acpi_guru, parent)
     return dialog.exec() == QDialog.DialogCode.Accepted
