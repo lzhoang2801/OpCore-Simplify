@@ -122,7 +122,7 @@ class KextMaestro:
         for codec_properties in hardware_report.get("Sound", {}).values():
             if codec_properties.get("Device ID") in codec_layouts.data:
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                    print("\n\033[1;93mNote:\033[0m Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext and uses the Apple T2 chip for audio management.")
+                    print("\n\033[1;93mNote:\033[0m Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext.")
                     print("To use AppleALC, you must rollback AppleHDA. Alternatively, you can use VoodooHDA.")
                     print("")
                     print("1. \033[1mAppleALC\033[0m")
@@ -139,7 +139,7 @@ class KextMaestro:
                     
                     gui_options = {
                         'title': 'Select Audio Kext',
-                        'message': 'Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext and uses the Apple T2 chip for audio management.\n\nChoose your audio solution:',
+                        'message': 'Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext.\n\nChoose your audio solution:',
                         'choices': [
                             {
                                 'value': '1',
@@ -197,6 +197,9 @@ class KextMaestro:
                     break
 
                 if gpu_props.get("Codename") in {"Navi 21", "Navi 23"}:
+                    # Black screen fix warning message
+                    black_screen_warning = 'If you experience black screen after verbose mode, remove "-v debug=0x100 keepsyms=1" from boot-args in config.plist'
+                    
                     print("\n*** Found {} is AMD {} GPU.".format(gpu_name, gpu_props.get("Codename")))
                     print("")
                     print("\033[91mImportant: Black Screen Fix\033[0m")
@@ -278,7 +281,7 @@ class KextMaestro:
                         'message': f'Select kext for your AMD {gpu_props.get("Codename")} GPU.\n\nNote: Since macOS Tahoe 26, WhateverGreen has known connector patching issues.',
                         'choices': gui_choices,
                         'default': str(recommended_option),
-                        'warning': 'If you experience black screen after verbose mode, remove "-v debug=0x100 keepsyms=1" from boot-args in config.plist'
+                        'warning': black_screen_warning
                     }
                     
                     kext_option = self.utils.request_input("Select kext for your AMD {} GPU (default: {}): ".format(gpu_props.get("Codename"), recommended_name),

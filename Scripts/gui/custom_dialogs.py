@@ -7,6 +7,8 @@ from PyQt6.QtWidgets import QLabel, QDialog
 from PyQt6.QtCore import Qt
 from qfluentwidgets import MessageBoxBase, LineEdit, ComboBox, MessageBox
 
+from ..styles import COLORS
+
 
 class InputMessageBox(MessageBoxBase):
     """Input dialog using qfluentwidgets MessageBoxBase pattern"""
@@ -109,7 +111,7 @@ class ChoiceMessageBox(MessageBoxBase):
         if descriptions_text:
             self.descriptionsLabel = QLabel('\n'.join(descriptions_text), self.widget)
             self.descriptionsLabel.setWordWrap(True)
-            self.descriptionsLabel.setStyleSheet("color: #605E5C; margin-top: 10px; font-size: 12px;")
+            self.descriptionsLabel.setStyleSheet(f"color: {COLORS['text_secondary']}; margin-top: 10px; font-size: 12px;")
             self.viewLayout.addWidget(self.descriptionsLabel)
         
         # Add warning or note if provided
@@ -117,13 +119,13 @@ class ChoiceMessageBox(MessageBoxBase):
             self.warningLabel = QLabel(f"⚠️ {warning}", self.widget)
             self.warningLabel.setWordWrap(True)
             # Using theme-aware warning color
-            self.warningLabel.setStyleSheet("color: #ff9800; margin-top: 10px; font-weight: 500;")
+            self.warningLabel.setStyleSheet(f"color: {COLORS['warning']}; margin-top: 10px; font-weight: 500;")
             self.viewLayout.addWidget(self.warningLabel)
         elif note:
             self.noteLabel = QLabel(f"ℹ️ {note}", self.widget)
             self.noteLabel.setWordWrap(True)
             # Using theme-aware info color
-            self.noteLabel.setStyleSheet("color: #2196F3; margin-top: 10px; font-weight: 500;")
+            self.noteLabel.setStyleSheet(f"color: {COLORS['info']}; margin-top: 10px; font-weight: 500;")
             self.viewLayout.addWidget(self.noteLabel)
         
         # Set minimum width for the dialog
