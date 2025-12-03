@@ -13,7 +13,6 @@ import tempfile
 class Utils:
     def __init__(self, script_name = "OpCore Simplify"):
         self.script_name = script_name
-        self.gui_callback = None  # Callback for GUI mode interactions
 
     def clean_temporary_dir(self):
         temporary_dir = tempfile.gettempdir()
@@ -159,23 +158,7 @@ class Utils:
         elif os.name == 'nt':
             os.startfile(folder_path)
 
-    def request_input(self, prompt="Press Enter to continue...", gui_type=None, gui_options=None):
-        """
-        Request input from user, using GUI callback if available.
-        
-        Args:
-            prompt: The prompt text
-            gui_type: Type of GUI dialog (e.g., 'choice', 'confirm', 'info')
-            gui_options: Additional options for GUI dialog
-        
-        Returns:
-            User's response as string
-        """
-        # If GUI callback is available and gui_type is specified, use GUI
-        if self.gui_callback and gui_type:
-            return self.gui_callback(gui_type, prompt, gui_options)
-        
-        # Fall back to CLI
+    def request_input(self, prompt="Press Enter to continue..."):
         if sys.version_info[0] < 3:
             user_response = raw_input(prompt)
         else:
