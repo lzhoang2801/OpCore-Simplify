@@ -85,7 +85,7 @@ class OpCoreGUI(FluentWindow):
         # Variables for tracking state
         self.hardware_report_path = "Not selected"
         self.macos_version_text = "Not selected"
-        self.macos_version = None  # Darwin version format (e.g., "22.0.0")
+        self.macos_version = ""  # Darwin version format (e.g., "22.0.0")
         self.smbios_model_text = "Not selected"
         self.disabled_devices_text = "None"
 

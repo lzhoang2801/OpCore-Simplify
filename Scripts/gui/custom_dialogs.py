@@ -400,7 +400,6 @@ class SMBIOSDialog(QDialog):
                 item.widget().deleteLater()
 
         current_category = None
-        incompatible_models = []
 
         for index, device in enumerate(self.mac_devices):
             # Check if model is supported
@@ -416,15 +415,10 @@ class SMBIOSDialog(QDialog):
                 (not is_supported or
                  (self.is_laptop and not device.name.startswith("MacBook")) or
                  (not self.is_laptop and device.name.startswith("MacBook")))):
-                incompatible_models.append(index)
                 continue
 
             # Extract category (e.g., "iMac", "MacBookPro")
-            category = ""
-            for char in device.name:
-                if char.isdigit():
-                    break
-                category += char
+            category = device.name.split(next((char for char in device.name if char.isdigit()), ''))[0]
 
             # Add category header if changed
             if category != current_category:
