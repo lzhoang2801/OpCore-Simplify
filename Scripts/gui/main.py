@@ -255,10 +255,11 @@ class OpCoreGUI(FluentWindow):
                 warning = options.get('warning', None)
                 
                 result = show_question_dialog(self, title, message, default, warning)
-                return "yes" if result else "no"
             else:
                 result = show_question_dialog(self, "Confirmation", prompt_text)
-                return "yes" if result else "no"
+            
+            # Convert boolean to "yes"/"no" string for consistency with CLI
+            return "yes" if result else "no"
         
         return None
     

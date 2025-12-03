@@ -1,9 +1,9 @@
 """
-Custom dialog implementations using qfluentwidgets
-Following qfluentwidgets design patterns by extending MessageBoxBase
+Custom dialog implementations using qfluentwidgets.
+Following qfluentwidgets design patterns by extending MessageBoxBase.
 """
 
-from PyQt6.QtWidgets import QLabel
+from PyQt6.QtWidgets import QLabel, QDialog
 from PyQt6.QtCore import Qt
 from qfluentwidgets import MessageBoxBase, LineEdit, ComboBox, MessageBox
 
@@ -103,12 +103,14 @@ class ChoiceMessageBox(MessageBoxBase):
         if warning:
             self.warningLabel = QLabel(f"⚠️ {warning}", self.widget)
             self.warningLabel.setWordWrap(True)
-            self.warningLabel.setStyleSheet("color: #ff9800; margin-top: 10px;")
+            # Using theme-aware warning color
+            self.warningLabel.setStyleSheet("color: #ff9800; margin-top: 10px; font-weight: 500;")
             self.viewLayout.addWidget(self.warningLabel)
         elif note:
             self.noteLabel = QLabel(f"ℹ️ {note}", self.widget)
             self.noteLabel.setWordWrap(True)
-            self.noteLabel.setStyleSheet("color: #2196F3; margin-top: 10px;")
+            # Using theme-aware info color
+            self.noteLabel.setStyleSheet("color: #2196F3; margin-top: 10px; font-weight: 500;")
             self.viewLayout.addWidget(self.noteLabel)
         
         # Set minimum width for the dialog
@@ -192,6 +194,7 @@ def show_question_dialog(parent, title: str, content: str, default: str = 'no', 
     dialog.yesButton.setText("Yes")
     dialog.cancelButton.setText("No")
     
-    # The MessageBox class already handles the exec() and returns Accepted/Rejected
-    return dialog.exec()
+    # exec() returns QDialog.DialogCode.Accepted if Yes is clicked, Rejected otherwise
+    return dialog.exec() == QDialog.DialogCode.Accepted
+
 
