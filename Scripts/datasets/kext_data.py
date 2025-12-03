@@ -313,7 +313,7 @@ kexts = [
         category = "Bluetooth",
         requires_kexts = ["BlueToolFixup", "IntelBTPatcher", "IntelBluetoothInjector"],
         github_repo = {
-            "owner": "OpenIntelWireless",
+            "owner": "lshbluesky",
             "repo": "IntelBluetoothFirmware"
         }
     ),
@@ -321,10 +321,9 @@ kexts = [
         name = "IntelBTPatcher", 
         description = "Fixes Intel Bluetooth bugs for better connectivity",
         category = "Bluetooth",
-        max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu", "BlueToolFixup", "IntelBluetoothFirmware", "IntelBluetoothInjector"],
         github_repo = {
-            "owner": "OpenIntelWireless",
+            "owner": "lshbluesky",
             "repo": "IntelBluetoothFirmware"
         }
     ),
@@ -335,7 +334,7 @@ kexts = [
         max_darwin_version = "20.99.99",
         requires_kexts = ["BlueToolFixup", "IntelBluetoothFirmware", "IntelBTPatcher"],
         github_repo = {
-            "owner": "OpenIntelWireless",
+            "owner": "lshbluesky",
             "repo": "IntelBluetoothFirmware"
         }
     ),
