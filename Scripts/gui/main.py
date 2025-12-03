@@ -6,6 +6,7 @@ import sys
 import os
 import threading
 import time
+import platform
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -66,7 +67,6 @@ class OpCoreGUI(FluentWindow):
         # Set cross-platform font with fallbacks
         font = QFont()
         # Use platform-appropriate fonts with fallbacks
-        import platform
         if platform.system() == "Windows":
             font.setFamily("Segoe UI")
         elif platform.system() == "Darwin":  # macOS
