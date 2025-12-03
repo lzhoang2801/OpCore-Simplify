@@ -6,7 +6,9 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from PyQt6.QtCore import Qt
 from qfluentwidgets import (
     PushButton, SubtitleLabel, BodyLabel, CardWidget,
-    StrongBodyLabel, ComboBox, PrimaryPushButton
+    StrongBodyLabel, ComboBox, PrimaryPushButton, FluentIcon,
+    IconWidget, GroupHeaderCardWidget, ToolTip, InfoBadge,
+    InfoBadgePosition, ScrollArea
 )
 
 from ..styles import COLORS, SPACING
@@ -23,99 +25,176 @@ class ConfigurationPage(QWidget):
 
     def setup_ui(self):
         """Setup the configuration page UI"""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
-                                  SPACING['xxlarge'], SPACING['xlarge'])
-        layout.setSpacing(SPACING['large'])
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
+                                       SPACING['xxlarge'], SPACING['xlarge'])
+        main_layout.setSpacing(SPACING['large'])
 
         # Step indicator
         step_label = BodyLabel("STEP 3 OF 4")
         step_label.setStyleSheet("color: #0078D4; font-weight: bold;")
-        layout.addWidget(step_label)
+        main_layout.addWidget(step_label)
 
-        # Title
+        # Header section with title and description
+        header_container = QWidget()
+        header_layout = QVBoxLayout(header_container)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(SPACING['tiny'])
+
         title_label = SubtitleLabel("Configuration")
-        layout.addWidget(title_label)
+        header_layout.addWidget(title_label)
 
         subtitle_label = BodyLabel("Configure your OpenCore EFI settings")
         subtitle_label.setStyleSheet("color: #605E5C;")
-        layout.addWidget(subtitle_label)
+        header_layout.addWidget(subtitle_label)
 
-        layout.addSpacing(SPACING['large'])
+        main_layout.addWidget(header_container)
+        main_layout.addSpacing(SPACING['medium'])
 
-        # Current configuration card
-        config_card = CardWidget()
-        config_layout = QVBoxLayout(config_card)
-        config_layout.setContentsMargins(SPACING['large'], SPACING['large'],
-                                         SPACING['large'], SPACING['large'])
+        # Scrollable area for configuration cards
+        scroll_area = ScrollArea(self)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setObjectName("configurationScrollArea")
 
-        card_title = StrongBodyLabel("Current Configuration")
-        config_layout.addWidget(card_title)
+        # Container widget for scroll area
+        container = QWidget()
+        self.cards_layout = QVBoxLayout(container)
+        self.cards_layout.setSpacing(SPACING['medium'])
+        self.cards_layout.setContentsMargins(0, 0, 0, 0)
 
-        # macOS Version
-        macos_layout = QHBoxLayout()
-        macos_label = BodyLabel("macOS Version:")
-        macos_layout.addWidget(macos_label)
+        # Current Configuration Card using GroupHeaderCardWidget
+        config_card = GroupHeaderCardWidget("Current Configuration", self)
+        
+        # macOS Version group
+        macos_widget = QWidget()
+        macos_widget_layout = QHBoxLayout(macos_widget)
+        macos_widget_layout.setContentsMargins(0, 0, 0, 0)
         self.macos_value = BodyLabel("Not selected")
-        self.macos_value.setStyleSheet("color: #605E5C;")
-        macos_layout.addWidget(self.macos_value)
-        macos_layout.addStretch()
-        config_layout.addLayout(macos_layout)
+        self.macos_value.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        macos_widget_layout.addWidget(self.macos_value)
+        macos_widget_layout.addStretch()
+        
+        config_card.addGroup(
+            FluentIcon.GLOBE,
+            "macOS Version",
+            "Target operating system version",
+            macos_widget
+        )
 
-        # SMBIOS Model
-        smbios_layout = QHBoxLayout()
-        smbios_label = BodyLabel("SMBIOS Model:")
-        smbios_layout.addWidget(smbios_label)
+        # SMBIOS Model group
+        smbios_widget = QWidget()
+        smbios_widget_layout = QHBoxLayout(smbios_widget)
+        smbios_widget_layout.setContentsMargins(0, 0, 0, 0)
         self.smbios_value = BodyLabel("Not selected")
-        self.smbios_value.setStyleSheet("color: #605E5C;")
-        smbios_layout.addWidget(self.smbios_value)
-        smbios_layout.addStretch()
-        config_layout.addLayout(smbios_layout)
+        self.smbios_value.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        smbios_widget_layout.addWidget(self.smbios_value)
+        smbios_widget_layout.addStretch()
+        
+        config_card.addGroup(
+            FluentIcon.TAG,
+            "SMBIOS Model",
+            "System identifier for macOS",
+            smbios_widget
+        )
 
-        # Disabled Devices
-        devices_layout = QHBoxLayout()
-        devices_label = BodyLabel("Disabled Devices:")
-        devices_layout.addWidget(devices_label)
+        # Disabled Devices group
+        devices_widget = QWidget()
+        devices_widget_layout = QVBoxLayout(devices_widget)
+        devices_widget_layout.setContentsMargins(0, 0, 0, 0)
         self.devices_value = BodyLabel("None")
-        self.devices_value.setStyleSheet("color: #605E5C;")
+        self.devices_value.setStyleSheet(f"color: {COLORS['text_secondary']};")
         self.devices_value.setWordWrap(True)
-        devices_layout.addWidget(self.devices_value)
-        devices_layout.addStretch()
-        config_layout.addLayout(devices_layout)
+        devices_widget_layout.addWidget(self.devices_value)
+        
+        config_card.addGroup(
+            FluentIcon.CANCEL,
+            "Disabled Devices",
+            "Hardware components excluded from configuration",
+            devices_widget
+        )
 
-        layout.addWidget(config_card)
+        self.cards_layout.addWidget(config_card)
 
-        # Customization options card
-        custom_card = CardWidget()
-        custom_layout = QVBoxLayout(custom_card)
-        custom_layout.setContentsMargins(SPACING['large'], SPACING['large'],
-                                         SPACING['large'], SPACING['large'])
+        # Customization Options Card using GroupHeaderCardWidget
+        custom_card = GroupHeaderCardWidget("Customization Options", self)
 
-        custom_title = StrongBodyLabel("Customization Options")
-        custom_layout.addWidget(custom_title)
-
-        # macOS Version button
-        self.macos_btn = PushButton("Select macOS Version")
+        # macOS Version customization
+        macos_btn_widget = QWidget()
+        macos_btn_layout = QVBoxLayout(macos_btn_widget)
+        macos_btn_layout.setContentsMargins(0, 0, 0, 0)
+        macos_btn_layout.setSpacing(SPACING['small'])
+        
+        self.macos_btn = PushButton(FluentIcon.GLOBE, "Select Version")
         self.macos_btn.clicked.connect(self.select_macos)
-        custom_layout.addWidget(self.macos_btn)
+        self.macos_btn.setFixedWidth(180)
+        macos_btn_layout.addWidget(self.macos_btn)
+        
+        custom_card.addGroup(
+            FluentIcon.SETTING,
+            "macOS Version",
+            "Choose your target macOS version for optimal compatibility",
+            macos_btn_widget
+        )
 
-        # ACPI Patches button
-        self.acpi_btn = PushButton("Customize ACPI Patches")
+        # ACPI Patches customization
+        acpi_btn_widget = QWidget()
+        acpi_btn_layout = QVBoxLayout(acpi_btn_widget)
+        acpi_btn_layout.setContentsMargins(0, 0, 0, 0)
+        acpi_btn_layout.setSpacing(SPACING['small'])
+        
+        self.acpi_btn = PushButton(FluentIcon.CODE, "Configure Patches")
         self.acpi_btn.clicked.connect(self.customize_acpi)
-        custom_layout.addWidget(self.acpi_btn)
+        self.acpi_btn.setFixedWidth(180)
+        acpi_btn_layout.addWidget(self.acpi_btn)
+        
+        custom_card.addGroup(
+            FluentIcon.DEVELOPER_TOOLS,
+            "ACPI Patches",
+            "Customize system ACPI table modifications for hardware compatibility",
+            acpi_btn_widget
+        )
 
-        # Kexts button
-        self.kexts_btn = PushButton("Customize Kexts")
+        # Kexts customization
+        kexts_btn_widget = QWidget()
+        kexts_btn_layout = QVBoxLayout(kexts_btn_widget)
+        kexts_btn_layout.setContentsMargins(0, 0, 0, 0)
+        kexts_btn_layout.setSpacing(SPACING['small'])
+        
+        self.kexts_btn = PushButton(FluentIcon.LIBRARY, "Manage Kexts")
         self.kexts_btn.clicked.connect(self.customize_kexts)
-        custom_layout.addWidget(self.kexts_btn)
+        self.kexts_btn.setFixedWidth(180)
+        kexts_btn_layout.addWidget(self.kexts_btn)
+        
+        custom_card.addGroup(
+            FluentIcon.GRID,
+            "Kernel Extensions",
+            "Configure kexts (drivers) required for your hardware",
+            kexts_btn_widget
+        )
 
-        # SMBIOS button
-        self.smbios_btn = PushButton("Customize SMBIOS Model")
+        # SMBIOS customization
+        smbios_btn_widget = QWidget()
+        smbios_btn_layout = QVBoxLayout(smbios_btn_widget)
+        smbios_btn_layout.setContentsMargins(0, 0, 0, 0)
+        smbios_btn_layout.setSpacing(SPACING['small'])
+        
+        self.smbios_btn = PushButton(FluentIcon.TAG, "Select Model")
         self.smbios_btn.clicked.connect(self.customize_smbios)
-        custom_layout.addWidget(self.smbios_btn)
+        self.smbios_btn.setFixedWidth(180)
+        smbios_btn_layout.addWidget(self.smbios_btn)
+        
+        custom_card.addGroup(
+            FluentIcon.COMPUTER,
+            "SMBIOS Model",
+            "Choose the Mac model your system will identify as",
+            smbios_btn_widget
+        )
 
-        layout.addWidget(custom_card)
-        layout.addStretch()
+        self.cards_layout.addWidget(custom_card)
+        self.cards_layout.addStretch()
+
+        scroll_area.setWidget(container)
+        main_layout.addWidget(scroll_area)
 
     def select_macos(self):
         """Select macOS version"""
