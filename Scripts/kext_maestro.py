@@ -343,7 +343,7 @@ class KextMaestro:
             elif usb_id in pci_data.BroadcomBluetoothIDs:               
                 selected_kexts.append("BrcmFirmwareData")
             elif usb_id in pci_data.IntelBluetoothIDs:
-                selected_kexts.append("IntelBTPatcher")
+                selected_kexts.append("IntelBluetoothFirmware")
             elif usb_id in pci_data.BluetoothIDs[-1]:
                 selected_kexts.append("BlueToolFixup")
 
