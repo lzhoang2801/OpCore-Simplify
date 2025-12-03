@@ -36,6 +36,20 @@
 >
 > Our tool does not guarantee a successful installation in the first attempt, but it should help you get started.
 
+## 🎨 **Modern GUI with qfluentwidgets**
+
+OpCore Simplify features a beautiful, modern graphical user interface built with [qfluentwidgets](https://qfluentwidgets.com), implementing Microsoft's Fluent Design System:
+
+- ✨ Modern, intuitive interface with smooth animations
+- 🎨 Beautiful UI components following Fluent Design principles
+- 🌓 Light/dark theme support
+- 📱 Responsive layout that works on various screen sizes
+- 🖥️ Cross-platform compatibility (Windows, macOS, Linux)
+- 💨 Fast and responsive with lazy loading
+- 🔧 Built on PyQt6 for stability and performance
+
+The GUI provides an easy-to-follow step-by-step wizard while still allowing CLI mode for advanced users or automation.
+
 ## ✨ **Features**
 
 1. **Comprehensive Hardware and macOS Support**  
@@ -96,14 +110,25 @@
 
    ![Download OpCore Simplify](https://i.imgur.com/mcE7OSX.png)
 
-2. **Running OpCore Simplify**:
+2. **Install GUI Dependencies** (Optional, for GUI mode):
+   ```bash
+   pip install -r requirements.txt
+   ```
+   Or install manually:
+   ```bash
+   pip install PyQt6 PyQt6-Fluent-Widgets
+   ```
+   
+   **Note:** If GUI dependencies are not installed, the application will automatically run in CLI mode. You can also explicitly use CLI mode with `python OpCore-Simplify.py --cli`.
+
+3. **Running OpCore Simplify**:
    - On **Windows**, run `OpCore-Simplify.bat`.
    - On **macOS**, run `OpCore-Simplify.command`.
    - On **Linux**, run `OpCore-Simplify.py` with existing Python interpreter.
 
    ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
 
-3. **Selecting hardware report**:
+4. **Selecting hardware report**:
    - On Windows, there will be an option for `E. Export hardware report`. It's recommended to use this for the best results with your hardware configuration and BIOS at the time of building.
    - Alternatively, use [**Hardware Sniffer**](https://github.com/lzhoang2801/Hardware-Sniffer) to create a `Report.json` and ACPI dump for configuration manully.
 
@@ -113,14 +138,14 @@
 
    ![Compatibility Checker](https://i.imgur.com/kuDGMmp.png)
 
-4. **Selecting macOS Version and Customizing OpenCore EFI**:
+5. **Selecting macOS Version and Customizing OpenCore EFI**:
    - By default, the latest compatible macOS version will be selected for your hardware.
    - OpCore Simplify will automatically apply essential ACPI patches and kexts. 
    - You can manually review and customize these settings as needed.
 
    ![OpCore Simplify Menu](https://i.imgur.com/TSk9ejy.png)
 
-5. **Building OpenCore EFI**:
+6. **Building OpenCore EFI**:
    - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
    - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
 
@@ -130,12 +155,12 @@
 
    ![Building OpenCore EFI](https://i.imgur.com/deyj5de.png)
 
-6. **USB Mapping**:
+7. **USB Mapping**:
    - After building your EFI, follow the steps for mapping USB ports.
 
    ![Results](https://i.imgur.com/MIPigPF.png)
 
-7. **Create USB and Install macOS**: 
+8. **Create USB and Install macOS**: 
    - Use [**UnPlugged**](https://github.com/corpnewt/UnPlugged) on Windows to create a USB macOS installer, or follow [this guide](https://dortania.github.io/OpenCore-Install-Guide/installer-guide/mac-install.html) for macOS.
    - For troubleshooting, refer to the [OpenCore Troubleshooting Guide](https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html).
 

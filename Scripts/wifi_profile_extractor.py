@@ -333,7 +333,9 @@ class WifiProfileExtractor:
             self.utils.head("WiFi Profile Extractor")
             print("")
             print("No WiFi profiles with saved passwords were found.")
-            self.utils.request_input()
+            # Only show "Press Enter to continue" prompt in CLI mode
+            if not self.utils.gui_callback:
+                self.utils.request_input()
         
         self.utils.head("WiFi Profile Extractor")
         print("")
@@ -346,6 +348,8 @@ class WifiProfileExtractor:
         print("")
         print("Successfully applied {} WiFi profiles.".format(len(profiles)))
         print("")
-            
-        self.utils.request_input()
+        
+        # Only show "Press Enter to continue" prompt in CLI mode
+        if not self.utils.gui_callback:
+            self.utils.request_input()
         return profiles

@@ -125,24 +125,9 @@ class ConfigurationPage(QWidget):
 
     def customize_acpi(self):
         """Customize ACPI patches"""
-        # Check if hardware report is loaded
-        if not self.controller.customized_hardware:
-            self.controller.update_status(
-                "Please load a hardware report first", 'warning')
-            return
-
-        # Import the ACPI patches dialog
-        from ..custom_dialogs import show_acpi_patches_dialog
-
-        # Show the ACPI patches dialog
-        ok = show_acpi_patches_dialog(
-            self.controller,
-            self.controller.ocpe.ac
-        )
-
-        if ok:
-            self.controller.update_status(
-                "ACPI patch configuration updated successfully", 'success')
+        # This would open a dialog or navigate to ACPI customization
+        self.controller.update_status(
+            "ACPI customization not yet implemented in GUI", 'info')
 
     def customize_kexts(self):
         """Customize kexts"""

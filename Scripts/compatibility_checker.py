@@ -60,7 +60,11 @@ class CompatibilityChecker:
             print("Missing required SSE4.x instruction set.")
             print("Your CPU is not supported by macOS versions newer than Sierra (10.12).")
             print("")
-            self.utils.request_input()
+            self.utils.request_input(
+                "Missing required SSE4.x instruction set.\n\n" +
+                "Your CPU is not supported by macOS versions newer than Sierra (10.12).",
+                gui_type='info'
+            )
             self.utils.exit_program()
 
         self.max_native_macos_version = max_version
@@ -73,7 +77,11 @@ class CompatibilityChecker:
             print("Please make sure to export the hardware report with the GPU information")
             print("and try again.")
             print("")
-            self.utils.request_input()
+            self.utils.request_input(
+                "No GPU found!\n\n" +
+                "Please make sure to export the hardware report with the GPU information and try again.",
+                gui_type='info'
+            )
             self.utils.exit_program()
 
         for gpu_name, gpu_props in self.hardware_report["GPU"].items():
@@ -193,7 +201,11 @@ class CompatibilityChecker:
             print("You cannot install macOS without a supported GPU.")
             print("Please do NOT spam my inbox or issue tracker about this issue anymore!")
             print("")
-            self.utils.request_input()
+            self.utils.request_input(
+                "You cannot install macOS without a supported GPU.\n\n" +
+                "Please do NOT spam my inbox or issue tracker about this issue anymore!",
+                gui_type='info'
+            )
             self.utils.exit_program()
 
         self.max_native_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_native_macos_version) else self.max_native_macos_version
@@ -287,7 +299,11 @@ class CompatibilityChecker:
             print("Please make sure to export the hardware report with the storage controller information")
             print("and try again.")
             print("")
-            self.utils.request_input()
+            self.utils.request_input(
+                "No storage controller found!\n\n" +
+                "Please make sure to export the hardware report with the storage controller information and try again.",
+                gui_type='info'
+            )
             self.utils.exit_program()
 
         for controller_name, controller_props in self.hardware_report["Storage Controllers"].items():
@@ -305,7 +321,11 @@ class CompatibilityChecker:
                 print("Intel VMD controllers are not supported in macOS.")
                 print("Please disable Intel VMD in the BIOS settings and try again with new hardware report.")
                 print("")
-                self.utils.request_input()
+                self.utils.request_input(
+                    "Intel VMD controllers are not supported in macOS.\n\n" +
+                    "Please disable Intel VMD in the BIOS settings and try again with new hardware report.",
+                    gui_type='info'
+                )
                 self.utils.exit_program()
 
             if next((device for device in pci_data.UnsupportedNVMeSSDIDs if device_id == device[0] and subsystem_id in device[1]), None):
@@ -321,7 +341,12 @@ class CompatibilityChecker:
             print("Consider purchasing a compatible SSD NVMe for your system.")
             print("Western Digital NVMe SSDs are generally recommended for good macOS compatibility.")
             print("")
-            self.utils.request_input()
+            self.utils.request_input(
+                "No compatible storage controller for macOS was found!\n\n" +
+                "Consider purchasing a compatible SSD NVMe for your system.\n" +
+                "Western Digital NVMe SSDs are generally recommended for good macOS compatibility.",
+                gui_type='info'
+            )
             self.utils.exit_program()
 
     def check_bluetooth_compatibility(self):
@@ -388,6 +413,9 @@ class CompatibilityChecker:
                 function()
 
         print("")
-        self.utils.request_input()
+        # Only show "Press Enter to continue" prompt in CLI mode
+        # In GUI mode, the results will be displayed automatically in the compatibility page
+        if not self.utils.gui_callback:
+            self.utils.request_input()
 
         return hardware_report, (self.min_native_macos_version, self.max_native_macos_version), self.ocl_patched_macos_version
