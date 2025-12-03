@@ -63,7 +63,7 @@ class gatheringFiles:
             elif kext.github_repo and kext.github_repo.get("repo") not in seen_repos:
                 name = kext.github_repo.get("repo")
                 seen_repos.add(name)
-                if name in dortania_builds_data:
+                if name != "IntelBluetoothFirmware" and name in dortania_builds_data:
                     add_product_to_download_database({
                         "product_name": name,
                         "id": dortania_builds_data[name]["versions"][0]["release"]["id"], 
