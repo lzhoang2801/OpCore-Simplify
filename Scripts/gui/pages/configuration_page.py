@@ -125,8 +125,52 @@ class ConfigurationPage(QWidget):
 
     def customize_smbios(self):
         """Customize SMBIOS model"""
-        self.controller.update_status(
-            "SMBIOS customization not yet implemented in GUI", 'info')
+        # Check if hardware report is loaded
+        if not self.controller.customized_hardware:
+            self.controller.update_status(
+                "Please load a hardware report first", 'warning')
+            return
+
+        # Import required modules
+        from ...datasets.mac_model_data import mac_devices
+        from ..custom_dialogs import show_smbios_dialog
+
+        # Get current state
+        current_model = self.controller.smbios_model_text
+        default_model = self.controller.ocpe.s.select_smbios_model(
+            self.controller.customized_hardware,
+            self.controller.macos_version_text
+        )
+        is_laptop = "Laptop" == self.controller.customized_hardware.get("Motherboard").get("Platform")
+
+        # Show SMBIOS selection dialog
+        selected_model, ok = show_smbios_dialog(
+            self.controller,
+            mac_devices,
+            current_model,
+            default_model,
+            self.controller.macos_version_text,
+            is_laptop,
+            self.controller.ocpe.u
+        )
+
+        if ok and selected_model != current_model:
+            # Update the selected SMBIOS model
+            self.controller.smbios_model_text = selected_model
+
+            # Apply SMBIOS-specific options
+            self.controller.ocpe.s.smbios_specific_options(
+                self.controller.customized_hardware,
+                selected_model,
+                self.controller.macos_version_text,
+                self.controller.ocpe.ac.patches,
+                self.controller.ocpe.k
+            )
+
+            # Update display
+            self.update_display()
+            self.controller.update_status(
+                f"SMBIOS model updated to {selected_model}", 'success')
 
     def update_display(self):
         """Update configuration display"""
