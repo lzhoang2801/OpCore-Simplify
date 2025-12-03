@@ -218,3 +218,24 @@ def show_question_dialog(parent, title: str, content: str, default: str = 'no', 
     return dialog.exec() == QDialog.DialogCode.Accepted
 
 
+def show_info_dialog(parent, title: str, content: str):
+    """
+    Show an informational dialog with OK button
+    
+    Args:
+        parent: Parent widget
+        title: Dialog title
+        content: Dialog content/message
+        
+    Returns:
+        str: Empty string for consistency with request_input
+    """
+    dialog = MessageBox(title, content, parent)
+    # Hide the cancel button for info dialogs
+    dialog.cancelButton.hide()
+    dialog.yesButton.setText("OK")
+    
+    dialog.exec()
+    return ""
+
+

@@ -21,7 +21,7 @@ from qfluentwidgets import (
 
 from .styles import COLORS, SPACING
 from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, WiFiPage
-from .custom_dialogs import show_input_dialog, show_choice_dialog, show_question_dialog
+from .custom_dialogs import show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog
 
 # Import from Scripts package
 scripts_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -260,6 +260,17 @@ class OpCoreGUI(FluentWindow):
             
             # Convert boolean to "yes"/"no" string for consistency with CLI
             return "yes" if result else "no"
+        
+        elif prompt_type == 'info':
+            # Informational dialog with OK button
+            if options:
+                title = options.get('title', 'Information')
+                message = options.get('message', prompt_text)
+            else:
+                title = 'Information'
+                message = prompt_text
+            
+            return show_info_dialog(self, title, message)
         
         return None
     
