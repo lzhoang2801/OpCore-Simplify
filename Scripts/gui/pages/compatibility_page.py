@@ -146,11 +146,16 @@ class CompatibilityPage(QWidget):
         main_layout.addWidget(scroll_area)
     
     def format_compatibility(self, compat_tuple):
-        """Format compatibility tuple to readable string with color"""
+        """
+        Format compatibility tuple to readable string with color.
+        
+        Note: Device compatibility tuples have format (max_version, min_version)
+        where index [0] is the highest/latest version and [-1] is the lowest/earliest.
+        """
         if not compat_tuple or compat_tuple == (None, None):
             return "Unsupported", "#D13438"  # Red
         
-        max_ver, min_ver = compat_tuple
+        max_ver, min_ver = compat_tuple  # First element is max, second is min
         
         if max_ver and min_ver:
             max_name = os_data.get_macos_name_by_darwin(max_ver)
@@ -159,6 +164,7 @@ class CompatibilityPage(QWidget):
             if max_name == min_name:
                 return f"Up to {max_name}", "#0078D4"  # Blue
             else:
+                # Display as min to max (earliest to latest) for user clarity
                 return f"{min_name} to {max_name}", "#107C10"  # Green
         
         return "Unknown", "#605E5C"  # Gray
@@ -331,18 +337,19 @@ class CompatibilityPage(QWidget):
             version_card = HardwareCard("macOS Version Support", FluentIcon.HISTORY)
             
             # native_macos_version is a tuple: (min_version, max_version)
-            # Index 0 is the minimum (earliest) version, Index -1 is the maximum (latest) version
-            min_ver = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[0])
-            max_ver = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[-1])
+            # Index [0] is the minimum (earliest) version, [-1] is the maximum (latest) version
+            min_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[0])
+            max_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[-1])
             
-            version_card.add_item("Supported Range:", f"{min_ver} to {max_ver}", color="#107C10")
+            version_card.add_item("Supported Range:", f"{min_ver_name} to {max_ver_name}", color="#107C10")
             
             # Add OCLP info if available
             if self.controller.ocl_patched_macos_version:
-                # ocl_patched_macos_version is also a tuple: (max_version, min_version) - note reversed order
-                oclp_max = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
-                oclp_min = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
-                version_card.add_item("OCLP Extended:", f"{oclp_min} to {oclp_max}", color="#0078D4")
+                # ocl_patched_macos_version is a tuple: (max_version, min_version) - note reversed from native
+                # Index [0] is the maximum (latest) version, [-1] is the minimum (earliest) version
+                oclp_max_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
+                oclp_min_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
+                version_card.add_item("OCLP Extended:", f"{oclp_min_name} to {oclp_max_name}", color="#0078D4")
                 version_card.add_detail("With OpenCore Legacy Patcher support", indent=1, color="#605E5C")
             
             self.cards_layout.addWidget(version_card)
