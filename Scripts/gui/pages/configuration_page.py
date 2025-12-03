@@ -74,7 +74,7 @@ class ConfigurationPage(QWidget):
         macos_widget_layout.addStretch()
         
         config_card.addGroup(
-            FluentIcon.SYSTEM,
+            FluentIcon.GLOBE,
             "macOS Version",
             "Target operating system version",
             macos_widget
@@ -165,7 +165,7 @@ class ConfigurationPage(QWidget):
         kexts_btn_layout.addWidget(self.kexts_btn)
         
         custom_card.addGroup(
-            FluentIcon.GRID,
+            FluentIcon.CODE,
             "Kernel Extensions",
             "Configure kexts (drivers) required for your hardware",
             kexts_btn_widget
@@ -183,7 +183,7 @@ class ConfigurationPage(QWidget):
         smbios_btn_layout.addWidget(self.smbios_btn)
         
         custom_card.addGroup(
-            FluentIcon.COMPUTER,
+            FluentIcon.TAG,
             "SMBIOS Model",
             "Choose the Mac model your system will identify as",
             smbios_btn_widget
