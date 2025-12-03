@@ -76,7 +76,8 @@ class ChoiceMessageBox(MessageBoxBase):
         self.contentLabel.setObjectName("contentLabel")
         self.contentLabel.setWordWrap(True)
         
-        # Populate combo box
+        # Populate combo box and build descriptions text
+        descriptions_text = []
         if choices:
             default_index = 0
             for idx, choice in enumerate(choices):
@@ -88,6 +89,11 @@ class ChoiceMessageBox(MessageBoxBase):
                 value = choice.get('value', str(idx))
                 self.choice_values.append(value)
                 
+                # Build description text if available
+                description = choice.get('description')
+                if description:
+                    descriptions_text.append(f"\n{label}:\n{description}")
+                
                 # Set default if matches
                 if default_value and value == default_value:
                     default_index = idx
@@ -98,6 +104,13 @@ class ChoiceMessageBox(MessageBoxBase):
         self.viewLayout.addWidget(self.titleLabel)
         self.viewLayout.addWidget(self.contentLabel)
         self.viewLayout.addWidget(self.comboBox)
+        
+        # Add descriptions if available
+        if descriptions_text:
+            self.descriptionsLabel = QLabel('\n'.join(descriptions_text), self.widget)
+            self.descriptionsLabel.setWordWrap(True)
+            self.descriptionsLabel.setStyleSheet("color: #605E5C; margin-top: 10px; font-size: 12px;")
+            self.viewLayout.addWidget(self.descriptionsLabel)
         
         # Add warning or note if provided
         if warning:
