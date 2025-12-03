@@ -27,6 +27,47 @@ class KextMaestro:
         ]
         self.ock_files_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "OCK_Files")
         self.kexts = kext_data.kexts
+    
+    def get_intel_wifi_info_message(self, macos_version, network_name):
+        """
+        Build a detailed information message about Intel WiFi kext options.
+        This centralizes the information to avoid duplication between CLI and GUI.
+        
+        Args:
+            macos_version: The macOS version being targeted
+            network_name: The name of the Intel WiFi device
+            
+        Returns:
+            str: A formatted message with complete Intel WiFi kext information
+        """
+        message_parts = []
+        
+        # Device detection
+        message_parts.append(f"Found {network_name} is Intel WiFi device.\n")
+        
+        # Note about kext options
+        message_parts.append("Note: Intel WiFi devices have two available kext options:\n")
+        
+        # Option 1: AirportItlwm
+        message_parts.append("1. AirportItlwm")
+        message_parts.append("   • Uses native WiFi settings menu")
+        message_parts.append("   • Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support")
+        message_parts.append("   • Supports enterprise-level security")
+        
+        # Add version-specific warning for AirportItlwm
+        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
+            message_parts.append("   • Since macOS Sequoia 15: Can work with OCLP root patch but may cause issues")
+        elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
+            message_parts.append("   • On macOS Sonoma 14: iServices won't work unless using OCLP root patch")
+        
+        # Option 2: itlwm
+        message_parts.append("\n2. itlwm")
+        message_parts.append("   • More stable overall")
+        message_parts.append("   • Works with HeliPort app instead of native WiFi settings menu")
+        message_parts.append("   • No Apple Continuity features and enterprise-level security")
+        message_parts.append("   • Can connect to Hidden Networks")
+        
+        return "\n".join(message_parts)
         
     def extract_pci_id(self, kext_path):
         if not os.path.exists(kext_path):
@@ -337,6 +378,10 @@ class KextMaestro:
             elif device_id in pci_data.BroadcomWiFiIDs[16:18] and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
                 selected_kexts.append("AirportBrcmFixup")
             elif device_id in pci_data.IntelWiFiIDs:
+                # Get the detailed Intel WiFi information
+                intel_wifi_info = self.get_intel_wifi_info_message(macos_version, network_name)
+                
+                # Print to CLI with formatting
                 print("\n*** Found {} is Intel WiFi device.".format(network_name))
                 print("")
                 print("\033[1;93mNote:\033[0m Intel WiFi devices have two available kext options:")
@@ -365,20 +410,20 @@ class KextMaestro:
                 if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
                     print("\033[91mImportant:\033[0m For macOS Beta versions, only itlwm kext is supported")
                     print("")
-                    # Show info dialog in GUI mode, press enter in CLI mode
+                    # Show info dialog in GUI mode with full context, press enter in CLI mode
                     gui_options = {
                         'title': 'Intel WiFi Kext - Beta Version',
-                        'message': 'For macOS Beta versions, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
+                        'message': intel_wifi_info + '\n\nImportant: For macOS Beta versions, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
                     }
                     self.utils.request_input("Press Enter to continue...", gui_type='info', gui_options=gui_options)
                     selected_option = recommended_option
                 elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
                     print("\033[91mImportant:\033[0m For macOS Tahoe 26, only itlwm kext is supported")
                     print("")
-                    # Show info dialog in GUI mode, press enter in CLI mode
+                    # Show info dialog in GUI mode with full context, press enter in CLI mode
                     gui_options = {
                         'title': 'Intel WiFi Kext - macOS Tahoe 26',
-                        'message': 'For macOS Tahoe 26, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
+                        'message': intel_wifi_info + '\n\nImportant: For macOS Tahoe 26, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
                     }
                     self.utils.request_input("Press Enter to continue...", gui_type='info', gui_options=gui_options)
                     selected_option = recommended_option
