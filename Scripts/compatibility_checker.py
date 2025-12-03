@@ -83,7 +83,7 @@ class CompatibilityChecker:
 
             max_version = os_data.get_latest_darwin_version()
             min_version = os_data.get_lowest_darwin_version()
-            ocl_patched_max_version = os_data.get_latest_darwin_version(include_beta=False)
+            ocl_patched_max_version = "24.99.99"
             ocl_patched_min_version = "20.0.0"
 
             if "Intel" in gpu_manufacturer:
