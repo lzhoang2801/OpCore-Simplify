@@ -310,7 +310,7 @@ class CompatibilityPage(QWidget):
         
         # Bluetooth Card
         if 'Bluetooth' in report and report['Bluetooth']:
-            bluetooth_card = HardwareCard("Bluetooth", FluentIcon.LABEL)
+            bluetooth_card = HardwareCard("Bluetooth", FluentIcon.BLUETOOTH)
             
             for bluetooth_name, bluetooth_props in report['Bluetooth'].items():
                 bluetooth_card.add_spacing()

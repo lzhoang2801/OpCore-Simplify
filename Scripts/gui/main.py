@@ -20,7 +20,7 @@ from qfluentwidgets import (
 )
 
 from .styles import COLORS, SPACING
-from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, WiFiPage
+from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage
 from .custom_dialogs import show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog
 
 # Import from Scripts package
@@ -125,7 +125,6 @@ class OpCoreGUI(FluentWindow):
         self.compatibilityPage = CompatibilityPage(self)
         self.configurationPage = ConfigurationPage(self)
         self.buildPage = BuildPage(self)
-        self.wifiPage = WiFiPage(self)
         self.consolePage = ConsolePage(self)
         
         # Add pages to navigation
@@ -136,7 +135,6 @@ class OpCoreGUI(FluentWindow):
         
         # Add tools section
         self.navigationInterface.addSeparator()
-        self.addSubInterface(self.wifiPage, FluentIcon.WIFI, "WiFi Profiles", NavigationItemPosition.BOTTOM)
         self.addSubInterface(self.consolePage, FluentIcon.DOCUMENT, "Console Log", NavigationItemPosition.BOTTOM)
         
         # Set console log widget for redirection
