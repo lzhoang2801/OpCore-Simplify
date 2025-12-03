@@ -3,9 +3,13 @@ Custom dialog implementations using qfluentwidgets.
 Following qfluentwidgets design patterns by extending MessageBoxBase.
 """
 
-from PyQt6.QtWidgets import QLabel, QDialog
+from PyQt6.QtWidgets import (
+    QLabel, QDialog, QVBoxLayout, QHBoxLayout,
+    QScrollArea, QWidget, QPushButton, QButtonGroup,
+    QRadioButton
+)
 from PyQt6.QtCore import Qt
-from qfluentwidgets import MessageBoxBase, LineEdit, ComboBox, MessageBox
+from qfluentwidgets import MessageBoxBase, LineEdit, ComboBox, MessageBox, PushButton, PrimaryPushButton, BodyLabel
 
 from .styles import COLORS
 
@@ -274,3 +278,236 @@ def show_info_dialog(parent, title: str, content: str):
     dialog = InfoMessageBox(title, content, parent)
     dialog.exec()
     return ""
+
+
+class SMBIOSDialog(QDialog):
+    """Custom dialog for SMBIOS model selection with filtering and categorization"""
+
+    def __init__(self, mac_devices, selected_model, default_model, macos_version, is_laptop, utils, parent=None):
+        """
+        Initialize SMBIOS dialog
+
+        Args:
+            mac_devices: List of MacDevice objects
+            selected_model: Currently selected SMBIOS model
+            default_model: Default/recommended SMBIOS model
+            macos_version: Target macOS version (Darwin format)
+            is_laptop: Boolean indicating if hardware is laptop
+            utils: Utils instance for version parsing
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.mac_devices = mac_devices
+        self.selected_model = selected_model
+        self.default_model = default_model
+        self.macos_version = macos_version
+        self.is_laptop = is_laptop
+        self.utils = utils
+        self.show_all_models = False
+        self.result_model = selected_model
+
+        self.setWindowTitle("Customize SMBIOS Model")
+        self.setMinimumSize(900, 700)
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Setup the dialog UI"""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+
+        # Title
+        title_label = QLabel("Customize SMBIOS Model")
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        layout.addWidget(title_label)
+
+        # Description
+        desc_label = BodyLabel(
+            "Compatible models only" if not self.show_all_models else "All available models"
+        )
+        desc_label.setStyleSheet("color: #605E5C;")
+        self.desc_label = desc_label
+        layout.addWidget(desc_label)
+
+        # Scroll area for models
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                border: 1px solid #E1DFDD;
+                border-radius: 4px;
+                background-color: white;
+            }
+        """)
+
+        # Container widget for scroll area
+        scroll_widget = QWidget()
+        self.scroll_layout = QVBoxLayout(scroll_widget)
+        self.scroll_layout.setSpacing(5)
+        self.scroll_layout.setContentsMargins(10, 10, 10, 10)
+
+        # Radio button group
+        self.button_group = QButtonGroup(self)
+        self.populate_models()
+
+        scroll.setWidget(scroll_widget)
+        layout.addWidget(scroll, 1)  # Give it stretch factor
+
+        # Note
+        note_label = BodyLabel(
+            f"ℹ️ Note: Grayed-out models are not officially supported by this macOS version."
+        )
+        note_label.setWordWrap(True)
+        note_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 11px; padding: 5px;")
+        layout.addWidget(note_label)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+
+        # Show all/compatible toggle
+        self.toggle_btn = PushButton(
+            "Show All Models" if not self.show_all_models else "Show Compatible Only"
+        )
+        self.toggle_btn.clicked.connect(self.toggle_filter)
+        button_layout.addWidget(self.toggle_btn)
+
+        # Restore default button
+        if self.selected_model != self.default_model:
+            self.restore_btn = PushButton(f"Restore Default ({self.default_model})")
+            self.restore_btn.clicked.connect(self.restore_default)
+            button_layout.addWidget(self.restore_btn)
+
+        button_layout.addStretch()
+
+        # Cancel and OK buttons
+        cancel_btn = PushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_btn)
+
+        ok_btn = PrimaryPushButton("OK")
+        ok_btn.clicked.connect(self.accept)
+        button_layout.addWidget(ok_btn)
+
+        layout.addLayout(button_layout)
+
+    def populate_models(self):
+        """Populate the models list with radio buttons"""
+        # Clear existing widgets
+        while self.scroll_layout.count():
+            item = self.scroll_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        current_category = None
+
+        for index, device in enumerate(self.mac_devices):
+            # Check if model is supported
+            is_supported = (
+                self.utils.parse_darwin_version(device.initial_support) <=
+                self.utils.parse_darwin_version(self.macos_version) <=
+                self.utils.parse_darwin_version(device.last_supported_version)
+            )
+
+            # Filter logic (same as CLI)
+            if (device.name not in (self.default_model, self.selected_model) and
+                not self.show_all_models and
+                (not is_supported or
+                 (self.is_laptop and not device.name.startswith("MacBook")) or
+                 (not self.is_laptop and device.name.startswith("MacBook")))):
+                continue
+
+            # Extract category (e.g., "iMac", "MacBookPro")
+            category = device.name.split(next((char for char in device.name if char.isdigit()), ''))[0]
+
+            # Add category header if changed
+            if category != current_category:
+                current_category = category
+                if self.scroll_layout.count() > 0:  # Add spacing before category
+                    self.scroll_layout.addSpacing(10)
+
+                category_label = QLabel(f"Category: {category if category else 'Uncategorized'}")
+                category_label.setStyleSheet(
+                    "font-weight: bold; font-size: 13px; color: #323130; "
+                    "border-bottom: 2px solid #0078D4; padding: 5px 0px;"
+                )
+                self.scroll_layout.addWidget(category_label)
+
+            # Create radio button for model
+            display_text = f"{device.name} - {device.cpu} ({device.cpu_generation})"
+            if device.discrete_gpu:
+                display_text += f" - {device.discrete_gpu}"
+
+            radio = QRadioButton(display_text)
+            radio.setProperty("model_name", device.name)
+            radio.setProperty("device_index", index)
+
+            # Style based on support status
+            if device.name == self.selected_model:
+                radio.setChecked(True)
+                radio.setStyleSheet(
+                    "font-weight: bold; color: #107C10; padding: 5px;"
+                )
+            elif not is_supported:
+                radio.setStyleSheet(
+                    "color: #A19F9D; padding: 5px;"
+                )
+            else:
+                radio.setStyleSheet("padding: 5px;")
+
+            # Connect to button group
+            self.button_group.addButton(radio, index)
+            self.scroll_layout.addWidget(radio)
+
+        self.scroll_layout.addStretch()
+
+    def toggle_filter(self):
+        """Toggle between showing all models and compatible models only"""
+        self.show_all_models = not self.show_all_models
+        self.toggle_btn.setText(
+            "Show All Models" if not self.show_all_models else "Show Compatible Only"
+        )
+        self.desc_label.setText(
+            "Compatible models only" if not self.show_all_models else "All available models"
+        )
+        self.populate_models()
+
+    def restore_default(self):
+        """Restore the default SMBIOS model"""
+        self.result_model = self.default_model
+        self.selected_model = self.default_model
+        self.populate_models()
+
+    def accept(self):
+        """Handle OK button click"""
+        # Get selected radio button
+        checked_button = self.button_group.checkedButton()
+        if checked_button:
+            self.result_model = checked_button.property("model_name")
+        super().accept()
+
+    def get_selected_model(self):
+        """Return the selected model"""
+        return self.result_model
+
+
+def show_smbios_dialog(parent, mac_devices, selected_model, default_model, macos_version, is_laptop, utils):
+    """
+    Show SMBIOS model selection dialog
+
+    Args:
+        parent: Parent widget
+        mac_devices: List of MacDevice objects
+        selected_model: Currently selected SMBIOS model
+        default_model: Default/recommended SMBIOS model
+        macos_version: Target macOS version (Darwin format)
+        is_laptop: Boolean indicating if hardware is laptop
+        utils: Utils instance for version parsing
+
+    Returns:
+        tuple: (model_name, ok) where model_name is selected model and ok is True if OK was clicked
+    """
+    dialog = SMBIOSDialog(mac_devices, selected_model, default_model, macos_version, is_laptop, utils, parent)
+    if dialog.exec() == QDialog.DialogCode.Accepted:
+        return dialog.get_selected_model(), True
+    return selected_model, False
