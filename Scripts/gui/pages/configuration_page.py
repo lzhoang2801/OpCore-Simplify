@@ -129,11 +129,11 @@ class ConfigurationPage(QWidget):
         # Import the kexts dialog
         from ..custom_dialogs import show_kexts_dialog
 
-        # Show the kexts dialog
+        # Show the kexts dialog (macos_version is in Darwin kernel version format, e.g., "22.0.0")
         ok = show_kexts_dialog(
             self.controller,
             self.controller.ocpe.k,
-            self.controller.macos_version  # Use Darwin version
+            self.controller.macos_version
         )
 
         if ok:

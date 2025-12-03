@@ -555,7 +555,7 @@ class KextsDialog(QDialog):
         # Description
         desc_label = BodyLabel(
             f"Select kernel extensions (kexts) for your system. "
-            f"Gray items are not supported by macOS version {self.macos_version}."
+            f"Grayed-out items are not supported by macOS version {self.macos_version}."
         )
         desc_label.setWordWrap(True)
         desc_label.setStyleSheet("color: #605E5C;")
@@ -585,8 +585,8 @@ class KextsDialog(QDialog):
 
         # Note
         note_label = BodyLabel(
-            f"ℹ️ Note: When a plugin of a kext is selected, the entire kext will be automatically selected. "
-            f"Required kexts cannot be unchecked."
+            "ℹ️ Note: When a plugin of a kext is selected, the entire kext will be automatically "
+            "selected. Required kexts cannot be unchecked."
         )
         note_label.setWordWrap(True)
         note_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 11px; padding: 5px;")
@@ -700,6 +700,7 @@ class KextsDialog(QDialog):
             return False
         
         # Kext is incompatible - ask user
+        # Check if Lilu is in the exact list of required kexts (not substring match)
         is_lilu_dependent = "Lilu" in kext.requires_kexts
         
         message = (
