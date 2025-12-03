@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import QLabel, QDialog
 from PyQt6.QtCore import Qt
 from qfluentwidgets import MessageBoxBase, LineEdit, ComboBox, MessageBox
 
-from ..styles import COLORS
+from .styles import COLORS
 
 
 class InputMessageBox(MessageBoxBase):
