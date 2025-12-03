@@ -22,21 +22,13 @@ if str(scripts_path) not in sys.path:
     sys.path.insert(0, str(scripts_path))
 from datasets import os_data, pci_data
 
-# Create a reusable empty widget instance
-_EMPTY_WIDGET = None
-
-def get_empty_widget():
-    """Get a reusable empty widget for addGroup calls"""
-    global _EMPTY_WIDGET
-    if _EMPTY_WIDGET is None:
-        _EMPTY_WIDGET = QWidget()
-    return _EMPTY_WIDGET
-
+# Create a reusable empty widget instance - REMOVED as it can cause layout issues
+# Each addGroup call should get its own QWidget instance
 
 def create_info_widget(text, color=None):
     """Create a simple label widget for displaying information"""
     if not text:
-        # Return empty widget if no text
+        # Return new empty widget if no text (don't reuse)
         return QWidget()
     label = BodyLabel(text)
     label.setWordWrap(True)
@@ -54,14 +46,14 @@ def add_group_with_indent(card, icon, title, content, widget=None, indent_level=
         icon: Icon for the group
         title: Title text
         content: Content/description text
-        widget: Widget to add (default: empty QWidget)
+        widget: Widget to add (default: new empty QWidget)
         indent_level: 0 for main items, 1+ for child items (each level adds 20px left margin)
     
     Returns:
         The created CardGroupWidget
     """
     if widget is None:
-        widget = get_empty_widget()
+        widget = QWidget()  # Create new instance each time
     
     group = card.addGroup(icon, title, content, widget)
     
@@ -365,10 +357,10 @@ class CompatibilityPage(QWidget):
                         continuity_color = COLORS['success']
                     elif device_id in pci_data.IntelWiFiIDs:
                         continuity_info = "Partial (Handoff with AirportItlwm) - AirDrop, Instant Hotspot not available"
-                        continuity_color = "#FDB913"
+                        continuity_color = COLORS['warning']
                     elif device_id in pci_data.AtherosWiFiIDs:
                         continuity_info = "Limited support"
-                        continuity_color = "#D13438"
+                        continuity_color = COLORS['error']
                     
                     if continuity_info:
                         add_group_with_indent(
@@ -449,7 +441,7 @@ class CompatibilityPage(QWidget):
                     FluentIcon.FINGERPRINT,
                     bio_device,
                     "Unsupported",
-                    create_info_widget("⚠️ Biometric authentication requires Apple T2 Chip - Not available for Hackintosh systems", "#FDB913"),
+                    create_info_widget("⚠️ Biometric authentication requires Apple T2 Chip - Not available for Hackintosh systems", COLORS['warning']),
                     indent_level=0
                 )
             
