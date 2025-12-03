@@ -94,6 +94,11 @@ class ConfigurationPage(QWidget):
         custom_title = StrongBodyLabel("Customization Options")
         custom_layout.addWidget(custom_title)
 
+        # macOS Version button
+        self.macos_btn = PushButton("Select macOS Version")
+        self.macos_btn.clicked.connect(self.select_macos)
+        custom_layout.addWidget(self.macos_btn)
+
         # ACPI Patches button
         self.acpi_btn = PushButton("Customize ACPI Patches")
         self.acpi_btn.clicked.connect(self.customize_acpi)
@@ -111,6 +116,12 @@ class ConfigurationPage(QWidget):
 
         layout.addWidget(custom_card)
         layout.addStretch()
+
+    def select_macos(self):
+        """Select macOS version"""
+        # This would open a dialog or navigate to ACPI customization
+        self.controller.update_status(
+            "Select macOS version is not yet implemented in GUI", 'info')
 
     def customize_acpi(self):
         """Customize ACPI patches"""
