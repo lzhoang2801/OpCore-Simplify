@@ -1,8 +1,7 @@
 """
-OpCore Simplify GUI Package
+OpCore Simplify GUI - qfluentwidgets version
 """
 
-from .main import OpCoreGUI
-from .icons import Icons
+from .main_new import OpCoreGUI
 
-__all__ = ['OpCoreGUI', 'Icons']
+__all__ = ['OpCoreGUI']

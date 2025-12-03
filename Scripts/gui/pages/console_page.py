@@ -1,189 +1,94 @@
 """
-Console log page for viewing system messages and debug information
+Console log page - qfluentwidgets version
 """
 
-import tkinter as tk
-from tkinter import scrolledtext
-import os
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from PyQt6.QtCore import Qt
+from qfluentwidgets import (
+    PushButton, SubtitleLabel, BodyLabel, CardWidget, TextEdit,
+    StrongBodyLabel, FluentIcon
+)
 
-from ..styles import COLORS, SPACING, get_font
-from ..icons import Icons
+from ..styles import COLORS, SPACING
 
 
-class ConsolePage(tk.Frame):
-    """Console log page for technical output"""
+class ConsolePage(QWidget):
+    """Console log viewer"""
     
-    def __init__(self, parent, app_controller, **kwargs):
-        """
-        Initialize console page
-        
-        Args:
-            parent: Parent widget
-            app_controller: Reference to main application controller
-        """
-        super().__init__(parent, bg=COLORS['bg_main'], **kwargs)
-        self.controller = app_controller
-        
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.controller = parent
         self.setup_ui()
-        
+    
     def setup_ui(self):
         """Setup the console page UI"""
-        # Main container with padding
-        container = tk.Frame(self, bg=COLORS['bg_main'])
-        container.pack(fill=tk.BOTH, expand=True, padx=SPACING['xxlarge'], 
-                      pady=SPACING['xlarge'])
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], 
+                                  SPACING['xxlarge'], SPACING['xlarge'])
+        layout.setSpacing(SPACING['large'])
         
-        # Title section
-        header_frame = tk.Frame(container, bg=COLORS['bg_main'])
-        header_frame.pack(fill=tk.X, pady=(0, SPACING['large']))
+        # Title
+        title_label = SubtitleLabel("Console Log")
+        layout.addWidget(title_label)
         
-        title_label = tk.Label(
-            header_frame,
-            text="Console Log",
-            font=get_font('title'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_primary']
-        )
-        title_label.pack(side=tk.LEFT)
+        subtitle_label = BodyLabel("View application console output")
+        subtitle_label.setStyleSheet("color: #605E5C;")
+        layout.addWidget(subtitle_label)
         
-        # Control buttons
-        button_frame = tk.Frame(header_frame, bg=COLORS['bg_main'])
-        button_frame.pack(side=tk.RIGHT)
+        layout.addSpacing(SPACING['large'])
         
-        # Clear button with macOS styling
-        clear_btn = tk.Button(
-            button_frame,
-            text="🗑️  Clear",
-            font=get_font('body'),
-            bg=COLORS['bg_hover'],
-            fg=COLORS['text_primary'],
-            activebackground=COLORS['bg_hover'],
-            bd=0,
-            relief=tk.FLAT,
-            cursor='hand2',
-            padx=SPACING['large'],
-            pady=SPACING['small'],
-            command=self.clear_console,
-            highlightthickness=0
-        )
-        clear_btn.pack(side=tk.LEFT, padx=(0, SPACING['small']))
+        # Console card
+        console_card = CardWidget()
+        console_layout = QVBoxLayout(console_card)
+        console_layout.setContentsMargins(SPACING['large'], SPACING['large'], 
+                                         SPACING['large'], SPACING['large'])
         
-        # Export button with macOS styling
-        export_btn = tk.Button(
-            button_frame,
-            text=Icons.format_with_text("save", "Export"),
-            font=get_font('body'),
-            bg=COLORS['bg_hover'],
-            fg=COLORS['text_primary'],
-            activebackground=COLORS['bg_hover'],
-            bd=0,
-            relief=tk.FLAT,
-            cursor='hand2',
-            padx=SPACING['large'],
-            pady=SPACING['small'],
-            command=self.export_console,
-            highlightthickness=0
-        )
-        export_btn.pack(side=tk.LEFT)
+        # Toolbar
+        toolbar = QHBoxLayout()
         
-        # macOS-style hover effects
-        def on_clear_enter(e):
-            clear_btn.config(bg=COLORS['bg_hover'])
-            
-        def on_clear_leave(e):
-            clear_btn.config(bg=COLORS['bg_hover'])
-            
-        def on_export_enter(e):
-            export_btn.config(bg=COLORS['bg_hover'])
-            
-        def on_export_leave(e):
-            export_btn.config(bg=COLORS['bg_hover'])
-            
-        clear_btn.bind('<Enter>', on_clear_enter)
-        clear_btn.bind('<Leave>', on_clear_leave)
-        export_btn.bind('<Enter>', on_export_enter)
-        export_btn.bind('<Leave>', on_export_leave)
+        clear_btn = PushButton(FluentIcon.DELETE, "Clear")
+        clear_btn.clicked.connect(self.clear_console)
+        toolbar.addWidget(clear_btn)
         
-        # Subtitle
-        subtitle_label = tk.Label(
-            container,
-            text="System messages, debug information, and application logs",
-            font=get_font('body'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_secondary']
-        )
-        subtitle_label.pack(anchor=tk.W, pady=(0, SPACING['large']))
+        save_btn = PushButton(FluentIcon.SAVE, "Save to File")
+        save_btn.clicked.connect(self.save_console)
+        toolbar.addWidget(save_btn)
         
-        # Console log area in a card with macOS styling
-        card = tk.Frame(container, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
-        card.pack(fill=tk.BOTH, expand=True)
+        toolbar.addStretch()
+        console_layout.addLayout(toolbar)
         
-        # Log text area with dark theme (macOS Terminal style)
-        log_frame = tk.Frame(card, bg='#1E1E1E', highlightbackground=COLORS['border_light'], highlightthickness=1)
-        log_frame.pack(fill=tk.BOTH, expand=True, padx=SPACING['medium'], pady=SPACING['medium'])
+        # Console text area
+        self.console_text = TextEdit()
+        self.console_text.setReadOnly(True)
+        self.console_text.setPlainText("Console output will appear here...")
+        self.console_text.setMinimumHeight(500)
+        console_layout.addWidget(self.console_text)
         
-        self.controller.console_log = scrolledtext.ScrolledText(
-            log_frame,
-            wrap=tk.WORD,
-            font=('Consolas', 9) if os.name == 'nt' else ('Monaco', 10),
-            bg='#1E1E1E',  # Dark background
-            fg='#D4D4D4',  # Light text
-            insertbackground='#FFFFFF',  # Cursor color
-            selectbackground='#264F78',  # Selection color
-            relief=tk.FLAT,
-            bd=0,
-            padx=SPACING['medium'],
-            pady=SPACING['medium']
-        )
-        self.controller.console_log.pack(fill=tk.BOTH, expand=True)
-        
-        # Info footer
-        footer = tk.Frame(container, bg=COLORS['bg_main'])
-        footer.pack(fill=tk.X, pady=(SPACING['medium'], 0))
-        
-        info_label = tk.Label(
-            footer,
-            text="💡 Tip: Export the console log when reporting issues to help with troubleshooting",
-            font=get_font('small'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_secondary'],
-            anchor=tk.W
-        )
-        info_label.pack(anchor=tk.W)
-        
+        layout.addWidget(console_card)
+    
     def clear_console(self):
-        """Clear the console log"""
-        self.controller.console_log.delete('1.0', tk.END)
-        self.controller.console_log.insert('1.0', "Console log cleared.\n\n")
+        """Clear console output"""
+        self.console_text.clear()
+    
+    def save_console(self):
+        """Save console output to file"""
+        from PyQt6.QtWidgets import QFileDialog
         
-    def export_console(self):
-        """Export console log to file"""
-        from tkinter import filedialog
-        import datetime
-        
-        # Get log content
-        log_content = self.controller.console_log.get('1.0', tk.END)
-        
-        # Ask for save location
-        filename = filedialog.asksaveasfilename(
-            defaultextension=".txt",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
-            initialfile=f"opcore_log_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Console Log",
+            "console.log",
+            "Log Files (*.log);;Text Files (*.txt);;All Files (*)"
         )
         
-        if filename:
+        if file_path:
             try:
-                with open(filename, 'w', encoding='utf-8') as f:
-                    f.write(log_content)
-                
-                from tkinter import messagebox
-                messagebox.showinfo("Export Successful", 
-                                  f"Console log exported to:\n{filename}")
+                with open(file_path, 'w') as f:
+                    f.write(self.console_text.toPlainText())
+                self.controller.update_status("Console log saved successfully", 'success')
             except Exception as e:
-                from tkinter import messagebox
-                messagebox.showerror("Export Failed", 
-                                   f"Failed to export console log:\n{str(e)}")
-        
+                self.controller.update_status(f"Failed to save log: {str(e)}", 'error')
+    
     def refresh(self):
-        """Refresh the page content"""
+        """Refresh page content"""
         pass

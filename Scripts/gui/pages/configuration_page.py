@@ -1,356 +1,135 @@
 """
-Step 3: Review and adjust configuration
+Step 3: Configuration - qfluentwidgets version
 """
 
-import tkinter as tk
-from tkinter import ttk, messagebox
-import os
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
+from PyQt6.QtCore import Qt
+from qfluentwidgets import (
+    PushButton, SubtitleLabel, BodyLabel, CardWidget, 
+    StrongBodyLabel, ComboBox, PrimaryPushButton
+)
 
-from ..styles import COLORS, SPACING, get_font
-from ..icons import Icons
+from ..styles import COLORS, SPACING
 
 
-class ConfigurationPage(tk.Frame):
-    """Step 3: Review and adjust auto-configured settings"""
+class ConfigurationPage(QWidget):
+    """Step 3: Configuration options"""
     
-    def __init__(self, parent, app_controller, **kwargs):
-        """
-        Initialize configuration page
-        
-        Args:
-            parent: Parent widget
-            app_controller: Reference to main application controller
-        """
-        super().__init__(parent, bg=COLORS['bg_main'], **kwargs)
-        self.controller = app_controller
-        
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.controller = parent
         self.setup_ui()
-        
+    
     def setup_ui(self):
         """Setup the configuration page UI"""
-        # Main container with padding
-        container = tk.Frame(self, bg=COLORS['bg_main'])
-        container.pack(fill=tk.BOTH, expand=True, padx=SPACING['xxlarge'], 
-                      pady=SPACING['xlarge'])
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], 
+                                  SPACING['xxlarge'], SPACING['xlarge'])
+        layout.setSpacing(SPACING['large'])
         
         # Step indicator
-        step_label = tk.Label(
-            container,
-            text="STEP 3 OF 4",
-            font=get_font('small'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['primary']
-        )
-        step_label.pack(anchor=tk.W, pady=(0, SPACING['tiny']))
-        
-        # Title section
-        title_label = tk.Label(
-            container,
-            text="Review Configuration",
-            font=get_font('title'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_primary']
-        )
-        title_label.pack(anchor=tk.W, pady=(0, SPACING['small']))
-        
-        subtitle_label = tk.Label(
-            container,
-            text="Review automatically selected settings or customize as needed",
-            font=get_font('body'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_secondary']
-        )
-        subtitle_label.pack(anchor=tk.W, pady=(0, SPACING['xlarge']))
-        
-        # Auto-configuration status card
-        self.create_status_card(container)
-        
-        # Current configuration card
-        self.create_config_card(container)
-        
-        # Customization options card
-        self.create_customization_card(container)
-        
-    def create_status_card(self, parent):
-        """Create auto-configuration status card"""
-        card = tk.Frame(parent, bg='#D1ECF1', relief=tk.FLAT, bd=0)
-        card.pack(fill=tk.X, pady=(0, SPACING['large']))
-        
-        content = tk.Frame(card, bg='#D1ECF1')
-        content.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['medium'])
-        
-        # Icon
-        icon = tk.Label(
-            content,
-            text="✅",
-            font=('SF Pro Display', 24),
-            bg='#D1ECF1',
-            fg='#0C5460'
-        )
-        icon.pack(side=tk.LEFT, padx=(0, SPACING['medium']))
-        
-        # Text
-        text_frame = tk.Frame(content, bg='#D1ECF1')
-        text_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
-        title_label = tk.Label(
-            text_frame,
-            text="Automatic Configuration Complete",
-            font=get_font('body_bold'),
-            bg='#D1ECF1',
-            fg='#0C5460',
-            anchor=tk.W
-        )
-        title_label.pack(anchor=tk.W)
-        
-        desc_label = tk.Label(
-            text_frame,
-            text="Settings have been optimally configured based on your hardware. Review below or customize if needed.",
-            font=get_font('small'),
-            bg='#D1ECF1',
-            fg='#0C5460',
-            anchor=tk.W,
-            wraplength=800
-        )
-        desc_label.pack(anchor=tk.W)
-    
-    def create_config_card(self, parent):
-        """Create current configuration display card"""
-        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
-        card.pack(fill=tk.X, pady=(0, SPACING['large']))
-        
-        # Card header
-        header = tk.Label(
-            card,
-            text="Current Configuration",
-            font=get_font('heading'),
-            bg=COLORS['bg_secondary'],
-            fg=COLORS['text_primary']
-        )
-        header.pack(anchor=tk.W, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
-        
-        # Configuration items
-        config_items = [
-            {
-                'label': "Hardware Report:",
-                'var': "hardware_report_path",
-                'icon': "📋"
-            },
-            {
-                'label': "macOS Version:",
-                'var': "macos_version",
-                'icon': "🍎"
-            },
-            {
-                'label': "SMBIOS Model:",
-                'var': "smbios_model",
-                'icon': "💻"
-            },
-            {
-                'label': "Disabled Devices:",
-                'var': "disabled_devices_text",
-                'icon': "⚠️"
-            },
-        ]
-        
-        for item in config_items:
-            self.create_config_item(card, item)
-        
-        # Add padding at bottom
-        tk.Frame(card, bg=COLORS['bg_secondary'], height=SPACING['large']).pack()
-        
-    def create_config_item(self, parent, item):
-        """Create a configuration item row"""
-        item_frame = tk.Frame(parent, bg=COLORS['bg_main'])
-        item_frame.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['small'])
-        
-        # Inner padding
-        inner_frame = tk.Frame(item_frame, bg=COLORS['bg_main'])
-        inner_frame.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['medium'])
-        
-        # Icon
-        icon_label = tk.Label(
-            inner_frame,
-            text=item['icon'],
-            font=('SF Pro Display', 20),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_primary']
-        )
-        icon_label.pack(side=tk.LEFT, padx=(0, SPACING['medium']))
-        
-        # Text container
-        text_frame = tk.Frame(inner_frame, bg=COLORS['bg_main'])
-        text_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
-        # Label
-        label = tk.Label(
-            text_frame,
-            text=item['label'],
-            font=get_font('caption'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_secondary'],
-            anchor=tk.W
-        )
-        label.pack(anchor=tk.W)
-        
-        # Value
-        value = tk.Label(
-            text_frame,
-            textvariable=getattr(self.controller, item['var'], tk.StringVar(value="Not available")),
-            font=get_font('body_bold'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_primary'],
-            anchor=tk.W,
-            wraplength=700
-        )
-        value.pack(anchor=tk.W)
-        
-    def create_customization_card(self, parent):
-        """Create customization options card"""
-        card = tk.Frame(parent, bg=COLORS['bg_secondary'], relief=tk.FLAT, bd=0)
-        card.pack(fill=tk.BOTH, expand=True)
-        
-        # Card header
-        header = tk.Label(
-            card,
-            text="Customization Options (Advanced)",
-            font=get_font('heading'),
-            bg=COLORS['bg_secondary'],
-            fg=COLORS['text_primary']
-        )
-        header.pack(anchor=tk.W, padx=SPACING['large'], pady=(SPACING['large'], SPACING['medium']))
-        
-        # Note
-        note_frame = tk.Frame(card, bg='#FFF3CD', relief=tk.FLAT, bd=0)
-        note_frame.pack(fill=tk.X, padx=SPACING['large'], pady=(0, SPACING['medium']))
-        
-        note_content = tk.Frame(note_frame, bg='#FFF3CD')
-        note_content.pack(fill=tk.X, padx=SPACING['medium'], pady=SPACING['small'])
-        
-        note_label = tk.Label(
-            note_content,
-            text="💡 Most users don't need to customize these settings. The automatic configuration provides optimal compatibility.",
-            font=get_font('small'),
-            bg='#FFF3CD',
-            fg='#856404',
-            anchor=tk.W,
-            wraplength=800
-        )
-        note_label.pack(anchor=tk.W)
-        
-        # Customization buttons
-        button_container = tk.Frame(card, bg=COLORS['bg_secondary'])
-        button_container.pack(fill=tk.X, padx=SPACING['large'], pady=(0, SPACING['large']))
-        
-        options = [
-            {
-                'icon': '🍎',
-                'title': 'Change macOS Version',
-                'description': 'Select a different macOS version for your system',
-                'command': self.controller.select_macos_version_gui
-            },
-            {
-                'icon': '📝',
-                'title': 'Customize ACPI Patches',
-                'description': 'View and modify ACPI patches (for advanced users)',
-                'command': self.controller.customize_acpi_gui
-            },
-            {
-                'icon': '🔧',
-                'title': 'Customize Kernel Extensions',
-                'description': 'Add or remove kexts (for advanced users)',
-                'command': self.controller.customize_kexts_gui
-            },
-            {
-                'icon': '💻',
-                'title': 'Change SMBIOS Model',
-                'description': 'Select a different Mac model identifier',
-                'command': self.controller.customize_smbios_gui
-            }
-        ]
-        
-        for option in options:
-            self.create_option_button(button_container, option)
-    
-    def create_option_button(self, parent, option):
-        """Create a customization option button matching upload page style"""
-        btn_frame = tk.Frame(
-            parent, 
-            bg=COLORS['bg_main'],
-            relief=tk.FLAT, 
-            bd=0,
-            highlightbackground=COLORS['border_light'],
-            highlightthickness=1
-        )
-        btn_frame.pack(fill=tk.X, pady=SPACING['small'])
-        
-        # Make entire frame clickable
-        btn_frame.bind('<Button-1>', lambda e: option['command']())
-        btn_frame.config(cursor='hand2')
-        
-        # Inner padding frame
-        inner_frame = tk.Frame(btn_frame, bg=COLORS['bg_main'])
-        inner_frame.pack(fill=tk.X, padx=SPACING['large'], pady=SPACING['large'])
-        inner_frame.bind('<Button-1>', lambda e: option['command']())
-        inner_frame.config(cursor='hand2')
-        
-        # Icon (using emoji)
-        icon_label = tk.Label(
-            inner_frame,
-            text=option.get('icon', '⚙️'),
-            font=('SF Pro Display', 32),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_primary']
-        )
-        icon_label.pack(side=tk.LEFT, padx=(0, SPACING['large']))
-        icon_label.bind('<Button-1>', lambda e: option['command']())
-        icon_label.config(cursor='hand2')
-        
-        # Text container
-        text_frame = tk.Frame(inner_frame, bg=COLORS['bg_main'])
-        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        text_frame.bind('<Button-1>', lambda e: option['command']())
-        text_frame.config(cursor='hand2')
+        step_label = BodyLabel("STEP 3 OF 4")
+        step_label.setStyleSheet("color: #0078D4; font-weight: bold;")
+        layout.addWidget(step_label)
         
         # Title
-        title_label = tk.Label(
-            text_frame,
-            text=option['title'],
-            font=get_font('body_bold'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_primary'],
-            anchor=tk.W
-        )
-        title_label.pack(anchor=tk.W)
-        title_label.bind('<Button-1>', lambda e: option['command']())
-        title_label.config(cursor='hand2')
+        title_label = SubtitleLabel("Configuration")
+        layout.addWidget(title_label)
         
-        # Description
-        desc_label = tk.Label(
-            text_frame,
-            text=option['description'],
-            font=get_font('small'),
-            bg=COLORS['bg_main'],
-            fg=COLORS['text_secondary'],
-            anchor=tk.W,
-            wraplength=500
-        )
-        desc_label.pack(anchor=tk.W)
-        desc_label.bind('<Button-1>', lambda e: option['command']())
-        desc_label.config(cursor='hand2')
+        subtitle_label = BodyLabel("Configure your OpenCore EFI settings")
+        subtitle_label.setStyleSheet("color: #605E5C;")
+        layout.addWidget(subtitle_label)
         
-        # Hover effects
-        def on_enter(e):
-            btn_frame.config(highlightbackground=COLORS['primary'], highlightthickness=2)
-            
-        def on_leave(e):
-            btn_frame.config(highlightbackground=COLORS['border_light'], highlightthickness=1)
+        layout.addSpacing(SPACING['large'])
         
-        for widget in [btn_frame, inner_frame, icon_label, text_frame, title_label, desc_label]:
-            widget.bind('<Enter>', on_enter)
-            widget.bind('<Leave>', on_leave)
+        # Current configuration card
+        config_card = CardWidget()
+        config_layout = QVBoxLayout(config_card)
+        config_layout.setContentsMargins(SPACING['large'], SPACING['large'], 
+                                        SPACING['large'], SPACING['large'])
         
+        card_title = StrongBodyLabel("Current Configuration")
+        config_layout.addWidget(card_title)
+        
+        # macOS Version
+        macos_layout = QHBoxLayout()
+        macos_label = BodyLabel("macOS Version:")
+        macos_layout.addWidget(macos_label)
+        self.macos_value = BodyLabel("Not selected")
+        self.macos_value.setStyleSheet("color: #605E5C;")
+        macos_layout.addWidget(self.macos_value)
+        macos_layout.addStretch()
+        config_layout.addLayout(macos_layout)
+        
+        # SMBIOS Model
+        smbios_layout = QHBoxLayout()
+        smbios_label = BodyLabel("SMBIOS Model:")
+        smbios_layout.addWidget(smbios_label)
+        self.smbios_value = BodyLabel("Not selected")
+        self.smbios_value.setStyleSheet("color: #605E5C;")
+        smbios_layout.addWidget(self.smbios_value)
+        smbios_layout.addStretch()
+        config_layout.addLayout(smbios_layout)
+        
+        # Disabled Devices
+        devices_layout = QHBoxLayout()
+        devices_label = BodyLabel("Disabled Devices:")
+        devices_layout.addWidget(devices_label)
+        self.devices_value = BodyLabel("None")
+        self.devices_value.setStyleSheet("color: #605E5C;")
+        self.devices_value.setWordWrap(True)
+        devices_layout.addWidget(self.devices_value)
+        devices_layout.addStretch()
+        config_layout.addLayout(devices_layout)
+        
+        layout.addWidget(config_card)
+        
+        # Customization options card
+        custom_card = CardWidget()
+        custom_layout = QVBoxLayout(custom_card)
+        custom_layout.setContentsMargins(SPACING['large'], SPACING['large'], 
+                                        SPACING['large'], SPACING['large'])
+        
+        custom_title = StrongBodyLabel("Customization Options")
+        custom_layout.addWidget(custom_title)
+        
+        # ACPI Patches button
+        self.acpi_btn = PushButton("Customize ACPI Patches")
+        self.acpi_btn.clicked.connect(self.customize_acpi)
+        custom_layout.addWidget(self.acpi_btn)
+        
+        # Kexts button
+        self.kexts_btn = PushButton("Customize Kexts")
+        self.kexts_btn.clicked.connect(self.customize_kexts)
+        custom_layout.addWidget(self.kexts_btn)
+        
+        # SMBIOS button
+        self.smbios_btn = PushButton("Customize SMBIOS Model")
+        self.smbios_btn.clicked.connect(self.customize_smbios)
+        custom_layout.addWidget(self.smbios_btn)
+        
+        layout.addWidget(custom_card)
+        layout.addStretch()
+    
+    def customize_acpi(self):
+        """Customize ACPI patches"""
+        # This would open a dialog or navigate to ACPI customization
+        self.controller.update_status("ACPI customization not yet implemented in GUI", 'info')
+    
+    def customize_kexts(self):
+        """Customize kexts"""
+        self.controller.update_status("Kext customization not yet implemented in GUI", 'info')
+    
+    def customize_smbios(self):
+        """Customize SMBIOS model"""
+        self.controller.update_status("SMBIOS customization not yet implemented in GUI", 'info')
+    
+    def update_display(self):
+        """Update configuration display"""
+        self.macos_value.setText(self.controller.macos_version_text)
+        self.smbios_value.setText(self.controller.smbios_model_text)
+        self.devices_value.setText(self.controller.disabled_devices_text)
+    
     def refresh(self):
-        """Refresh the page content"""
-        # This can be called when configuration changes
-        pass
+        """Refresh page content"""
+        self.update_display()

@@ -480,16 +480,30 @@ if __name__ == '__main__':
     if use_gui:
         # Run GUI mode
         try:
+            from PyQt6.QtWidgets import QApplication
             from Scripts.gui import OpCoreGUI
-            app = OpCoreGUI(o)
-            app.run()
+            
+            # Create QApplication instance
+            app = QApplication(sys.argv)
+            
+            # Create and show main window
+            window = OpCoreGUI(o)
+            window.show()
+            
+            # Start event loop
+            sys.exit(app.exec())
+            
         except ImportError as e:
             print("Error: Could not import GUI module. Falling back to CLI mode.")
             print(f"Details: {e}")
+            print("Make sure PyQt6 and PyQt6-Fluent-Widgets are installed:")
+            print("  pip install PyQt6 PyQt6-Fluent-Widgets")
             use_gui = False
         except Exception as e:
             print(f"Error starting GUI: {e}")
             print("Falling back to CLI mode...")
+            import traceback
+            traceback.print_exc()
             use_gui = False
     
     if not use_gui:
