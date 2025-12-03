@@ -11,13 +11,13 @@ from qfluentwidgets import (
 
 from ..styles import COLORS, SPACING
 
-# Import os_data for version names
+# Import os_data and pci_data for version names and device checks
 import sys
 import os
 scripts_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if scripts_path not in sys.path:
     sys.path.insert(0, scripts_path)
-from datasets import os_data
+from datasets import os_data, pci_data
 
 
 class HardwareCard(CardWidget):
@@ -275,9 +275,6 @@ class CompatibilityPage(QWidget):
                 # Continuity support information (from compatibility_checker.py logic)
                 device_id = device_props.get('Device ID', '')
                 if device_id:
-                    # Import pci_data to check device types
-                    from datasets import pci_data
-                    
                     if device_id in pci_data.BroadcomWiFiIDs:
                         network_card.add_detail("Continuity: Full support (AirDrop, Handoff, etc.)", indent=1, color="#107C10")
                     elif device_id in pci_data.IntelWiFiIDs:
@@ -333,16 +330,19 @@ class CompatibilityPage(QWidget):
         if self.controller.native_macos_version:
             version_card = HardwareCard("macOS Version Support", FluentIcon.HISTORY)
             
+            # native_macos_version is a tuple: (min_version, max_version)
+            # Index 0 is the minimum (earliest) version, Index -1 is the maximum (latest) version
             min_ver = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[0])
             max_ver = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[-1])
             
-            version_card.add_item("Supported Range:", f"{max_ver} to {min_ver}", color="#107C10")
+            version_card.add_item("Supported Range:", f"{min_ver} to {max_ver}", color="#107C10")
             
             # Add OCLP info if available
             if self.controller.ocl_patched_macos_version:
-                oclp_min = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
-                oclp_max = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
-                version_card.add_item("OCLP Extended:", f"{oclp_max} to {oclp_min}", color="#0078D4")
+                # ocl_patched_macos_version is also a tuple: (max_version, min_version) - note reversed order
+                oclp_max = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
+                oclp_min = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
+                version_card.add_item("OCLP Extended:", f"{oclp_min} to {oclp_max}", color="#0078D4")
                 version_card.add_detail("With OpenCore Legacy Patcher support", indent=1, color="#605E5C")
             
             self.cards_layout.addWidget(version_card)
