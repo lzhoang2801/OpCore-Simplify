@@ -119,9 +119,29 @@ class ConfigurationPage(QWidget):
 
     def select_macos(self):
         """Select macOS version"""
-        # This would open a dialog or navigate to ACPI customization
-        self.controller.update_status(
-            "Select macOS version is not yet implemented in GUI", 'info')
+        # Check if hardware report is loaded
+        if not self.controller.hardware_report:
+            self.controller.update_status(
+                "Please load a hardware report first", 'warning')
+            return
+
+        # Import the macOS version dialog
+        from ..custom_dialogs import show_macos_version_dialog
+
+        # Show the macOS version selection dialog
+        selected_version, ok = show_macos_version_dialog(
+            self.controller,
+            self.controller.hardware_report,
+            self.controller.native_macos_version,
+            self.controller.ocl_patched_macos_version,
+            self.controller.ocpe.u
+        )
+
+        if ok and selected_version:
+            # Apply the selected macOS version
+            self.controller.apply_macos_version(selected_version)
+            self.controller.update_status(
+                f"macOS version updated to {self.controller.macos_version_text}", 'success')
 
     def customize_acpi(self):
         """Customize ACPI patches"""
