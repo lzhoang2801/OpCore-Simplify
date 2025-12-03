@@ -7,11 +7,16 @@ import os
 import threading
 import time
 
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QMessageBox, QTextEdit
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
+    QFileDialog, QMessageBox, QTextEdit
+)
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QTimer
 from PyQt6.QtGui import QIcon
-from qfluentwidgets import (FluentWindow, NavigationItemPosition, FluentIcon, setTheme, Theme, 
-                            InfoBar, InfoBarPosition, PushButton, ProgressBar, TextEdit)
+from qfluentwidgets import (
+    FluentWindow, NavigationItemPosition, FluentIcon, 
+    setTheme, Theme, InfoBar, InfoBarPosition
+)
 
 from .styles import COLORS, SPACING
 from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, WiFiPage

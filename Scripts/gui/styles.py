@@ -2,7 +2,6 @@
 Centralized styling and theming for OpCore Simplify GUI with qfluentwidgets
 """
 
-from qfluentwidgets import Theme, setTheme, isDarkTheme
 from PyQt6.QtGui import QColor
 
 # Color palette - Fluent Design System inspired
