@@ -36,8 +36,9 @@ class ChoiceDialog(Dialog):
         
         # Add combo box
         self.combo_box = ComboBox(self)
-        self.combo_box.addItems(options)
-        self.combo_box.setCurrentIndex(0)
+        if options:
+            self.combo_box.addItems(options)
+            self.combo_box.setCurrentIndex(0)
         
         # Insert combo box before buttons
         self.textLayout.addWidget(self.combo_box)
@@ -108,4 +109,5 @@ def show_question_dialog(parent, title: str, content: str):
     dialog.yesButton.setText("Yes")
     dialog.cancelButton.setText("No")
     
-    return dialog.exec()
+    # exec() returns 1 for accept (OK/Yes) and 0 for reject (Cancel/No)
+    return dialog.exec() == 1
