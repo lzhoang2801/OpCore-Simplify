@@ -22,14 +22,58 @@ if str(scripts_path) not in sys.path:
     sys.path.insert(0, str(scripts_path))
 from datasets import os_data, pci_data
 
+# Create a reusable empty widget instance
+_EMPTY_WIDGET = None
+
+def get_empty_widget():
+    """Get a reusable empty widget for addGroup calls"""
+    global _EMPTY_WIDGET
+    if _EMPTY_WIDGET is None:
+        _EMPTY_WIDGET = QWidget()
+    return _EMPTY_WIDGET
+
 
 def create_info_widget(text, color=None):
     """Create a simple label widget for displaying information"""
+    if not text:
+        # Return empty widget if no text
+        return QWidget()
     label = BodyLabel(text)
     label.setWordWrap(True)
     if color:
         label.setStyleSheet(f"color: {color};")
     return label
+
+
+def add_group_with_indent(card, icon, title, content, widget=None, indent_level=0):
+    """
+    Add a group to a GroupHeaderCardWidget with optional indentation.
+    
+    Args:
+        card: The GroupHeaderCardWidget instance
+        icon: Icon for the group
+        title: Title text
+        content: Content/description text
+        widget: Widget to add (default: empty QWidget)
+        indent_level: 0 for main items, 1+ for child items (each level adds 20px left margin)
+    
+    Returns:
+        The created CardGroupWidget
+    """
+    if widget is None:
+        widget = get_empty_widget()
+    
+    group = card.addGroup(icon, title, content, widget)
+    
+    # Apply indentation if needed
+    if indent_level > 0:
+        # Get the horizontal layout (hBoxLayout) and adjust left margin
+        # Default margins are (24, 10, 24, 10) - left, top, right, bottom
+        base_margin = 24
+        indent = 20 * indent_level
+        group.hBoxLayout.setContentsMargins(base_margin + indent, 10, 24, 10)
+    
+    return group
 
 
 class CompatibilityPage(QWidget):
@@ -133,26 +177,29 @@ class CompatibilityPage(QWidget):
             cpu_info = report['CPU']
             
             if isinstance(cpu_info, dict):
-                # Processor Name group
+                # Processor Name group (main item - no indent)
                 name = cpu_info.get('Processor Name', 'Unknown')
-                cpu_card.addGroup(
+                add_group_with_indent(
+                    cpu_card,
                     FluentIcon.TAG,
                     "Processor",
                     name,
-                    QWidget()
+                    indent_level=0
                 )
                 
-                # Compatibility group
+                # Compatibility group (child item - indent level 1)
                 compat = cpu_info.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                cpu_card.addGroup(
+                add_group_with_indent(
+                    cpu_card,
                     FluentIcon.ACCEPT,
                     "macOS Compatibility",
                     compat_text,
-                    create_info_widget("", compat_color)
+                    create_info_widget("", compat_color),
+                    indent_level=1
                 )
                 
-                # Additional details group if available
+                # Additional details group if available (child item - indent level 1)
                 details = []
                 if cpu_info.get('Codename'):
                     details.append(f"Codename: {cpu_info.get('Codename')}")
@@ -160,11 +207,12 @@ class CompatibilityPage(QWidget):
                     details.append(f"Cores: {cpu_info.get('Core Count')}")
                 
                 if details:
-                    cpu_card.addGroup(
+                    add_group_with_indent(
+                        cpu_card,
                         FluentIcon.INFO,
                         "Details",
                         " • ".join(details),
-                        QWidget()
+                        indent_level=1
                     )
             
             self.cards_layout.addWidget(cpu_card)
@@ -174,37 +222,42 @@ class CompatibilityPage(QWidget):
             gpu_card = GroupHeaderCardWidget("Graphics", self)
             
             for idx, (gpu_name, gpu_info) in enumerate(report['GPU'].items()):
-                # GPU Name and Type group
+                # GPU Name and Type group (main item - no indent)
                 device_type = gpu_info.get('Device Type', 'Unknown')
-                gpu_card.addGroup(
+                add_group_with_indent(
+                    gpu_card,
                     FluentIcon.PHOTO,
                     gpu_name,
                     f"Type: {device_type}",
-                    QWidget()
+                    indent_level=0
                 )
                 
-                # Compatibility group
+                # Compatibility group (child item - indent level 1)
                 compat = gpu_info.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                gpu_card.addGroup(
+                add_group_with_indent(
+                    gpu_card,
                     FluentIcon.ACCEPT,
                     "macOS Compatibility",
                     compat_text,
-                    create_info_widget("", compat_color)
+                    create_info_widget("", compat_color),
+                    indent_level=1
                 )
                 
-                # OCLP Compatibility if available
+                # OCLP Compatibility if available (child item - indent level 1)
                 if 'OCLP Compatibility' in gpu_info:
                     oclp_compat = gpu_info.get('OCLP Compatibility')
                     oclp_text, oclp_color = self.format_compatibility(oclp_compat)
-                    gpu_card.addGroup(
+                    add_group_with_indent(
+                        gpu_card,
                         FluentIcon.IOT,
                         "OCLP Compatibility",
                         oclp_text,
-                        create_info_widget("Extended support with OpenCore Legacy Patcher", "#605E5C")
+                        create_info_widget("Extended support with OpenCore Legacy Patcher", COLORS['text_secondary']),
+                        indent_level=1
                     )
                 
-                # Connected monitors
+                # Connected monitors (child item - indent level 1)
                 if 'Monitor' in report:
                     connected_monitors = []
                     for monitor_name, monitor_info in report['Monitor'].items():
@@ -213,11 +266,12 @@ class CompatibilityPage(QWidget):
                             connected_monitors.append(f"{monitor_name} ({connector})")
                     
                     if connected_monitors:
-                        gpu_card.addGroup(
+                        add_group_with_indent(
+                            gpu_card,
                             FluentIcon.VIEW,
                             "Connected Displays",
                             ", ".join(connected_monitors),
-                            QWidget()
+                            indent_level=1
                         )
             
             self.cards_layout.addWidget(gpu_card)
@@ -227,32 +281,36 @@ class CompatibilityPage(QWidget):
             sound_card = GroupHeaderCardWidget("Audio", self)
             
             for audio_device, audio_props in report['Sound'].items():
-                # Audio Device group
-                sound_card.addGroup(
+                # Audio Device group (main item - no indent)
+                add_group_with_indent(
+                    sound_card,
                     FluentIcon.MUSIC,
                     audio_device,
                     "",
-                    QWidget()
+                    indent_level=0
                 )
                 
-                # Compatibility group
+                # Compatibility group (child item - indent level 1)
                 compat = audio_props.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                sound_card.addGroup(
+                add_group_with_indent(
+                    sound_card,
                     FluentIcon.ACCEPT,
                     "macOS Compatibility",
                     compat_text,
-                    create_info_widget("", compat_color)
+                    create_info_widget("", compat_color),
+                    indent_level=1
                 )
                 
-                # Audio endpoints
+                # Audio endpoints (child item - indent level 1)
                 endpoints = audio_props.get('Audio Endpoints', [])
                 if endpoints:
-                    sound_card.addGroup(
+                    add_group_with_indent(
+                        sound_card,
                         FluentIcon.HEADPHONE,
                         "Audio Endpoints",
                         ", ".join(endpoints),
-                        QWidget()
+                        indent_level=1
                     )
             
             self.cards_layout.addWidget(sound_card)
@@ -262,44 +320,49 @@ class CompatibilityPage(QWidget):
             network_card = GroupHeaderCardWidget("Network", self)
             
             for device_name, device_props in report['Network'].items():
-                # Network Device group
-                network_card.addGroup(
+                # Network Device group (main item - no indent)
+                add_group_with_indent(
+                    network_card,
                     FluentIcon.WIFI,
                     device_name,
                     "",
-                    QWidget()
+                    indent_level=0
                 )
                 
-                # Compatibility group
+                # Compatibility group (child item - indent level 1)
                 compat = device_props.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                network_card.addGroup(
+                add_group_with_indent(
+                    network_card,
                     FluentIcon.ACCEPT,
                     "macOS Compatibility",
                     compat_text,
-                    create_info_widget("", compat_color)
+                    create_info_widget("", compat_color),
+                    indent_level=1
                 )
                 
-                # OCLP Compatibility if available
+                # OCLP Compatibility if available (child item - indent level 1)
                 if 'OCLP Compatibility' in device_props:
                     oclp_compat = device_props.get('OCLP Compatibility')
                     oclp_text, oclp_color = self.format_compatibility(oclp_compat)
-                    network_card.addGroup(
+                    add_group_with_indent(
+                        network_card,
                         FluentIcon.IOT,
                         "OCLP Compatibility",
                         oclp_text,
-                        create_info_widget("Extended support with OpenCore Legacy Patcher", "#605E5C")
+                        create_info_widget("Extended support with OpenCore Legacy Patcher", COLORS['text_secondary']),
+                        indent_level=1
                     )
                 
-                # Continuity support information (from compatibility_checker.py logic)
+                # Continuity support information (child item - indent level 1)
                 device_id = device_props.get('Device ID', '')
                 if device_id:
                     continuity_info = ""
-                    continuity_color = "#605E5C"
+                    continuity_color = COLORS['text_secondary']
                     
                     if device_id in pci_data.BroadcomWiFiIDs:
                         continuity_info = "Full support (AirDrop, Handoff, etc.)"
-                        continuity_color = "#107C10"
+                        continuity_color = COLORS['success']
                     elif device_id in pci_data.IntelWiFiIDs:
                         continuity_info = "Partial (Handoff with AirportItlwm) - AirDrop, Instant Hotspot not available"
                         continuity_color = "#FDB913"
@@ -308,11 +371,13 @@ class CompatibilityPage(QWidget):
                         continuity_color = "#D13438"
                     
                     if continuity_info:
-                        network_card.addGroup(
+                        add_group_with_indent(
+                            network_card,
                             FluentIcon.SYNC,
                             "Continuity Features",
                             continuity_info,
-                            create_info_widget("", continuity_color)
+                            create_info_widget("", continuity_color),
+                            indent_level=1
                         )
             
             self.cards_layout.addWidget(network_card)
@@ -322,22 +387,25 @@ class CompatibilityPage(QWidget):
             storage_card = GroupHeaderCardWidget("Storage", self)
             
             for controller_name, controller_props in report['Storage Controllers'].items():
-                # Storage Controller group
-                storage_card.addGroup(
+                # Storage Controller group (main item - no indent)
+                add_group_with_indent(
+                    storage_card,
                     FluentIcon.FOLDER,
                     controller_name,
                     "",
-                    QWidget()
+                    indent_level=0
                 )
                 
-                # Compatibility group
+                # Compatibility group (child item - indent level 1)
                 compat = controller_props.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                storage_card.addGroup(
+                add_group_with_indent(
+                    storage_card,
                     FluentIcon.ACCEPT,
                     "macOS Compatibility",
                     compat_text,
-                    create_info_widget("", compat_color)
+                    create_info_widget("", compat_color),
+                    indent_level=1
                 )
             
             self.cards_layout.addWidget(storage_card)
@@ -347,22 +415,25 @@ class CompatibilityPage(QWidget):
             bluetooth_card = GroupHeaderCardWidget("Bluetooth", self)
             
             for bluetooth_name, bluetooth_props in report['Bluetooth'].items():
-                # Bluetooth Device group
-                bluetooth_card.addGroup(
+                # Bluetooth Device group (main item - no indent)
+                add_group_with_indent(
+                    bluetooth_card,
                     FluentIcon.BLUETOOTH,
                     bluetooth_name,
                     "",
-                    QWidget()
+                    indent_level=0
                 )
                 
-                # Compatibility group
+                # Compatibility group (child item - indent level 1)
                 compat = bluetooth_props.get('Compatibility', (None, None))
                 compat_text, compat_color = self.format_compatibility(compat)
-                bluetooth_card.addGroup(
+                add_group_with_indent(
+                    bluetooth_card,
                     FluentIcon.ACCEPT,
                     "macOS Compatibility",
                     compat_text,
-                    create_info_widget("", compat_color)
+                    create_info_widget("", compat_color),
+                    indent_level=1
                 )
             
             self.cards_layout.addWidget(bluetooth_card)
@@ -372,12 +443,14 @@ class CompatibilityPage(QWidget):
             bio_card = GroupHeaderCardWidget("Biometric", self)
             
             for bio_device, bio_props in report['Biometric'].items():
-                # Biometric Device group
-                bio_card.addGroup(
+                # Biometric Device group (main item - no indent, unsupported warning included)
+                add_group_with_indent(
+                    bio_card,
                     FluentIcon.FINGERPRINT,
                     bio_device,
                     "Unsupported",
-                    create_info_widget("⚠️ Biometric authentication requires Apple T2 Chip - Not available for Hackintosh systems", "#FDB913")
+                    create_info_widget("⚠️ Biometric authentication requires Apple T2 Chip - Not available for Hackintosh systems", "#FDB913"),
+                    indent_level=0
                 )
             
             self.cards_layout.addWidget(bio_card)
@@ -393,11 +466,13 @@ class CompatibilityPage(QWidget):
             min_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[0])
             max_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[-1])
             
-            version_card.addGroup(
+            add_group_with_indent(
+                version_card,
                 FluentIcon.HISTORY,
                 "Native Support Range",
                 f"{min_ver_name} to {max_ver_name}",
-                create_info_widget("Fully supported macOS versions for your hardware", "#107C10")
+                create_info_widget("Fully supported macOS versions for your hardware", COLORS['success']),
+                indent_level=0
             )
             
             # Add OCLP info if available
@@ -409,11 +484,13 @@ class CompatibilityPage(QWidget):
                 oclp_max_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
                 oclp_min_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
                 # Display as earliest to latest for consistency
-                version_card.addGroup(
+                add_group_with_indent(
+                    version_card,
                     FluentIcon.IOT,
                     "OCLP Extended Support",
                     f"{oclp_min_name} to {oclp_max_name}",
-                    create_info_widget("Additional macOS versions supported with OpenCore Legacy Patcher", "#0078D4")
+                    create_info_widget("Additional macOS versions supported with OpenCore Legacy Patcher", COLORS['primary']),
+                    indent_level=0
                 )
             
             self.cards_layout.addWidget(version_card)
