@@ -72,7 +72,7 @@ class ReportValidator:
                             "Codename": {"type": str},
                             "Device ID": {"type": str, "pattern": self.PATTERNS["device_id"]},
                             "Device Type": {"type": str, "pattern": self.PATTERNS["gpu_device_type"]},
-                            "Subsystem ID": {"type": str, "pattern": self.PATTERNS["hex_id"]},
+                            "Subsystem ID": {"type": str, "required": False, "pattern": self.PATTERNS["hex_id"]},
                             "PCI Path": {"type": str, "required": False, "pattern": self.PATTERNS["pci_path"]},
                             "ACPI Path": {"type": str, "required": False, "pattern": self.PATTERNS["acpi_path"]},
                             "Resizable BAR": {"type": str, "required": False, "pattern": self.PATTERNS["enabled_disabled"]}
@@ -99,7 +99,7 @@ class ReportValidator:
                         "schema": {
                             "Bus Type": {"type": str, "pattern": self.PATTERNS["bus_type"]},
                             "Device ID": {"type": str, "pattern": self.PATTERNS["device_id"]},
-                            "Subsystem ID": {"type": str, "pattern": self.PATTERNS["hex_id"]},
+                            "Subsystem ID": {"type": str, "required": False, "pattern": self.PATTERNS["hex_id"]},
                             "PCI Path": {"type": str, "required": False, "pattern": self.PATTERNS["pci_path"]},
                             "ACPI Path": {"type": str, "required": False, "pattern": self.PATTERNS["acpi_path"]}
                         }
@@ -127,7 +127,7 @@ class ReportValidator:
                         "schema": {
                             "Bus Type": {"type": str, "pattern": self.PATTERNS["bus_type"]},
                             "Device ID": {"type": str, "pattern": self.PATTERNS["device_id"]},
-                            "Subsystem ID": {"type": str, "pattern": self.PATTERNS["hex_id"]},
+                            "Subsystem ID": {"type": str, "required": False, "pattern": self.PATTERNS["hex_id"]},
                             "PCI Path": {"type": str, "required": False, "pattern": self.PATTERNS["pci_path"]},
                             "ACPI Path": {"type": str, "required": False, "pattern": self.PATTERNS["acpi_path"]}
                         }
@@ -154,7 +154,7 @@ class ReportValidator:
                         "schema": {
                             "Bus Type": {"type": str, "pattern": self.PATTERNS["bus_type"]},
                             "Device ID": {"type": str, "pattern": self.PATTERNS["device_id"]},
-                            "Subsystem ID": {"type": str, "pattern": self.PATTERNS["hex_id"]},
+                            "Subsystem ID": {"type": str, "required": False, "pattern": self.PATTERNS["hex_id"]},
                             "PCI Path": {"type": str, "required": False, "pattern": self.PATTERNS["pci_path"]},
                             "ACPI Path": {"type": str, "required": False, "pattern": self.PATTERNS["acpi_path"]},
                             "Disk Drives": {"type": list, "required": False, "item_rule": {"type": str}}
@@ -192,7 +192,7 @@ class ReportValidator:
                         "schema": {
                             "Bus Type": {"type": str, "pattern": self.PATTERNS["bus_type"]},
                             "Device ID": {"type": str, "pattern": self.PATTERNS["device_id"]},
-                            "Subsystem ID": {"type": str, "pattern": self.PATTERNS["hex_id"]},
+                            "Subsystem ID": {"type": str, "required": False, "pattern": self.PATTERNS["hex_id"]},
                             "PCI Path": {"type": str, "required": False, "pattern": self.PATTERNS["pci_path"]},
                             "ACPI Path": {"type": str, "required": False, "pattern": self.PATTERNS["acpi_path"]}
                         }
