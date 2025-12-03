@@ -147,6 +147,42 @@ class ChoiceMessageBox(MessageBoxBase):
         return None
 
 
+class InfoMessageBox(MessageBoxBase):
+    """Info dialog using qfluentwidgets MessageBoxBase pattern with better support for long content"""
+    
+    def __init__(self, title: str, content: str, parent=None):
+        """
+        Initialize info dialog
+        
+        Args:
+            title: Dialog title
+            content: Dialog message (can be multi-line)
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        
+        # Create UI elements
+        self.titleLabel = QLabel(title, self.widget)
+        self.contentLabel = QLabel(content, self.widget)
+        
+        # Setup title and content
+        self.titleLabel.setObjectName("titleLabel")
+        self.contentLabel.setObjectName("contentLabel")
+        self.contentLabel.setWordWrap(True)
+        self.contentLabel.setTextFormat(Qt.TextFormat.PlainText)
+        
+        # Add widgets to layout
+        self.viewLayout.addWidget(self.titleLabel)
+        self.viewLayout.addWidget(self.contentLabel)
+        
+        # Set minimum width for the dialog to handle longer content
+        self.widget.setMinimumWidth(600)
+        
+        # Hide cancel button for info dialogs
+        self.cancelButton.hide()
+        self.yesButton.setText("OK")
+
+
 def show_input_dialog(parent, title: str, content: str, placeholder: str = ""):
     """
     Show an input dialog and return the entered text
@@ -230,11 +266,7 @@ def show_info_dialog(parent, title: str, content: str):
     Returns:
         str: Empty string for consistency with request_input
     """
-    dialog = MessageBox(title, content, parent)
-    # Hide the cancel button for info dialogs
-    dialog.cancelButton.hide()
-    dialog.yesButton.setText("OK")
-    
+    dialog = InfoMessageBox(title, content, parent)
     dialog.exec()
     return ""
 
