@@ -10,17 +10,18 @@ import platform
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
-    QFileDialog, QMessageBox, QTextEdit
+    QFileDialog, QTextEdit
 )
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QTimer
 from PyQt6.QtGui import QIcon, QFont
 from qfluentwidgets import (
     FluentWindow, NavigationItemPosition, FluentIcon, 
-    setTheme, Theme, InfoBar, InfoBarPosition
+    setTheme, Theme, InfoBar, InfoBarPosition, MessageBox
 )
 
 from .styles import COLORS, SPACING
 from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, WiFiPage
+from .custom_dialogs import show_input_dialog, show_choice_dialog, show_question_dialog
 
 # Import from Scripts package
 scripts_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -224,30 +225,23 @@ class OpCoreGUI(FluentWindow):
         """Handle interactive prompts in GUI mode"""
         if prompt_type == 'input':
             # Simple text input dialog
-            from PyQt6.QtWidgets import QInputDialog
-            text, ok = QInputDialog.getText(self, "Input Required", prompt_text)
+            text, ok = show_input_dialog(self, "Input Required", prompt_text)
             if ok:
                 return text
             return ""
         
         elif prompt_type == 'choice':
             # Choice dialog with options
-            from PyQt6.QtWidgets import QInputDialog
             if options:
-                item, ok = QInputDialog.getItem(self, "Select Option", prompt_text, options, 0, False)
+                item, ok = show_choice_dialog(self, "Select Option", prompt_text, options)
                 if ok:
                     return item
             return None
         
         elif prompt_type == 'confirm':
             # Yes/No confirmation dialog
-            reply = QMessageBox.question(
-                self,
-                "Confirmation",
-                prompt_text,
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
-            return reply == QMessageBox.StandardButton.Yes
+            result = show_question_dialog(self, "Confirmation", prompt_text)
+            return result
         
         return None
     
@@ -373,7 +367,7 @@ class OpCoreGUI(FluentWindow):
         
         # Check for OCLP warning if needed
         if self.needs_oclp:
-            reply = QMessageBox.question(
+            result = show_question_dialog(
                 self,
                 "OpenCore Legacy Patcher Warning",
                 "OpenCore Legacy Patcher is required for your configuration.\n\n"
@@ -381,11 +375,10 @@ class OpCoreGUI(FluentWindow):
                 "1. OCLP is the only solution for dropped GPU and WiFi support\n"
                 "2. OCLP disables macOS security features (SIP, AMFI)\n"
                 "3. OCLP is not officially supported for Hackintosh\n\n"
-                "Do you want to continue?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                "Do you want to continue?"
             )
             
-            if reply != QMessageBox.StandardButton.Yes:
+            if not result:
                 return
         
         # Run build in background thread
