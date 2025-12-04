@@ -671,7 +671,7 @@ class KextMaestro:
             if bundle_info.get("IOKitPersonalities").get("itlwm").get("WiFiConfig"):
                 from Scripts import wifi_profile_extractor
                 
-                wifi_profiles = wifi_profile_extractor.WifiProfileExtractor().get_profiles()
+                wifi_profiles = wifi_profile_extractor.WifiProfileExtractor(self.utils).get_profiles()
 
                 if wifi_profiles:
                     bundle_info["IOKitPersonalities"]["itlwm"]["WiFiConfig"] = {
