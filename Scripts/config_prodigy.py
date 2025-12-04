@@ -8,7 +8,6 @@ from Scripts.datasets import codec_layouts
 from Scripts import gathering_files
 from Scripts import smbios
 from Scripts import utils
-import random
 
 class ConfigProdigy:
     def __init__(self):
@@ -269,19 +268,25 @@ class ConfigProdigy:
             return None, None
         
         available_layouts = codec_layouts.data.get(codec_id)
+        
+        # Check if there are any layouts available for this codec
+        if not available_layouts:
+            return None, None
 
         recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
         recommended_layouts = [layout for layout in available_layouts if self.utils.contains_any(recommended_authors, layout.comment)]
 
-        # Use pre-selected layout as default if available, otherwise pick a random recommended one
+        # Use pre-selected layout as default if available, otherwise pick the first recommended one
         if self.selected_codec_layout:
             # Find the layout object for the pre-selected ID
             default_layout = next((layout for layout in available_layouts if layout.id == self.selected_codec_layout), None)
             if not default_layout:
                 # Fallback if pre-selected layout is not in available layouts
-                default_layout = random.choice(recommended_layouts or available_layouts)
+                # Use first recommended layout if available, otherwise first layout
+                default_layout = recommended_layouts[0] if recommended_layouts else available_layouts[0]
         else:
-            default_layout = random.choice(recommended_layouts or available_layouts)
+            # Use first recommended layout if available, otherwise first layout
+            default_layout = recommended_layouts[0] if recommended_layouts else available_layouts[0]
 
         selected_layout_id = None
         
