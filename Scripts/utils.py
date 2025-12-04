@@ -15,6 +15,9 @@ class Utils:
         self.script_name = script_name
         self.gui_handler = None  # GUI handler object for direct dialog access
         self.gui_log_callback = None  # Callback for logging to build log
+        self.gui_callback = None  # Callback for GUI prompts (backward compatibility)
+        self.gui_progress_callback = None  # Callback for updating build progress in GUI
+        self.gui_gathering_progress_callback = None  # Callback for updating gathering progress in GUI
 
     # ==================== Dialog Methods ====================
     # These methods provide a clean interface for showing dialogs
@@ -348,7 +351,7 @@ class Utils:
 
     def progress_bar(self, title, steps, current_step_index, done=False):
         # Check if GUI callback exists for progress updates
-        if hasattr(self, 'gui_progress_callback') and self.gui_progress_callback:
+        if self.gui_progress_callback:
             # Calculate progress percentage
             if done:
                 progress = 100
