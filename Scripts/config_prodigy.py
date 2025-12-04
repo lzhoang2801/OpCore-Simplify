@@ -23,6 +23,9 @@ class ConfigProdigy:
             "Comet Lake": "55060A00",
             "Ice Lake": "E5060700"
         }
+        # Pre-selected audio codec layout (can be changed during build)
+        self.selected_codec_layout = None
+        self.selected_audio_controller = None
 
     def mmio_whitelist(self, motherboard_chipset):
         booter_mmiowhitelist = []
@@ -270,13 +273,21 @@ class ConfigProdigy:
         recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
         recommended_layouts = [layout for layout in available_layouts if self.utils.contains_any(recommended_authors, layout.comment)]
 
-        default_layout = random.choice(recommended_layouts or available_layouts)
+        # Use pre-selected layout as default if available, otherwise pick a random recommended one
+        if self.selected_codec_layout:
+            # Find the layout object for the pre-selected ID
+            default_layout = next((layout for layout in available_layouts if layout.id == self.selected_codec_layout), None)
+            if not default_layout:
+                # Fallback if pre-selected layout is not in available layouts
+                default_layout = random.choice(recommended_layouts or available_layouts)
+        else:
+            default_layout = random.choice(recommended_layouts or available_layouts)
 
         selected_layout_id = None
         
         # Check if GUI mode is available
         if self.utils.gui_callback:
-            # Use GUI dialog
+            # Use GUI dialog - this will block until user makes selection
             result = self.utils.gui_callback(
                 'codec_layout',
                 '',
@@ -289,6 +300,9 @@ class ConfigProdigy:
             )
             
             if result and result[1]:  # (layout_id, ok)
+                # Store the selection for next time (as pre-selected value)
+                self.selected_codec_layout = result[0]
+                self.selected_audio_controller = audio_controller_properties
                 return result[0], audio_controller_properties
             else:
                 return None, None
@@ -388,12 +402,18 @@ class ConfigProdigy:
                     # Check if it's an index (1-based)
                     if 1 <= option_int <= len(available_layouts):
                         selected_layout_id = available_layouts[option_int - 1].id
+                        # Store the selection for next time (as pre-selected value)
+                        self.selected_codec_layout = selected_layout_id
+                        self.selected_audio_controller = audio_controller_properties
                         return selected_layout_id, audio_controller_properties
                     # Otherwise treat as layout ID
                     else:
                         for layout in available_layouts:
                             if layout.id == option_int:
                                 selected_layout_id = layout.id
+                                # Store the selection for next time (as pre-selected value)
+                                self.selected_codec_layout = selected_layout_id
+                                self.selected_audio_controller = audio_controller_properties
                                 return selected_layout_id, audio_controller_properties
             except:
                 continue
