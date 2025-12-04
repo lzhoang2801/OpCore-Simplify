@@ -24,7 +24,7 @@ from .styles import COLORS, SPACING
 from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage
 from .custom_dialogs import (
     show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
-    show_wifi_profile_extractor_dialog, show_before_using_efi_dialog
+    show_before_using_efi_dialog
 )
 
 # Import from Scripts package

@@ -1206,66 +1206,6 @@ def show_macos_version_dialog(parent, hardware_report, native_macos_version, ocl
     return None, False
 
 
-class WiFiProfileExtractorDialog(MessageBoxBase):
-    """WiFi Profile Extractor dialog with information and yes/no response"""
-
-    def __init__(self, parent=None):
-        """
-        Initialize WiFi Profile Extractor dialog
-        
-        Args:
-            parent: Parent widget
-        """
-        super().__init__(parent)
-
-        # Create UI elements
-        self.titleLabel = QLabel("WiFi Profile Extractor", self.widget)
-        
-        # Build the content message with all information from CLI
-        content_text = (
-            "Note:\n"
-            "- When using itlwm kext, WiFi appears as Ethernet in macOS\n"
-            "- You'll need Heliport app to manage WiFi connections in macOS\n"
-            "- This step will enable auto WiFi connections at boot time\n"
-            "  and is useful for users installing macOS via Recovery OS\n"
-            "\n"
-            "Would you like to scan for WiFi profiles?"
-        )
-        
-        self.contentLabel = QLabel(content_text, self.widget)
-
-        # Setup title and content
-        self.titleLabel.setObjectName("titleLabel")
-        self.contentLabel.setObjectName("contentLabel")
-        self.contentLabel.setWordWrap(True)
-        self.contentLabel.setTextFormat(Qt.TextFormat.PlainText)
-
-        # Add widgets to layout
-        self.viewLayout.addWidget(self.titleLabel)
-        self.viewLayout.addWidget(self.contentLabel)
-
-        # Set minimum width for the dialog
-        self.widget.setMinimumWidth(600)
-
-        # Update button labels to Yes/No
-        self.yesButton.setText("Yes")
-        self.cancelButton.setText("No")
-
-
-def show_wifi_profile_extractor_dialog(parent):
-    """
-    Show WiFi Profile Extractor dialog with yes/no response
-    
-    Args:
-        parent: Parent widget
-    
-    Returns:
-        bool: True if Yes was clicked, False if No was clicked
-    """
-    dialog = WiFiProfileExtractorDialog(parent)
-    return dialog.exec() == QDialog.DialogCode.Accepted
-
-
 class BeforeUsingEFIDialog(QDialog):
     """Dialog showing requirements before using the built EFI"""
 

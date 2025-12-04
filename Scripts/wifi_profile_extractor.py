@@ -288,28 +288,40 @@ class WifiProfileExtractor:
     def get_profiles(self):
         os_name = platform.system()
 
-        # Check if GUI mode - use dialog
+        # Message text used for both GUI and CLI modes
+        wifi_note_message = (
+            'Note:\n'
+            '- When using itlwm kext, WiFi appears as Ethernet in macOS\n'
+            '- You\'ll need Heliport app to manage WiFi connections in macOS\n'
+            '- This step will enable auto WiFi connections at boot time\n'
+            '  and is useful for users installing macOS via Recovery OS'
+        )
+
+        # Check if GUI mode - use dialog via thread-safe callback
         if self.utils.gui_callback:
-            # Import here to avoid circular dependencies
-            from Scripts.gui.custom_dialogs import show_wifi_profile_extractor_dialog
+            # Use the thread-safe GUI callback mechanism
+            # This ensures the dialog is shown on the main thread
+            user_wants_scan_result = self.utils.gui_callback(
+                'confirm',
+                '',  # Empty string as the message is in options
+                {
+                    'title': 'WiFi Profile Extractor',
+                    'message': wifi_note_message + '\n\nWould you like to scan for WiFi profiles?',
+                    'default': 'no'
+                }
+            )
             
-            # Get the parent window from utils if available
-            parent = getattr(self.utils, 'gui_parent', None)
-            
-            # Show the WiFi profile extractor dialog
-            user_wants_scan = show_wifi_profile_extractor_dialog(parent)
-            
-            if not user_wants_scan:
+            # Convert result to boolean
+            if user_wants_scan_result != "yes":
                 return []
         else:
             # CLI mode - use original prompts
             self.utils.head("WiFi Profile Extractor")
             print("")
             print("\033[1;93mNote:\033[0m")
-            print("- When using itlwm kext, WiFi appears as Ethernet in macOS")
-            print("- You'll need Heliport app to manage WiFi connections in macOS")
-            print("- This step will enable auto WiFi connections at boot time")
-            print("  and is useful for users installing macOS via Recovery OS")
+            # Print each line of the note (remove the 'Note:\n' prefix and split)
+            for line in wifi_note_message.split('\n')[1:]:
+                print(line)
             print("")
             
             while True:
