@@ -481,6 +481,10 @@ if __name__ == '__main__':
     if use_gui:
         # Run GUI mode
         try:
+            # Set TERM environment variable to prevent terminal control issues
+            if 'TERM' not in os.environ:
+                os.environ['TERM'] = 'dumb'
+            
             from PyQt6.QtWidgets import QApplication
             from Scripts.gui import OpCoreGUI
             

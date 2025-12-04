@@ -217,7 +217,12 @@ class Utils:
     def head(self, text = None, width = 68, resize=True):
         if resize:
             self.adjust_window_size()
-        os.system('cls' if os.name=='nt' else 'clear')
+        # Skip clear screen in GUI mode or if TERM is not set to prevent issues
+        if self.gui_callback is None and os.environ.get('TERM'):
+            try:
+                os.system('cls' if os.name=='nt' else 'clear')
+            except Exception:
+                pass  # Silently ignore clear screen errors
         if text == None:
             text = self.script_name
         separator = "═" * (width - 2)
@@ -229,10 +234,17 @@ class Utils:
         print("╔{}╗\n║{}║\n╚{}╝".format(separator, title, separator))
     
     def adjust_window_size(self, content=""):
+        # Skip terminal resizing in GUI mode or if TERM is not set
+        if self.gui_callback is not None or not os.environ.get('TERM'):
+            return
         lines = content.splitlines()
         rows = len(lines)
         cols = max(len(line) for line in lines) if lines else 0
-        print('\033[8;{};{}t'.format(max(rows+6, 30), max(cols+2, 100)))
+        try:
+            print('\033[8;{};{}t'.format(max(rows+6, 30), max(cols+2, 100)))
+        except Exception:
+            # Silently ignore any terminal resize errors
+            pass
 
     def exit_program(self):
         self.head()

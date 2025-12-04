@@ -116,6 +116,13 @@ class ResourceFetcher:
 
         speed_str = "-- KB/s"
         
+        # Check if we're in GUI mode (utils has gui_callback set)
+        is_gui_mode = self.utils.gui_callback is not None
+        
+        # GUI mode progress tracking - to avoid flooding console with too many updates
+        last_progress = ""  # Last progress string printed (GUI mode)
+        last_mb_printed = -1  # Last megabyte boundary printed (GUI mode)
+        
         while True:
             chunk = response.read(self.buffer_size)
             if not chunk:
@@ -150,10 +157,25 @@ class ResourceFetcher:
             else:
                 progress = "{} {:.1f}MB downloaded".format(speed_str, bytes_downloaded/(1024*1024))
             
-            print(" " * 80, end="\r")
-            print(progress, end="\r")
+            # In GUI mode, print on new lines; in CLI mode, use carriage return
+            if is_gui_mode:
+                # Only print every 1MB to avoid flooding the GUI console
+                current_mb = bytes_downloaded // (1024*1024)
+                mb_boundary_crossed = current_mb > last_mb_printed
+                
+                # Print progress every MB to give user feedback without flooding
+                if mb_boundary_crossed:
+                    print(progress)
+                    last_progress = progress
+                    last_mb_printed = current_mb
+            else:
+                # CLI mode: use carriage return for in-place updates
+                print(" " * 80, end="\r")
+                print(progress, end="\r")
             
-        print()
+        # Final newline
+        if not is_gui_mode:
+            print()
 
     def download_and_save_file(self, resource_url, destination_path, sha256_hash=None):
         attempt = 0
