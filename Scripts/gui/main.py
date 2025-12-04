@@ -158,6 +158,8 @@ class OpCoreGUI(FluentWindow):
         self.ocpe.k.utils.gui_parent = self
         self.ocpe.c.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.c.utils.gui_parent = self
+        self.ocpe.co.utils.gui_callback = self.handle_gui_prompt_threadsafe
+        self.ocpe.co.utils.gui_parent = self
         self.ocpe.o.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.o.utils.gui_parent = self
         self.ocpe.o.utils.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
