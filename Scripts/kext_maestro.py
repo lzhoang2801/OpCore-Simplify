@@ -237,7 +237,7 @@ class KextMaestro:
             selected_kexts.append("CpuTscSync")
 
         if needs_oclp:
-            selected_kexts.extend(("AMFIPass", "RestrictEvents"))
+            selected_kexts.extend(("AMFIPass", "RestrictEvents") if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("25.0.0") else ("RestrictEvents"))
 
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
