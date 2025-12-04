@@ -18,10 +18,10 @@ import plistlib
 
 class ACPIGuru:
     def __init__(self):
-        self.acpi = dsdt.DSDT()
+        self.utils = utils.Utils()
+        self.acpi = dsdt.DSDT(utils_instance=self.utils)
         self.smbios = smbios.SMBIOS()
         self.run = run.Run().run
-        self.utils = utils.Utils()
         self.patches = acpi_patch_data.patches
         self.hardware_report = None
         self.disabled_devices = None

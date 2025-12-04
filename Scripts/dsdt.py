@@ -7,13 +7,12 @@ from Scripts import run
 from Scripts import utils
 
 class DSDT:
-    def __init__(self, **kwargs):
+    def __init__(self, utils_instance=None, **kwargs):
         #self.dl = downloader.Downloader()
-        self.github = github.Github()
-        self.fetcher = resource_fetcher.ResourceFetcher()
+        self.u = utils_instance if utils_instance is not None else utils.Utils()
+        self.github = github.Github(utils_instance=self.u)
+        self.fetcher = resource_fetcher.ResourceFetcher(utils_instance=self.u)
         self.r  = run.Run()
-        #self.u  = utils.Utils("SSDT Time")
-        self.u = utils.Utils()
         self.iasl_url_macOS = "https://raw.githubusercontent.com/acidanthera/MaciASL/master/Dist/iasl-stable"
         self.iasl_url_macOS_legacy = "https://raw.githubusercontent.com/acidanthera/MaciASL/master/Dist/iasl-legacy"
         self.iasl_url_linux = "https://raw.githubusercontent.com/corpnewt/linux_iasl/main/iasl.zip"

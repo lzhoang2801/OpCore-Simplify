@@ -13,9 +13,9 @@ os_name = platform.system()
 class gatheringFiles:
     def __init__(self):
         self.utils = utils.Utils()
-        self.github = github.Github()
+        self.github = github.Github(utils_instance=self.utils)
         self.kext = kext_maestro.KextMaestro()
-        self.fetcher = resource_fetcher.ResourceFetcher()
+        self.fetcher = resource_fetcher.ResourceFetcher(utils_instance=self.utils)
         self.integrity_checker = integrity_checker.IntegrityChecker()
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
         self.ocbinarydata_url = "https://github.com/acidanthera/OcBinaryData/archive/refs/heads/master.zip"
