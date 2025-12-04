@@ -14,6 +14,7 @@ class Utils:
     def __init__(self, script_name = "OpCore Simplify"):
         self.script_name = script_name
         self.gui_callback = None  # Callback for GUI mode interactions
+        self.gui_log_callback = None  # Callback for logging to build log
 
     def clean_temporary_dir(self):
         temporary_dir = tempfile.gettempdir()

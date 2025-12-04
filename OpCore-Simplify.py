@@ -203,7 +203,7 @@ class OCPE:
         steps = [
             "Copying EFI base to results folder",
             "Applying ACPI patches",
-            "Copying kexts and snapshotting to config.plist",
+            "Installing and configuring kernel extensions",
             "Generating config.plist",
             "Cleaning up unused drivers, resources, and tools"
         ]

@@ -1360,3 +1360,115 @@ def show_before_using_efi_dialog(parent, bios_requirements, result_dir):
     """
     dialog = BeforeUsingEFIDialog(bios_requirements, result_dir, parent)
     return dialog.exec() == QDialog.DialogCode.Accepted
+
+
+class WiFiNetworkCountDialog(MessageBoxBase):
+    """Dialog for selecting how many WiFi networks to process"""
+
+    def __init__(self, total_networks: int, parent=None):
+        """
+        Initialize WiFi Network Count dialog
+        
+        Args:
+            total_networks: Total number of WiFi networks found
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.total_networks = total_networks
+        self.result = 5  # Default value
+
+        # Create UI elements
+        self.titleLabel = QLabel("WiFi Network Retrieval", self.widget)
+        
+        content_text = (
+            f"Found {total_networks} WiFi networks on this device.\n\n"
+            "How many networks would you like to process?\n\n"
+            "Select a specific number or choose to process all available networks."
+        )
+        self.contentLabel = QLabel(content_text, self.widget)
+        
+        # Create input field for number
+        self.inputLineEdit = LineEdit(self.widget)
+        self.inputLineEdit.setPlaceholderText(f"Enter number (1-{total_networks}, default: 5)")
+        
+        # Add "All" button
+        all_button_layout = QHBoxLayout()
+        self.allButton = PushButton("Process All Networks")
+        self.allButton.clicked.connect(self.select_all_networks)
+        all_button_layout.addWidget(self.allButton)
+        all_button_layout.addStretch()
+
+        # Setup UI
+        self.titleLabel.setObjectName("titleLabel")
+        self.contentLabel.setObjectName("contentLabel")
+        self.contentLabel.setWordWrap(True)
+
+        self.viewLayout.addWidget(self.titleLabel)
+        self.viewLayout.addWidget(self.contentLabel)
+        self.viewLayout.addWidget(self.inputLineEdit)
+        self.viewLayout.addLayout(all_button_layout)
+
+        # Set minimum width for the dialog
+        self.widget.setMinimumWidth(500)
+
+        # Focus on input field
+        self.inputLineEdit.setFocus()
+        
+        # Update button text
+        self.yesButton.setText("OK")
+        self.cancelButton.setText("Cancel")
+
+    def select_all_networks(self):
+        """Handle 'Process All Networks' button click"""
+        self.result = self.total_networks
+        self.accept()
+
+    def accept(self):
+        """Handle OK button - validate and store the input"""
+        input_text = self.inputLineEdit.text().strip()
+        
+        if not input_text:
+            # Use default value
+            self.result = min(5, self.total_networks)
+        else:
+            try:
+                num = int(input_text)
+                if 1 <= num <= self.total_networks:
+                    self.result = num
+                else:
+                    MessageBox(
+                        "Invalid Input",
+                        f"Please enter a number between 1 and {self.total_networks}.",
+                        self
+                    ).exec()
+                    return
+            except ValueError:
+                MessageBox(
+                    "Invalid Input",
+                    "Please enter a valid number.",
+                    self
+                ).exec()
+                return
+        
+        super().accept()
+
+    def getResult(self):
+        """Get the selected number of networks"""
+        return self.result
+
+
+def show_wifi_network_count_dialog(parent, total_networks: int):
+    """
+    Show WiFi Network Count dialog
+    
+    Args:
+        parent: Parent widget
+        total_networks: Total number of WiFi networks found
+    
+    Returns:
+        tuple: (count, ok) where count is selected number and ok is True if OK was clicked
+    """
+    dialog = WiFiNetworkCountDialog(total_networks, parent)
+    if dialog.exec():
+        return dialog.getResult(), True
+    return None, False
