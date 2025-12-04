@@ -65,6 +65,11 @@ class ResourceFetcher:
         response = None
 
         while attempt < 3:
+            # Close previous response from failed attempt before retrying
+            if response:
+                response.close()
+                response = None
+            
             response = self._make_request(resource_url)
 
             if not response:
@@ -81,30 +86,35 @@ class ResourceFetcher:
             print(f"Failed to fetch content from {resource_url}")
             return None
         
-        content = response.read()
-
-        if response.info().get("Content-Encoding") == "gzip" or content.startswith(b"\x1f\x8b"):
-            try:
-                content = gzip.decompress(content)
-            except Exception as e:
-                print(f"Failed to decompress gzip content: {e}")
-        elif response.info().get("Content-Encoding") == "deflate":
-            try:
-                content = zlib.decompress(content)
-            except Exception as e:
-                print(f"Failed to decompress deflate content: {e}")
-        
         try:
-            if content_type == "json":
-                return json.loads(content)
-            elif content_type == "plist":
-                return plistlib.loads(content)
-            else:
-                return content.decode("utf-8")
-        except Exception as e:
-            print(f"Error parsing content as {content_type}: {e}")
+            content = response.read()
+
+            if response.info().get("Content-Encoding") == "gzip" or content.startswith(b"\x1f\x8b"):
+                try:
+                    content = gzip.decompress(content)
+                except Exception as e:
+                    print(f"Failed to decompress gzip content: {e}")
+            elif response.info().get("Content-Encoding") == "deflate":
+                try:
+                    content = zlib.decompress(content)
+                except Exception as e:
+                    print(f"Failed to decompress deflate content: {e}")
             
-        return None
+            try:
+                if content_type == "json":
+                    return json.loads(content)
+                elif content_type == "plist":
+                    return plistlib.loads(content)
+                else:
+                    return content.decode("utf-8")
+            except Exception as e:
+                print(f"Error parsing content as {content_type}: {e}")
+                
+            return None
+        finally:
+            # Always close the response to prevent resource leaks
+            if response:
+                response.close()
 
     def _download_with_progress(self, response, local_file):
         total_size = response.getheader("Content-Length")
@@ -226,6 +236,11 @@ class ResourceFetcher:
                 else:
                     # Final attempt failed, return False to indicate failure
                     return False
+            finally:
+                # Always close the response to prevent resource leaks
+                # The response is only needed during download; verification reads from the local file
+                if response:
+                    response.close()
 
             if os.path.exists(destination_path) and os.path.getsize(destination_path) > 0:
                 if sha256_hash:
