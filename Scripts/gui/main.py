@@ -53,6 +53,11 @@ class ConsoleRedirector:
 
 class OpCoreGUI(FluentWindow):
     """Main GUI application with modern sidebar layout using qfluentwidgets"""
+    
+    # Signals for thread-safe GUI operations
+    gui_prompt_signal = pyqtSignal(str, str, object, object)  # prompt_type, prompt_text, options, result_holder
+    update_status_signal = pyqtSignal(str, str)  # message, status_type
+    update_build_progress_signal = pyqtSignal(str, list, int, int, bool)  # title, steps, current_step_index, progress, done
 
     def __init__(self, ocpe_instance):
         """
@@ -111,21 +116,26 @@ class OpCoreGUI(FluentWindow):
 
         # Console redirection
         self.console_redirected = False
+        
+        # Connect signals to slots for thread-safe GUI operations
+        self.gui_prompt_signal.connect(self._handle_gui_prompt_on_main_thread)
+        self.update_status_signal.connect(self.update_status)
+        self.update_build_progress_signal.connect(self._update_build_progress_on_main_thread)
 
         # Set up GUI callbacks
         self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
-        self.ocpe.u.gui_callback = self.handle_gui_prompt
+        self.ocpe.u.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.u.gui_parent = self
-        self.ocpe.u.gui_progress_callback = self.update_build_progress
-        self.ocpe.h.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.u.gui_progress_callback = self.update_build_progress_threadsafe
+        self.ocpe.h.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.h.utils.gui_parent = self
-        self.ocpe.k.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.k.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.k.utils.gui_parent = self
-        self.ocpe.c.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.c.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.c.utils.gui_parent = self
-        self.ocpe.o.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.o.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.o.utils.gui_parent = self
-        self.ocpe.ac.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.ac.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.ac.utils.gui_parent = self
 
         self.init_navigation()
@@ -292,6 +302,36 @@ class OpCoreGUI(FluentWindow):
 
         return None
 
+    def handle_gui_prompt_threadsafe(self, prompt_type, prompt_text, options=None):
+        """Thread-safe wrapper for handle_gui_prompt that can be called from any thread"""
+        # Check if we're on the main thread
+        if threading.current_thread() == threading.main_thread():
+            # We're on the main thread, call directly
+            return self.handle_gui_prompt(prompt_type, prompt_text, options)
+        
+        # We're on a background thread, use signal to invoke on main thread
+        # Use threading.Event for proper synchronization
+        result_holder = {'result': None}
+        event = threading.Event()
+        
+        # Emit signal to main thread
+        self.gui_prompt_signal.emit(prompt_type, prompt_text, options, (result_holder, event))
+        
+        # Wait for result from main thread with a 30-second timeout to prevent deadlock
+        if not event.wait(timeout=30.0):
+            # Timeout occurred - return None to prevent hanging
+            print("Warning: GUI prompt timed out after 30 seconds")
+            return None
+        
+        return result_holder['result']
+    
+    def _handle_gui_prompt_on_main_thread(self, prompt_type, prompt_text, options, holder_tuple):
+        """Slot that handles GUI prompts on the main thread"""
+        result_holder, event = holder_tuple
+        result = self.handle_gui_prompt(prompt_type, prompt_text, options)
+        result_holder['result'] = result
+        event.set()  # Signal that result is ready
+
     def load_hardware_report(self, path, data=None):
         """Load hardware report and update UI"""
         self.hardware_report_path = path
@@ -398,7 +438,7 @@ class OpCoreGUI(FluentWindow):
                 else:
                     error_message = "Unknown error."
 
-                self.update_status(f"Export failed: {error_message}", 'error')
+                self.update_status_signal.emit(f"Export failed: {error_message}", 'error')
             else:
                 report_path = os.path.join(report_dir, "Report.json")
                 acpitables_dir = os.path.join(report_dir, "ACPI")
@@ -440,12 +480,12 @@ class OpCoreGUI(FluentWindow):
         def build_thread():
             try:
                 # Gather bootloader and kexts (uses Darwin version)
-                self.update_status("Gathering bootloader and kexts...", 'info')
+                self.update_status_signal.emit("Gathering bootloader and kexts...", 'info')
                 self.ocpe.o.gather_bootloader_kexts(
                     self.ocpe.k.kexts, self.macos_version)
 
                 # Build EFI (uses Darwin version)
-                self.update_status("Building OpenCore EFI...", 'info')
+                self.update_status_signal.emit("Building OpenCore EFI...", 'info')
                 self.ocpe.build_opencore_efi(
                     self.customized_hardware,
                     self.disabled_devices,
@@ -454,14 +494,14 @@ class OpCoreGUI(FluentWindow):
                     self.needs_oclp
                 )
 
-                self.update_status(
+                self.update_status_signal.emit(
                     "OpenCore EFI built successfully!", 'success')
 
                 # Show "Before Using EFI" dialog on main thread
                 QTimer.singleShot(0, self.show_before_using_efi_dialog)
 
             except Exception as e:
-                self.update_status(f"Build failed: {str(e)}", 'error')
+                self.update_status_signal.emit(f"Build failed: {str(e)}", 'error')
                 import traceback
                 print(traceback.format_exc())
                 # Re-enable build button on error
@@ -470,6 +510,20 @@ class OpCoreGUI(FluentWindow):
 
         thread = threading.Thread(target=build_thread, daemon=True)
         thread.start()
+
+    def update_build_progress_threadsafe(self, title, steps, current_step_index, progress, done):
+        """Thread-safe wrapper for update_build_progress that can be called from any thread"""
+        # Check if we're on the main thread
+        if threading.current_thread() == threading.main_thread():
+            # We're on the main thread, call directly
+            self.update_build_progress(title, steps, current_step_index, progress, done)
+        else:
+            # We're on a background thread, use signal to invoke on main thread
+            self.update_build_progress_signal.emit(title, steps, current_step_index, progress, done)
+    
+    def _update_build_progress_on_main_thread(self, title, steps, current_step_index, progress, done):
+        """Slot that handles build progress updates on the main thread"""
+        self.update_build_progress(title, steps, current_step_index, progress, done)
 
     def update_build_progress(self, title, steps, current_step_index, progress, done):
         """Update build progress in GUI"""
