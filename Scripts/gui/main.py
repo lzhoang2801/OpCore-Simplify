@@ -22,7 +22,10 @@ from qfluentwidgets import (
 
 from .styles import COLORS, SPACING
 from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage
-from .custom_dialogs import show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog
+from .custom_dialogs import (
+    show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
+    show_wifi_profile_extractor_dialog, show_before_using_efi_dialog
+)
 
 # Import from Scripts package
 scripts_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -112,11 +115,18 @@ class OpCoreGUI(FluentWindow):
         # Set up GUI callbacks
         self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
         self.ocpe.u.gui_callback = self.handle_gui_prompt
+        self.ocpe.u.gui_parent = self
+        self.ocpe.u.gui_progress_callback = self.update_build_progress
         self.ocpe.h.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.h.utils.gui_parent = self
         self.ocpe.k.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.k.utils.gui_parent = self
         self.ocpe.c.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.c.utils.gui_parent = self
         self.ocpe.o.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.o.utils.gui_parent = self
         self.ocpe.ac.utils.gui_callback = self.handle_gui_prompt
+        self.ocpe.ac.utils.gui_parent = self
 
         self.init_navigation()
 
@@ -447,11 +457,50 @@ class OpCoreGUI(FluentWindow):
                 self.update_status(
                     "OpenCore EFI built successfully!", 'success')
 
+                # Show "Before Using EFI" dialog on main thread
+                QTimer.singleShot(0, self.show_before_using_efi_dialog)
+
             except Exception as e:
                 self.update_status(f"Build failed: {str(e)}", 'error')
+                import traceback
+                print(traceback.format_exc())
 
         thread = threading.Thread(target=build_thread, daemon=True)
         thread.start()
+
+    def update_build_progress(self, title, steps, current_step_index, progress, done):
+        """Update build progress in GUI"""
+        # Update progress bar
+        if self.progress_bar:
+            self.progress_bar.setValue(progress)
+        
+        # Update build log with step information
+        if self.build_log:
+            if done:
+                self.build_log.append(f"\n✓ {title} - Complete!")
+                for step in steps:
+                    self.build_log.append(f"  ✓ {step}")
+            else:
+                step_text = steps[current_step_index]
+                self.build_log.append(f"\n> {step_text}...")
+
+    def show_before_using_efi_dialog(self):
+        """Show Before Using EFI dialog after successful build"""
+        # Calculate BIOS requirements
+        bios_requirements = self.ocpe.check_bios_requirements(
+            self.hardware_report_data, self.customized_hardware)
+        
+        # Show the dialog
+        result = show_before_using_efi_dialog(
+            self, bios_requirements, self.ocpe.result_dir)
+        
+        if result:
+            # User agreed - open the result folder
+            self.ocpe.u.open_folder(self.ocpe.result_dir)
+            
+            # Enable the open result button
+            if self.open_result_btn:
+                self.open_result_btn.setEnabled(True)
 
     def run(self):
         """Run the application"""

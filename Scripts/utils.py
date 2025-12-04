@@ -187,20 +187,32 @@ class Utils:
         return user_response
 
     def progress_bar(self, title, steps, current_step_index, done=False):
-        self.head(title)
-        print("")
-        if done:
-            for step in steps:
-                print("  [\033[92m✓\033[0m] {}".format(step))
+        # Check if GUI callback exists for progress updates
+        if hasattr(self, 'gui_progress_callback') and self.gui_progress_callback:
+            # Calculate progress percentage
+            if done:
+                progress = 100
+            else:
+                progress = int((current_step_index / len(steps)) * 100)
+            
+            # Call GUI progress callback
+            self.gui_progress_callback(title, steps, current_step_index, progress, done)
         else:
-            for i, step in enumerate(steps):
-                if i < current_step_index:
+            # CLI mode - original behavior
+            self.head(title)
+            print("")
+            if done:
+                for step in steps:
                     print("  [\033[92m✓\033[0m] {}".format(step))
-                elif i == current_step_index:
-                    print("  [\033[1;93m>\033[0m] {}...".format(step))
-                else:
-                    print("  [ ] {}".format(step))
-        print("")
+            else:
+                for i, step in enumerate(steps):
+                    if i < current_step_index:
+                        print("  [\033[92m✓\033[0m] {}".format(step))
+                    elif i == current_step_index:
+                        print("  [\033[1;93m>\033[0m] {}...".format(step))
+                    else:
+                        print("  [ ] {}".format(step))
+            print("")
 
     def head(self, text = None, width = 68, resize=True):
         if resize:

@@ -288,24 +288,39 @@ class WifiProfileExtractor:
     def get_profiles(self):
         os_name = platform.system()
 
-        self.utils.head("WiFi Profile Extractor")
-        print("")
-        print("\033[1;93mNote:\033[0m")
-        print("- When using itlwm kext, WiFi appears as Ethernet in macOS")
-        print("- You'll need Heliport app to manage WiFi connections in macOS")
-        print("- This step will enable auto WiFi connections at boot time")
-        print("  and is useful for users installing macOS via Recovery OS")
-        print("")
-        
-        while True:
-            user_input = self.utils.request_input("Would you like to scan for WiFi profiles? (Yes/no): ").strip().lower()
+        # Check if GUI mode - use dialog
+        if self.utils.gui_callback:
+            # Import here to avoid circular dependencies
+            from Scripts.gui.custom_dialogs import show_wifi_profile_extractor_dialog
             
-            if user_input == "yes":
-                break
-            elif user_input == "no":
+            # Get the parent window from utils if available
+            parent = getattr(self.utils, 'gui_parent', None)
+            
+            # Show the WiFi profile extractor dialog
+            user_wants_scan = show_wifi_profile_extractor_dialog(parent)
+            
+            if not user_wants_scan:
                 return []
-            else:
-                print("\033[91mInvalid selection, please try again.\033[0m\n\n")
+        else:
+            # CLI mode - use original prompts
+            self.utils.head("WiFi Profile Extractor")
+            print("")
+            print("\033[1;93mNote:\033[0m")
+            print("- When using itlwm kext, WiFi appears as Ethernet in macOS")
+            print("- You'll need Heliport app to manage WiFi connections in macOS")
+            print("- This step will enable auto WiFi connections at boot time")
+            print("  and is useful for users installing macOS via Recovery OS")
+            print("")
+            
+            while True:
+                user_input = self.utils.request_input("Would you like to scan for WiFi profiles? (Yes/no): ").strip().lower()
+                
+                if user_input == "yes":
+                    break
+                elif user_input == "no":
+                    return []
+                else:
+                    print("\033[91mInvalid selection, please try again.\033[0m\n\n")
 
         profiles = []
         self.utils.head("Detecting WiFi Profiles")

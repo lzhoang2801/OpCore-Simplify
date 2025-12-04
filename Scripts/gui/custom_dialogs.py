@@ -1202,3 +1202,222 @@ def show_macos_version_dialog(parent, hardware_report, native_macos_version, ocl
     if dialog.exec() == QDialog.DialogCode.Accepted:
         return dialog.get_selected_version(), True
     return None, False
+
+
+class WiFiProfileExtractorDialog(MessageBoxBase):
+    """WiFi Profile Extractor dialog with information and yes/no response"""
+
+    def __init__(self, parent=None):
+        """
+        Initialize WiFi Profile Extractor dialog
+        
+        Args:
+            parent: Parent widget
+        """
+        super().__init__(parent)
+
+        # Create UI elements
+        self.titleLabel = QLabel("WiFi Profile Extractor", self.widget)
+        
+        # Build the content message with all information from CLI
+        content_text = (
+            "Note:\n"
+            "- When using itlwm kext, WiFi appears as Ethernet in macOS\n"
+            "- You'll need Heliport app to manage WiFi connections in macOS\n"
+            "- This step will enable auto WiFi connections at boot time\n"
+            "  and is useful for users installing macOS via Recovery OS\n"
+            "\n"
+            "Would you like to scan for WiFi profiles?"
+        )
+        
+        self.contentLabel = QLabel(content_text, self.widget)
+
+        # Setup title and content
+        self.titleLabel.setObjectName("titleLabel")
+        self.contentLabel.setObjectName("contentLabel")
+        self.contentLabel.setWordWrap(True)
+        self.contentLabel.setTextFormat(Qt.TextFormat.PlainText)
+
+        # Add widgets to layout
+        self.viewLayout.addWidget(self.titleLabel)
+        self.viewLayout.addWidget(self.contentLabel)
+
+        # Set minimum width for the dialog
+        self.widget.setMinimumWidth(600)
+
+        # Update button labels to Yes/No
+        self.yesButton.setText("Yes")
+        self.cancelButton.setText("No")
+
+
+def show_wifi_profile_extractor_dialog(parent):
+    """
+    Show WiFi Profile Extractor dialog with yes/no response
+    
+    Args:
+        parent: Parent widget
+    
+    Returns:
+        bool: True if Yes was clicked, False if No was clicked
+    """
+    dialog = WiFiProfileExtractorDialog(parent)
+    return dialog.exec() == QDialog.DialogCode.Accepted
+
+
+class BeforeUsingEFIDialog(QDialog):
+    """Dialog showing requirements before using the built EFI"""
+
+    def __init__(self, bios_requirements, result_dir, parent=None):
+        """
+        Initialize Before Using EFI dialog
+        
+        Args:
+            bios_requirements: List of BIOS requirement strings
+            result_dir: Path to the built EFI result directory
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.bios_requirements = bios_requirements
+        self.result_dir = result_dir
+        
+        self.setWindowTitle("Before Using EFI")
+        self.setMinimumSize(700, 500)
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Setup the dialog UI"""
+        import platform
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+
+        # Title
+        title_label = QLabel("Before Using EFI")
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        layout.addWidget(title_label)
+
+        # Description
+        desc_label = BodyLabel("Please complete the following steps:")
+        desc_label.setStyleSheet(f"color: {COLORS['warning']}; font-weight: 500; font-size: 14px;")
+        layout.addWidget(desc_label)
+
+        # Scroll area for content
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                border: 1px solid #E1DFDD;
+                border-radius: 4px;
+                background-color: white;
+            }
+        """)
+
+        # Container widget for scroll area
+        scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(scroll_widget)
+        scroll_layout.setSpacing(15)
+        scroll_layout.setContentsMargins(15, 15, 15, 15)
+
+        # BIOS/UEFI Settings section
+        if self.bios_requirements:
+            bios_label = QLabel("BIOS/UEFI Settings Required:")
+            bios_label.setStyleSheet("font-weight: bold; font-size: 13px; color: #323130;")
+            scroll_layout.addWidget(bios_label)
+            
+            for requirement in self.bios_requirements:
+                req_label = BodyLabel(f"  • {requirement}")
+                req_label.setWordWrap(True)
+                req_label.setStyleSheet("padding-left: 10px; color: #605E5C;")
+                scroll_layout.addWidget(req_label)
+            
+            scroll_layout.addSpacing(10)
+
+        # USB Mapping section
+        usb_label = QLabel("USB Mapping:")
+        usb_label.setStyleSheet("font-weight: bold; font-size: 13px; color: #323130;")
+        scroll_layout.addWidget(usb_label)
+
+        # Determine path separator based on OS
+        path_sep = "\\" if platform.system() == "Windows" else "/"
+        kexts_path = f"EFI{path_sep}OC{path_sep}Kexts"
+        
+        usb_instructions = [
+            "Use USBToolBox tool to map USB ports.",
+            f"Add created UTBMap.kext into the {kexts_path} folder.",
+            f"Remove UTBDefault.kext in the {kexts_path} folder.",
+            "Edit config.plist:",
+            "  - Use ProperTree to open your config.plist.",
+            "  - Run OC Snapshot by pressing Command/Ctrl + R.",
+            "  - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.",
+            "  - Save the file when finished."
+        ]
+        
+        for instruction in usb_instructions:
+            inst_label = BodyLabel(f"  • {instruction}")
+            inst_label.setWordWrap(True)
+            inst_label.setStyleSheet("padding-left: 10px; color: #605E5C;")
+            scroll_layout.addWidget(inst_label)
+
+        scroll_layout.addStretch()
+        scroll.setWidget(scroll_widget)
+        layout.addWidget(scroll, 1)
+
+        # Agreement section
+        agreement_label = BodyLabel(
+            'Type "AGREE" below to acknowledge these requirements and open the built EFI folder.'
+        )
+        agreement_label.setWordWrap(True)
+        agreement_label.setStyleSheet("font-weight: 500; color: #323130; margin-top: 10px;")
+        layout.addWidget(agreement_label)
+
+        # Input field for AGREE
+        self.agree_input = LineEdit()
+        self.agree_input.setPlaceholderText('Type "AGREE" here...')
+        layout.addWidget(self.agree_input)
+
+        # Buttons
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+        button_layout.addStretch()
+
+        # Cancel button
+        cancel_btn = PushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_btn)
+
+        # OK button
+        ok_btn = PrimaryPushButton("Open EFI Folder")
+        ok_btn.clicked.connect(self.accept)
+        button_layout.addWidget(ok_btn)
+
+        layout.addLayout(button_layout)
+
+    def accept(self):
+        """Handle OK button - validate AGREE input"""
+        if self.agree_input.text().strip().upper() == "AGREE":
+            super().accept()
+        else:
+            # Show error message
+            from qfluentwidgets import MessageBox
+            MessageBox(
+                "Invalid Input",
+                'Please type "AGREE" to acknowledge the requirements.',
+                self
+            ).exec()
+
+
+def show_before_using_efi_dialog(parent, bios_requirements, result_dir):
+    """
+    Show Before Using EFI dialog
+    
+    Args:
+        parent: Parent widget
+        bios_requirements: List of BIOS requirement strings
+        result_dir: Path to the built EFI result directory
+    
+    Returns:
+        bool: True if AGREE was typed and OK clicked, False otherwise
+    """
+    dialog = BeforeUsingEFIDialog(bios_requirements, result_dir, parent)
+    return dialog.exec() == QDialog.DialogCode.Accepted
