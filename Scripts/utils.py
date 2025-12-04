@@ -32,7 +32,7 @@ class Utils:
             None (waits for user to click OK)
         """
         if self.gui_handler:
-            from gui.custom_dialogs import show_info_dialog
+            from Scripts.gui.custom_dialogs import show_info_dialog
             show_info_dialog(self.gui_handler, title, message)
         else:
             # CLI fallback
@@ -57,7 +57,7 @@ class Utils:
             'yes' or 'no' as string
         """
         if self.gui_handler:
-            from gui.custom_dialogs import show_question_dialog
+            from Scripts.gui.custom_dialogs import show_question_dialog
             result = show_question_dialog(self.gui_handler, title, message, default, warning)
             return 'yes' if result else 'no'
         else:
@@ -84,7 +84,7 @@ class Utils:
             Selected value or None if cancelled
         """
         if self.gui_handler:
-            from gui.custom_dialogs import show_choice_dialog
+            from Scripts.gui.custom_dialogs import show_choice_dialog
             value, ok = show_choice_dialog(
                 self.gui_handler, title, message, choices, 
                 default_value, warning, note
@@ -145,7 +145,7 @@ class Utils:
             Entered text or empty string if cancelled
         """
         if self.gui_handler:
-            from gui.custom_dialogs import show_input_dialog
+            from Scripts.gui.custom_dialogs import show_input_dialog
             text, ok = show_input_dialog(self.gui_handler, title, message, placeholder)
             return text if ok else ""
         else:
