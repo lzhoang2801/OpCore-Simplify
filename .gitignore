@@ -165,3 +165,6 @@ Scripts/gui_old.py.bak
 */iasl-*
 Scripts/iasl
 sha_version.txt
+macserial
+macserial.exe
+macserial.linux
