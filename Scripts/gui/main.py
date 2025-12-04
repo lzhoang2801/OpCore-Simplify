@@ -464,6 +464,9 @@ class OpCoreGUI(FluentWindow):
                 self.update_status(f"Build failed: {str(e)}", 'error')
                 import traceback
                 print(traceback.format_exc())
+                # Re-enable build button on error
+                if self.build_btn:
+                    QTimer.singleShot(0, lambda: self.build_btn.setEnabled(True))
 
         thread = threading.Thread(target=build_thread, daemon=True)
         thread.start()
@@ -501,6 +504,10 @@ class OpCoreGUI(FluentWindow):
             # Enable the open result button
             if self.open_result_btn:
                 self.open_result_btn.setEnabled(True)
+        
+        # Re-enable the build button for next build
+        if self.build_btn:
+            self.build_btn.setEnabled(True)
 
     def run(self):
         """Run the application"""
