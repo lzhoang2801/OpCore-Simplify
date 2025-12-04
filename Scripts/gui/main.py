@@ -146,25 +146,30 @@ class OpCoreGUI(FluentWindow):
         self.update_build_progress_signal.connect(self._update_build_progress_on_main_thread)
         self.update_gathering_progress_signal.connect(self._update_gathering_progress_on_main_thread)
 
-        # Set up GUI callbacks
+        # Set up GUI handlers - using new direct handler approach
         self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
-        self.ocpe.u.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.u.gui_parent = self
+        
+        # Set gui_handler to self for all utils instances (new direct dialog approach)
+        self.ocpe.u.gui_handler = self
         self.ocpe.u.gui_progress_callback = self.update_build_progress_threadsafe
         self.ocpe.u.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
-        self.ocpe.h.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.h.utils.gui_parent = self
-        self.ocpe.k.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.k.utils.gui_parent = self
-        self.ocpe.c.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.c.utils.gui_parent = self
-        self.ocpe.co.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.co.utils.gui_parent = self
-        self.ocpe.o.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.o.utils.gui_parent = self
+        
+        self.ocpe.h.utils.gui_handler = self
+        self.ocpe.k.utils.gui_handler = self
+        self.ocpe.c.utils.gui_handler = self
+        self.ocpe.co.utils.gui_handler = self
+        self.ocpe.o.utils.gui_handler = self
         self.ocpe.o.utils.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
+        self.ocpe.ac.utils.gui_handler = self
+        
+        # Keep old gui_callback for backward compatibility during migration
+        self.ocpe.u.gui_callback = self.handle_gui_prompt_threadsafe
+        self.ocpe.h.utils.gui_callback = self.handle_gui_prompt_threadsafe
+        self.ocpe.k.utils.gui_callback = self.handle_gui_prompt_threadsafe
+        self.ocpe.c.utils.gui_callback = self.handle_gui_prompt_threadsafe
+        self.ocpe.co.utils.gui_callback = self.handle_gui_prompt_threadsafe
+        self.ocpe.o.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.ac.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.ac.utils.gui_parent = self
 
         self.init_navigation()
 
@@ -366,20 +371,24 @@ class OpCoreGUI(FluentWindow):
         # Emit signal to main thread
         self.gui_prompt_signal.emit(prompt_type, prompt_text, options, (result_holder, event))
         
-        # Wait for result from main thread with a 30-second timeout to prevent deadlock
-        if not event.wait(timeout=30.0):
-            # Timeout occurred - return None to prevent hanging
-            print("Warning: GUI prompt timed out after 30 seconds")
-            return None
+        # Wait for result from main thread without timeout - dialogs should wait for user interaction
+        event.wait(timeout=None)
         
         return result_holder['result']
     
     def _handle_gui_prompt_on_main_thread(self, prompt_type, prompt_text, options, holder_tuple):
         """Slot that handles GUI prompts on the main thread"""
         result_holder, event = holder_tuple
-        result = self.handle_gui_prompt(prompt_type, prompt_text, options)
-        result_holder['result'] = result
-        event.set()  # Signal that result is ready
+        try:
+            result = self.handle_gui_prompt(prompt_type, prompt_text, options)
+            result_holder['result'] = result
+        except Exception as e:
+            # Log error but ensure event is set to prevent deadlock
+            print(f"Error in GUI prompt handler: {e}")
+            result_holder['result'] = None
+        finally:
+            # Always signal completion to prevent deadlock
+            event.set()
 
     def load_hardware_report(self, path, data=None):
         """Load hardware report and update UI"""

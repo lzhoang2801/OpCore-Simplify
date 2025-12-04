@@ -35,16 +35,12 @@ class HardwareCustomizer:
                     print("You can still proceed with Legacy if you prefer.")
                     print("")
 
-                    gui_options = {
-                        'title': 'Firmware Type Selection',
-                        'message': 'Your BIOS Firmware Type is not UEFI.\n\nDo you want to build the EFI for UEFI?\n\nIf yes, please make sure to update your BIOS and enable UEFI Boot Mode in your BIOS settings.\nYou can still proceed with Legacy if you prefer.',
-                        'default': 'yes'
-                    }
-
                     while True:
-                        answer = self.utils.request_input("Build EFI for UEFI? (Yes/no): ",
-                                                        gui_type='confirm',
-                                                        gui_options=gui_options).strip().lower()
+                        answer = self.utils.show_question_dialog(
+                            'Firmware Type Selection',
+                            'Your BIOS Firmware Type is not UEFI.\n\nDo you want to build the EFI for UEFI?\n\nIf yes, please make sure to update your BIOS and enable UEFI Boot Mode in your BIOS settings.\nYou can still proceed with Legacy if you prefer.',
+                            default='yes'
+                        )
                         if answer == "yes":
                             self.customized_hardware[device_type]["Firmware Type"] = "UEFI"
                             break
@@ -93,7 +89,10 @@ class HardwareCustomizer:
             print("")
             print("All other devices of the same type have been disabled.")
             print("")
-            self.utils.request_input(gui_type='info')
+            self.utils.show_info_dialog(
+                'Device Selection Summary',
+                'Selected devices have been configured.\n\nAll other devices of the same type have been disabled.'
+            )
         
         return self.customized_hardware, self.disabled_devices, needs_oclp
 

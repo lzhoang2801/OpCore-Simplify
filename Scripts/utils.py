@@ -13,8 +13,167 @@ import tempfile
 class Utils:
     def __init__(self, script_name = "OpCore Simplify"):
         self.script_name = script_name
-        self.gui_callback = None  # Callback for GUI mode interactions
+        self.gui_handler = None  # GUI handler object for direct dialog access
         self.gui_log_callback = None  # Callback for logging to build log
+
+    # ==================== Dialog Methods ====================
+    # These methods provide a clean interface for showing dialogs
+    # They automatically use GUI when available, otherwise fall back to CLI
+    
+    def show_info_dialog(self, title, message):
+        """
+        Show an informational dialog with OK button.
+        
+        Args:
+            title: Dialog title
+            message: Dialog message
+            
+        Returns:
+            None (waits for user to click OK)
+        """
+        if self.gui_handler:
+            from gui.custom_dialogs import show_info_dialog
+            show_info_dialog(self.gui_handler, title, message)
+        else:
+            # CLI fallback
+            print("\n" + "="*60)
+            print(title.center(60))
+            print("="*60)
+            print(message)
+            print("="*60)
+            self.cli_input("Press Enter to continue...")
+    
+    def show_question_dialog(self, title, message, default='no', warning=None):
+        """
+        Show a Yes/No question dialog.
+        
+        Args:
+            title: Dialog title
+            message: Question to ask
+            default: Default answer ('yes' or 'no')
+            warning: Optional warning message
+            
+        Returns:
+            'yes' or 'no' as string
+        """
+        if self.gui_handler:
+            from gui.custom_dialogs import show_question_dialog
+            result = show_question_dialog(self.gui_handler, title, message, default, warning)
+            return 'yes' if result else 'no'
+        else:
+            # CLI fallback
+            if warning:
+                message = f"{message}\n\n⚠️  {warning}"
+            prompt = f"{message} (yes/No): " if default == 'no' else f"{message} (Yes/no): "
+            response = self.cli_input(prompt).strip().lower() or default
+            return 'yes' if response == 'yes' else 'no'
+    
+    def show_choice_dialog(self, title, message, choices, default_value=None, warning=None, note=None):
+        """
+        Show a choice/dropdown dialog.
+        
+        Args:
+            title: Dialog title
+            message: Dialog message
+            choices: List of choice dicts with 'value', 'label', and optional 'description'
+            default_value: Default value to select
+            warning: Optional warning message
+            note: Optional note message
+            
+        Returns:
+            Selected value or None if cancelled
+        """
+        if self.gui_handler:
+            from gui.custom_dialogs import show_choice_dialog
+            value, ok = show_choice_dialog(
+                self.gui_handler, title, message, choices, 
+                default_value, warning, note
+            )
+            return value if ok else None
+        else:
+            # CLI fallback
+            print("\n" + "="*60)
+            print(title.center(60))
+            print("="*60)
+            if message:
+                print(message)
+            if warning:
+                print(f"\n⚠️  {warning}")
+            if note:
+                print(f"\nℹ️  {note}")
+            print()
+            
+            for idx, choice in enumerate(choices, 1):
+                label = choice.get('label', choice.get('value', str(idx)))
+                description = choice.get('description', '')
+                if description:
+                    print(f"{idx}. {label}")
+                    print(f"   {description}")
+                else:
+                    print(f"{idx}. {label}")
+            
+            print()
+            default_idx = 1
+            if default_value:
+                for idx, choice in enumerate(choices, 1):
+                    if choice.get('value') == default_value:
+                        default_idx = idx
+                        break
+            
+            prompt = f"Select option (1-{len(choices)}, default: {default_idx}): "
+            response = self.cli_input(prompt).strip() or str(default_idx)
+            
+            try:
+                selected_idx = int(response) - 1
+                if 0 <= selected_idx < len(choices):
+                    return choices[selected_idx].get('value')
+            except ValueError:
+                pass
+            
+            return None
+    
+    def show_input_dialog(self, title, message, placeholder=""):
+        """
+        Show a text input dialog.
+        
+        Args:
+            title: Dialog title
+            message: Prompt message
+            placeholder: Placeholder text
+            
+        Returns:
+            Entered text or empty string if cancelled
+        """
+        if self.gui_handler:
+            from gui.custom_dialogs import show_input_dialog
+            text, ok = show_input_dialog(self.gui_handler, title, message, placeholder)
+            return text if ok else ""
+        else:
+            # CLI fallback
+            print("\n" + "="*60)
+            print(title.center(60))
+            print("="*60)
+            print(message)
+            if placeholder:
+                print(f"({placeholder})")
+            return self.cli_input("> ").strip()
+    
+    def cli_input(self, prompt=""):
+        """
+        Get input from CLI (helper for consistent Python 2/3 support).
+        
+        Args:
+            prompt: Prompt to display
+            
+        Returns:
+            User input as string
+        """
+        if sys.version_info[0] < 3:
+            return raw_input(prompt)
+        else:
+            return input(prompt)
+    
+    # ==================== End Dialog Methods ====================
 
     def clean_temporary_dir(self):
         temporary_dir = tempfile.gettempdir()
