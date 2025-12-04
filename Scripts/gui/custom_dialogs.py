@@ -3,6 +3,8 @@ Custom dialog implementations using qfluentwidgets.
 Following qfluentwidgets design patterns by extending MessageBoxBase.
 """
 
+import platform
+
 from PyQt6.QtWidgets import (
     QLabel, QDialog, QVBoxLayout, QHBoxLayout,
     QScrollArea, QWidget, QPushButton, QButtonGroup,
@@ -1286,8 +1288,6 @@ class BeforeUsingEFIDialog(QDialog):
 
     def setup_ui(self):
         """Setup the dialog UI"""
-        import platform
-        
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
@@ -1399,7 +1399,6 @@ class BeforeUsingEFIDialog(QDialog):
             super().accept()
         else:
             # Show error message
-            from qfluentwidgets import MessageBox
             MessageBox(
                 "Invalid Input",
                 'Please type "AGREE" to acknowledge the requirements.',
