@@ -61,9 +61,16 @@ class BuildPage(QWidget):
 
         # Progress bar
         self.progress_bar = ProgressBar()
-        self.progress_bar.setVisible(False)
+        self.progress_bar.setVisible(True)  # Make visible from the start
+        self.progress_bar.setValue(0)
         self.controller.progress_bar = self.progress_bar
         build_layout.addWidget(self.progress_bar)
+        
+        # Progress status label
+        self.progress_label = BodyLabel("Ready to build")
+        self.progress_label.setStyleSheet("color: #605E5C;")
+        build_layout.addWidget(self.progress_label)
+        self.controller.progress_label = self.progress_label
 
         layout.addWidget(build_card)
 
@@ -100,8 +107,10 @@ class BuildPage(QWidget):
         self.build_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
+        self.progress_label.setText("Starting build...")
         self.build_log.clear()
-        self.build_log.append("Starting build...")
+        self.build_log.append("Starting build process...")
+        self.build_log.append("")
 
         # Call controller build method
         self.controller.build_efi()

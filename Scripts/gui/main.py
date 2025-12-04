@@ -58,6 +58,7 @@ class OpCoreGUI(FluentWindow):
     gui_prompt_signal = pyqtSignal(str, str, object, object)  # prompt_type, prompt_text, options, result_holder
     update_status_signal = pyqtSignal(str, str)  # message, status_type
     update_build_progress_signal = pyqtSignal(str, list, int, int, bool)  # title, steps, current_step_index, progress, done
+    update_gathering_progress_signal = pyqtSignal(dict)  # progress_info dict
 
     def __init__(self, ocpe_instance):
         """
@@ -110,6 +111,7 @@ class OpCoreGUI(FluentWindow):
         self.build_btn = None
         self.progress_var = None
         self.progress_bar = None
+        self.progress_label = None
         self.build_log = None
         self.open_result_btn = None
         self.console_log = None
@@ -121,12 +123,14 @@ class OpCoreGUI(FluentWindow):
         self.gui_prompt_signal.connect(self._handle_gui_prompt_on_main_thread)
         self.update_status_signal.connect(self.update_status)
         self.update_build_progress_signal.connect(self._update_build_progress_on_main_thread)
+        self.update_gathering_progress_signal.connect(self._update_gathering_progress_on_main_thread)
 
         # Set up GUI callbacks
         self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
         self.ocpe.u.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.u.gui_parent = self
         self.ocpe.u.gui_progress_callback = self.update_build_progress_threadsafe
+        self.ocpe.u.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
         self.ocpe.h.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.h.utils.gui_parent = self
         self.ocpe.k.utils.gui_callback = self.handle_gui_prompt_threadsafe
@@ -135,6 +139,7 @@ class OpCoreGUI(FluentWindow):
         self.ocpe.c.utils.gui_parent = self
         self.ocpe.o.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.o.utils.gui_parent = self
+        self.ocpe.o.utils.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
         self.ocpe.ac.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.ac.utils.gui_parent = self
 
@@ -511,6 +516,52 @@ class OpCoreGUI(FluentWindow):
         thread = threading.Thread(target=build_thread, daemon=True)
         thread.start()
 
+    def update_gathering_progress_threadsafe(self, progress_info):
+        """Thread-safe wrapper for update_gathering_progress that can be called from any thread"""
+        # Check if we're on the main thread
+        if threading.current_thread() == threading.main_thread():
+            # We're on the main thread, call directly
+            self.update_gathering_progress(progress_info)
+        else:
+            # We're on a background thread, use signal to invoke on main thread
+            self.update_gathering_progress_signal.emit(progress_info)
+    
+    def _update_gathering_progress_on_main_thread(self, progress_info):
+        """Slot that handles gathering progress updates on the main thread"""
+        self.update_gathering_progress(progress_info)
+    
+    def update_gathering_progress(self, progress_info):
+        """Update gathering files progress in GUI"""
+        current = progress_info.get('current', 0)
+        total = progress_info.get('total', 1)
+        product_name = progress_info.get('product_name', '')
+        status = progress_info.get('status', 'downloading')
+        
+        # Update progress bar
+        if self.progress_bar:
+            progress_percent = int((current / total) * 100) if total > 0 else 0
+            self.progress_bar.setValue(progress_percent)
+        
+        # Update progress label
+        if self.progress_label:
+            if status == 'complete':
+                self.progress_label.setText("✓ All files gathered successfully!")
+            elif status == 'downloading':
+                self.progress_label.setText(f"⬇ Downloading {current}/{total}: {product_name}")
+            elif status == 'processing':
+                self.progress_label.setText(f"✓ Processing {current}/{total}: {product_name}")
+        
+        # Update build log with gathering information (less verbose for GUI)
+        if self.build_log:
+            if status == 'complete':
+                self.build_log.append("\n✓ All files gathered successfully!")
+            elif status == 'downloading':
+                # Only log every file download to keep it concise
+                self.build_log.append(f"⬇ {current}/{total}: {product_name}")
+            elif status == 'processing':
+                # Don't log processing to avoid clutter - progress label handles it
+                pass
+    
     def update_build_progress_threadsafe(self, title, steps, current_step_index, progress, done):
         """Thread-safe wrapper for update_build_progress that can be called from any thread"""
         # Check if we're on the main thread
@@ -531,6 +582,14 @@ class OpCoreGUI(FluentWindow):
         if self.progress_bar:
             self.progress_bar.setValue(progress)
         
+        # Update progress label
+        if self.progress_label:
+            if done:
+                self.progress_label.setText(f"✓ {title} - Complete!")
+            else:
+                step_text = steps[current_step_index] if current_step_index < len(steps) else "Processing"
+                self.progress_label.setText(f"⚙ {step_text}...")
+        
         # Update build log with step information
         if self.build_log:
             if done:
@@ -538,7 +597,7 @@ class OpCoreGUI(FluentWindow):
                 for step in steps:
                     self.build_log.append(f"  ✓ {step}")
             else:
-                step_text = steps[current_step_index]
+                step_text = steps[current_step_index] if current_step_index < len(steps) else "Processing"
                 self.build_log.append(f"\n> {step_text}...")
 
     def show_before_using_efi_dialog(self):
