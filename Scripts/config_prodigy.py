@@ -502,7 +502,7 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, hardware_report, macos_version, kexts, config):
+    def boot_args(self, hardware_report, macos_version, needs_oclp, kexts, config):
         boot_args = [
             "-v",
             "debug=0x100",
@@ -513,6 +513,10 @@ class ConfigProdigy:
             boot_args.append("npci=0x2000")
 
         for kext in kexts:
+            if kext.name == "AMFIPass":
+                if needs_oclp and not kext.checked:
+                    boot_args.append("amfi=0x80")
+
             if not kext.checked:
                 continue
 
@@ -682,7 +686,7 @@ class ConfigProdigy:
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
-        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, kexts, config)
+        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, needs_oclp, kexts, config)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = self.utils.hex_to_bytes("")
 
