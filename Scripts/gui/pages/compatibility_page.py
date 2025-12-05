@@ -8,7 +8,7 @@ from PyQt6.QtGui import QFont
 from qfluentwidgets import (
     PushButton, SubtitleLabel, BodyLabel, CardWidget, TextEdit,
     StrongBodyLabel, ScrollArea, FluentIcon, IconWidget, GroupHeaderCardWidget,
-    TitleLabel, ExpandLayout, setFont
+    TitleLabel, setFont
 )
 
 from ..styles import COLORS, SPACING
@@ -93,7 +93,7 @@ class CompatibilityPage(ScrollArea):
         self.setObjectName("compatibilityPage")
         self.controller = parent
         self.scrollWidget = QWidget()
-        self.expandLayout = ExpandLayout(self.scrollWidget)
+        self.expandLayout = QVBoxLayout()
         # Explicitly set the layout on the scroll widget to ensure proper display
         self.scrollWidget.setLayout(self.expandLayout)
         self.setup_ui()
@@ -101,11 +101,12 @@ class CompatibilityPage(ScrollArea):
     def setup_ui(self):
         """Setup the compatibility page UI"""
         self.resize(1000, 800)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setViewportMargins(0, 120, 0, 20)
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
-        
+
         # Enable transparent background for proper styling
         self.enableTransparentBackground()
 
@@ -122,7 +123,8 @@ class CompatibilityPage(ScrollArea):
         # Subtitle with improved styling
         self.subtitle_label = StrongBodyLabel(
             "Review hardware compatibility with macOS", self)
-        self.subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        self.subtitle_label.setStyleSheet(
+            f"color: {COLORS['text_secondary']};")
         self.subtitle_label.move(36, 90)
 
         # Initialize layout for compatibility cards
@@ -137,7 +139,8 @@ class CompatibilityPage(ScrollArea):
         # macOS version support card - positioned at the top of content area
         self.macos_version_card = CardWidget(self.scrollWidget)
         self.macos_version_card.setFixedWidth(320)
-        self.macos_version_card.setVisible(False)  # Hidden until data is loaded
+        self.macos_version_card.setVisible(
+            False)  # Hidden until data is loaded
 
         version_card_layout = QVBoxLayout(self.macos_version_card)
         version_card_layout.setContentsMargins(SPACING['medium'], SPACING['medium'],
@@ -266,7 +269,7 @@ class CompatibilityPage(ScrollArea):
         # Clear existing cards (except the macOS version card which should be the first widget)
         # Collect all widgets to remove (keeping track of which to preserve)
         widgets_to_remove = []
-        
+
         for i in range(self.expandLayout.count()):
             item = self.expandLayout.itemAt(i)
             if item and item.widget():
@@ -274,7 +277,7 @@ class CompatibilityPage(ScrollArea):
                 # Keep the macOS version card, remove everything else
                 if widget != self.macos_version_card:
                     widgets_to_remove.append(widget)
-        
+
         # Now remove all the widgets we identified
         for widget in widgets_to_remove:
             self.expandLayout.removeWidget(widget)
@@ -294,7 +297,8 @@ class CompatibilityPage(ScrollArea):
 
         # CPU Card
         if 'CPU' in report:
-            cpu_card = GroupHeaderCardWidget("CPU", self.scrollWidget)
+            cpu_card = GroupHeaderCardWidget(self.scrollWidget)
+            cpu_card.setTitle("CPU")
             cpu_info = report['CPU']
 
             if isinstance(cpu_info, dict):
@@ -341,7 +345,8 @@ class CompatibilityPage(ScrollArea):
 
         # GPU Card
         if 'GPU' in report and report['GPU']:
-            gpu_card = GroupHeaderCardWidget("Graphics", self.scrollWidget)
+            gpu_card = GroupHeaderCardWidget(self.scrollWidget)
+            gpu_card.setTitle("Graphics")
 
             for idx, (gpu_name, gpu_info) in enumerate(report['GPU'].items()):
                 # GPU Name and Type group (main item - no indent)
@@ -405,7 +410,8 @@ class CompatibilityPage(ScrollArea):
 
         # Sound Card
         if 'Sound' in report and report['Sound']:
-            sound_card = GroupHeaderCardWidget("Audio", self.scrollWidget)
+            sound_card = GroupHeaderCardWidget(self.scrollWidget)
+            sound_card.setTitle("Audio")
 
             for audio_device, audio_props in report['Sound'].items():
                 # Audio Device group (main item - no indent)
@@ -445,7 +451,8 @@ class CompatibilityPage(ScrollArea):
 
         # Network Card
         if 'Network' in report and report['Network']:
-            network_card = GroupHeaderCardWidget("Network", self.scrollWidget)
+            network_card = GroupHeaderCardWidget(self.scrollWidget)
+            network_card.setTitle("Network")
 
             for device_name, device_props in report['Network'].items():
                 # Network Device group (main item - no indent)
@@ -515,7 +522,8 @@ class CompatibilityPage(ScrollArea):
 
         # Storage Controllers Card
         if 'Storage Controllers' in report and report['Storage Controllers']:
-            storage_card = GroupHeaderCardWidget("Storage", self.scrollWidget)
+            storage_card = GroupHeaderCardWidget(self.scrollWidget)
+            storage_card.setTitle("Storage")
 
             for controller_name, controller_props in report['Storage Controllers'].items():
                 # Storage Controller group (main item - no indent)
@@ -544,7 +552,8 @@ class CompatibilityPage(ScrollArea):
 
         # Bluetooth Card
         if 'Bluetooth' in report and report['Bluetooth']:
-            bluetooth_card = GroupHeaderCardWidget("Bluetooth", self.scrollWidget)
+            bluetooth_card = GroupHeaderCardWidget(self.scrollWidget)
+            bluetooth_card.setTitle("Bluetooth")
 
             for bluetooth_name, bluetooth_props in report['Bluetooth'].items():
                 # Bluetooth Device group (main item - no indent)
@@ -573,7 +582,8 @@ class CompatibilityPage(ScrollArea):
 
         # Biometric Card (if exists)
         if 'Biometric' in report and report['Biometric']:
-            bio_card = GroupHeaderCardWidget("Biometric", self.scrollWidget)
+            bio_card = GroupHeaderCardWidget(self.scrollWidget)
+            bio_card.setTitle("Biometric")
 
             for bio_device, bio_props in report['Biometric'].items():
                 # Biometric Device group (main item - no indent)
@@ -617,10 +627,10 @@ class CompatibilityPage(ScrollArea):
 
         # Update the macOS version card in the header
         self.update_macos_version_card()
-        
+
         # Force layout update to ensure widgets are displayed
-        self.expandLayout.update()
         self.scrollWidget.updateGeometry()
+        self.scrollWidget.update()
         self.update()
 
     def refresh(self):
