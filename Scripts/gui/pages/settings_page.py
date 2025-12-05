@@ -13,7 +13,8 @@ from qfluentwidgets import (
     LineEdit, FluentIcon, InfoBar, InfoBarPosition,
     SettingCardGroup, SwitchSettingCard, ComboBoxSettingCard,
     PushSettingCard, ExpandSettingCard, setTheme, Theme, SpinBox,
-    OptionsConfigItem, OptionsValidator, qconfig
+    OptionsConfigItem, OptionsValidator, qconfig, HyperlinkCard,
+    RangeSettingCard, StrongBodyLabel, CaptionLabel
 )
 
 from ..styles import COLORS, SPACING
@@ -43,11 +44,17 @@ class SettingsPage(QWidget):
         title_label = TitleLabel("Settings")
         layout.addWidget(title_label)
 
-        # Subtitle
-        subtitle_label = BodyLabel(
-            "Configure OpCore Simplify preferences - 27 settings across 9 categories")
+        # Subtitle with improved styling
+        subtitle_label = StrongBodyLabel(
+            "Configure OpCore Simplify preferences")
         subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
         layout.addWidget(subtitle_label)
+        
+        # Category count with helpful info
+        category_info = CaptionLabel(
+            "27 settings organized across 9 categories • Changes are saved automatically")
+        category_info.setStyleSheet(f"color: {COLORS['text_tertiary']};")
+        layout.addWidget(category_info)
 
         layout.addSpacing(SPACING['medium'])
 
@@ -94,6 +101,10 @@ class SettingsPage(QWidget):
         # Advanced Settings Group
         self.advanced_group = self.create_advanced_group()
         scroll_layout.addWidget(self.advanced_group)
+        
+        # Documentation and Help Group
+        self.help_group = self.create_help_group()
+        scroll_layout.addWidget(self.help_group)
 
         scroll_layout.addStretch()
         scroll.setWidget(scroll_content)
@@ -101,19 +112,23 @@ class SettingsPage(QWidget):
 
         # Bottom section with version and reset button
         bottom_layout = QHBoxLayout()
-        bottom_layout.setContentsMargins(0, SPACING['medium'], 0, 0)
+        bottom_layout.setContentsMargins(0, SPACING['large'], 0, 0)
+        bottom_layout.setSpacing(SPACING['medium'])
 
-        # Version information
-        version_label = BodyLabel("Version:")
-        version_label.setStyleSheet("font-weight: bold;")
-        bottom_layout.addWidget(version_label)
+        # Version information with better styling
+        version_container = QHBoxLayout()
+        version_container.setSpacing(SPACING['small'])
+        
+        version_label = StrongBodyLabel("Version:")
+        version_container.addWidget(version_label)
 
         git_sha = self.get_git_version()
-        version_value = BodyLabel(git_sha)
+        version_value = CaptionLabel(git_sha)
         version_value.setStyleSheet(
             f"color: {COLORS['text_secondary']}; font-family: 'Courier New', monospace;")
-        bottom_layout.addWidget(version_value)
-
+        version_container.addWidget(version_value)
+        
+        bottom_layout.addLayout(version_container)
         bottom_layout.addStretch()
 
         # Reset button
@@ -126,7 +141,7 @@ class SettingsPage(QWidget):
 
     def create_build_settings_group(self):
         """Create build settings group using modern components"""
-        group = SettingCardGroup("Build Settings", self)
+        group = SettingCardGroup("Build Settings 🔨", self)
 
         # Output directory setting
         self.output_dir_card = PushSettingCard(
@@ -144,7 +159,7 @@ class SettingsPage(QWidget):
         self.open_folder_card = SwitchSettingCard(
             FluentIcon.FOLDER_ADD,
             "Open folder after build",
-            "Automatically open the result folder after EFI build completes",
+            "Automatically opens the EFI build result folder when the build process completes successfully",
             configItem=None,
             parent=group
         )
@@ -158,7 +173,7 @@ class SettingsPage(QWidget):
         self.clean_temp_card = SwitchSettingCard(
             FluentIcon.DELETE,
             "Clean temporary files on exit",
-            "Remove temporary build files when closing the application",
+            "Automatically removes temporary build files and cache when closing the application to save disk space",
             configItem=None,
             parent=group
         )
@@ -172,13 +187,13 @@ class SettingsPage(QWidget):
 
     def create_boot_args_group(self):
         """Create boot arguments group using modern components"""
-        group = SettingCardGroup("Boot Arguments", self)
+        group = SettingCardGroup("Boot Arguments 🚀", self)
 
         # Verbose boot setting
         self.verbose_boot_card = SwitchSettingCard(
             FluentIcon.CODE,
             "Verbose boot (debug mode)",
-            'Include "-v debug=0x100 keepsyms=1" in boot-args for detailed boot logging',
+            'Enables verbose boot with "-v debug=0x100 keepsyms=1" arguments for detailed boot logging and troubleshooting',
             configItem=None,
             parent=group
         )
@@ -192,16 +207,17 @@ class SettingsPage(QWidget):
         self.custom_boot_args_card = ExpandSettingCard(
             FluentIcon.COMMAND_PROMPT,
             "Additional Boot Arguments",
-            "Add custom boot arguments (e.g., 'alcid=1 -wegnoegpu'). Space-separated, appended to defaults.",
+            "Add custom boot arguments (space-separated). Examples: alcid=1 (audio), -wegnoegpu (disable GPU)",
             group
         )
         self.custom_boot_args_input = LineEdit(self)
         self.custom_boot_args_input.setPlaceholderText(
-            "e.g., alcid=1 -wegnoegpu")
+            "e.g., alcid=1 -wegnoegpu agdpmod=pikera")
         self.custom_boot_args_input.setText(
             self.settings.get("custom_boot_args", ""))
         self.custom_boot_args_input.textChanged.connect(
             lambda text: self.settings.set("custom_boot_args", text))
+        self.custom_boot_args_input.setClearButtonEnabled(True)
         self.custom_boot_args_card.viewLayout.addWidget(
             self.custom_boot_args_input)
         group.addSettingCard(self.custom_boot_args_card)
@@ -210,13 +226,13 @@ class SettingsPage(QWidget):
 
     def create_macos_version_group(self):
         """Create macOS version settings group using modern components"""
-        group = SettingCardGroup("macOS Version Settings", self)
+        group = SettingCardGroup("macOS Version Settings 🍎", self)
 
         # Include beta versions
         self.include_beta_card = SwitchSettingCard(
             FluentIcon.UPDATE,
             "Include beta versions",
-            "Show beta/unreleased macOS versions in version selection menu",
+            "Shows beta and unreleased macOS versions in version selection menus. Enable for testing new macOS releases.",
             configItem=None,
             parent=group
         )
@@ -246,7 +262,7 @@ class SettingsPage(QWidget):
             self.macos_version_config,
             FluentIcon.EMBED,
             "Preferred macOS Version",
-            "Default macOS version to auto-select. Leave as 'Auto' for automatic detection based on hardware.",
+            "Sets the default macOS version to auto-select. Choose 'Auto' for automatic hardware-based detection.",
             version_texts,
             group
         )
@@ -326,13 +342,13 @@ class SettingsPage(QWidget):
 
     def create_boot_picker_group(self):
         """Create OpenCore boot picker settings group using modern components"""
-        group = SettingCardGroup("OpenCore Boot Picker", self)
+        group = SettingCardGroup("OpenCore Boot Picker ⏸️", self)
 
         # Show picker
         self.show_picker_card = SwitchSettingCard(
             FluentIcon.MENU,
             "Show boot picker",
-            "Display OpenCore boot menu at startup",
+            "Displays the OpenCore boot menu at startup, allowing you to choose between different boot entries",
             configItem=None,
             parent=group
         )
@@ -361,7 +377,7 @@ class SettingsPage(QWidget):
             self.picker_mode_config,
             FluentIcon.APPLICATION,
             "Picker mode",
-            "Auto: Determined by firmware type. Builtin: Text mode. External: GUI mode with OpenCanopy.",
+            "Boot picker interface: Auto (firmware-based), Builtin (text mode), or External (OpenCanopy GUI)",
             picker_mode_values,
             group
         )
@@ -371,7 +387,7 @@ class SettingsPage(QWidget):
         self.hide_aux_card = SwitchSettingCard(
             FluentIcon.HIDE,
             "Hide auxiliary entries",
-            "Hide auxiliary entries (recovery, reset NVRAM, tools) in boot picker",
+            "Hides auxiliary boot entries (recovery, reset NVRAM, tools) from the boot picker for a cleaner interface",
             configItem=None,
             parent=group
         )
@@ -381,19 +397,25 @@ class SettingsPage(QWidget):
             lambda checked: self.settings.set("hide_auxiliary", checked))
         group.addSettingCard(self.hide_aux_card)
 
-        # Picker timeout using ExpandSettingCard with SpinBox
-        self.timeout_card = ExpandSettingCard(
+        # Picker timeout using RangeSettingCard for better UX
+        self.timeout_config = OptionsConfigItem(
+            "BootPicker",
+            "Timeout",
+            str(self.settings.get("picker_timeout", 5)),
+            OptionsValidator([str(i) for i in range(0, 61)])
+        )
+        
+        self.timeout_card = RangeSettingCard(
+            self.timeout_config,
             FluentIcon.HISTORY,
-            "Boot timeout (seconds)",
-            "Time to wait before auto-booting default entry. 0 = wait indefinitely.",
+            "Boot timeout",
+            "Time (in seconds) to wait before auto-booting. Set to 0 to wait indefinitely.",
             group
         )
-        self.timeout_spin = SpinBox(self)
-        self.timeout_spin.setRange(0, 999)
-        self.timeout_spin.setValue(self.settings.get("picker_timeout", 5))
-        self.timeout_spin.valueChanged.connect(
-            lambda value: self.settings.set("picker_timeout", value))
-        self.timeout_card.viewLayout.addWidget(self.timeout_spin)
+        self.timeout_card.valueChanged.connect(
+            lambda value: self.settings.set("picker_timeout", int(value)))
+        self.timeout_card.setRange(0, 60)
+        self.timeout_card.setValue(self.settings.get("picker_timeout", 5))
         group.addSettingCard(self.timeout_card)
 
         # Picker variant
@@ -420,7 +442,7 @@ class SettingsPage(QWidget):
             self.picker_variant_config,
             FluentIcon.PALETTE,
             "Picker visual theme",
-            "Visual theme for OpenCore boot picker (External mode only)",
+            "Selects the visual theme for the OpenCore boot picker (only applies when using External/OpenCanopy mode)",
             picker_variant_values,
             group
         )
@@ -430,13 +452,13 @@ class SettingsPage(QWidget):
 
     def create_security_group(self):
         """Create security settings group using modern components"""
-        group = SettingCardGroup("Security Settings ⚠️", self)
+        group = SettingCardGroup("Security Settings 🔒", self)
 
         # Disable SIP
         self.disable_sip_card = SwitchSettingCard(
             FluentIcon.SETTING,
             "Disable SIP",
-            "Disable System Integrity Protection (csr-active-config). Required for many Hackintosh features.",
+            "Disables System Integrity Protection (csr-active-config). Required for many Hackintosh features and kexts.",
             configItem=None,
             parent=group
         )
@@ -466,7 +488,7 @@ class SettingsPage(QWidget):
             self.secure_boot_config,
             FluentIcon.CERTIFICATE,
             "Secure Boot Model",
-            "Default: Auto-select based on macOS version. Disabled: No secure boot. Others: Specific Mac model identifiers.",
+            "Secure boot configuration: Default (auto-detect), Disabled (no secure boot), or specific Mac model identifiers",
             secure_boot_values,
             group
         )
@@ -490,7 +512,7 @@ class SettingsPage(QWidget):
             self.vault_config,
             FluentIcon.COMPLETED,
             "OpenCore Vault",
-            "Optional: No vault protection. Basic/Secure: Vault signature verification (requires manual setup).",
+            "Vault protection level: Optional (none), Basic/Secure (requires vault signature setup for enhanced security)",
             vault_values,
             group
         )
@@ -500,13 +522,13 @@ class SettingsPage(QWidget):
 
     def create_smbios_group(self):
         """Create SMBIOS settings group using modern components"""
-        group = SettingCardGroup("SMBIOS Settings ⚠️", self)
+        group = SettingCardGroup("SMBIOS Settings 🔑", self)
 
         # Random SMBIOS
         self.random_smbios_card = SwitchSettingCard(
             FluentIcon.SYNC,
             "Generate random SMBIOS",
-            "Generate new random serial numbers for each build",
+            "Automatically generates new random serial numbers for each build to ensure unique system identifiers",
             configItem=None,
             parent=group
         )
@@ -520,7 +542,7 @@ class SettingsPage(QWidget):
         self.preserve_smbios_card = SwitchSettingCard(
             FluentIcon.SAVE,
             "Preserve SMBIOS between builds",
-            "Keep the same SMBIOS values across multiple builds",
+            "Maintains the same SMBIOS values across multiple builds for consistency with iCloud and other services",
             configItem=None,
             parent=group
         )
@@ -534,7 +556,7 @@ class SettingsPage(QWidget):
         self.custom_serial_card = ExpandSettingCard(
             FluentIcon.TAG,
             "Custom Serial Number",
-            "Leave empty to auto-generate. Disabled when random SMBIOS is enabled.",
+            "Override auto-generated serial. Leave empty for automatic generation. Disabled when random SMBIOS is enabled.",
             group
         )
         self.custom_serial_input = LineEdit(self)
@@ -546,6 +568,7 @@ class SettingsPage(QWidget):
             lambda text: self.settings.set("custom_serial_number", text))
         self.custom_serial_input.setEnabled(
             not self.settings.get("random_smbios", True))
+        self.custom_serial_input.setClearButtonEnabled(True)
         self.custom_serial_card.viewLayout.addWidget(self.custom_serial_input)
         group.addSettingCard(self.custom_serial_card)
 
@@ -553,7 +576,7 @@ class SettingsPage(QWidget):
         self.custom_mlb_card = ExpandSettingCard(
             FluentIcon.DEVELOPER_TOOLS,
             "Custom MLB (Main Logic Board)",
-            "Leave empty to auto-generate. Disabled when random SMBIOS is enabled.",
+            "Override auto-generated MLB. Leave empty for automatic generation. Disabled when random SMBIOS is enabled.",
             group
         )
         self.custom_mlb_input = LineEdit(self)
@@ -564,6 +587,7 @@ class SettingsPage(QWidget):
             lambda text: self.settings.set("custom_mlb", text))
         self.custom_mlb_input.setEnabled(
             not self.settings.get("random_smbios", True))
+        self.custom_mlb_input.setClearButtonEnabled(True)
         self.custom_mlb_card.viewLayout.addWidget(self.custom_mlb_input)
         group.addSettingCard(self.custom_mlb_card)
 
@@ -571,17 +595,18 @@ class SettingsPage(QWidget):
         self.custom_rom_card = ExpandSettingCard(
             FluentIcon.RINGER,
             "Custom ROM (MAC Address)",
-            "Leave empty to auto-generate (e.g., 112233445566). Disabled when random SMBIOS is enabled.",
+            "Override auto-generated ROM address. Format: 12 hex digits (e.g., 112233445566). Disabled when random SMBIOS is enabled.",
             group
         )
         self.custom_rom_input = LineEdit(self)
         self.custom_rom_input.setPlaceholderText(
-            "Leave empty to auto-generate (e.g., 112233445566)")
+            "e.g., 112233445566")
         self.custom_rom_input.setText(self.settings.get("custom_rom", ""))
         self.custom_rom_input.textChanged.connect(
             lambda text: self.settings.set("custom_rom", text))
         self.custom_rom_input.setEnabled(
             not self.settings.get("random_smbios", True))
+        self.custom_rom_input.setClearButtonEnabled(True)
         self.custom_rom_card.viewLayout.addWidget(self.custom_rom_input)
         group.addSettingCard(self.custom_rom_card)
 
@@ -589,7 +614,7 @@ class SettingsPage(QWidget):
 
     def create_appearance_group(self):
         """Create appearance settings group using modern components"""
-        group = SettingCardGroup("Appearance", self)
+        group = SettingCardGroup("Appearance 🎨", self)
 
         # Theme setting
         theme_values = ["light", "dark"]
@@ -610,7 +635,7 @@ class SettingsPage(QWidget):
             self.theme_config,
             FluentIcon.BRUSH,
             "Theme",
-            "Choose the application theme. Changes apply immediately.",
+            "Selects the application color theme. Changes take effect immediately throughout the interface.",
             theme_texts,
             group
         )
@@ -620,13 +645,13 @@ class SettingsPage(QWidget):
 
     def create_update_settings_group(self):
         """Create update & download settings group using modern components"""
-        group = SettingCardGroup("Updates & Downloads", self)
+        group = SettingCardGroup("Updates & Downloads 📦", self)
 
         # Auto-update check
         self.auto_update_card = SwitchSettingCard(
             FluentIcon.UPDATE,
             "Check for updates on startup",
-            "Automatically check for OpCore Simplify updates when the application starts",
+            "Automatically checks for new OpCore Simplify updates when the application launches to keep you up to date",
             configItem=None,
             parent=group
         )
@@ -640,7 +665,7 @@ class SettingsPage(QWidget):
         self.verify_integrity_card = SwitchSettingCard(
             FluentIcon.CERTIFICATE,
             "Verify download integrity (SHA256)",
-            "Verify SHA256 checksums of downloaded OpenCore and kext files for security",
+            "Verifies SHA256 checksums of downloaded OpenCore and kext files to ensure authenticity and security",
             configItem=None,
             parent=group
         )
@@ -654,7 +679,7 @@ class SettingsPage(QWidget):
         self.force_redownload_card = SwitchSettingCard(
             FluentIcon.DOWNLOAD,
             "Force redownload files",
-            "Always download fresh files even if they exist locally. Useful for debugging.",
+            "Forces fresh downloads of all files even if they exist locally. Useful for debugging or ensuring latest versions.",
             configItem=None,
             parent=group
         )
@@ -668,13 +693,13 @@ class SettingsPage(QWidget):
 
     def create_advanced_group(self):
         """Create advanced settings group using modern components"""
-        group = SettingCardGroup("Advanced Settings ⚠️", self)
+        group = SettingCardGroup("Advanced Settings ⚙️", self)
 
         # Enable debug logging
         self.debug_logging_card = SwitchSettingCard(
             FluentIcon.DEVELOPER_TOOLS,
             "Enable debug logging",
-            "Enable detailed debug logging throughout the application for troubleshooting",
+            "Enables detailed debug logging throughout the application for advanced troubleshooting and diagnostics",
             configItem=None,
             parent=group
         )
@@ -688,7 +713,7 @@ class SettingsPage(QWidget):
         self.skip_acpi_card = SwitchSettingCard(
             FluentIcon.CANCEL,
             "Skip ACPI validation warnings",
-            "Bypass ACPI table validation warnings. Use only if you know what you're doing.",
+            "Bypasses ACPI table validation warnings during build. Only enable if you understand the implications.",
             configItem=None,
             parent=group
         )
@@ -702,7 +727,7 @@ class SettingsPage(QWidget):
         self.force_kext_card = SwitchSettingCard(
             FluentIcon.CARE_RIGHT_SOLID,
             "Force load incompatible kexts",
-            "Force load kexts on unsupported macOS versions using '-lilubetaall'. May cause instability.",
+            "Forces loading of kexts on unsupported macOS versions using '-lilubetaall' boot argument. May cause system instability.",
             configItem=None,
             parent=group
         )
@@ -711,6 +736,45 @@ class SettingsPage(QWidget):
         self.force_kext_card.switchButton.checkedChanged.connect(
             lambda checked: self.settings.set("force_load_incompatible_kexts", checked))
         group.addSettingCard(self.force_kext_card)
+
+        return group
+    
+    def create_help_group(self):
+        """Create help and documentation group with useful links"""
+        group = SettingCardGroup("Help & Documentation 📚", self)
+        
+        # OpenCore Documentation
+        self.opencore_docs_card = HyperlinkCard(
+            "https://dortania.github.io/OpenCore-Install-Guide/",
+            "OpenCore Install Guide",
+            FluentIcon.BOOK_SHELF,
+            "OpenCore Documentation",
+            "Complete guide for installing macOS with OpenCore",
+            group
+        )
+        group.addSettingCard(self.opencore_docs_card)
+        
+        # Troubleshooting Guide
+        self.troubleshoot_card = HyperlinkCard(
+            "https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html",
+            "Troubleshooting",
+            FluentIcon.HELP,
+            "Troubleshooting Guide",
+            "Solutions to common OpenCore installation issues",
+            group
+        )
+        group.addSettingCard(self.troubleshoot_card)
+        
+        # GitHub Repository
+        self.github_card = HyperlinkCard(
+            "https://github.com/rubentalstra/OpCore-Simplify",
+            "View on GitHub",
+            FluentIcon.GITHUB,
+            "OpCore-Simplify Repository",
+            "Report issues, contribute, or view the source code",
+            group
+        )
+        group.addSettingCard(self.github_card)
 
         return group
 
@@ -775,7 +839,8 @@ class SettingsPage(QWidget):
             if hasattr(self, 'picker_mode_card'):
                 self.picker_mode_card.setValue("Auto")
             self.hide_aux_card.switchButton.setChecked(False)
-            self.timeout_spin.setValue(5)
+            if hasattr(self, 'timeout_card'):
+                self.timeout_card.setValue(5)
             if hasattr(self, 'picker_variant_card'):
                 self.picker_variant_card.setValue("Auto")
             self.disable_sip_card.switchButton.setChecked(True)
