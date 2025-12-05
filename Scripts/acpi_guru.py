@@ -18,10 +18,10 @@ import plistlib
 
 class ACPIGuru:
     def __init__(self):
-        self.acpi = dsdt.DSDT()
+        self.utils = utils.Utils()
+        self.acpi = dsdt.DSDT(utils_instance=self.utils)
         self.smbios = smbios.SMBIOS()
         self.run = run.Run().run
-        self.utils = utils.Utils()
         self.patches = acpi_patch_data.patches
         self.hardware_report = None
         self.disabled_devices = None
@@ -29,6 +29,7 @@ class ACPIGuru:
         self.smbios_model = None
         self.dsdt = None
         self.lpc_bus_device = None
+        self.gui_folder_callback = None  # Callback for GUI folder selection
         self.osi_strings = {
             "Windows 2000": "Windows 2000",
             "Windows XP": "Windows 2001",
@@ -143,7 +144,9 @@ class ACPIGuru:
                 print(" - No valid .aml files were found!")
                 print("")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
+                # Only show "Press Enter to continue" prompt in CLI mode
+                if not self.utils.gui_callback:
+                    self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -159,7 +162,9 @@ class ACPIGuru:
                 print("\nOnly one is allowed at a time.  Please remove one of the above and try again.")
                 print("")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
+                # Only show "Press Enter to continue" prompt in CLI mode
+                if not self.utils.gui_callback:
+                    self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -183,7 +188,9 @@ class ACPIGuru:
                 print("\n{} could not be disassembled!".format(os.path.basename(path)))
                 print("")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
+                # Only show "Press Enter to continue" prompt in CLI mode
+                if not self.utils.gui_callback:
+                    self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -197,7 +204,9 @@ class ACPIGuru:
             print("Passed file/folder does not exist!")
             print("")
             #self.u.grab("Press [enter] to return...")
-            self.utils.request_input()
+            # Only show "Press Enter to continue" prompt in CLI mode
+            if not self.utils.gui_callback:
+                self.utils.request_input()
             # Restore any prior tables
             self.acpi.acpi_tables = prior_tables
             return
@@ -249,7 +258,9 @@ class ACPIGuru:
                 print("\n{} could not be disassembled!".format(trouble_dsdt))
                 print("")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
+                # Only show "Press Enter to continue" prompt in CLI mode
+                if not self.utils.gui_callback:
+                    self.utils.request_input()
                 if temp:
                     shutil.rmtree(temp,ignore_errors=True)
                 # Restore any prior tables
@@ -3215,12 +3226,20 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
         }
 
     def select_acpi_tables(self):
+        # If GUI callback is available, use it instead of console input
+        if self.gui_folder_callback:
+            path = self.gui_folder_callback()
+            if path:
+                return self.read_acpi_tables(path)
+            return None
+        
+        # Console mode - original behavior
         while True:
             self.utils.head("Select ACPI Tables")
             print("")
             print("Q. Quit")
             print(" ")
-            menu = self.utils.request_input("Please drag and drop ACPI Tables folder here: ")
+            menu = self.utils.request_input("Please select or drag and drop ACPI Tables folder here: ")
             if menu.lower() == "q":
                 self.utils.exit_program()
             path = self.utils.normalize_path(menu)

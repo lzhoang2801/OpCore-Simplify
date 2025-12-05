@@ -13,8 +13,207 @@ import tempfile
 class Utils:
     def __init__(self, script_name = "OpCore Simplify"):
         self.script_name = script_name
+        self.gui_handler = None  # GUI handler object for direct dialog access
+        self.gui_log_callback = None  # Callback for logging to build log/console
+        self.gui_callback = None  # Callback for GUI prompts (backward compatibility)
+        self.gui_progress_callback = None  # Callback for updating build progress in GUI
+        self.gui_gathering_progress_callback = None  # Callback for updating gathering progress in GUI
+        
+        # Load settings for debug logging
+        try:
+            from Scripts import settings as settings_module
+            self.settings = settings_module.Settings()
+            self.debug_logging_enabled = self.settings.get_enable_debug_logging()
+        except:
+            self.settings = None
+            self.debug_logging_enabled = False
+    
+    def debug_log(self, message):
+        """Log debug messages if debug logging is enabled"""
+        if self.debug_logging_enabled:
+            self.log_gui(f"[DEBUG] {message}", level="Debug")
+
+    def log_gui(self, message, level="Info", to_build_log=False, fallback_stdout=True):
+        """Emit a message to the GUI log when available, with optional stdout fallback."""
+        if self.gui_log_callback:
+            try:
+                self.gui_log_callback(message, level, to_build_log=to_build_log)
+            except TypeError:
+                # Backward compatibility if callback doesn't accept keyword argument
+                self.gui_log_callback(message, level)
+            return True
+
+        if fallback_stdout:
+            print(message)
+        return False
+
+    # ==================== Dialog Methods ====================
+    # These methods provide a clean interface for showing dialogs
+    # They automatically use GUI when available, otherwise fall back to CLI
+    
+    def show_info_dialog(self, title, message):
+        """
+        Show an informational dialog with OK button.
+        
+        Args:
+            title: Dialog title
+            message: Dialog message
+            
+        Returns:
+            None (waits for user to click OK)
+        """
+        if self.gui_handler:
+            from Scripts.gui.custom_dialogs import show_info_dialog
+            show_info_dialog(self.gui_handler, title, message)
+        else:
+            # CLI fallback
+            print("\n" + "="*60)
+            print(title.center(60))
+            print("="*60)
+            print(message)
+            print("="*60)
+            self.cli_input("Press Enter to continue...")
+    
+    def show_question_dialog(self, title, message, default='no', warning=None):
+        """
+        Show a Yes/No question dialog.
+        
+        Args:
+            title: Dialog title
+            message: Question to ask
+            default: Default answer ('yes' or 'no')
+            warning: Optional warning message
+            
+        Returns:
+            'yes' or 'no' as string
+        """
+        if self.gui_handler:
+            from Scripts.gui.custom_dialogs import show_question_dialog
+            result = show_question_dialog(self.gui_handler, title, message, default, warning)
+            return 'yes' if result else 'no'
+        else:
+            # CLI fallback
+            if warning:
+                message = f"{message}\n\n⚠️  {warning}"
+            prompt = f"{message} (yes/No): " if default == 'no' else f"{message} (Yes/no): "
+            response = self.cli_input(prompt).strip().lower() or default
+            return 'yes' if response == 'yes' else 'no'
+    
+    def show_choice_dialog(self, title, message, choices, default_value=None, warning=None, note=None):
+        """
+        Show a choice/dropdown dialog.
+        
+        Args:
+            title: Dialog title
+            message: Dialog message
+            choices: List of choice dicts with 'value', 'label', and optional 'description'
+            default_value: Default value to select
+            warning: Optional warning message
+            note: Optional note message
+            
+        Returns:
+            Selected value or None if cancelled
+        """
+        if self.gui_handler:
+            from Scripts.gui.custom_dialogs import show_choice_dialog
+            value, ok = show_choice_dialog(
+                self.gui_handler, title, message, choices, 
+                default_value, warning, note
+            )
+            return value if ok else None
+        else:
+            # CLI fallback
+            print("\n" + "="*60)
+            print(title.center(60))
+            print("="*60)
+            if message:
+                print(message)
+            if warning:
+                print(f"\n⚠️  {warning}")
+            if note:
+                print(f"\nℹ️  {note}")
+            print()
+            
+            for idx, choice in enumerate(choices, 1):
+                label = choice.get('label', choice.get('value', str(idx)))
+                description = choice.get('description', '')
+                if description:
+                    print(f"{idx}. {label}")
+                    print(f"   {description}")
+                else:
+                    print(f"{idx}. {label}")
+            
+            print()
+            default_idx = 1
+            if default_value:
+                for idx, choice in enumerate(choices, 1):
+                    if choice.get('value') == default_value:
+                        default_idx = idx
+                        break
+            
+            prompt = f"Select option (1-{len(choices)}, default: {default_idx}): "
+            response = self.cli_input(prompt).strip() or str(default_idx)
+            
+            try:
+                selected_idx = int(response) - 1
+                if 0 <= selected_idx < len(choices):
+                    return choices[selected_idx].get('value')
+            except ValueError:
+                pass
+            
+            return None
+    
+    def show_input_dialog(self, title, message, placeholder=""):
+        """
+        Show a text input dialog.
+        
+        Args:
+            title: Dialog title
+            message: Prompt message
+            placeholder: Placeholder text
+            
+        Returns:
+            Entered text or empty string if cancelled
+        """
+        if self.gui_handler:
+            from Scripts.gui.custom_dialogs import show_input_dialog
+            text, ok = show_input_dialog(self.gui_handler, title, message, placeholder)
+            return text if ok else ""
+        else:
+            # CLI fallback
+            print("\n" + "="*60)
+            print(title.center(60))
+            print("="*60)
+            print(message)
+            if placeholder:
+                print(f"({placeholder})")
+            return self.cli_input("> ").strip()
+    
+    def cli_input(self, prompt=""):
+        """
+        Get input from CLI (helper for consistent Python 2/3 support).
+        
+        Args:
+            prompt: Prompt to display
+            
+        Returns:
+            User input as string
+        """
+        if sys.version_info[0] < 3:
+            return raw_input(prompt)
+        else:
+            return input(prompt)
+    
+    # ==================== End Dialog Methods ====================
 
     def clean_temporary_dir(self):
+        """Clean temporary directories created by OpCore Simplify"""
+        # Check if clean_temp_files_on_exit is enabled
+        if hasattr(self, 'settings') and self.settings:
+            if not self.settings.get_clean_temp_files_on_exit():
+                self.debug_log("Skipping temp file cleanup (disabled in settings)")
+                return
+        
         temporary_dir = tempfile.gettempdir()
         
         for file in os.listdir(temporary_dir):
@@ -24,8 +223,10 @@ class Utils:
                     continue
 
                 try:
+                    self.debug_log(f"Cleaning temporary directory: {file}")
                     shutil.rmtree(os.path.join(temporary_dir, file))
                 except Exception as e:
+                    self.debug_log(f"Failed to remove temp directory {file}: {e}")
                     pass
     
     def get_temporary_dir(self):
@@ -158,7 +359,23 @@ class Utils:
         elif os.name == 'nt':
             os.startfile(folder_path)
 
-    def request_input(self, prompt="Press Enter to continue..."):
+    def request_input(self, prompt="Press Enter to continue...", gui_type=None, gui_options=None):
+        """
+        Request input from user, using GUI callback if available.
+        
+        Args:
+            prompt: The prompt text
+            gui_type: Type of GUI dialog (e.g., 'choice', 'confirm', 'info')
+            gui_options: Additional options for GUI dialog
+        
+        Returns:
+            User's response as string
+        """
+        # If GUI callback is available and gui_type is specified, use GUI
+        if self.gui_callback and gui_type:
+            return self.gui_callback(gui_type, prompt, gui_options)
+        
+        # Fall back to CLI
         if sys.version_info[0] < 3:
             user_response = raw_input(prompt)
         else:
@@ -170,25 +387,42 @@ class Utils:
         return user_response
 
     def progress_bar(self, title, steps, current_step_index, done=False):
-        self.head(title)
-        print("")
-        if done:
-            for step in steps:
-                print("  [\033[92m✓\033[0m] {}".format(step))
+        # Check if GUI callback exists for progress updates
+        if self.gui_progress_callback:
+            # Calculate progress percentage
+            if done:
+                progress = 100
+            else:
+                progress = int((current_step_index / len(steps)) * 100)
+            
+            # Call GUI progress callback
+            self.gui_progress_callback(title, steps, current_step_index, progress, done)
         else:
-            for i, step in enumerate(steps):
-                if i < current_step_index:
+            # CLI mode - original behavior
+            self.head(title)
+            print("")
+            if done:
+                for step in steps:
                     print("  [\033[92m✓\033[0m] {}".format(step))
-                elif i == current_step_index:
-                    print("  [\033[1;93m>\033[0m] {}...".format(step))
-                else:
-                    print("  [ ] {}".format(step))
-        print("")
+            else:
+                for i, step in enumerate(steps):
+                    if i < current_step_index:
+                        print("  [\033[92m✓\033[0m] {}".format(step))
+                    elif i == current_step_index:
+                        print("  [\033[1;93m>\033[0m] {}...".format(step))
+                    else:
+                        print("  [ ] {}".format(step))
+            print("")
 
     def head(self, text = None, width = 68, resize=True):
         if resize:
             self.adjust_window_size()
-        os.system('cls' if os.name=='nt' else 'clear')
+        # Skip clear screen in GUI mode or if TERM is not set to prevent issues
+        if self.gui_callback is None and os.environ.get('TERM'):
+            try:
+                os.system('cls' if os.name=='nt' else 'clear')
+            except Exception:
+                pass  # Silently ignore clear screen errors
         if text == None:
             text = self.script_name
         separator = "═" * (width - 2)
@@ -200,10 +434,17 @@ class Utils:
         print("╔{}╗\n║{}║\n╚{}╝".format(separator, title, separator))
     
     def adjust_window_size(self, content=""):
+        # Skip terminal resizing in GUI mode or if TERM is not set
+        if self.gui_callback is not None or not os.environ.get('TERM'):
+            return
         lines = content.splitlines()
         rows = len(lines)
         cols = max(len(line) for line in lines) if lines else 0
-        print('\033[8;{};{}t'.format(max(rows+6, 30), max(cols+2, 100)))
+        try:
+            print('\033[8;{};{}t'.format(max(rows+6, 30), max(cols+2, 100)))
+        except Exception:
+            # Silently ignore any terminal resize errors
+            pass
 
     def exit_program(self):
         self.head()

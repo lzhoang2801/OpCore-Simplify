@@ -18,16 +18,18 @@ else:
     from urllib2 import urlopen, Request, URLError
 
 MAX_ATTEMPTS = 3
+RETRY_DELAY_SECONDS = 2
+STALL_TIMEOUT_SECONDS = 60
 
 class ResourceFetcher:
-    def __init__(self, headers=None):
+    def __init__(self, headers=None, utils_instance=None):
         self.request_headers = headers or {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         }
         self.buffer_size = 16 * 1024
         self.ssl_context = self.create_ssl_context()
         self.integrity_checker = integrity_checker.IntegrityChecker()
-        self.utils = utils.Utils()
+        self.utils = utils_instance if utils_instance is not None else utils.Utils()
 
     def create_ssl_context(self):
         try:
@@ -37,24 +39,24 @@ class ResourceFetcher:
                 cafile = certifi.where()
             ssl_context = ssl.create_default_context(cafile=cafile)
         except Exception as e:
-            print("Failed to create SSL context: {}".format(e))
+            print(f"Failed to create SSL context: {e}")
             ssl_context = ssl._create_unverified_context()
         return ssl_context
 
-    def _make_request(self, resource_url, timeout=10):
+    def _make_request(self, resource_url, timeout=30):
         try:
             headers = dict(self.request_headers)
             headers["Accept-Encoding"] = "gzip, deflate"
             
             return urlopen(Request(resource_url, headers=headers), timeout=timeout, context=self.ssl_context)
         except socket.timeout as e:
-            print("Timeout error: {}".format(e))
+            print(f"Timeout error: {e}")
         except ssl.SSLError as e:
-            print("SSL error: {}".format(e))
+            print(f"SSL error: {e}")
         except (URLError, socket.gaierror) as e:
-            print("Connection error: {}".format(e))
+            print(f"Connection error: {e}")
         except Exception as e:
-            print("Request failed: {}".format(e))
+            print(f"Request failed: {e}")
 
         return None
 
@@ -63,11 +65,16 @@ class ResourceFetcher:
         response = None
 
         while attempt < 3:
+            # Close previous response from failed attempt before retrying
+            if response:
+                response.close()
+                response = None
+            
             response = self._make_request(resource_url)
 
             if not response:
                 attempt += 1
-                print("Failed to fetch content from {}. Retrying...".format(resource_url))
+                print(f"Failed to fetch content from {resource_url}. Retrying...")
                 continue
 
             if response.getcode() == 200:
@@ -76,33 +83,38 @@ class ResourceFetcher:
             attempt += 1
 
         if not response:
-            print("Failed to fetch content from {}".format(resource_url))
+            print(f"Failed to fetch content from {resource_url}")
             return None
         
-        content = response.read()
-
-        if response.info().get("Content-Encoding") == "gzip" or content.startswith(b"\x1f\x8b"):
-            try:
-                content = gzip.decompress(content)
-            except Exception as e:
-                print("Failed to decompress gzip content: {}".format(e))
-        elif response.info().get("Content-Encoding") == "deflate":
-            try:
-                content = zlib.decompress(content)
-            except Exception as e:
-                print("Failed to decompress deflate content: {}".format(e))
-        
         try:
-            if content_type == "json":
-                return json.loads(content)
-            elif content_type == "plist":
-                return plistlib.loads(content)
-            else:
-                return content.decode("utf-8")
-        except Exception as e:
-            print("Error parsing content as {}: {}".format(content_type, e))
+            content = response.read()
+
+            if response.info().get("Content-Encoding") == "gzip" or content.startswith(b"\x1f\x8b"):
+                try:
+                    content = gzip.decompress(content)
+                except Exception as e:
+                    print(f"Failed to decompress gzip content: {e}")
+            elif response.info().get("Content-Encoding") == "deflate":
+                try:
+                    content = zlib.decompress(content)
+                except Exception as e:
+                    print(f"Failed to decompress deflate content: {e}")
             
-        return None
+            try:
+                if content_type == "json":
+                    return json.loads(content)
+                elif content_type == "plist":
+                    return plistlib.loads(content)
+                else:
+                    return content.decode("utf-8")
+            except Exception as e:
+                print(f"Error parsing content as {content_type}: {e}")
+                
+            return None
+        finally:
+            # Always close the response to prevent resource leaks
+            if response:
+                response.close()
 
     def _download_with_progress(self, response, local_file):
         total_size = response.getheader("Content-Length")
@@ -113,11 +125,31 @@ class ResourceFetcher:
         last_time = start_time
         last_bytes = 0
         speeds = []
+        
+        # Stall detection variables
+        stall_timeout = STALL_TIMEOUT_SECONDS
+        last_progress_time = time.time()
+        last_progress_bytes = 0
 
         speed_str = "-- KB/s"
         
+        # Check if we're in GUI mode (utils has gui_callback set)
+        is_gui_mode = self.utils.gui_callback is not None
+        
+        # GUI mode progress tracking - to avoid flooding console with too many updates
+        last_progress = ""  # Last progress string printed (GUI mode)
+        last_mb_printed = -1  # Last megabyte boundary printed (GUI mode)
+        
         while True:
-            chunk = response.read(self.buffer_size)
+            try:
+                chunk = response.read(self.buffer_size)
+            except socket.timeout:
+                print("\nDownload stalled - connection timeout while reading data")
+                raise Exception("Download stalled - connection timeout")
+            except Exception as e:
+                print(f"\nError reading data: {e}")
+                raise
+                
             if not chunk:
                 break
             local_file.write(chunk)
@@ -125,6 +157,14 @@ class ResourceFetcher:
             
             current_time = time.time()
             time_diff = current_time - last_time
+            
+            # Check for stall - no progress for stall_timeout seconds
+            if bytes_downloaded > last_progress_bytes:
+                last_progress_time = current_time
+                last_progress_bytes = bytes_downloaded
+            elif current_time - last_progress_time > stall_timeout:
+                print(f"\nDownload appears to be stalled (no progress for {stall_timeout} seconds)")
+                raise Exception(f"Download stalled - no progress for {stall_timeout} seconds")
             
             if time_diff > 0.5:
                 current_speed = (bytes_downloaded - last_bytes) / time_diff
@@ -134,9 +174,9 @@ class ResourceFetcher:
                 avg_speed = sum(speeds) / len(speeds)
                 
                 if avg_speed < 1024*1024:
-                    speed_str = "{:.1f} KB/s".format(avg_speed/1024)
+                    speed_str = f"{avg_speed/1024:.1f} KB/s"
                 else:
-                    speed_str = "{:.1f} MB/s".format(avg_speed/(1024*1024))
+                    speed_str = f"{avg_speed/(1024*1024):.1f} MB/s"
                 
                 last_time = current_time
                 last_bytes = bytes_downloaded
@@ -146,14 +186,29 @@ class ResourceFetcher:
                 bar_length = 40
                 filled = int(bar_length * bytes_downloaded / total_size)
                 bar = "█" * filled + "░" * (bar_length - filled)
-                progress = "{} [{}] {:3d}% {:.1f}/{:.1f}MB".format(speed_str, bar, percent, bytes_downloaded/(1024*1024), total_size/(1024*1024))
+                progress = f"{speed_str} [{bar}] {percent:3d}% {bytes_downloaded/(1024*1024):.1f}/{total_size/(1024*1024):.1f}MB"
             else:
-                progress = "{} {:.1f}MB downloaded".format(speed_str, bytes_downloaded/(1024*1024))
+                progress = f"{speed_str} {bytes_downloaded/(1024*1024):.1f}MB downloaded"
             
-            print(" " * 80, end="\r")
-            print(progress, end="\r")
+            # In GUI mode, print on new lines; in CLI mode, use carriage return
+            if is_gui_mode:
+                # Only print every 1MB to avoid flooding the GUI console
+                current_mb = bytes_downloaded // (1024*1024)
+                mb_boundary_crossed = current_mb > last_mb_printed
+                
+                # Print progress every MB to give user feedback without flooding
+                if mb_boundary_crossed:
+                    print(progress)
+                    last_progress = progress
+                    last_mb_printed = current_mb
+            else:
+                # CLI mode: use carriage return for in-place updates
+                print(" " * 80, end="\r")
+                print(progress, end="\r")
             
-        print()
+        # Final newline
+        if not is_gui_mode:
+            print()
 
     def download_and_save_file(self, resource_url, destination_path, sha256_hash=None):
         attempt = 0
@@ -163,11 +218,29 @@ class ResourceFetcher:
             response = self._make_request(resource_url)
 
             if not response:
-                print("Failed to fetch content from {}. Retrying...".format(resource_url))
+                print(f"Failed to fetch content from {resource_url}. Retrying...")
+                time.sleep(RETRY_DELAY_SECONDS)
                 continue
 
-            with open(destination_path, "wb") as local_file:
-                self._download_with_progress(response, local_file)
+            try:
+                with open(destination_path, "wb") as local_file:
+                    self._download_with_progress(response, local_file)
+            except Exception as e:
+                print(f"Error during download: {e}")
+                if os.path.exists(destination_path):
+                    os.remove(destination_path)
+                if attempt < MAX_ATTEMPTS:
+                    print(f"Retrying download (attempt {attempt + 1}/{MAX_ATTEMPTS})...")
+                    time.sleep(RETRY_DELAY_SECONDS)
+                    continue
+                else:
+                    # Final attempt failed, return False to indicate failure
+                    return False
+            finally:
+                # Always close the response to prevent resource leaks
+                # The response is only needed during download; verification reads from the local file
+                if response:
+                    response.close()
 
             if os.path.exists(destination_path) and os.path.getsize(destination_path) > 0:
                 if sha256_hash:
@@ -179,6 +252,7 @@ class ResourceFetcher:
                     else:
                         print("Checksum mismatch! Removing file and retrying download...")
                         os.remove(destination_path)
+                        time.sleep(RETRY_DELAY_SECONDS)
                         continue
                 else:
                     print("No SHA256 hash provided. Downloading file without verification.")
@@ -188,7 +262,8 @@ class ResourceFetcher:
                 os.remove(destination_path)
 
             if attempt < MAX_ATTEMPTS:
-                print("Download failed for {}. Retrying...".format(resource_url))
+                print(f"Download failed for {resource_url}. Retrying...")
+                time.sleep(RETRY_DELAY_SECONDS)
 
-        print("Failed to download {} after {} attempts.".format(resource_url, MAX_ATTEMPTS))
+        print(f"Failed to download {resource_url} after {MAX_ATTEMPTS} attempts.")
         return False

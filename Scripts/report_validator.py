@@ -1,4 +1,5 @@
 from Scripts import utils
+from Scripts import settings as settings_module
 import json
 import os
 import re
@@ -8,6 +9,7 @@ class ReportValidator:
         self.errors = []
         self.warnings = []
         self.u = utils.Utils()
+        self.settings = settings_module.Settings()
         
         self.PATTERNS = {
             "not_empty": r".+",
@@ -294,6 +296,12 @@ class ReportValidator:
         return cleaned_data
 
     def show_validation_report(self, report_path, is_valid, errors, warnings):
+        # Check if ACPI validation should be skipped
+        if self.settings.get_skip_acpi_validation():
+            self.u.debug_log("ACPI validation warnings skipped (disabled in settings)")
+            # Filter out ACPI-related warnings
+            warnings = [w for w in warnings if 'ACPI' not in w and 'acpi' not in w.lower()]
+        
         self.u.head("Validation Report")
         print("")
         print("Validation report for: {}".format(report_path))
