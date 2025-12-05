@@ -15,7 +15,7 @@ from qfluentwidgets import (
     SettingCardGroup, SwitchSettingCard, ComboBoxSettingCard,
     PushSettingCard, ExpandSettingCard, setTheme, Theme, SpinBox,
     OptionsConfigItem, OptionsValidator, qconfig, HyperlinkCard,
-    RangeSettingCard, StrongBodyLabel, CaptionLabel, ExpandLayout,
+    RangeSettingCard, StrongBodyLabel, CaptionLabel,
     setFont, SettingCard
 )
 
@@ -33,17 +33,19 @@ class SettingsPage(ScrollArea):
         self.setObjectName("settingsPage")
         self.settings = Settings()
         self.scrollWidget = QWidget()
-        self.expandLayout = ExpandLayout(self.scrollWidget)
+        self.expandLayout = QVBoxLayout()
+        self.scrollWidget.setLayout(self.expandLayout)
         self.init_ui()
 
     def init_ui(self):
         """Initialize the UI with modern qfluentwidgets components"""
         self.resize(1000, 800)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setViewportMargins(0, 120, 0, 20)
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
-        
+
         # Enable transparent background for proper styling
         self.enableTransparentBackground()
 
@@ -55,9 +57,10 @@ class SettingsPage(ScrollArea):
         # Subtitle with improved styling
         self.subtitle_label = StrongBodyLabel(
             "Configure OpCore Simplify preferences", self)
-        self.subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        self.subtitle_label.setStyleSheet(
+            f"color: {COLORS['text_secondary']};")
         self.subtitle_label.move(36, 70)
-        
+
         # Category count with helpful info
         self.category_info = CaptionLabel(
             "27 settings organized across 9 categories • Changes are saved automatically", self)
@@ -65,10 +68,10 @@ class SettingsPage(ScrollArea):
         self.category_info.move(36, 95)
 
         # Initialize layout for setting cards
-        self.__initLayout()
+        self._init_layout()
 
-    def __initLayout(self):
-        """Initialize the expand layout with all setting groups"""
+    def _init_layout(self):
+        """Initialize the layout with all setting groups"""
         # Set layout spacing and margins
         self.expandLayout.setSpacing(28)
         self.expandLayout.setContentsMargins(36, 10, 36, 0)
@@ -108,7 +111,7 @@ class SettingsPage(ScrollArea):
         # Advanced Settings Group
         self.advanced_group = self.create_advanced_group()
         self.expandLayout.addWidget(self.advanced_group)
-        
+
         # Documentation and Help Group
         self.help_group = self.create_help_group()
         self.expandLayout.addWidget(self.help_group)
@@ -116,7 +119,8 @@ class SettingsPage(ScrollArea):
         # Bottom section with version and reset button
         self.bottom_widget = QWidget()
         bottom_layout = QHBoxLayout(self.bottom_widget)
-        bottom_layout.setContentsMargins(0, SPACING['large'], 0, SPACING['large'])
+        bottom_layout.setContentsMargins(
+            0, SPACING['large'], 0, SPACING['large'])
         bottom_layout.setSpacing(SPACING['medium'])
 
         # Version information with better styling
@@ -745,7 +749,7 @@ class SettingsPage(ScrollArea):
     def create_help_group(self):
         """Create help and documentation group with useful links"""
         group = SettingCardGroup("Help & Documentation", self.scrollWidget)
-        
+
         # OpenCore Documentation
         self.opencore_docs_card = HyperlinkCard(
             "https://dortania.github.io/OpenCore-Install-Guide/",
