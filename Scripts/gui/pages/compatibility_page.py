@@ -4,9 +4,11 @@ Step 2: Compatibility checker - qfluentwidgets version
 from ...datasets import os_data, pci_data
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 from qfluentwidgets import (
     PushButton, SubtitleLabel, BodyLabel, CardWidget, TextEdit,
-    StrongBodyLabel, ScrollArea, FluentIcon, IconWidget, GroupHeaderCardWidget
+    StrongBodyLabel, ScrollArea, FluentIcon, IconWidget, GroupHeaderCardWidget,
+    TitleLabel, ExpandLayout, setFont
 )
 
 from ..styles import COLORS, SPACING
@@ -83,52 +85,57 @@ def get_compatibility_icon(compat_tuple):
     return FluentIcon.ACCEPT  # Supported
 
 
-class CompatibilityPage(QWidget):
+class CompatibilityPage(ScrollArea):
     """Step 2: View hardware compatibility"""
 
     def __init__(self, parent):
         super().__init__(parent)
         self.setObjectName("compatibilityPage")
         self.controller = parent
+        self.scrollWidget = QWidget()
+        self.expandLayout = ExpandLayout(self.scrollWidget)
         self.setup_ui()
 
     def setup_ui(self):
         """Setup the compatibility page UI"""
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
-                                       SPACING['xxlarge'], SPACING['xlarge'])
-        main_layout.setSpacing(SPACING['large'])
+        self.resize(1000, 800)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setViewportMargins(0, 120, 0, 20)
+        self.setWidget(self.scrollWidget)
+        self.setWidgetResizable(True)
+        
+        # Enable transparent background for proper styling
+        self.enableTransparentBackground()
 
-        # Step indicator
-        step_label = BodyLabel("STEP 2 OF 4")
-        step_label.setStyleSheet("color: #0078D4; font-weight: bold;")
-        main_layout.addWidget(step_label)
+        # Step indicator - positioned absolutely outside the scroll area
+        self.step_label = BodyLabel("STEP 2 OF 4", self)
+        self.step_label.setStyleSheet("color: #0078D4; font-weight: bold;")
+        self.step_label.move(36, 30)
 
-        # Header section with title on left and macOS version card on right
-        header_layout = QHBoxLayout()
-        header_layout.setSpacing(SPACING['large'])
+        # Title label - positioned absolutely outside the scroll area
+        self.title_label = TitleLabel("Hardware Compatibility", self)
+        setFont(self.title_label, 28, QFont.Weight.DemiBold)
+        self.title_label.move(36, 50)
 
-        # Left side: Title and subtitle
-        title_container = QWidget()
-        title_layout = QVBoxLayout(title_container)
-        title_layout.setContentsMargins(0, 0, 0, 0)
-        title_layout.setSpacing(SPACING['tiny'])
+        # Subtitle with improved styling
+        self.subtitle_label = StrongBodyLabel(
+            "Review hardware compatibility with macOS", self)
+        self.subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        self.subtitle_label.move(36, 90)
 
-        title_label = SubtitleLabel("Hardware Compatibility")
-        title_layout.addWidget(title_label)
+        # Initialize layout for compatibility cards
+        self.__initLayout()
 
-        subtitle_label = BodyLabel("Review hardware compatibility with macOS")
-        subtitle_label.setStyleSheet("color: #605E5C;")
-        title_layout.addWidget(subtitle_label)
+    def __initLayout(self):
+        """Initialize the expand layout with compatibility cards"""
+        # Set layout spacing and margins
+        self.expandLayout.setSpacing(28)
+        self.expandLayout.setContentsMargins(36, 10, 36, 0)
 
-        header_layout.addWidget(title_container)
-        header_layout.addStretch()
-
-        # Right side: macOS version support card (will be populated in update_display)
-        self.macos_version_card = CardWidget()
+        # macOS version support card - positioned at the top of content area
+        self.macos_version_card = CardWidget(self.scrollWidget)
         self.macos_version_card.setFixedWidth(320)
-        self.macos_version_card.setVisible(
-            False)  # Hidden until data is loaded
+        self.macos_version_card.setVisible(False)  # Hidden until data is loaded
 
         version_card_layout = QVBoxLayout(self.macos_version_card)
         version_card_layout.setContentsMargins(SPACING['medium'], SPACING['medium'],
@@ -144,33 +151,14 @@ class CompatibilityPage(QWidget):
         self.version_card_content.setSpacing(SPACING['small'])
         version_card_layout.addLayout(self.version_card_content)
 
-        header_layout.addWidget(self.macos_version_card)
+        self.expandLayout.addWidget(self.macos_version_card)
 
-        main_layout.addLayout(header_layout)
-        main_layout.addSpacing(SPACING['medium'])
-
-        # Scrollable area for cards
-        scroll_area = ScrollArea(self)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setObjectName("compatibilityScrollArea")
-
-        # Container widget for scroll area
-        container = QWidget()
-        self.cards_layout = QVBoxLayout(container)
-        self.cards_layout.setSpacing(SPACING['medium'])
-        self.cards_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Placeholder message
+        # Placeholder message (will be replaced when hardware report is loaded)
         self.placeholder_label = BodyLabel(
             "Load a hardware report to see compatibility information")
         self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.placeholder_label.setStyleSheet("color: #605E5C; padding: 40px;")
-        self.cards_layout.addWidget(self.placeholder_label)
-
-        self.cards_layout.addStretch()
-
-        scroll_area.setWidget(container)
-        main_layout.addWidget(scroll_area)
+        self.expandLayout.addWidget(self.placeholder_label)
 
     def update_macos_version_card(self):
         """Update the macOS version support card in the header"""
@@ -273,11 +261,19 @@ class CompatibilityPage(QWidget):
 
     def update_display(self):
         """Update compatibility display with GroupHeaderCardWidget for better organization"""
-        # Clear existing cards
-        while self.cards_layout.count() > 0:
-            item = self.cards_layout.takeAt(0)
-            if item.widget():
+        # Clear existing cards (except the macOS version card which is the first widget)
+        # Store reference to widgets we want to keep
+        widgets_to_keep = {self.macos_version_card}
+        
+        # Remove all widgets except those we want to keep
+        while self.expandLayout.count() > 0:
+            item = self.expandLayout.takeAt(0)
+            if item.widget() and item.widget() not in widgets_to_keep:
                 item.widget().deleteLater()
+            elif item.widget() in widgets_to_keep:
+                # Re-add the widget we want to keep
+                self.expandLayout.addWidget(item.widget())
+                break
 
         if not self.controller.hardware_report:
             self.placeholder_label = BodyLabel(
@@ -285,8 +281,7 @@ class CompatibilityPage(QWidget):
             self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.placeholder_label.setStyleSheet(
                 "color: #605E5C; padding: 40px;")
-            self.cards_layout.addWidget(self.placeholder_label)
-            self.cards_layout.addStretch()
+            self.expandLayout.addWidget(self.placeholder_label)
             return
 
         report = self.controller.hardware_report
@@ -335,7 +330,7 @@ class CompatibilityPage(QWidget):
                         indent_level=1
                     )
 
-            self.cards_layout.addWidget(cpu_card)
+            self.expandLayout.addWidget(cpu_card)
 
         # GPU Card
         if 'GPU' in report and report['GPU']:
@@ -398,7 +393,7 @@ class CompatibilityPage(QWidget):
                             indent_level=1
                         )
 
-            self.cards_layout.addWidget(gpu_card)
+            self.expandLayout.addWidget(gpu_card)
 
         # Sound Card
         if 'Sound' in report and report['Sound']:
@@ -437,7 +432,7 @@ class CompatibilityPage(QWidget):
                         indent_level=1
                     )
 
-            self.cards_layout.addWidget(sound_card)
+            self.expandLayout.addWidget(sound_card)
 
         # Network Card
         if 'Network' in report and report['Network']:
@@ -506,7 +501,7 @@ class CompatibilityPage(QWidget):
                             indent_level=1
                         )
 
-            self.cards_layout.addWidget(network_card)
+            self.expandLayout.addWidget(network_card)
 
         # Storage Controllers Card
         if 'Storage Controllers' in report and report['Storage Controllers']:
@@ -534,7 +529,7 @@ class CompatibilityPage(QWidget):
                     indent_level=1
                 )
 
-            self.cards_layout.addWidget(storage_card)
+            self.expandLayout.addWidget(storage_card)
 
         # Bluetooth Card
         if 'Bluetooth' in report and report['Bluetooth']:
@@ -562,7 +557,7 @@ class CompatibilityPage(QWidget):
                     indent_level=1
                 )
 
-            self.cards_layout.addWidget(bluetooth_card)
+            self.expandLayout.addWidget(bluetooth_card)
 
         # Biometric Card (if exists)
         if 'Biometric' in report and report['Biometric']:
@@ -594,13 +589,10 @@ class CompatibilityPage(QWidget):
                     indent_level=1
                 )
 
-            self.cards_layout.addWidget(bio_card)
+            self.expandLayout.addWidget(bio_card)
 
         # Update the macOS version card in the header
         self.update_macos_version_card()
-
-        # Add stretch at the end
-        self.cards_layout.addStretch()
 
     def refresh(self):
         """Refresh page content"""
