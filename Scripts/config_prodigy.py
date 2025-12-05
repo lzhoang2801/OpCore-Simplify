@@ -626,14 +626,13 @@ class ConfigProdigy:
             "keepsyms=1"
         ]
 
+        if needs_oclp and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
+            boot_args.append("amfi=0x80")
+
         if config["Booter"]["Quirks"]["ResizeAppleGpuBars"] != 0 and self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")):
             boot_args.append("npci=0x2000")
 
         for kext in kexts:
-            if kext.name == "AMFIPass":
-                if needs_oclp and not kext.checked:
-                    boot_args.append("amfi=0x80")
-
             if not kext.checked:
                 continue
 
