@@ -11,8 +11,9 @@ from PyQt6.QtCore import Qt
 from qfluentwidgets import (
     ScrollArea, TitleLabel, BodyLabel, PushButton,
     LineEdit, FluentIcon, InfoBar, InfoBarPosition,
-    SettingCardGroup, SwitchSettingCard, ComboBox,
-    PushSettingCard, ExpandSettingCard, setTheme, Theme, SpinBox
+    SettingCardGroup, SwitchSettingCard, ComboBoxSettingCard,
+    PushSettingCard, ExpandSettingCard, setTheme, Theme, SpinBox,
+    OptionsConfigItem, OptionsValidator, qconfig
 )
 
 from ..styles import COLORS, SPACING
@@ -101,7 +102,7 @@ class SettingsPage(QWidget):
         # Bottom section with version and reset button
         bottom_layout = QHBoxLayout()
         bottom_layout.setContentsMargins(0, SPACING['medium'], 0, 0)
-        
+
         # Version information
         version_label = BodyLabel("Version:")
         version_label.setStyleSheet("font-weight: bold;")
@@ -120,19 +121,20 @@ class SettingsPage(QWidget):
         reset_btn.setIcon(FluentIcon.CANCEL)
         reset_btn.clicked.connect(self.reset_to_defaults)
         bottom_layout.addWidget(reset_btn)
-        
+
         layout.addLayout(bottom_layout)
 
     def create_build_settings_group(self):
         """Create build settings group using modern components"""
         group = SettingCardGroup("Build Settings", self)
-        
+
         # Output directory setting
         self.output_dir_card = PushSettingCard(
             "Browse",
             FluentIcon.FOLDER,
             "Build Output Directory",
-            self.settings.get("build_output_directory", "") or "Use temporary directory (default)",
+            self.settings.get("build_output_directory",
+                              "") or "Use temporary directory (default)",
             group
         )
         self.output_dir_card.clicked.connect(self.browse_output_directory)
@@ -194,11 +196,14 @@ class SettingsPage(QWidget):
             group
         )
         self.custom_boot_args_input = LineEdit(self)
-        self.custom_boot_args_input.setPlaceholderText("e.g., alcid=1 -wegnoegpu")
-        self.custom_boot_args_input.setText(self.settings.get("custom_boot_args", ""))
+        self.custom_boot_args_input.setPlaceholderText(
+            "e.g., alcid=1 -wegnoegpu")
+        self.custom_boot_args_input.setText(
+            self.settings.get("custom_boot_args", ""))
         self.custom_boot_args_input.textChanged.connect(
             lambda text: self.settings.set("custom_boot_args", text))
-        self.custom_boot_args_card.viewLayout.addWidget(self.custom_boot_args_input)
+        self.custom_boot_args_card.viewLayout.addWidget(
+            self.custom_boot_args_input)
         group.addSettingCard(self.custom_boot_args_card)
 
         return group
@@ -218,97 +223,106 @@ class SettingsPage(QWidget):
         self.include_beta_card.switchButton.setChecked(
             self.settings.get("include_beta_versions", False))
         self.include_beta_card.switchButton.checkedChanged.connect(
-            lambda checked: [self.settings.set("include_beta_versions", checked), self.update_version_dropdown()])
+            self.on_include_beta_toggled)
         group.addSettingCard(self.include_beta_card)
 
-        # Preferred macOS version with dropdown
-        self.preferred_version_card = ExpandSettingCard(
+        # Preferred macOS version selection
+        version_values, version_texts = self._get_macos_version_options()
+        initial_value = self.settings.get("preferred_macos_version", "")
+        if initial_value not in version_values:
+            initial_value = ""
+
+        self.macos_version_validator = OptionsValidator(version_values)
+        self.macos_version_config = OptionsConfigItem(
+            "macOSSettings",
+            "PreferredVersion",
+            initial_value,
+            self.macos_version_validator
+        )
+        self.macos_version_config.valueChanged.connect(
+            self.on_preferred_version_changed)
+
+        self.preferred_version_card = ComboBoxSettingCard(
+            self.macos_version_config,
             FluentIcon.EMBED,
             "Preferred macOS Version",
             "Default macOS version to auto-select. Leave as 'Auto' for automatic detection based on hardware.",
+            version_texts,
             group
         )
-        
-        # Create ComboBox with available macOS versions
-        self.preferred_version_combo = ComboBox(self)
-        self.update_version_dropdown()
-        
-        # Connect to save the darwin version when changed
-        self.preferred_version_combo.currentTextChanged.connect(self.on_preferred_version_changed)
-        
-        self.preferred_version_card.viewLayout.addWidget(self.preferred_version_combo)
         group.addSettingCard(self.preferred_version_card)
 
         return group
-    
-    def update_version_dropdown(self):
-        """Update the version dropdown based on include_beta_versions setting"""
-        # Save current selection
-        current_text = self.preferred_version_combo.currentText() if hasattr(self, 'preferred_version_combo') else None
-        
-        # Clear and rebuild dropdown
-        self.preferred_version_combo.clear()
-        
-        # Add "Auto" as first option
-        version_options = ["Auto"]
-        
-        # Check if beta versions should be included
+
+    def _get_macos_version_options(self):
+        """Build the macOS version options (value/text pairs)."""
         include_beta = self.settings.get("include_beta_versions", False)
-        
-        # Add macOS versions from the dataset
+        values = [""]
+        texts = ["Auto"]
+
         for macos_info in os_data.macos_versions:
-            # Skip beta versions if not enabled
             if macos_info.release_status != "final" and not include_beta:
                 continue
-            
-            # Format: "macOS Ventura (13)" for example
+
             display_name = f"macOS {macos_info.name} ({macos_info.macos_version})"
             if macos_info.release_status != "final":
                 display_name += " (Beta)"
-            version_options.append(display_name)
-        
-        self.preferred_version_combo.addItems(version_options)
-        
-        # Restore previous selection if it still exists
-        if current_text and current_text in version_options:
-            self.preferred_version_combo.setCurrentText(current_text)
-        else:
-            # Set current value from settings
-            current_pref = self.settings.get("preferred_macos_version", "")
-            if current_pref:
-                # Try to find matching version by darwin version
-                matched = False
-                for macos_info in os_data.macos_versions:
-                    if current_pref.startswith(str(macos_info.darwin_version)):
-                        display_name = f"macOS {macos_info.name} ({macos_info.macos_version})"
-                        if macos_info.release_status != "final":
-                            display_name += " (Beta)"
-                        if display_name in version_options:
-                            self.preferred_version_combo.setCurrentText(display_name)
-                            matched = True
-                            break
-                if not matched:
-                    self.preferred_version_combo.setCurrentIndex(0)  # Auto
-            else:
-                self.preferred_version_combo.setCurrentIndex(0)  # Auto
-    
-    def on_preferred_version_changed(self, text):
-        """Handle preferred macOS version change"""
-        if text == "Auto":
-            self.settings.set("preferred_macos_version", "")
-        else:
-            # Extract version info from display text
-            # Format is "macOS Ventura (13)" or "macOS Tahoe (26) (Beta)"
-            for macos_info in os_data.macos_versions:
-                display_name = f"macOS {macos_info.name} ({macos_info.macos_version})"
-                if macos_info.release_status != "final":
-                    display_name += " (Beta)"
-                
-                if text == display_name:
-                    # Save as darwin version format (e.g., "23.0.0")
-                    darwin_version = f"{macos_info.darwin_version}.0.0"
-                    self.settings.set("preferred_macos_version", darwin_version)
-                    break
+
+            values.append(f"{macos_info.darwin_version}.0.0")
+            texts.append(display_name)
+
+        return values, texts
+
+    def update_version_dropdown(self):
+        """Refresh ComboBoxSettingCard options when include beta toggles."""
+        if not hasattr(self, 'preferred_version_card') or not hasattr(self, 'macos_version_config'):
+            return
+
+        values, texts = self._get_macos_version_options()
+        self.macos_version_validator.options = values
+
+        card = self.preferred_version_card
+        combo = card.comboBox
+
+        combo.blockSignals(True)
+        combo.clear()
+        card.optionToText = {value: text for value, text in zip(values, texts)}
+
+        for text, value in zip(texts, values):
+            combo.addItem(text, userData=value)
+
+        current_value = qconfig.get(self.macos_version_config)
+        if current_value not in card.optionToText:
+            current_value = values[0]
+            qconfig.set(self.macos_version_config, current_value, save=False)
+
+        combo.setCurrentText(card.optionToText[current_value])
+        combo.blockSignals(False)
+
+    def on_include_beta_toggled(self, checked):
+        """Update settings and refresh options when beta visibility changes."""
+        self.settings.set("include_beta_versions", checked)
+        self.update_version_dropdown()
+
+    def on_preferred_version_changed(self, value):
+        """Store preferred macOS version whenever the config item changes."""
+        self.settings.set("preferred_macos_version", value or "")
+
+    def on_picker_mode_changed(self, value):
+        """Persist picker mode selection."""
+        self.settings.set("picker_mode", value)
+
+    def on_picker_variant_changed(self, value):
+        """Persist picker variant selection."""
+        self.settings.set("picker_variant", value)
+
+    def on_secure_boot_model_changed(self, value):
+        """Persist secure boot model selection."""
+        self.settings.set("secure_boot_model", value)
+
+    def on_vault_changed(self, value):
+        """Persist vault selection."""
+        self.settings.set("vault", value)
 
     def create_boot_picker_group(self):
         """Create OpenCore boot picker settings group using modern components"""
@@ -329,18 +343,28 @@ class SettingsPage(QWidget):
         group.addSettingCard(self.show_picker_card)
 
         # Picker mode
-        self.picker_mode_card = ExpandSettingCard(
+        picker_mode_values = ["Auto", "Builtin", "External"]
+        picker_mode_value = self.settings.get("picker_mode", "Auto")
+        if picker_mode_value not in picker_mode_values:
+            picker_mode_value = "Auto"
+
+        self.picker_mode_config = OptionsConfigItem(
+            "BootPicker",
+            "Mode",
+            picker_mode_value,
+            OptionsValidator(picker_mode_values)
+        )
+        self.picker_mode_config.valueChanged.connect(
+            self.on_picker_mode_changed)
+
+        self.picker_mode_card = ComboBoxSettingCard(
+            self.picker_mode_config,
             FluentIcon.APPLICATION,
             "Picker mode",
             "Auto: Determined by firmware type. Builtin: Text mode. External: GUI mode with OpenCanopy.",
+            picker_mode_values,
             group
         )
-        self.picker_mode_combo = ComboBox(self)
-        self.picker_mode_combo.addItems(["Auto", "Builtin", "External"])
-        self.picker_mode_combo.setCurrentText(self.settings.get("picker_mode", "Auto"))
-        self.picker_mode_combo.currentTextChanged.connect(
-            lambda text: self.settings.set("picker_mode", text))
-        self.picker_mode_card.viewLayout.addWidget(self.picker_mode_combo)
         group.addSettingCard(self.picker_mode_card)
 
         # Hide auxiliary
@@ -373,19 +397,33 @@ class SettingsPage(QWidget):
         group.addSettingCard(self.timeout_card)
 
         # Picker variant
-        self.picker_variant_card = ExpandSettingCard(
+        picker_variant_values = [
+            "Auto",
+            "Acidanthera/GoldenGate",
+            "Acidanthera/Syrah",
+            "Acidanthera/Chardonnay"
+        ]
+        picker_variant_value = self.settings.get("picker_variant", "Auto")
+        if picker_variant_value not in picker_variant_values:
+            picker_variant_value = "Auto"
+
+        self.picker_variant_config = OptionsConfigItem(
+            "BootPicker",
+            "Variant",
+            picker_variant_value,
+            OptionsValidator(picker_variant_values)
+        )
+        self.picker_variant_config.valueChanged.connect(
+            self.on_picker_variant_changed)
+
+        self.picker_variant_card = ComboBoxSettingCard(
+            self.picker_variant_config,
             FluentIcon.PALETTE,
             "Picker visual theme",
             "Visual theme for OpenCore boot picker (External mode only)",
+            picker_variant_values,
             group
         )
-        self.picker_variant_combo = ComboBox(self)
-        self.picker_variant_combo.addItems(
-            ["Auto", "Acidanthera/GoldenGate", "Acidanthera/Syrah", "Acidanthera/Chardonnay"])
-        self.picker_variant_combo.setCurrentText(self.settings.get("picker_variant", "Auto"))
-        self.picker_variant_combo.currentTextChanged.connect(
-            lambda text: self.settings.set("picker_variant", text))
-        self.picker_variant_card.viewLayout.addWidget(self.picker_variant_combo)
         group.addSettingCard(self.picker_variant_card)
 
         return group
@@ -409,34 +447,53 @@ class SettingsPage(QWidget):
         group.addSettingCard(self.disable_sip_card)
 
         # Secure boot model
-        self.secure_boot_card = ExpandSettingCard(
+        secure_boot_values = ["Default", "Disabled",
+                              "j137", "j680", "j132", "j174", "j140k", "j152f"]
+        secure_boot_value = self.settings.get("secure_boot_model", "Default")
+        if secure_boot_value not in secure_boot_values:
+            secure_boot_value = "Default"
+
+        self.secure_boot_config = OptionsConfigItem(
+            "Security",
+            "SecureBootModel",
+            secure_boot_value,
+            OptionsValidator(secure_boot_values)
+        )
+        self.secure_boot_config.valueChanged.connect(
+            self.on_secure_boot_model_changed)
+
+        self.secure_boot_card = ComboBoxSettingCard(
+            self.secure_boot_config,
             FluentIcon.CERTIFICATE,
             "Secure Boot Model",
             "Default: Auto-select based on macOS version. Disabled: No secure boot. Others: Specific Mac model identifiers.",
+            secure_boot_values,
             group
         )
-        self.secure_boot_combo = ComboBox(self)
-        self.secure_boot_combo.addItems(
-            ["Default", "Disabled", "j137", "j680", "j132", "j174", "j140k", "j152f"])
-        self.secure_boot_combo.setCurrentText(self.settings.get("secure_boot_model", "Default"))
-        self.secure_boot_combo.currentTextChanged.connect(
-            lambda text: self.settings.set("secure_boot_model", text))
-        self.secure_boot_card.viewLayout.addWidget(self.secure_boot_combo)
         group.addSettingCard(self.secure_boot_card)
 
         # Vault
-        self.vault_card = ExpandSettingCard(
+        vault_values = ["Optional", "Basic", "Secure"]
+        vault_value = self.settings.get("vault", "Optional")
+        if vault_value not in vault_values:
+            vault_value = "Optional"
+
+        self.vault_config = OptionsConfigItem(
+            "Security",
+            "Vault",
+            vault_value,
+            OptionsValidator(vault_values)
+        )
+        self.vault_config.valueChanged.connect(self.on_vault_changed)
+
+        self.vault_card = ComboBoxSettingCard(
+            self.vault_config,
             FluentIcon.COMPLETED,
             "OpenCore Vault",
             "Optional: No vault protection. Basic/Secure: Vault signature verification (requires manual setup).",
+            vault_values,
             group
         )
-        self.vault_combo = ComboBox(self)
-        self.vault_combo.addItems(["Optional", "Basic", "Secure"])
-        self.vault_combo.setCurrentText(self.settings.get("vault", "Optional"))
-        self.vault_combo.currentTextChanged.connect(
-            lambda text: self.settings.set("vault", text))
-        self.vault_card.viewLayout.addWidget(self.vault_combo)
         group.addSettingCard(self.vault_card)
 
         return group
@@ -481,11 +538,14 @@ class SettingsPage(QWidget):
             group
         )
         self.custom_serial_input = LineEdit(self)
-        self.custom_serial_input.setPlaceholderText("Leave empty to auto-generate")
-        self.custom_serial_input.setText(self.settings.get("custom_serial_number", ""))
+        self.custom_serial_input.setPlaceholderText(
+            "Leave empty to auto-generate")
+        self.custom_serial_input.setText(
+            self.settings.get("custom_serial_number", ""))
         self.custom_serial_input.textChanged.connect(
             lambda text: self.settings.set("custom_serial_number", text))
-        self.custom_serial_input.setEnabled(not self.settings.get("random_smbios", True))
+        self.custom_serial_input.setEnabled(
+            not self.settings.get("random_smbios", True))
         self.custom_serial_card.viewLayout.addWidget(self.custom_serial_input)
         group.addSettingCard(self.custom_serial_card)
 
@@ -497,11 +557,13 @@ class SettingsPage(QWidget):
             group
         )
         self.custom_mlb_input = LineEdit(self)
-        self.custom_mlb_input.setPlaceholderText("Leave empty to auto-generate")
+        self.custom_mlb_input.setPlaceholderText(
+            "Leave empty to auto-generate")
         self.custom_mlb_input.setText(self.settings.get("custom_mlb", ""))
         self.custom_mlb_input.textChanged.connect(
             lambda text: self.settings.set("custom_mlb", text))
-        self.custom_mlb_input.setEnabled(not self.settings.get("random_smbios", True))
+        self.custom_mlb_input.setEnabled(
+            not self.settings.get("random_smbios", True))
         self.custom_mlb_card.viewLayout.addWidget(self.custom_mlb_input)
         group.addSettingCard(self.custom_mlb_card)
 
@@ -513,11 +575,13 @@ class SettingsPage(QWidget):
             group
         )
         self.custom_rom_input = LineEdit(self)
-        self.custom_rom_input.setPlaceholderText("Leave empty to auto-generate (e.g., 112233445566)")
+        self.custom_rom_input.setPlaceholderText(
+            "Leave empty to auto-generate (e.g., 112233445566)")
         self.custom_rom_input.setText(self.settings.get("custom_rom", ""))
         self.custom_rom_input.textChanged.connect(
             lambda text: self.settings.set("custom_rom", text))
-        self.custom_rom_input.setEnabled(not self.settings.get("random_smbios", True))
+        self.custom_rom_input.setEnabled(
+            not self.settings.get("random_smbios", True))
         self.custom_rom_card.viewLayout.addWidget(self.custom_rom_input)
         group.addSettingCard(self.custom_rom_card)
 
@@ -528,18 +592,28 @@ class SettingsPage(QWidget):
         group = SettingCardGroup("Appearance", self)
 
         # Theme setting
-        self.theme_card = ExpandSettingCard(
+        theme_values = ["light", "dark"]
+        theme_texts = ["Light", "Dark"]
+        theme_value = self.settings.get("theme", "light")
+        if theme_value not in theme_values:
+            theme_value = "light"
+
+        self.theme_config = OptionsConfigItem(
+            "Appearance",
+            "Theme",
+            theme_value,
+            OptionsValidator(theme_values)
+        )
+        self.theme_config.valueChanged.connect(self.on_theme_changed)
+
+        self.theme_card = ComboBoxSettingCard(
+            self.theme_config,
             FluentIcon.BRUSH,
             "Theme",
             "Choose the application theme. Changes apply immediately.",
+            theme_texts,
             group
         )
-        self.theme_combo = ComboBox(self)
-        self.theme_combo.addItems(["Light", "Dark"])
-        current_theme = self.settings.get("theme", "light")
-        self.theme_combo.setCurrentText("Light" if current_theme == "light" else "Dark")
-        self.theme_combo.currentTextChanged.connect(self.on_theme_changed)
-        self.theme_card.viewLayout.addWidget(self.theme_combo)
         group.addSettingCard(self.theme_card)
 
         return group
@@ -645,7 +719,8 @@ class SettingsPage(QWidget):
         folder = QFileDialog.getExistingDirectory(
             self,
             "Select Build Output Directory",
-            self.settings.get("build_output_directory", "") or os.path.expanduser("~")
+            self.settings.get("build_output_directory",
+                              "") or os.path.expanduser("~")
         )
 
         if folder:
@@ -653,16 +728,13 @@ class SettingsPage(QWidget):
             self.output_dir_card.setContent(folder)
             self.show_success("Output directory updated successfully")
 
-    def on_theme_changed(self, text):
+    def on_theme_changed(self, value):
         """Handle theme change"""
-        theme = "light" if text == "Light" else "dark"
+        theme = value if value in ("light", "dark") else "light"
         self.settings.set("theme", theme)
 
         # Apply theme immediately
-        if theme == "dark":
-            setTheme(Theme.DARK)
-        else:
-            setTheme(Theme.LIGHT)
+        setTheme(Theme.DARK if theme == "dark" else Theme.LIGHT)
 
         self.show_success("Theme updated successfully")
 
@@ -690,27 +762,34 @@ class SettingsPage(QWidget):
             self.settings.save()
 
             # Update all UI elements using the new card components
-            self.output_dir_card.setContent("Use temporary directory (default)")
+            self.output_dir_card.setContent(
+                "Use temporary directory (default)")
             self.open_folder_card.switchButton.setChecked(True)
             self.clean_temp_card.switchButton.setChecked(True)
             self.verbose_boot_card.switchButton.setChecked(True)
             self.custom_boot_args_input.setText("")
             self.include_beta_card.switchButton.setChecked(False)
-            self.preferred_version_combo.setCurrentIndex(0)  # Set to "Auto"
+            if hasattr(self, 'preferred_version_card'):
+                self.preferred_version_card.setValue("")
             self.show_picker_card.switchButton.setChecked(True)
-            self.picker_mode_combo.setCurrentText("Auto")
+            if hasattr(self, 'picker_mode_card'):
+                self.picker_mode_card.setValue("Auto")
             self.hide_aux_card.switchButton.setChecked(False)
             self.timeout_spin.setValue(5)
-            self.picker_variant_combo.setCurrentText("Auto")
+            if hasattr(self, 'picker_variant_card'):
+                self.picker_variant_card.setValue("Auto")
             self.disable_sip_card.switchButton.setChecked(True)
-            self.secure_boot_combo.setCurrentText("Default")
-            self.vault_combo.setCurrentText("Optional")
+            if hasattr(self, 'secure_boot_card'):
+                self.secure_boot_card.setValue("Default")
+            if hasattr(self, 'vault_card'):
+                self.vault_card.setValue("Optional")
             self.random_smbios_card.switchButton.setChecked(True)
             self.preserve_smbios_card.switchButton.setChecked(False)
             self.custom_serial_input.setText("")
             self.custom_mlb_input.setText("")
             self.custom_rom_input.setText("")
-            self.theme_combo.setCurrentText("Light")
+            if hasattr(self, 'theme_card'):
+                self.theme_card.setValue("light")
             self.auto_update_card.switchButton.setChecked(True)
             self.verify_integrity_card.switchButton.setChecked(True)
             self.force_redownload_card.switchButton.setChecked(False)
