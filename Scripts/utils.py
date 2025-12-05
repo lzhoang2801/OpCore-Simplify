@@ -14,7 +14,7 @@ class Utils:
     def __init__(self, script_name = "OpCore Simplify"):
         self.script_name = script_name
         self.gui_handler = None  # GUI handler object for direct dialog access
-        self.gui_log_callback = None  # Callback for logging to build log
+        self.gui_log_callback = None  # Callback for logging to build log/console
         self.gui_callback = None  # Callback for GUI prompts (backward compatibility)
         self.gui_progress_callback = None  # Callback for updating build progress in GUI
         self.gui_gathering_progress_callback = None  # Callback for updating gathering progress in GUI
@@ -31,7 +31,21 @@ class Utils:
     def debug_log(self, message):
         """Log debug messages if debug logging is enabled"""
         if self.debug_logging_enabled:
-            print(f"[DEBUG] {message}")
+            self.log_gui(f"[DEBUG] {message}", level="Debug")
+
+    def log_gui(self, message, level="Info", to_build_log=False, fallback_stdout=True):
+        """Emit a message to the GUI log when available, with optional stdout fallback."""
+        if self.gui_log_callback:
+            try:
+                self.gui_log_callback(message, level, to_build_log=to_build_log)
+            except TypeError:
+                # Backward compatibility if callback doesn't accept keyword argument
+                self.gui_log_callback(message, level)
+            return True
+
+        if fallback_stdout:
+            print(message)
+        return False
 
     # ==================== Dialog Methods ====================
     # These methods provide a clean interface for showing dialogs

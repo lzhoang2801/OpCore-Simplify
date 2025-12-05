@@ -109,8 +109,8 @@ class BuildPage(QWidget):
         self.progress_bar.setValue(0)
         self.progress_label.setText("Starting build...")
         self.build_log.clear()
-        self.build_log.append("Starting build process...")
-        self.build_log.append("")
+        self.controller.log_message("Starting build process...")
+        self.controller.log_message("", to_console=False, to_build_log=True)
 
         # Call controller build method
         self.controller.build_efi()

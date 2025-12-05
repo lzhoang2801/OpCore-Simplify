@@ -1,6 +1,4 @@
-"""
-Main GUI application with sidebar navigation using qfluentwidgets
-"""
+"""Main GUI application with sidebar navigation using qfluentwidgets"""
 
 from ..datasets import os_data, mac_model_data
 import sys
@@ -8,6 +6,7 @@ import os
 import threading
 import time
 import platform
+import re
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
@@ -34,40 +33,67 @@ if scripts_path not in sys.path:
 
 
 class ConsoleRedirector(QObject):
-    """Thread-safe stdout redirector to QTextEdit widget using Qt signals"""
-    
-    # Signal to append text on the main thread
-    append_text_signal = pyqtSignal(str)
+    """Thread-safe stream redirector that feeds ConsolePage metrics and keeps stdout/stderr mirrored."""
 
-    def __init__(self, text_widget, original_stdout=None):
+    append_text_signal = pyqtSignal(str, str)
+    LEVEL_PATTERN = re.compile(r"\[(info|warning|error|debug)\]", re.IGNORECASE)
+
+    def __init__(self, controller, original_stdout=None, default_level="Info"):
         super().__init__()
-        self.text_widget = text_widget
+        self.controller = controller
         self.original_stdout = original_stdout or sys.__stdout__
-        
-        # Connect signal to slot for thread-safe text appending
+        self.default_level = default_level
+        self._buffer = ""
+
         self.append_text_signal.connect(self._append_text_on_main_thread)
 
     def write(self, text):
-        # Append to GUI text widget using signal for thread safety
-        if text.strip():
-            stripped_text = text.rstrip()
-            # Check if we're on the main thread
-            if threading.current_thread() == threading.main_thread():
-                # Direct call on main thread
-                self.text_widget.append(stripped_text)
-            else:
-                # Use signal for thread-safe GUI update
-                self.append_text_signal.emit(stripped_text)
-        
-        # Write to original stdout after GUI update to maintain original ordering
+        if not text:
+            return
+
+        normalized = text.replace('\r', '\n')
+        self._buffer += normalized
+
+        while '\n' in self._buffer:
+            line, self._buffer = self._buffer.split('\n', 1)
+            self._emit_line(line)
+
         if self.original_stdout:
             self.original_stdout.write(text)
 
-    def _append_text_on_main_thread(self, text):
+    def _emit_line(self, line):
+        message = line.rstrip('\r')
+        level = self._detect_level(message)
+
+        if threading.current_thread() == threading.main_thread():
+            self.controller.log_message(message, level, to_build_log=False)
+        else:
+            self.append_text_signal.emit(message, level)
+
+    def _append_text_on_main_thread(self, text, level):
         """Slot that appends text on the main thread"""
-        self.text_widget.append(text)
+        self.controller.log_message(text, level, to_build_log=False)
+
+    def _detect_level(self, text):
+        match = self.LEVEL_PATTERN.search(text)
+        if match:
+            return match.group(1).capitalize()
+
+        lowered = text.lower()
+        if lowered.startswith("error") or "traceback" in lowered:
+            return "Error"
+        if lowered.startswith("warning") or lowered.startswith("warn"):
+            return "Warning"
+        if lowered.startswith("debug"):
+            return "Debug"
+        if "failed" in lowered:
+            return "Error"
+        return self.default_level
 
     def flush(self):
+        if self._buffer:
+            self._emit_line(self._buffer)
+            self._buffer = ""
         if self.original_stdout:
             self.original_stdout.flush()
 
@@ -80,6 +106,7 @@ class OpCoreGUI(FluentWindow):
     update_status_signal = pyqtSignal(str, str)  # message, status_type
     update_build_progress_signal = pyqtSignal(str, list, int, int, bool)  # title, steps, current_step_index, progress, done
     update_gathering_progress_signal = pyqtSignal(dict)  # progress_info dict
+    log_message_signal = pyqtSignal(str, str, bool, bool)  # message, level, to_console, to_build_log
 
     def __init__(self, ocpe_instance):
         """
@@ -142,6 +169,8 @@ class OpCoreGUI(FluentWindow):
         self.build_log = None
         self.open_result_btn = None
         self.console_log = None
+        self.stdout_redirector = None
+        self.stderr_redirector = None
 
         # Console redirection
         self.console_redirected = False
@@ -151,6 +180,7 @@ class OpCoreGUI(FluentWindow):
         self.update_status_signal.connect(self.update_status)
         self.update_build_progress_signal.connect(self._update_build_progress_on_main_thread)
         self.update_gathering_progress_signal.connect(self._update_gathering_progress_on_main_thread)
+        self.log_message_signal.connect(self._log_message_on_main_thread)
 
         # Set up GUI handlers - using new direct handler approach
         self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
@@ -175,7 +205,19 @@ class OpCoreGUI(FluentWindow):
         self.ocpe.c.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.co.utils.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.o.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.ac.utils.gui_callback = self.handle_gui_prompt_threadsafe
+
+        utils_with_logging = {
+            self.ocpe.u,
+            self.ocpe.h.utils,
+            self.ocpe.k.utils,
+            self.ocpe.c.utils,
+            self.ocpe.co.utils,
+            self.ocpe.o.utils,
+            self.ocpe.ac.utils,
+        }
+        for utils_instance in utils_with_logging:
+            if hasattr(utils_instance, "gui_log_callback"):
+                utils_instance.gui_log_callback = self._dispatch_backend_log
 
         self.init_navigation()
 
@@ -206,19 +248,48 @@ class OpCoreGUI(FluentWindow):
         self.addSubInterface(self.settingsPage, FluentIcon.SETTING,
                              "Settings", NavigationItemPosition.BOTTOM)
 
-        # Set console log widget for redirection
+        # Set console log widget for redirection/state sharing
         self.console_log = self.consolePage.console_text
 
         # Redirect console output
         if not self.console_redirected:
-            sys.stdout = ConsoleRedirector(self.console_log)
+            self.stdout_redirector = ConsoleRedirector(
+                controller=self,
+                original_stdout=sys.__stdout__,
+                default_level="Info",
+            )
+            self.stderr_redirector = ConsoleRedirector(
+                controller=self,
+                original_stdout=sys.__stderr__,
+                default_level="Error",
+            )
+            sys.stdout = self.stdout_redirector
+            sys.stderr = self.stderr_redirector
             self.console_redirected = True
 
-    def log_message(self, message):
-        """Log a message to both console and build log"""
-        print(message)
-        if self.build_log:
-            self.build_log.append(message)
+    def log_message(self, message, level="Info", *, to_console=True, to_build_log=True):
+        """Log a message to console dashboard and/or build log in a thread-safe way."""
+        if threading.current_thread() != threading.main_thread():
+            self.log_message_signal.emit(message, level, to_console, to_build_log)
+            return
+        self._log_message_on_main_thread(message, level, to_console, to_build_log)
+
+    def _log_message_on_main_thread(self, message, level, to_console, to_build_log):
+        lines = message.splitlines()
+        if not lines:
+            lines = [""]
+
+        if to_console and hasattr(self, "consolePage") and self.consolePage:
+            for line in lines:
+                self.consolePage.append_log(line, level)
+
+        if to_build_log and self.build_log:
+            for line in lines:
+                self.build_log.append(line)
+
+    def _dispatch_backend_log(self, message, level="Info", to_build_log=False):
+        """Callback passed to backend utils to surface logs in the GUI."""
+        self.log_message(message, level, to_console=True, to_build_log=to_build_log)
 
     def update_status(self, message, status_type='info'):
         """Update the status using InfoBar"""
@@ -613,16 +684,10 @@ class OpCoreGUI(FluentWindow):
             elif status == 'processing':
                 self.progress_label.setText(f"✓ Processing {current}/{total}: {product_name}")
         
-        # Update build log with gathering information (less verbose for GUI)
-        if self.build_log:
-            if status == 'complete':
-                self.build_log.append("\n✓ All files gathered successfully!")
-            elif status == 'downloading':
-                # Only log every file download to keep it concise
-                self.build_log.append(f"⬇ {current}/{total}: {product_name}")
-            elif status == 'processing':
-                # Don't log processing to avoid clutter - progress label handles it
-                pass
+        if status == 'complete':
+            self.log_message("\n✓ All files gathered successfully!", to_build_log=True)
+        elif status == 'downloading':
+            self.log_message(f"⬇ {current}/{total}: {product_name}", to_build_log=True)
     
     def update_build_progress_threadsafe(self, title, steps, current_step_index, progress, done):
         """Thread-safe wrapper for update_build_progress that can be called from any thread"""
@@ -652,15 +717,13 @@ class OpCoreGUI(FluentWindow):
                 step_text = steps[current_step_index] if current_step_index < len(steps) else "Processing"
                 self.progress_label.setText(f"⚙ {step_text}...")
         
-        # Update build log with step information
-        if self.build_log:
-            if done:
-                self.build_log.append(f"\n✓ {title} - Complete!")
-                for step in steps:
-                    self.build_log.append(f"  ✓ {step}")
-            else:
-                step_text = steps[current_step_index] if current_step_index < len(steps) else "Processing"
-                self.build_log.append(f"\n> {step_text}...")
+        if done:
+            self.log_message(f"\n✓ {title} - Complete!", to_build_log=True)
+            for step in steps:
+                self.log_message(f"  ✓ {step}", to_console=False, to_build_log=True)
+        else:
+            step_text = steps[current_step_index] if current_step_index < len(steps) else "Processing"
+            self.log_message(f"\n> {step_text}...", to_build_log=True)
 
     def show_before_using_efi_dialog(self):
         """Show Before Using EFI dialog after successful build"""

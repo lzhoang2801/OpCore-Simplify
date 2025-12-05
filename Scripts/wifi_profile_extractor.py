@@ -10,14 +10,9 @@ class WifiProfileExtractor:
         self.run = run.Run().run
         self.utils = utils_instance if utils_instance is not None else utils.Utils()
 
-    def log(self, message):
-        """Log message to console and build log if available"""
-        print(message)
-        # If GUI mode and gui_parent is available, also log to build_log
-        if hasattr(self.utils, 'gui_parent') and self.utils.gui_parent:
-            parent = self.utils.gui_parent
-            if hasattr(parent, 'build_log') and parent.build_log:
-                parent.build_log.append(message)
+    def log(self, message, level="Info"):
+        """Log message to console and surface it in GUI build log when available"""
+        self.utils.log_gui(message, level=level, to_build_log=True)
 
     def get_authentication_type(self, authentication_type):
         authentication_type = authentication_type.lower()
