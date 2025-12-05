@@ -150,7 +150,7 @@ class SettingsPage(ScrollArea):
 
     def create_build_settings_group(self):
         """Create build settings group using modern components"""
-        group = SettingCardGroup("Build Settings 🔨", self.scrollWidget)
+        group = SettingCardGroup("Build Settings", self.scrollWidget)
 
         # Output directory setting
         self.output_dir_card = PushSettingCard(
@@ -196,7 +196,7 @@ class SettingsPage(ScrollArea):
 
     def create_boot_args_group(self):
         """Create boot arguments group using modern components"""
-        group = SettingCardGroup("Boot Arguments 🚀", self.scrollWidget)
+        group = SettingCardGroup("Boot Arguments", self.scrollWidget)
 
         # Verbose boot setting
         self.verbose_boot_card = SwitchSettingCard(
@@ -235,7 +235,7 @@ class SettingsPage(ScrollArea):
 
     def create_macos_version_group(self):
         """Create macOS version settings group using modern components"""
-        group = SettingCardGroup("macOS Version Settings 🍎", self.scrollWidget)
+        group = SettingCardGroup("macOS Version Settings", self.scrollWidget)
 
         # Include beta versions
         self.include_beta_card = SwitchSettingCard(
@@ -351,7 +351,7 @@ class SettingsPage(ScrollArea):
 
     def create_boot_picker_group(self):
         """Create OpenCore boot picker settings group using modern components"""
-        group = SettingCardGroup("OpenCore Boot Picker ⏸️", self.scrollWidget)
+        group = SettingCardGroup("OpenCore Boot Picker", self.scrollWidget)
 
         # Show picker
         self.show_picker_card = SwitchSettingCard(
@@ -455,7 +455,7 @@ class SettingsPage(ScrollArea):
 
     def create_security_group(self):
         """Create security settings group using modern components"""
-        group = SettingCardGroup("Security Settings 🔒", self.scrollWidget)
+        group = SettingCardGroup("Security Settings ⚠️", self.scrollWidget)
 
         # Disable SIP
         self.disable_sip_card = SwitchSettingCard(
@@ -525,7 +525,7 @@ class SettingsPage(ScrollArea):
 
     def create_smbios_group(self):
         """Create SMBIOS settings group using modern components"""
-        group = SettingCardGroup("SMBIOS Settings 🔑", self.scrollWidget)
+        group = SettingCardGroup("SMBIOS Settings ⚠️", self.scrollWidget)
 
         # Random SMBIOS
         self.random_smbios_card = SwitchSettingCard(
@@ -617,7 +617,7 @@ class SettingsPage(ScrollArea):
 
     def create_appearance_group(self):
         """Create appearance settings group using modern components"""
-        group = SettingCardGroup("Appearance 🎨", self.scrollWidget)
+        group = SettingCardGroup("Appearance", self.scrollWidget)
 
         # Theme setting
         theme_values = ["light", "dark"]
@@ -648,7 +648,7 @@ class SettingsPage(ScrollArea):
 
     def create_update_settings_group(self):
         """Create update & download settings group using modern components"""
-        group = SettingCardGroup("Updates & Downloads 📦", self.scrollWidget)
+        group = SettingCardGroup("Updates & Downloads", self.scrollWidget)
 
         # Auto-update check
         self.auto_update_card = SwitchSettingCard(
@@ -696,7 +696,7 @@ class SettingsPage(ScrollArea):
 
     def create_advanced_group(self):
         """Create advanced settings group using modern components"""
-        group = SettingCardGroup("Advanced Settings ⚙️", self.scrollWidget)
+        group = SettingCardGroup("Advanced Settings ⚠️", self.scrollWidget)
 
         # Enable debug logging
         self.debug_logging_card = SwitchSettingCard(
@@ -744,7 +744,7 @@ class SettingsPage(ScrollArea):
 
     def create_help_group(self):
         """Create help and documentation group with useful links"""
-        group = SettingCardGroup("Help & Documentation 📚", self.scrollWidget)
+        group = SettingCardGroup("Help & Documentation", self.scrollWidget)
         
         # OpenCore Documentation
         self.opencore_docs_card = HyperlinkCard(
