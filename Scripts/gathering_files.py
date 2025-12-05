@@ -3,6 +3,7 @@ from Scripts import kext_maestro
 from Scripts import integrity_checker
 from Scripts import resource_fetcher
 from Scripts import utils
+from Scripts import settings as settings_module
 import os
 import shutil
 import subprocess
@@ -13,6 +14,7 @@ os_name = platform.system()
 class gatheringFiles:
     def __init__(self):
         self.utils = utils.Utils()
+        self.settings = settings_module.Settings()
         self.github = github.Github(utils_instance=self.utils)
         self.kext = kext_maestro.KextMaestro()
         self.fetcher = resource_fetcher.ResourceFetcher(utils_instance=self.utils)
@@ -214,17 +216,25 @@ class gatheringFiles:
             if product_history_index is not None:
                 history_item = download_history[product_history_index]
                 is_latest_id = (product_id == history_item.get("id"))
-                folder_is_valid, _ = self.integrity_checker.verify_folder_integrity(asset_dir, manifest_path)
                 
-                if is_latest_id and folder_is_valid:
-                    # Skip this product - already up to date
-                    if self.utils.gui_callback:
-                        # In GUI mode, just print a brief message
-                        print(f"✓ {product_name} already up to date")
-                    else:
-                        # In CLI mode, show the standard message
-                        print(f"\nLatest version of {product_name} already downloaded.")
-                    continue
+                # Check if force redownload is enabled
+                if not self.settings.get_force_redownload():
+                    folder_is_valid, _ = self.integrity_checker.verify_folder_integrity(asset_dir, manifest_path)
+                    
+                    if is_latest_id and folder_is_valid:
+                        # Skip this product - already up to date
+                        if self.utils.gui_callback:
+                            # In GUI mode, just print a brief message
+                            print(f"✓ {product_name} already up to date")
+                        else:
+                            # In CLI mode, show the standard message
+                            print(f"\nLatest version of {product_name} already downloaded.")
+                        continue
+                else:
+                    # Force redownload is enabled, remove existing files
+                    if os.path.exists(asset_dir):
+                        shutil.rmtree(asset_dir, ignore_errors=True)
+                    print(f"Force redownloading {product_name}...")
             
             # Add to products to download list
             products_to_download.append({
@@ -277,7 +287,9 @@ class gatheringFiles:
                 return False
 
             zip_path = os.path.join(self.temporary_dir, product_name) + ".zip"
-            if not self.fetcher.download_and_save_file(product_download_url, zip_path, sha256_hash):
+            # Pass verify_download_integrity setting to download function
+            sha256_to_verify = sha256_hash if self.settings.get_verify_download_integrity() else None
+            if not self.fetcher.download_and_save_file(product_download_url, zip_path, sha256_to_verify):
                 folder_is_valid, _ = self.integrity_checker.verify_folder_integrity(asset_dir, manifest_path)
                 if product_history_index is not None and folder_is_valid:
                     print(f"Using previously downloaded version of {product_name}.")

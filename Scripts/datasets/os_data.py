@@ -18,6 +18,16 @@ macos_versions = [
 ]
 
 def get_latest_darwin_version(include_beta=True):
+    # Check settings if include_beta is not explicitly set
+    if include_beta:
+        try:
+            from Scripts.settings import Settings
+            settings = Settings()
+            include_beta = settings.get_include_beta_versions()
+        except:
+            # Fallback to default if settings not available
+            pass
+    
     for macos_version in macos_versions[::-1]:
         if include_beta:
             return "{}.{}.{}".format(macos_version.darwin_version, 99, 99)

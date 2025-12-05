@@ -1,3 +1,7 @@
+# User settings
+settings.json
+preserved_smbios.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

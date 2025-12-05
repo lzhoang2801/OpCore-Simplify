@@ -7,6 +7,7 @@ from .compatibility_page import CompatibilityPage
 from .configuration_page import ConfigurationPage
 from .build_page import BuildPage
 from .console_page import ConsolePage
+from .settings_page import SettingsPage
 
 __all__ = [
     'UploadPage',
@@ -14,4 +15,5 @@ __all__ = [
     'ConfigurationPage',
     'BuildPage',
     'ConsolePage',
+    'SettingsPage',
 ]

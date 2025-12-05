@@ -10,6 +10,7 @@ from Scripts import report_validator
 from Scripts import run
 from Scripts import smbios
 from Scripts import utils
+from Scripts import settings as settings_module
 import updater
 import os
 import sys
@@ -31,7 +32,17 @@ class OCPE:
         self.s = smbios.SMBIOS()
         self.v = report_validator.ReportValidator()
         self.r = run.Run()
-        self.result_dir = self.u.get_temporary_dir()
+        self.settings = settings_module.Settings()
+        
+        # Use custom output directory if set, otherwise use temporary directory
+        custom_output_dir = self.settings.get_build_output_directory()
+        if custom_output_dir:
+            # Create a timestamped subdirectory in the custom output location
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            self.result_dir = os.path.join(custom_output_dir, f"EFI_Build_{timestamp}")
+            os.makedirs(self.result_dir, exist_ok=True)
+        else:
+            self.result_dir = self.u.get_temporary_dir()
 
     def select_hardware_report(self):
         self.ac.dsdt = self.ac.acpi.acpi_tables = None
@@ -311,6 +322,12 @@ class OCPE:
             files_to_remove.append(resources_audio_dir)
 
         picker_variant = config_data.get("Misc", {}).get("Boot", {}).get("PickerVariant")
+        # Use settings if available
+        if hasattr(self, 'settings'):
+            settings_variant = self.settings.get_picker_variant()
+            if settings_variant and settings_variant != "Auto":
+                picker_variant = settings_variant
+        
         if picker_variant in (None, "Auto"):
             picker_variant = "Acidanthera/GoldenGate" 
         if os.name == "nt":
@@ -499,9 +516,14 @@ class OCPE:
                 self.u.request_input("Press Enter to main menu...")
 
 if __name__ == '__main__':
-    update_flag = updater.Updater().run_update()
-    if update_flag:
-        os.execv(sys.executable, ['python3'] + sys.argv)
+    # Check if auto-update is enabled in settings
+    from Scripts.settings import Settings
+    settings = Settings()
+    
+    if settings.get_auto_update_check():
+        update_flag = updater.Updater().run_update()
+        if update_flag:
+            os.execv(sys.executable, ['python3'] + sys.argv)
 
     o = OCPE()
     

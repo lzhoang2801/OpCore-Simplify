@@ -3,11 +3,13 @@ from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts.datasets import codec_layouts
 from Scripts import utils
+from Scripts import settings as settings_module
 import time
 
 class CompatibilityChecker:
     def __init__(self):
         self.utils = utils.Utils()
+        self.settings = settings_module.Settings()
 
     def show_macos_compatibility(self, device_compatibility):
         if not device_compatibility:

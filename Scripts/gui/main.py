@@ -21,7 +21,7 @@ from qfluentwidgets import (
 )
 
 from .styles import COLORS, SPACING
-from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage
+from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, SettingsPage
 from .custom_dialogs import (
     show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
     show_before_using_efi_dialog, show_wifi_network_count_dialog, show_codec_layout_dialog
@@ -109,8 +109,14 @@ class OpCoreGUI(FluentWindow):
         font.setStyleHint(QFont.StyleHint.SansSerif)
         self.setFont(font)
 
-        # Use light theme by default
-        setTheme(Theme.LIGHT)
+        # Apply theme from settings
+        from Scripts.settings import Settings
+        settings = Settings()
+        theme_setting = settings.get_theme()
+        if theme_setting == "dark":
+            setTheme(Theme.DARK)
+        else:
+            setTheme(Theme.LIGHT)
 
         # Variables for tracking state
         self.hardware_report_path = "Not selected"
@@ -181,6 +187,7 @@ class OpCoreGUI(FluentWindow):
         self.configurationPage = ConfigurationPage(self)
         self.buildPage = BuildPage(self)
         self.consolePage = ConsolePage(self)
+        self.settingsPage = SettingsPage(self)
 
         # Add pages to navigation
         self.addSubInterface(self.uploadPage, FluentIcon.FOLDER_ADD,
@@ -196,6 +203,8 @@ class OpCoreGUI(FluentWindow):
         self.navigationInterface.addSeparator()
         self.addSubInterface(self.consolePage, FluentIcon.DOCUMENT,
                              "Console Log", NavigationItemPosition.BOTTOM)
+        self.addSubInterface(self.settingsPage, FluentIcon.SETTING,
+                             "Settings", NavigationItemPosition.BOTTOM)
 
         # Set console log widget for redirection
         self.console_log = self.consolePage.console_text
@@ -664,8 +673,11 @@ class OpCoreGUI(FluentWindow):
             self, bios_requirements, self.ocpe.result_dir)
         
         if result:
-            # User agreed - open the result folder
-            self.ocpe.u.open_folder(self.ocpe.result_dir)
+            # User agreed - open the result folder if setting is enabled
+            from Scripts.settings import Settings
+            settings = Settings()
+            if settings.get_open_folder_after_build():
+                self.ocpe.u.open_folder(self.ocpe.result_dir)
             
             # Enable the open result button
             if self.open_result_btn:

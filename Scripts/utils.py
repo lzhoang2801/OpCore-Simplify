@@ -18,6 +18,20 @@ class Utils:
         self.gui_callback = None  # Callback for GUI prompts (backward compatibility)
         self.gui_progress_callback = None  # Callback for updating build progress in GUI
         self.gui_gathering_progress_callback = None  # Callback for updating gathering progress in GUI
+        
+        # Load settings for debug logging
+        try:
+            from Scripts import settings as settings_module
+            self.settings = settings_module.Settings()
+            self.debug_logging_enabled = self.settings.get_enable_debug_logging()
+        except:
+            self.settings = None
+            self.debug_logging_enabled = False
+    
+    def debug_log(self, message):
+        """Log debug messages if debug logging is enabled"""
+        if self.debug_logging_enabled:
+            print(f"[DEBUG] {message}")
 
     # ==================== Dialog Methods ====================
     # These methods provide a clean interface for showing dialogs
@@ -179,6 +193,13 @@ class Utils:
     # ==================== End Dialog Methods ====================
 
     def clean_temporary_dir(self):
+        """Clean temporary directories created by OpCore Simplify"""
+        # Check if clean_temp_files_on_exit is enabled
+        if hasattr(self, 'settings') and self.settings:
+            if not self.settings.get_clean_temp_files_on_exit():
+                self.debug_log("Skipping temp file cleanup (disabled in settings)")
+                return
+        
         temporary_dir = tempfile.gettempdir()
         
         for file in os.listdir(temporary_dir):
@@ -188,8 +209,10 @@ class Utils:
                     continue
 
                 try:
+                    self.debug_log(f"Cleaning temporary directory: {file}")
                     shutil.rmtree(os.path.join(temporary_dir, file))
                 except Exception as e:
+                    self.debug_log(f"Failed to remove temp directory {file}: {e}")
                     pass
     
     def get_temporary_dir(self):

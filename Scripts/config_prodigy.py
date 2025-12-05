@@ -8,12 +8,14 @@ from Scripts.datasets import codec_layouts
 from Scripts import gathering_files
 from Scripts import smbios
 from Scripts import utils
+from Scripts import settings as settings_module
 
 class ConfigProdigy:
     def __init__(self):
         self.g = gathering_files.gatheringFiles()
         self.smbios = smbios.SMBIOS()
         self.utils = utils.Utils()
+        self.settings = settings_module.Settings()
         self.cpuids = {
             "Ivy Bridge": "A9060300",
             "Haswell": "C3060300",
@@ -620,11 +622,16 @@ class ConfigProdigy:
         return kernel_patch
 
     def boot_args(self, hardware_report, macos_version, needs_oclp, kexts, config):
-        boot_args = [
-            "-v",
-            "debug=0x100",
-            "keepsyms=1"
-        ]
+        boot_args = []
+        
+        # Add verbose boot arguments if setting is enabled
+        if self.settings.get_verbose_boot():
+            boot_args.extend([
+                "-v",
+                "debug=0x100",
+                "keepsyms=1"
+            ])
+            self.utils.debug_log("Verbose boot arguments enabled")
 
         if needs_oclp and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
             boot_args.append("amfi=0x80")
@@ -692,9 +699,27 @@ class ConfigProdigy:
             elif kext.name == "CpuTopologyRebuild":
                 boot_args.append("ctrsmt=full")
 
+        # Add custom boot arguments from settings
+        custom_boot_args = self.settings.get_custom_boot_args()
+        if custom_boot_args:
+            # Split custom args and add them
+            custom_args_list = custom_boot_args.strip().split()
+            for arg in custom_args_list:
+                if arg and arg not in boot_args:
+                    boot_args.append(arg)
+        
+        # Check if force load incompatible kexts is enabled
+        if self.settings.get_force_load_incompatible_kexts() and "-lilubetaall" not in boot_args:
+            boot_args.append("-lilubetaall")
+        
         return " ".join(boot_args)
     
     def csr_active_config(self, macos_version):
+        # Check if user wants to keep SIP enabled
+        if not self.settings.get_disable_sip():
+            return "00000000"  # SIP enabled
+        
+        # Disable SIP based on macOS version
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
             return "030A0000"
         elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("18.0.0"):
@@ -729,6 +754,9 @@ class ConfigProdigy:
         return uefi_drivers
 
     def genarate(self, hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp, kexts, config):
+        self.utils.debug_log("Starting config generation")
+        self.utils.debug_log(f"SMBIOS Model: {smbios_model}, macOS Version: {macos_version}")
+        
         del config["#WARNING - 1"]
         del config["#WARNING - 2"]
         del config["#WARNING - 3"]
@@ -790,15 +818,40 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[4:20]
 
         config["Misc"]["BlessOverride"] = []
-        config["Misc"]["Boot"]["HideAuxiliary"] = False
-        config["Misc"]["Boot"]["PickerMode"] = "Builtin" if hardware_report.get("BIOS").get("Firmware Type") != "UEFI" else "External"
+        # Apply HideAuxiliary setting from preferences
+        config["Misc"]["Boot"]["HideAuxiliary"] = self.settings.get_hide_auxiliary()
+        
+        # Apply PickerMode setting - default is firmware-based, but can be overridden
+        picker_mode_setting = self.settings.get_picker_mode()
+        if picker_mode_setting == "Auto":
+            config["Misc"]["Boot"]["PickerMode"] = "Builtin" if hardware_report.get("BIOS").get("Firmware Type") != "UEFI" else "External"
+        else:
+            config["Misc"]["Boot"]["PickerMode"] = picker_mode_setting
+        
+        # Apply Timeout setting
+        config["Misc"]["Boot"]["Timeout"] = self.settings.get_picker_timeout()
+        
+        # Show/hide picker based on setting
+        if not self.settings.get_show_picker():
+            config["Misc"]["Boot"]["Timeout"] = 0
+        
         config["Misc"]["Debug"]["AppleDebug"] = config["Misc"]["Debug"]["ApplePanic"] = False
         config["Misc"]["Debug"]["DisableWatchDog"] = True
         config["Misc"]["Entries"] = []
         config["Misc"]["Security"]["AllowSetDefault"] = True
         config["Misc"]["Security"]["ScanPolicy"] = 0
-        config["Misc"]["Security"]["SecureBootModel"] = "Default" if not needs_oclp and self.utils.parse_darwin_version("20.0.0") <= self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "Disabled"
-        config["Misc"]["Security"]["Vault"] = "Optional"
+        
+        # Apply SecureBootModel setting from preferences
+        secure_boot_setting = self.settings.get_secure_boot_model()
+        if secure_boot_setting == "Default":
+            # Use automatic selection based on macOS version and OCLP
+            config["Misc"]["Security"]["SecureBootModel"] = "Default" if not needs_oclp and self.utils.parse_darwin_version("20.0.0") <= self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "Disabled"
+        else:
+            config["Misc"]["Security"]["SecureBootModel"] = secure_boot_setting
+        
+        # Apply Vault setting from preferences
+        config["Misc"]["Security"]["Vault"] = self.settings.get_vault()
+        
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
