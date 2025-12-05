@@ -14,7 +14,7 @@ from qfluentwidgets import (
     SettingCardGroup, SwitchSettingCard, ComboBoxSettingCard,
     PushSettingCard, ExpandSettingCard, setTheme, Theme, SpinBox,
     OptionsConfigItem, OptionsValidator, qconfig, HyperlinkCard,
-    RangeSettingCard, StrongBodyLabel, CaptionLabel
+    StrongBodyLabel, CaptionLabel
 )
 
 from ..styles import COLORS, SPACING
@@ -49,7 +49,7 @@ class SettingsPage(QWidget):
             "Configure OpCore Simplify preferences")
         subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
         layout.addWidget(subtitle_label)
-        
+
         # Category count with helpful info
         category_info = CaptionLabel(
             "27 settings organized across 9 categories • Changes are saved automatically")
@@ -101,7 +101,7 @@ class SettingsPage(QWidget):
         # Advanced Settings Group
         self.advanced_group = self.create_advanced_group()
         scroll_layout.addWidget(self.advanced_group)
-        
+
         # Documentation and Help Group
         self.help_group = self.create_help_group()
         scroll_layout.addWidget(self.help_group)
@@ -118,7 +118,7 @@ class SettingsPage(QWidget):
         # Version information with better styling
         version_container = QHBoxLayout()
         version_container.setSpacing(SPACING['small'])
-        
+
         version_label = StrongBodyLabel("Version:")
         version_container.addWidget(version_label)
 
@@ -127,7 +127,7 @@ class SettingsPage(QWidget):
         version_value.setStyleSheet(
             f"color: {COLORS['text_secondary']}; font-family: 'Courier New', monospace;")
         version_container.addWidget(version_value)
-        
+
         bottom_layout.addLayout(version_container)
         bottom_layout.addStretch()
 
@@ -141,7 +141,7 @@ class SettingsPage(QWidget):
 
     def create_build_settings_group(self):
         """Create build settings group using modern components"""
-        group = SettingCardGroup("Build Settings 🔨", self)
+        group = SettingCardGroup("Build Settings", self)
 
         # Output directory setting
         self.output_dir_card = PushSettingCard(
@@ -187,7 +187,7 @@ class SettingsPage(QWidget):
 
     def create_boot_args_group(self):
         """Create boot arguments group using modern components"""
-        group = SettingCardGroup("Boot Arguments 🚀", self)
+        group = SettingCardGroup("Boot Arguments", self)
 
         # Verbose boot setting
         self.verbose_boot_card = SwitchSettingCard(
@@ -226,7 +226,7 @@ class SettingsPage(QWidget):
 
     def create_macos_version_group(self):
         """Create macOS version settings group using modern components"""
-        group = SettingCardGroup("macOS Version Settings 🍎", self)
+        group = SettingCardGroup("macOS Version Settings", self)
 
         # Include beta versions
         self.include_beta_card = SwitchSettingCard(
@@ -342,7 +342,7 @@ class SettingsPage(QWidget):
 
     def create_boot_picker_group(self):
         """Create OpenCore boot picker settings group using modern components"""
-        group = SettingCardGroup("OpenCore Boot Picker ⏸️", self)
+        group = SettingCardGroup("OpenCore Boot Picker", self)
 
         # Show picker
         self.show_picker_card = SwitchSettingCard(
@@ -397,25 +397,19 @@ class SettingsPage(QWidget):
             lambda checked: self.settings.set("hide_auxiliary", checked))
         group.addSettingCard(self.hide_aux_card)
 
-        # Picker timeout using RangeSettingCard for better UX
-        self.timeout_config = OptionsConfigItem(
-            "BootPicker",
-            "Timeout",
-            str(self.settings.get("picker_timeout", 5)),
-            OptionsValidator([str(i) for i in range(0, 61)])
-        )
-        
-        self.timeout_card = RangeSettingCard(
-            self.timeout_config,
+        # Picker timeout using SpinBox for precise control
+        self.timeout_card = ExpandSettingCard(
             FluentIcon.HISTORY,
             "Boot timeout",
-            "Time (in seconds) to wait before auto-booting. Set to 0 to wait indefinitely.",
+            "Time in seconds to wait before auto-booting the default entry. Set to 0 to wait indefinitely.",
             group
         )
-        self.timeout_card.valueChanged.connect(
-            lambda value: self.settings.set("picker_timeout", int(value)))
-        self.timeout_card.setRange(0, 60)
-        self.timeout_card.setValue(self.settings.get("picker_timeout", 5))
+        self.timeout_spin = SpinBox(self)
+        self.timeout_spin.setRange(0, 60)
+        self.timeout_spin.setValue(self.settings.get("picker_timeout", 5))
+        self.timeout_spin.valueChanged.connect(
+            lambda value: self.settings.set("picker_timeout", value))
+        self.timeout_card.viewLayout.addWidget(self.timeout_spin)
         group.addSettingCard(self.timeout_card)
 
         # Picker variant
@@ -452,7 +446,7 @@ class SettingsPage(QWidget):
 
     def create_security_group(self):
         """Create security settings group using modern components"""
-        group = SettingCardGroup("Security Settings 🔒", self)
+        group = SettingCardGroup("Security Settings ⚠️", self)
 
         # Disable SIP
         self.disable_sip_card = SwitchSettingCard(
@@ -522,7 +516,7 @@ class SettingsPage(QWidget):
 
     def create_smbios_group(self):
         """Create SMBIOS settings group using modern components"""
-        group = SettingCardGroup("SMBIOS Settings 🔑", self)
+        group = SettingCardGroup("SMBIOS Settings ⚠️", self)
 
         # Random SMBIOS
         self.random_smbios_card = SwitchSettingCard(
@@ -614,7 +608,7 @@ class SettingsPage(QWidget):
 
     def create_appearance_group(self):
         """Create appearance settings group using modern components"""
-        group = SettingCardGroup("Appearance 🎨", self)
+        group = SettingCardGroup("Appearance", self)
 
         # Theme setting
         theme_values = ["light", "dark"]
@@ -645,7 +639,7 @@ class SettingsPage(QWidget):
 
     def create_update_settings_group(self):
         """Create update & download settings group using modern components"""
-        group = SettingCardGroup("Updates & Downloads 📦", self)
+        group = SettingCardGroup("Updates & Downloads", self)
 
         # Auto-update check
         self.auto_update_card = SwitchSettingCard(
@@ -693,7 +687,7 @@ class SettingsPage(QWidget):
 
     def create_advanced_group(self):
         """Create advanced settings group using modern components"""
-        group = SettingCardGroup("Advanced Settings ⚙️", self)
+        group = SettingCardGroup("Advanced Settings ⚠️️", self)
 
         # Enable debug logging
         self.debug_logging_card = SwitchSettingCard(
@@ -738,11 +732,11 @@ class SettingsPage(QWidget):
         group.addSettingCard(self.force_kext_card)
 
         return group
-    
+
     def create_help_group(self):
         """Create help and documentation group with useful links"""
-        group = SettingCardGroup("Help & Documentation 📚", self)
-        
+        group = SettingCardGroup("Help & Documentation", self)
+
         # OpenCore Documentation
         self.opencore_docs_card = HyperlinkCard(
             "https://dortania.github.io/OpenCore-Install-Guide/",
@@ -753,7 +747,7 @@ class SettingsPage(QWidget):
             group
         )
         group.addSettingCard(self.opencore_docs_card)
-        
+
         # Troubleshooting Guide
         self.troubleshoot_card = HyperlinkCard(
             "https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/troubleshooting.html",
@@ -764,10 +758,10 @@ class SettingsPage(QWidget):
             group
         )
         group.addSettingCard(self.troubleshoot_card)
-        
+
         # GitHub Repository
         self.github_card = HyperlinkCard(
-            "https://github.com/rubentalstra/OpCore-Simplify",
+            "https://github.com/lzhoang2801/OpCore-Simplify",
             "View on GitHub",
             FluentIcon.GITHUB,
             "OpCore-Simplify Repository",
@@ -839,8 +833,8 @@ class SettingsPage(QWidget):
             if hasattr(self, 'picker_mode_card'):
                 self.picker_mode_card.setValue("Auto")
             self.hide_aux_card.switchButton.setChecked(False)
-            if hasattr(self, 'timeout_card'):
-                self.timeout_card.setValue(5)
+            if hasattr(self, 'timeout_spin'):
+                self.timeout_spin.setValue(5)
             if hasattr(self, 'picker_variant_card'):
                 self.picker_variant_card.setValue("Auto")
             self.disable_sip_card.switchButton.setChecked(True)
