@@ -8,13 +8,15 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 from qfluentwidgets import (
     ScrollArea, TitleLabel, BodyLabel, PushButton,
     LineEdit, FluentIcon, InfoBar, InfoBarPosition,
     SettingCardGroup, SwitchSettingCard, ComboBoxSettingCard,
     PushSettingCard, ExpandSettingCard, setTheme, Theme, SpinBox,
     OptionsConfigItem, OptionsValidator, qconfig, HyperlinkCard,
-    StrongBodyLabel, CaptionLabel
+    RangeSettingCard, StrongBodyLabel, CaptionLabel, ExpandLayout,
+    setFont, SettingCard
 )
 
 from ..styles import COLORS, SPACING
@@ -22,7 +24,7 @@ from ...settings import Settings
 from ...datasets import os_data
 
 
-class SettingsPage(QWidget):
+class SettingsPage(ScrollArea):
     """Comprehensive settings page for OpCore Simplify with all 27 settings"""
 
     def __init__(self, controller):
@@ -30,89 +32,91 @@ class SettingsPage(QWidget):
         self.controller = controller
         self.setObjectName("settingsPage")
         self.settings = Settings()
+        self.scrollWidget = QWidget()
+        self.expandLayout = ExpandLayout(self.scrollWidget)
         self.init_ui()
 
     def init_ui(self):
         """Initialize the UI with modern qfluentwidgets components"""
-        # Main layout with proper margins
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
-                                  SPACING['xxlarge'], SPACING['xlarge'])
-        layout.setSpacing(SPACING['large'])
+        self.resize(1000, 800)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setViewportMargins(0, 120, 0, 20)
+        self.setWidget(self.scrollWidget)
+        self.setWidgetResizable(True)
+        
+        # Enable transparent background for proper styling
+        self.enableTransparentBackground()
 
-        # Title
-        title_label = TitleLabel("Settings")
-        layout.addWidget(title_label)
+        # Title labels - positioned absolutely outside the scroll area
+        self.settingLabel = TitleLabel("Settings", self)
+        setFont(self.settingLabel, 28, QFont.Weight.DemiBold)
+        self.settingLabel.move(36, 30)
 
         # Subtitle with improved styling
-        subtitle_label = StrongBodyLabel(
-            "Configure OpCore Simplify preferences")
-        subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
-        layout.addWidget(subtitle_label)
-
+        self.subtitle_label = StrongBodyLabel(
+            "Configure OpCore Simplify preferences", self)
+        self.subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        self.subtitle_label.move(36, 70)
+        
         # Category count with helpful info
-        category_info = CaptionLabel(
-            "27 settings organized across 9 categories • Changes are saved automatically")
-        category_info.setStyleSheet(f"color: {COLORS['text_tertiary']};")
-        layout.addWidget(category_info)
+        self.category_info = CaptionLabel(
+            "27 settings organized across 9 categories • Changes are saved automatically", self)
+        self.category_info.setStyleSheet(f"color: {COLORS['text_tertiary']};")
+        self.category_info.move(36, 95)
 
-        layout.addSpacing(SPACING['medium'])
+        # Initialize layout for setting cards
+        self.__initLayout()
 
-        # Scroll area for settings
-        scroll = ScrollArea(self)
-        scroll.setWidgetResizable(True)
-        scroll_content = QWidget()
-        scroll_layout = QVBoxLayout(scroll_content)
-        scroll_layout.setSpacing(SPACING['medium'])
-        scroll_layout.setContentsMargins(0, 0, 0, 0)
+    def __initLayout(self):
+        """Initialize the expand layout with all setting groups"""
+        # Set layout spacing and margins
+        self.expandLayout.setSpacing(28)
+        self.expandLayout.setContentsMargins(36, 10, 36, 0)
 
         # Build Settings Group
         self.build_group = self.create_build_settings_group()
-        scroll_layout.addWidget(self.build_group)
+        self.expandLayout.addWidget(self.build_group)
 
         # Boot Arguments Group
         self.boot_group = self.create_boot_args_group()
-        scroll_layout.addWidget(self.boot_group)
+        self.expandLayout.addWidget(self.boot_group)
 
         # macOS Version Settings Group
         self.macos_group = self.create_macos_version_group()
-        scroll_layout.addWidget(self.macos_group)
+        self.expandLayout.addWidget(self.macos_group)
 
         # OpenCore Boot Picker Group
         self.picker_group = self.create_boot_picker_group()
-        scroll_layout.addWidget(self.picker_group)
+        self.expandLayout.addWidget(self.picker_group)
 
         # Security Settings Group
         self.security_group = self.create_security_group()
-        scroll_layout.addWidget(self.security_group)
+        self.expandLayout.addWidget(self.security_group)
 
         # SMBIOS Settings Group
         self.smbios_group = self.create_smbios_group()
-        scroll_layout.addWidget(self.smbios_group)
+        self.expandLayout.addWidget(self.smbios_group)
 
         # Appearance Group
         self.appearance_group = self.create_appearance_group()
-        scroll_layout.addWidget(self.appearance_group)
+        self.expandLayout.addWidget(self.appearance_group)
 
         # Update & Download Settings Group
         self.update_group = self.create_update_settings_group()
-        scroll_layout.addWidget(self.update_group)
+        self.expandLayout.addWidget(self.update_group)
 
         # Advanced Settings Group
         self.advanced_group = self.create_advanced_group()
-        scroll_layout.addWidget(self.advanced_group)
-
+        self.expandLayout.addWidget(self.advanced_group)
+        
         # Documentation and Help Group
         self.help_group = self.create_help_group()
-        scroll_layout.addWidget(self.help_group)
-
-        scroll_layout.addStretch()
-        scroll.setWidget(scroll_content)
-        layout.addWidget(scroll)
+        self.expandLayout.addWidget(self.help_group)
 
         # Bottom section with version and reset button
-        bottom_layout = QHBoxLayout()
-        bottom_layout.setContentsMargins(0, SPACING['large'], 0, 0)
+        self.bottom_widget = QWidget()
+        bottom_layout = QHBoxLayout(self.bottom_widget)
+        bottom_layout.setContentsMargins(0, SPACING['large'], 0, SPACING['large'])
         bottom_layout.setSpacing(SPACING['medium'])
 
         # Version information with better styling
@@ -132,16 +136,21 @@ class SettingsPage(QWidget):
         bottom_layout.addStretch()
 
         # Reset button
-        reset_btn = PushButton("Reset All to Defaults", self)
+        reset_btn = PushButton("Reset All to Defaults", self.bottom_widget)
         reset_btn.setIcon(FluentIcon.CANCEL)
         reset_btn.clicked.connect(self.reset_to_defaults)
         bottom_layout.addWidget(reset_btn)
 
-        layout.addLayout(bottom_layout)
+        self.expandLayout.addWidget(self.bottom_widget)
+
+        # Adjust icon size for all setting cards (must be done after all cards are added)
+        # ExpandSettingCard inherits from QScrollArea, not SettingCard, so it won't be affected
+        for card in self.findChildren(SettingCard):
+            card.setIconSize(18, 18)
 
     def create_build_settings_group(self):
         """Create build settings group using modern components"""
-        group = SettingCardGroup("Build Settings", self)
+        group = SettingCardGroup("Build Settings 🔨", self.scrollWidget)
 
         # Output directory setting
         self.output_dir_card = PushSettingCard(
@@ -187,7 +196,7 @@ class SettingsPage(QWidget):
 
     def create_boot_args_group(self):
         """Create boot arguments group using modern components"""
-        group = SettingCardGroup("Boot Arguments", self)
+        group = SettingCardGroup("Boot Arguments 🚀", self.scrollWidget)
 
         # Verbose boot setting
         self.verbose_boot_card = SwitchSettingCard(
@@ -226,7 +235,7 @@ class SettingsPage(QWidget):
 
     def create_macos_version_group(self):
         """Create macOS version settings group using modern components"""
-        group = SettingCardGroup("macOS Version Settings", self)
+        group = SettingCardGroup("macOS Version Settings 🍎", self.scrollWidget)
 
         # Include beta versions
         self.include_beta_card = SwitchSettingCard(
@@ -342,7 +351,7 @@ class SettingsPage(QWidget):
 
     def create_boot_picker_group(self):
         """Create OpenCore boot picker settings group using modern components"""
-        group = SettingCardGroup("OpenCore Boot Picker", self)
+        group = SettingCardGroup("OpenCore Boot Picker ⏸️", self.scrollWidget)
 
         # Show picker
         self.show_picker_card = SwitchSettingCard(
@@ -446,7 +455,7 @@ class SettingsPage(QWidget):
 
     def create_security_group(self):
         """Create security settings group using modern components"""
-        group = SettingCardGroup("Security Settings ⚠️", self)
+        group = SettingCardGroup("Security Settings 🔒", self.scrollWidget)
 
         # Disable SIP
         self.disable_sip_card = SwitchSettingCard(
@@ -516,7 +525,7 @@ class SettingsPage(QWidget):
 
     def create_smbios_group(self):
         """Create SMBIOS settings group using modern components"""
-        group = SettingCardGroup("SMBIOS Settings ⚠️", self)
+        group = SettingCardGroup("SMBIOS Settings 🔑", self.scrollWidget)
 
         # Random SMBIOS
         self.random_smbios_card = SwitchSettingCard(
@@ -608,7 +617,7 @@ class SettingsPage(QWidget):
 
     def create_appearance_group(self):
         """Create appearance settings group using modern components"""
-        group = SettingCardGroup("Appearance", self)
+        group = SettingCardGroup("Appearance 🎨", self.scrollWidget)
 
         # Theme setting
         theme_values = ["light", "dark"]
@@ -639,7 +648,7 @@ class SettingsPage(QWidget):
 
     def create_update_settings_group(self):
         """Create update & download settings group using modern components"""
-        group = SettingCardGroup("Updates & Downloads", self)
+        group = SettingCardGroup("Updates & Downloads 📦", self.scrollWidget)
 
         # Auto-update check
         self.auto_update_card = SwitchSettingCard(
@@ -687,7 +696,7 @@ class SettingsPage(QWidget):
 
     def create_advanced_group(self):
         """Create advanced settings group using modern components"""
-        group = SettingCardGroup("Advanced Settings ⚠️️", self)
+        group = SettingCardGroup("Advanced Settings ⚙️", self.scrollWidget)
 
         # Enable debug logging
         self.debug_logging_card = SwitchSettingCard(
@@ -735,8 +744,8 @@ class SettingsPage(QWidget):
 
     def create_help_group(self):
         """Create help and documentation group with useful links"""
-        group = SettingCardGroup("Help & Documentation", self)
-
+        group = SettingCardGroup("Help & Documentation 📚", self.scrollWidget)
+        
         # OpenCore Documentation
         self.opencore_docs_card = HyperlinkCard(
             "https://dortania.github.io/OpenCore-Install-Guide/",
