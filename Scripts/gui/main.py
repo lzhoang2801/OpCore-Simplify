@@ -36,7 +36,8 @@ class ConsoleRedirector(QObject):
     """Thread-safe stream redirector that feeds ConsolePage metrics and keeps stdout/stderr mirrored."""
 
     append_text_signal = pyqtSignal(str, str)
-    LEVEL_PATTERN = re.compile(r"\[(info|warning|error|debug)\]", re.IGNORECASE)
+    LEVEL_PATTERN = re.compile(
+        r"\[(info|warning|error|debug)\]", re.IGNORECASE)
 
     def __init__(self, controller, original_stdout=None, default_level="Info"):
         super().__init__()
@@ -100,13 +101,16 @@ class ConsoleRedirector(QObject):
 
 class OpCoreGUI(FluentWindow):
     """Main GUI application with modern sidebar layout using qfluentwidgets"""
-    
+
     # Signals for thread-safe GUI operations
-    gui_prompt_signal = pyqtSignal(str, str, object, object)  # prompt_type, prompt_text, options, result_holder
+    # prompt_type, prompt_text, options, result_holder
+    gui_prompt_signal = pyqtSignal(str, str, object, object)
     update_status_signal = pyqtSignal(str, str)  # message, status_type
-    update_build_progress_signal = pyqtSignal(str, list, int, int, bool)  # title, steps, current_step_index, progress, done
+    # title, steps, current_step_index, progress, done
+    update_build_progress_signal = pyqtSignal(str, list, int, int, bool)
     update_gathering_progress_signal = pyqtSignal(dict)  # progress_info dict
-    log_message_signal = pyqtSignal(str, str, bool, bool)  # message, level, to_console, to_build_log
+    # message, level, to_console, to_build_log
+    log_message_signal = pyqtSignal(str, str, bool, bool)
 
     def __init__(self, ocpe_instance):
         """
@@ -174,22 +178,24 @@ class OpCoreGUI(FluentWindow):
 
         # Console redirection
         self.console_redirected = False
-        
+
         # Connect signals to slots for thread-safe GUI operations
         self.gui_prompt_signal.connect(self._handle_gui_prompt_on_main_thread)
         self.update_status_signal.connect(self.update_status)
-        self.update_build_progress_signal.connect(self._update_build_progress_on_main_thread)
-        self.update_gathering_progress_signal.connect(self._update_gathering_progress_on_main_thread)
+        self.update_build_progress_signal.connect(
+            self._update_build_progress_on_main_thread)
+        self.update_gathering_progress_signal.connect(
+            self._update_gathering_progress_on_main_thread)
         self.log_message_signal.connect(self._log_message_on_main_thread)
 
         # Set up GUI handlers - using new direct handler approach
         self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
-        
+
         # Set gui_handler to self for all utils instances (new direct dialog approach)
         self.ocpe.u.gui_handler = self
         self.ocpe.u.gui_progress_callback = self.update_build_progress_threadsafe
         self.ocpe.u.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
-        
+
         self.ocpe.h.utils.gui_handler = self
         self.ocpe.k.utils.gui_handler = self
         self.ocpe.c.utils.gui_handler = self
@@ -197,7 +203,7 @@ class OpCoreGUI(FluentWindow):
         self.ocpe.o.utils.gui_handler = self
         self.ocpe.o.utils.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
         self.ocpe.ac.utils.gui_handler = self
-        
+
         # Keep old gui_callback for backward compatibility during migration
         self.ocpe.u.gui_callback = self.handle_gui_prompt_threadsafe
         self.ocpe.h.utils.gui_callback = self.handle_gui_prompt_threadsafe
@@ -237,16 +243,16 @@ class OpCoreGUI(FluentWindow):
                              "Home", NavigationItemPosition.TOP)
         self.addSubInterface(self.uploadPage, FluentIcon.FOLDER_ADD,
                              "1. Upload Report", NavigationItemPosition.TOP)
-        self.addSubInterface(self.compatibilityPage, FluentIcon.SEARCH,
+        self.addSubInterface(self.compatibilityPage, FluentIcon.CHECKBOX,
                              "2. Compatibility", NavigationItemPosition.TOP)
-        self.addSubInterface(self.configurationPage, FluentIcon.SETTING,
+        self.addSubInterface(self.configurationPage, FluentIcon.EDIT,
                              "3. Configuration", NavigationItemPosition.TOP)
         self.addSubInterface(self.buildPage, FluentIcon.DEVELOPER_TOOLS,
                              "4. Build EFI", NavigationItemPosition.TOP)
 
         # Add tools section
         self.navigationInterface.addSeparator()
-        self.addSubInterface(self.consolePage, FluentIcon.DOCUMENT,
+        self.addSubInterface(self.consolePage, FluentIcon.CODE,
                              "Console Log", NavigationItemPosition.BOTTOM)
         self.addSubInterface(self.settingsPage, FluentIcon.SETTING,
                              "Settings", NavigationItemPosition.BOTTOM)
@@ -273,9 +279,11 @@ class OpCoreGUI(FluentWindow):
     def log_message(self, message, level="Info", *, to_console=True, to_build_log=True):
         """Log a message to console dashboard and/or build log in a thread-safe way."""
         if threading.current_thread() != threading.main_thread():
-            self.log_message_signal.emit(message, level, to_console, to_build_log)
+            self.log_message_signal.emit(
+                message, level, to_console, to_build_log)
             return
-        self._log_message_on_main_thread(message, level, to_console, to_build_log)
+        self._log_message_on_main_thread(
+            message, level, to_console, to_build_log)
 
     def _log_message_on_main_thread(self, message, level, to_console, to_build_log):
         lines = message.splitlines()
@@ -292,7 +300,8 @@ class OpCoreGUI(FluentWindow):
 
     def _dispatch_backend_log(self, message, level="Info", to_build_log=False):
         """Callback passed to backend utils to surface logs in the GUI."""
-        self.log_message(message, level, to_console=True, to_build_log=to_build_log)
+        self.log_message(message, level, to_console=True,
+                         to_build_log=to_build_log)
 
     def update_status(self, message, status_type='info'):
         """Update the status using InfoBar"""
@@ -420,7 +429,8 @@ class OpCoreGUI(FluentWindow):
             # WiFi network count selection dialog - the only WiFi dialog we actually need
             if options:
                 total_networks = options.get('total_networks', 5)
-                count, ok = show_wifi_network_count_dialog(self, total_networks)
+                count, ok = show_wifi_network_count_dialog(
+                    self, total_networks)
                 return (count, ok)
             return (None, False)
 
@@ -431,7 +441,7 @@ class OpCoreGUI(FluentWindow):
                 available_layouts = options.get('available_layouts', [])
                 default_layout = options.get('default_layout')
                 recommended_layouts = options.get('recommended_layouts', [])
-                
+
                 layout_id, ok = show_codec_layout_dialog(
                     self, codec_id, available_layouts, default_layout, recommended_layouts)
                 return (layout_id, ok)
@@ -445,20 +455,21 @@ class OpCoreGUI(FluentWindow):
         if threading.current_thread() == threading.main_thread():
             # We're on the main thread, call directly
             return self.handle_gui_prompt(prompt_type, prompt_text, options)
-        
+
         # We're on a background thread, use signal to invoke on main thread
         # Use threading.Event for proper synchronization
         result_holder = {'result': None}
         event = threading.Event()
-        
+
         # Emit signal to main thread
-        self.gui_prompt_signal.emit(prompt_type, prompt_text, options, (result_holder, event))
-        
+        self.gui_prompt_signal.emit(
+            prompt_type, prompt_text, options, (result_holder, event))
+
         # Wait for result from main thread without timeout - dialogs should wait for user interaction
         event.wait(timeout=None)
-        
+
         return result_holder['result']
-    
+
     def _handle_gui_prompt_on_main_thread(self, prompt_type, prompt_text, options, holder_tuple):
         """Slot that handles GUI prompts on the main thread"""
         result_holder, event = holder_tuple
@@ -579,7 +590,8 @@ class OpCoreGUI(FluentWindow):
                 else:
                     error_message = "Unknown error."
 
-                self.update_status_signal.emit(f"Export failed: {error_message}", 'error')
+                self.update_status_signal.emit(
+                    f"Export failed: {error_message}", 'error')
             else:
                 report_path = os.path.join(report_dir, "Report.json")
                 acpitables_dir = os.path.join(report_dir, "ACPI")
@@ -621,12 +633,14 @@ class OpCoreGUI(FluentWindow):
         def build_thread():
             try:
                 # Gather bootloader and kexts (uses Darwin version)
-                self.update_status_signal.emit("Gathering bootloader and kexts...", 'info')
+                self.update_status_signal.emit(
+                    "Gathering bootloader and kexts...", 'info')
                 self.ocpe.o.gather_bootloader_kexts(
                     self.ocpe.k.kexts, self.macos_version)
 
                 # Build EFI (uses Darwin version)
-                self.update_status_signal.emit("Building OpenCore EFI...", 'info')
+                self.update_status_signal.emit(
+                    "Building OpenCore EFI...", 'info')
                 self.ocpe.build_opencore_efi(
                     self.customized_hardware,
                     self.disabled_devices,
@@ -642,12 +656,14 @@ class OpCoreGUI(FluentWindow):
                 QTimer.singleShot(0, self.show_before_using_efi_dialog)
 
             except Exception as e:
-                self.update_status_signal.emit(f"Build failed: {str(e)}", 'error')
+                self.update_status_signal.emit(
+                    f"Build failed: {str(e)}", 'error')
                 import traceback
                 print(traceback.format_exc())
                 # Re-enable build button on error
                 if self.build_btn:
-                    QTimer.singleShot(0, lambda: self.build_btn.setEnabled(True))
+                    QTimer.singleShot(
+                        0, lambda: self.build_btn.setEnabled(True))
 
         thread = threading.Thread(target=build_thread, daemon=True)
         thread.start()
@@ -661,71 +677,82 @@ class OpCoreGUI(FluentWindow):
         else:
             # We're on a background thread, use signal to invoke on main thread
             self.update_gathering_progress_signal.emit(progress_info)
-    
+
     def _update_gathering_progress_on_main_thread(self, progress_info):
         """Slot that handles gathering progress updates on the main thread"""
         self.update_gathering_progress(progress_info)
-    
+
     def update_gathering_progress(self, progress_info):
         """Update gathering files progress in GUI"""
         current = progress_info.get('current', 0)
         total = progress_info.get('total', 1)
         product_name = progress_info.get('product_name', '')
         status = progress_info.get('status', 'downloading')
-        
+
         # Update progress bar
         if self.progress_bar:
             progress_percent = int((current / total) * 100) if total > 0 else 0
             self.progress_bar.setValue(progress_percent)
-        
+
         # Update progress label
         if self.progress_label:
             if status == 'complete':
-                self.progress_label.setText("✓ All files gathered successfully!")
+                self.progress_label.setText(
+                    "✓ All files gathered successfully!")
             elif status == 'downloading':
-                self.progress_label.setText(f"⬇ Downloading {current}/{total}: {product_name}")
+                self.progress_label.setText(
+                    f"⬇ Downloading {current}/{total}: {product_name}")
             elif status == 'processing':
-                self.progress_label.setText(f"✓ Processing {current}/{total}: {product_name}")
-        
+                self.progress_label.setText(
+                    f"✓ Processing {current}/{total}: {product_name}")
+
         if status == 'complete':
-            self.log_message("\n✓ All files gathered successfully!", to_build_log=True)
+            self.log_message(
+                "\n✓ All files gathered successfully!", to_build_log=True)
         elif status == 'downloading':
-            self.log_message(f"⬇ {current}/{total}: {product_name}", to_build_log=True)
-    
+            self.log_message(
+                f"⬇ {current}/{total}: {product_name}", to_build_log=True)
+
     def update_build_progress_threadsafe(self, title, steps, current_step_index, progress, done):
         """Thread-safe wrapper for update_build_progress that can be called from any thread"""
         # Check if we're on the main thread
         if threading.current_thread() == threading.main_thread():
             # We're on the main thread, call directly
-            self.update_build_progress(title, steps, current_step_index, progress, done)
+            self.update_build_progress(
+                title, steps, current_step_index, progress, done)
         else:
             # We're on a background thread, use signal to invoke on main thread
-            self.update_build_progress_signal.emit(title, steps, current_step_index, progress, done)
-    
+            self.update_build_progress_signal.emit(
+                title, steps, current_step_index, progress, done)
+
     def _update_build_progress_on_main_thread(self, title, steps, current_step_index, progress, done):
         """Slot that handles build progress updates on the main thread"""
-        self.update_build_progress(title, steps, current_step_index, progress, done)
+        self.update_build_progress(
+            title, steps, current_step_index, progress, done)
 
     def update_build_progress(self, title, steps, current_step_index, progress, done):
         """Update build progress in GUI"""
         # Update progress bar
         if self.progress_bar:
             self.progress_bar.setValue(progress)
-        
+
         # Update progress label
         if self.progress_label:
             if done:
                 self.progress_label.setText(f"✓ {title} - Complete!")
             else:
-                step_text = steps[current_step_index] if current_step_index < len(steps) else "Processing"
+                step_text = steps[current_step_index] if current_step_index < len(
+                    steps) else "Processing"
                 self.progress_label.setText(f"⚙ {step_text}...")
-        
+
         if done:
             self.log_message(f"\n✓ {title} - Complete!", to_build_log=True)
             for step in steps:
-                self.log_message(f"  ✓ {step}", to_console=False, to_build_log=True)
+                self.log_message(
+                    f"  ✓ {step}", to_console=False, to_build_log=True)
         else:
-            step_text = steps[current_step_index] if current_step_index < len(steps) else "Processing"
+            step_text = steps[current_step_index] if current_step_index < len(
+                steps) else "Processing"
             self.log_message(f"\n> {step_text}...", to_build_log=True)
 
     def show_before_using_efi_dialog(self):
@@ -733,22 +760,22 @@ class OpCoreGUI(FluentWindow):
         # Calculate BIOS requirements
         bios_requirements = self.ocpe.check_bios_requirements(
             self.hardware_report_data, self.customized_hardware)
-        
+
         # Show the dialog
         result = show_before_using_efi_dialog(
             self, bios_requirements, self.ocpe.result_dir)
-        
+
         if result:
             # User agreed - open the result folder if setting is enabled
             from Scripts.settings import Settings
             settings = Settings()
             if settings.get_open_folder_after_build():
                 self.ocpe.u.open_folder(self.ocpe.result_dir)
-            
+
             # Enable the open result button
             if self.open_result_btn:
                 self.open_result_btn.setEnabled(True)
-        
+
         # Re-enable the build button for next build
         if self.build_btn:
             self.build_btn.setEnabled(True)

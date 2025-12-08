@@ -4,10 +4,10 @@ Step 2: Compatibility checker - qfluentwidgets version
 from ...datasets import os_data, pci_data
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QColor
 from qfluentwidgets import (
     PushButton, SubtitleLabel, BodyLabel, CardWidget, TextEdit,
-    StrongBodyLabel, ScrollArea, FluentIcon, IconWidget, GroupHeaderCardWidget,
+    StrongBodyLabel, ScrollArea, FluentIcon, GroupHeaderCardWidget,
     TitleLabel, setFont
 )
 
@@ -37,6 +37,14 @@ def create_info_widget(text, color=None):
     if color:
         label.setStyleSheet(f"color: {color};")
     return label
+
+
+def colored_icon(icon, color_hex):
+    """Return a Fluent icon tinted for both light and dark themes"""
+    if not icon or not color_hex:
+        return icon
+    tint = QColor(color_hex)
+    return icon.colored(tint, tint)
 
 
 def add_group_with_indent(card, icon, title, content, widget=None, indent_level=0):
@@ -78,11 +86,11 @@ def get_compatibility_icon(compat_tuple):
         compat_tuple: Compatibility tuple (max_version, min_version) or (None, None)
 
     Returns:
-        FluentIcon: ACCEPT for supported, CANCEL for unsupported
+        FluentIcon: ACCEPT for supported, CLOSE for unsupported
     """
     if not compat_tuple or compat_tuple == (None, None):
-        return FluentIcon.CANCEL  # Unsupported
-    return FluentIcon.ACCEPT  # Supported
+        return colored_icon(FluentIcon.CLOSE, COLORS['error'])
+    return colored_icon(FluentIcon.ACCEPT, COLORS['success'])
 
 
 class CompatibilityPage(ScrollArea):
@@ -94,6 +102,11 @@ class CompatibilityPage(ScrollArea):
         self.controller = parent
         self.scrollWidget = QWidget()
         self.expandLayout = QVBoxLayout()
+        self.contentWidget = None
+        self.contentLayout = None
+        self.version_support_container = None
+        self.native_support_label = None
+        self.ocl_support_label = None
         # Explicitly set the layout on the scroll widget to ensure proper display
         self.scrollWidget.setLayout(self.expandLayout)
         self.setup_ui()
@@ -116,132 +129,116 @@ class CompatibilityPage(ScrollArea):
         """Initialize the expand layout with compatibility cards"""
         # Set layout spacing and margins
         self.expandLayout.setSpacing(SPACING['large'])
-        self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
+        self.expandLayout.setContentsMargins(
+            SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
 
         # Step indicator
         step_label = BodyLabel("STEP 2 OF 4")
-        step_label.setStyleSheet(f"color: {COLORS['primary']}; font-weight: bold;")
+        step_label.setStyleSheet(
+            f"color: {COLORS['primary']}; font-weight: bold;")
         self.expandLayout.addWidget(step_label)
 
         # Header section with title and description
         header_container = QWidget()
-        header_layout = QVBoxLayout(header_container)
+        header_layout = QHBoxLayout(header_container)
         header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(SPACING['tiny'])
+        header_layout.setSpacing(SPACING['large'])
+
+        title_block = QWidget()
+        title_layout = QVBoxLayout(title_block)
+        title_layout.setContentsMargins(0, 0, 0, 0)
+        title_layout.setSpacing(SPACING['tiny'])
 
         title_label = SubtitleLabel("Hardware Compatibility")
-        header_layout.addWidget(title_label)
+        title_layout.addWidget(title_label)
 
         subtitle_label = BodyLabel("Review hardware compatibility with macOS")
         subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
-        header_layout.addWidget(subtitle_label)
+        title_layout.addWidget(subtitle_label)
+
+        header_layout.addWidget(title_block, 1)
+
+        self.version_support_container = QWidget()
+        self.version_support_container.setVisible(False)
+        support_layout = QVBoxLayout(self.version_support_container)
+        support_layout.setContentsMargins(0, 0, 0, 0)
+        support_layout.setSpacing(SPACING['tiny'])
+
+        support_title = StrongBodyLabel("macOS Support Range")
+        support_title.setStyleSheet(
+            f"color: {COLORS['primary']}; font-size: 13px;")
+        support_title.setAlignment(Qt.AlignmentFlag.AlignRight)
+        support_layout.addWidget(support_title)
+
+        self.native_support_label = StrongBodyLabel("")
+        self.native_support_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.native_support_label.setWordWrap(True)
+        support_layout.addWidget(self.native_support_label)
+
+        self.ocl_support_label = BodyLabel("")
+        self.ocl_support_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.ocl_support_label.setWordWrap(True)
+        support_layout.addWidget(self.ocl_support_label)
+
+        header_layout.addWidget(
+            self.version_support_container, 0, Qt.AlignmentFlag.AlignTop)
 
         self.expandLayout.addWidget(header_container)
         self.expandLayout.addSpacing(SPACING['large'])
 
-        # macOS version support card - positioned at the top of content area
-        self.macos_version_card = CardWidget(self.scrollWidget)
-        self.macos_version_card.setFixedWidth(320)
-        self.macos_version_card.setVisible(
-            False)  # Hidden until data is loaded
-
-        version_card_layout = QVBoxLayout(self.macos_version_card)
-        version_card_layout.setContentsMargins(SPACING['medium'], SPACING['medium'],
-                                               SPACING['medium'], SPACING['medium'])
-        version_card_layout.setSpacing(SPACING['small'])
-
-        self.version_card_title = StrongBodyLabel("macOS Version Support")
-        self.version_card_title.setStyleSheet(
-            f"color: {COLORS['primary']}; font-size: 14px;")
-        version_card_layout.addWidget(self.version_card_title)
-
-        self.version_card_content = QVBoxLayout()
-        self.version_card_content.setSpacing(SPACING['small'])
-        version_card_layout.addLayout(self.version_card_content)
-
-        self.expandLayout.addWidget(self.macos_version_card)
+        # Dynamic content container that holds all compatibility cards
+        self.contentWidget = QWidget()
+        self.contentLayout = QVBoxLayout(self.contentWidget)
+        self.contentLayout.setContentsMargins(0, 0, 0, 0)
+        self.contentLayout.setSpacing(SPACING['large'])
+        self.expandLayout.addWidget(self.contentWidget)
 
         # Placeholder message (will be replaced when hardware report is loaded)
         self.placeholder_label = BodyLabel(
             "Load a hardware report to see compatibility information")
         self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.placeholder_label.setStyleSheet("color: #605E5C; padding: 40px;")
-        self.expandLayout.addWidget(self.placeholder_label)
+        self.placeholder_label.setWordWrap(True)
+        self.contentLayout.addWidget(self.placeholder_label)
+        self.contentLayout.addStretch()
 
     def update_macos_version_card(self):
-        """Update the macOS version support card in the header"""
-        # Clear existing content (widgets and spacers)
-        while self.version_card_content.count() > 0:
-            item = self.version_card_content.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-
-        if not self.controller.native_macos_version:
-            self.macos_version_card.setVisible(False)
+        """Update the macOS version support text in the header"""
+        if not self.version_support_container:
             return
 
-        # Show the card
-        self.macos_version_card.setVisible(True)
-
-        def create_support_row(title, version_text, icon, color):
-            """Compact row with icon, label, and value to keep card minimal"""
-            row_widget = QWidget()
-            row_layout = QHBoxLayout(row_widget)
-            row_layout.setContentsMargins(0, 0, 0, 0)
-            row_layout.setSpacing(SPACING['small'])
-
-            icon_widget = IconWidget(icon)
-            icon_widget.setFixedSize(18, 18)
-            row_layout.addWidget(icon_widget)
-
-            text_layout = QVBoxLayout()
-            text_layout.setContentsMargins(0, 0, 0, 0)
-            text_layout.setSpacing(0)
-
-            title_label = BodyLabel(title)
-            title_label.setStyleSheet(
-                f"color: {COLORS['text_secondary']}; font-weight: 500;")
-            text_layout.addWidget(title_label)
-
-            value_label = StrongBodyLabel(version_text)
-            value_label.setStyleSheet(f"color: {color}; font-size: 13px;")
-            value_label.setWordWrap(True)
-            text_layout.addWidget(value_label)
-
-            row_layout.addLayout(text_layout)
-            row_layout.addStretch()
-            return row_widget
+        if not self.controller.native_macos_version:
+            self.version_support_container.setVisible(False)
+            self.native_support_label.setText("")
+            self.ocl_support_label.setText("")
+            return
 
         # native_macos_version tuple format: (min_version, max_version)
-        # Index [0] = earliest supported version
-        # Index [-1] = latest supported version
         min_ver_name = os_data.get_macos_name_by_darwin(
             self.controller.native_macos_version[0])
         max_ver_name = os_data.get_macos_name_by_darwin(
             self.controller.native_macos_version[-1])
 
         native_range = min_ver_name if min_ver_name == max_ver_name else f"{min_ver_name} to {max_ver_name}"
-        self.version_card_content.addWidget(
-            create_support_row("Native Support", native_range,
-                               FluentIcon.ACCEPT, COLORS['success'])
-        )
+        self.native_support_label.setText(f"Native: {native_range}")
+        self.native_support_label.setStyleSheet(
+            f"color: {COLORS['success']}; font-size: 13px;")
 
-        # Add OCLP info if available
         if self.controller.ocl_patched_macos_version:
-            self.version_card_content.addSpacing(SPACING['small'])
-
-            # ocl_patched_macos_version tuple format: (max_version, min_version)
-            # Index [0] = latest supported version
-            # Index [-1] = earliest supported version
             oclp_max_name = os_data.get_macos_name_by_darwin(
                 self.controller.ocl_patched_macos_version[0])
             oclp_min_name = os_data.get_macos_name_by_darwin(
                 self.controller.ocl_patched_macos_version[-1])
             oclp_range = oclp_min_name if oclp_min_name == oclp_max_name else f"{oclp_min_name} to {oclp_max_name}"
-            self.version_card_content.addWidget(
-                create_support_row("OCLP Extended", oclp_range,
-                                   FluentIcon.IOT, COLORS['primary'])
-            )
+            self.ocl_support_label.setText(f"OCLP: {oclp_range}")
+            self.ocl_support_label.setStyleSheet(
+                f"color: {COLORS['primary']}; font-size: 12px;")
+            self.ocl_support_label.setVisible(True)
+        else:
+            self.ocl_support_label.setVisible(False)
+            self.ocl_support_label.setText("")
+
+        self.version_support_container.setVisible(True)
 
     def format_compatibility(self, compat_tuple):
         """
@@ -269,30 +266,27 @@ class CompatibilityPage(ScrollArea):
 
     def update_display(self):
         """Update compatibility display with GroupHeaderCardWidget for better organization"""
-        # Clear existing cards (except the macOS version card which should be the first widget)
-        # Collect all widgets to remove (keeping track of which to preserve)
-        widgets_to_remove = []
+        if not self.contentLayout:
+            return
 
-        for i in range(self.expandLayout.count()):
-            item = self.expandLayout.itemAt(i)
-            if item and item.widget():
-                widget = item.widget()
-                # Keep the macOS version card, remove everything else
-                if widget != self.macos_version_card:
-                    widgets_to_remove.append(widget)
-
-        # Now remove all the widgets we identified
-        for widget in widgets_to_remove:
-            self.expandLayout.removeWidget(widget)
-            widget.deleteLater()
+        # Clear existing dynamic content
+        while self.contentLayout.count() > 0:
+            item = self.contentLayout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
 
         if not self.controller.hardware_report:
+            if self.version_support_container:
+                self.version_support_container.setVisible(False)
             self.placeholder_label = BodyLabel(
                 "Load a hardware report to see compatibility information")
             self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.placeholder_label.setStyleSheet(
                 "color: #605E5C; padding: 40px;")
-            self.expandLayout.addWidget(self.placeholder_label)
+            self.placeholder_label.setWordWrap(True)
+            self.contentLayout.addWidget(self.placeholder_label)
+            self.contentLayout.addStretch()
             return
 
         report = self.controller.hardware_report
@@ -309,7 +303,7 @@ class CompatibilityPage(ScrollArea):
                 name = cpu_info.get('Processor Name', 'Unknown')
                 add_group_with_indent(
                     cpu_card,
-                    FluentIcon.TAG,
+                    colored_icon(FluentIcon.TAG, COLORS['primary']),
                     "Processor",
                     name,
                     indent_level=0
@@ -337,13 +331,13 @@ class CompatibilityPage(ScrollArea):
                 if details:
                     add_group_with_indent(
                         cpu_card,
-                        FluentIcon.INFO,
+                        colored_icon(FluentIcon.INFO, COLORS['info']),
                         "Details",
                         " • ".join(details),
                         indent_level=1
                     )
 
-            self.expandLayout.addWidget(cpu_card)
+            self.contentLayout.addWidget(cpu_card)
             cards_added += 1
 
         # GPU Card
@@ -356,7 +350,7 @@ class CompatibilityPage(ScrollArea):
                 device_type = gpu_info.get('Device Type', 'Unknown')
                 add_group_with_indent(
                     gpu_card,
-                    FluentIcon.PHOTO,
+                    colored_icon(FluentIcon.PHOTO, COLORS['primary']),
                     gpu_name,
                     f"Type: {device_type}",
                     indent_level=0
@@ -381,7 +375,7 @@ class CompatibilityPage(ScrollArea):
                         oclp_compat)
                     add_group_with_indent(
                         gpu_card,
-                        FluentIcon.IOT,
+                        colored_icon(FluentIcon.IOT, COLORS['primary']),
                         "OCLP Compatibility",
                         oclp_text,
                         create_info_widget(
@@ -402,13 +396,13 @@ class CompatibilityPage(ScrollArea):
                     if connected_monitors:
                         add_group_with_indent(
                             gpu_card,
-                            FluentIcon.VIEW,
+                            colored_icon(FluentIcon.VIEW, COLORS['info']),
                             "Connected Displays",
                             ", ".join(connected_monitors),
                             indent_level=1
                         )
 
-            self.expandLayout.addWidget(gpu_card)
+            self.contentLayout.addWidget(gpu_card)
             cards_added += 1
 
         # Sound Card
@@ -420,7 +414,7 @@ class CompatibilityPage(ScrollArea):
                 # Audio Device group (main item - no indent)
                 add_group_with_indent(
                     sound_card,
-                    FluentIcon.MUSIC,
+                    colored_icon(FluentIcon.MUSIC, COLORS['primary']),
                     audio_device,
                     "",
                     indent_level=0
@@ -443,13 +437,13 @@ class CompatibilityPage(ScrollArea):
                 if endpoints:
                     add_group_with_indent(
                         sound_card,
-                        FluentIcon.HEADPHONE,
+                        colored_icon(FluentIcon.HEADPHONE, COLORS['info']),
                         "Audio Endpoints",
                         ", ".join(endpoints),
                         indent_level=1
                     )
 
-            self.expandLayout.addWidget(sound_card)
+            self.contentLayout.addWidget(sound_card)
             cards_added += 1
 
         # Network Card
@@ -461,7 +455,7 @@ class CompatibilityPage(ScrollArea):
                 # Network Device group (main item - no indent)
                 add_group_with_indent(
                     network_card,
-                    FluentIcon.WIFI,
+                    colored_icon(FluentIcon.WIFI, COLORS['primary']),
                     device_name,
                     "",
                     indent_level=0
@@ -486,7 +480,7 @@ class CompatibilityPage(ScrollArea):
                         oclp_compat)
                     add_group_with_indent(
                         network_card,
-                        FluentIcon.IOT,
+                        colored_icon(FluentIcon.IOT, COLORS['primary']),
                         "OCLP Compatibility",
                         oclp_text,
                         create_info_widget(
@@ -513,14 +507,14 @@ class CompatibilityPage(ScrollArea):
                     if continuity_info:
                         add_group_with_indent(
                             network_card,
-                            FluentIcon.SYNC,
+                            colored_icon(FluentIcon.SYNC, continuity_color),
                             "Continuity Features",
                             continuity_info,
                             create_info_widget("", continuity_color),
                             indent_level=1
                         )
 
-            self.expandLayout.addWidget(network_card)
+            self.contentLayout.addWidget(network_card)
             cards_added += 1
 
         # Storage Controllers Card
@@ -532,7 +526,7 @@ class CompatibilityPage(ScrollArea):
                 # Storage Controller group (main item - no indent)
                 add_group_with_indent(
                     storage_card,
-                    FluentIcon.FOLDER,
+                    colored_icon(FluentIcon.FOLDER, COLORS['primary']),
                     controller_name,
                     "",
                     indent_level=0
@@ -550,7 +544,7 @@ class CompatibilityPage(ScrollArea):
                     indent_level=1
                 )
 
-            self.expandLayout.addWidget(storage_card)
+            self.contentLayout.addWidget(storage_card)
             cards_added += 1
 
         # Bluetooth Card
@@ -562,7 +556,7 @@ class CompatibilityPage(ScrollArea):
                 # Bluetooth Device group (main item - no indent)
                 add_group_with_indent(
                     bluetooth_card,
-                    FluentIcon.BLUETOOTH,
+                    colored_icon(FluentIcon.BLUETOOTH, COLORS['primary']),
                     bluetooth_name,
                     "",
                     indent_level=0
@@ -580,7 +574,7 @@ class CompatibilityPage(ScrollArea):
                     indent_level=1
                 )
 
-            self.expandLayout.addWidget(bluetooth_card)
+            self.contentLayout.addWidget(bluetooth_card)
             cards_added += 1
 
         # Biometric Card (if exists)
@@ -592,7 +586,7 @@ class CompatibilityPage(ScrollArea):
                 # Biometric Device group (main item - no indent)
                 add_group_with_indent(
                     bio_card,
-                    FluentIcon.FINGERPRINT,
+                    colored_icon(FluentIcon.FINGERPRINT, COLORS['warning']),
                     bio_device,
                     "Unsupported",
                     indent_level=0
@@ -607,14 +601,14 @@ class CompatibilityPage(ScrollArea):
                 ])
                 add_group_with_indent(
                     bio_card,
-                    FluentIcon.MEGAPHONE,
+                    colored_icon(FluentIcon.MEGAPHONE, COLORS['warning']),
                     "macOS Compatibility",
                     compat_text,
                     create_info_widget(warning_message, COLORS['warning']),
                     indent_level=1
                 )
 
-            self.expandLayout.addWidget(bio_card)
+            self.contentLayout.addWidget(bio_card)
             cards_added += 1
 
         # If no cards were added, show a message
@@ -626,9 +620,12 @@ class CompatibilityPage(ScrollArea):
             no_data_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             no_data_label.setStyleSheet("color: #D13438; padding: 40px;")
             no_data_label.setWordWrap(True)
-            self.expandLayout.addWidget(no_data_label)
+            self.contentLayout.addWidget(no_data_label)
 
-        # Update the macOS version card in the header
+        # Keep page from collapsing when few/no cards are present
+        self.contentLayout.addStretch()
+
+        # Update the macOS version info in the header
         self.update_macos_version_card()
 
         # Force layout update to ensure widgets are displayed

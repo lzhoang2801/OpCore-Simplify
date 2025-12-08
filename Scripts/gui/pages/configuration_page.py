@@ -84,10 +84,10 @@ class ConfigurationPage(QWidget):
 
         # Cards layout - directly in main layout without scroll area container
         self.cards_layout = main_layout
-        
+
         # Track the position where cards should be inserted (after header)
         self.cards_start_index = main_layout.count()
-        
+
         # Store reference to configuration card for dynamic updates
         self.config_card = None
         self._build_config_card()
@@ -100,12 +100,12 @@ class ConfigurationPage(QWidget):
         macos_btn_layout = QVBoxLayout(macos_btn_widget)
         macos_btn_layout.setContentsMargins(0, 0, 0, 0)
         macos_btn_layout.setSpacing(SPACING['small'])
-        
+
         self.macos_btn = PushButton(FluentIcon.GLOBE, "Select Version")
         self.macos_btn.clicked.connect(self.select_macos)
         self.macos_btn.setFixedWidth(180)
         macos_btn_layout.addWidget(self.macos_btn)
-        
+
         custom_card.addGroup(
             FluentIcon.SETTING,
             "macOS Version",
@@ -118,12 +118,12 @@ class ConfigurationPage(QWidget):
         acpi_btn_layout = QVBoxLayout(acpi_btn_widget)
         acpi_btn_layout.setContentsMargins(0, 0, 0, 0)
         acpi_btn_layout.setSpacing(SPACING['small'])
-        
+
         self.acpi_btn = PushButton(FluentIcon.CODE, "Configure Patches")
         self.acpi_btn.clicked.connect(self.customize_acpi)
         self.acpi_btn.setFixedWidth(180)
         acpi_btn_layout.addWidget(self.acpi_btn)
-        
+
         custom_card.addGroup(
             FluentIcon.DEVELOPER_TOOLS,
             "ACPI Patches",
@@ -136,12 +136,12 @@ class ConfigurationPage(QWidget):
         kexts_btn_layout = QVBoxLayout(kexts_btn_widget)
         kexts_btn_layout.setContentsMargins(0, 0, 0, 0)
         kexts_btn_layout.setSpacing(SPACING['small'])
-        
+
         self.kexts_btn = PushButton(FluentIcon.LIBRARY, "Manage Kexts")
         self.kexts_btn.clicked.connect(self.customize_kexts)
         self.kexts_btn.setFixedWidth(180)
         kexts_btn_layout.addWidget(self.kexts_btn)
-        
+
         custom_card.addGroup(
             FluentIcon.CODE,
             "Kernel Extensions",
@@ -154,12 +154,12 @@ class ConfigurationPage(QWidget):
         smbios_btn_layout = QVBoxLayout(smbios_btn_widget)
         smbios_btn_layout.setContentsMargins(0, 0, 0, 0)
         smbios_btn_layout.setSpacing(SPACING['small'])
-        
+
         self.smbios_btn = PushButton(FluentIcon.TAG, "Select Model")
         self.smbios_btn.clicked.connect(self.customize_smbios)
         self.smbios_btn.setFixedWidth(180)
         smbios_btn_layout.addWidget(self.smbios_btn)
-        
+
         custom_card.addGroup(
             FluentIcon.TAG,
             "SMBIOS Model",
@@ -176,19 +176,20 @@ class ConfigurationPage(QWidget):
         if self.config_card is not None:
             self.cards_layout.removeWidget(self.config_card)
             self.config_card.deleteLater()
-        
+
         # Create new configuration card
         self.config_card = GroupHeaderCardWidget("Current Configuration", self)
-        
+
         # macOS Version group
         macos_widget = QWidget()
         macos_widget_layout = QHBoxLayout(macos_widget)
         macos_widget_layout.setContentsMargins(0, 0, 0, 0)
-        self.macos_value = BodyLabel(self.controller.macos_version_text if hasattr(self.controller, 'macos_version_text') else "Not selected")
+        self.macos_value = BodyLabel(self.controller.macos_version_text if hasattr(
+            self.controller, 'macos_version_text') else "Not selected")
         self.macos_value.setStyleSheet(f"color: {COLORS['text_secondary']};")
         macos_widget_layout.addWidget(self.macos_value)
         macos_widget_layout.addStretch()
-        
+
         self.config_card.addGroup(
             FluentIcon.GLOBE,
             "macOS Version",
@@ -200,11 +201,12 @@ class ConfigurationPage(QWidget):
         smbios_widget = QWidget()
         smbios_widget_layout = QHBoxLayout(smbios_widget)
         smbios_widget_layout.setContentsMargins(0, 0, 0, 0)
-        self.smbios_value = BodyLabel(self.controller.smbios_model_text if hasattr(self.controller, 'smbios_model_text') else "Not selected")
+        self.smbios_value = BodyLabel(self.controller.smbios_model_text if hasattr(
+            self.controller, 'smbios_model_text') else "Not selected")
         self.smbios_value.setStyleSheet(f"color: {COLORS['text_secondary']};")
         smbios_widget_layout.addWidget(self.smbios_value)
         smbios_widget_layout.addStretch()
-        
+
         self.config_card.addGroup(
             FluentIcon.TAG,
             "SMBIOS Model",
@@ -213,24 +215,26 @@ class ConfigurationPage(QWidget):
         )
 
         # Disabled Devices - display each device vertically
-        disabled_devices = self.controller.disabled_devices if hasattr(self.controller, 'disabled_devices') and self.controller.disabled_devices is not None else {}
-        
+        disabled_devices = self.controller.disabled_devices if hasattr(
+            self.controller, 'disabled_devices') and self.controller.disabled_devices is not None else {}
+
         if disabled_devices:
             # Add header for disabled devices section
             header_widget = QWidget()
             header_layout = QVBoxLayout(header_widget)
             header_layout.setContentsMargins(0, 0, 0, 0)
-            header_label = BodyLabel("Hardware components excluded from configuration")
+            header_label = BodyLabel(
+                "Hardware components excluded from configuration")
             header_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
             header_layout.addWidget(header_label)
-            
+
             self.config_card.addGroup(
-                FluentIcon.CANCEL,
+                FluentIcon.CLOSE,
                 "Disabled Devices",
                 "",
                 header_widget
             )
-            
+
             # Add each disabled device as a separate indented group
             for device_name in disabled_devices.keys():
                 add_group_with_indent(
@@ -246,19 +250,21 @@ class ConfigurationPage(QWidget):
             none_widget = QWidget()
             none_layout = QVBoxLayout(none_widget)
             none_layout.setContentsMargins(0, 0, 0, 0)
-            none_label = BodyLabel("All hardware components are compatible and enabled")
+            none_label = BodyLabel(
+                "All hardware components are compatible and enabled")
             none_label.setStyleSheet(f"color: {COLORS['success']};")
             none_layout.addWidget(none_label)
-            
+
             self.config_card.addGroup(
                 FluentIcon.ACCEPT,
                 "Disabled Devices",
                 "",
                 none_widget
             )
-        
+
         # Insert the card at the tracked position (after header, before other cards)
-        self.cards_layout.insertWidget(self.cards_start_index, self.config_card)
+        self.cards_layout.insertWidget(
+            self.cards_start_index, self.config_card)
 
     def select_macos(self):
         """Select macOS version"""
@@ -347,7 +353,8 @@ class ConfigurationPage(QWidget):
             self.controller.customized_hardware,
             self.controller.macos_version  # Use Darwin version
         )
-        is_laptop = "Laptop" == self.controller.customized_hardware.get("Motherboard").get("Platform")
+        is_laptop = "Laptop" == self.controller.customized_hardware.get(
+            "Motherboard").get("Platform")
 
         # Show SMBIOS selection dialog
         selected_model, ok = show_smbios_dialog(
