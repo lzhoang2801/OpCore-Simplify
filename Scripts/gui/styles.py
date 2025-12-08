@@ -32,6 +32,14 @@ COLORS = {
     'warning': '#FF8C00',
     'error': '#E81123',
     'info': '#0078D4',
+    
+    # Note and Warning section colors
+    'note_bg': '#E3F2FD',
+    'note_border': '#2196F3',
+    'note_text': '#1565C0',
+    'warning_bg': '#FFF3E0',
+    'warning_border': '#FF9800',
+    'warning_text': '#F57C00',
 
     # Border colors
     'border': '#D1D1D1',

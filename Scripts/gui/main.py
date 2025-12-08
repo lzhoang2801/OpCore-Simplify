@@ -20,7 +20,7 @@ from qfluentwidgets import (
 )
 
 from .styles import COLORS, SPACING
-from .pages import UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, SettingsPage
+from .pages import HomePage, UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, SettingsPage
 from .custom_dialogs import (
     show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
     show_before_using_efi_dialog, show_wifi_network_count_dialog, show_codec_layout_dialog
@@ -224,6 +224,7 @@ class OpCoreGUI(FluentWindow):
     def init_navigation(self):
         """Initialize navigation sidebar and pages"""
         # Create pages
+        self.homePage = HomePage(self)
         self.uploadPage = UploadPage(self)
         self.compatibilityPage = CompatibilityPage(self)
         self.configurationPage = ConfigurationPage(self)
@@ -232,6 +233,8 @@ class OpCoreGUI(FluentWindow):
         self.settingsPage = SettingsPage(self)
 
         # Add pages to navigation
+        self.addSubInterface(self.homePage, FluentIcon.HOME,
+                             "Home", NavigationItemPosition.TOP)
         self.addSubInterface(self.uploadPage, FluentIcon.FOLDER_ADD,
                              "1. Upload Report", NavigationItemPosition.TOP)
         self.addSubInterface(self.compatibilityPage, FluentIcon.SEARCH,
