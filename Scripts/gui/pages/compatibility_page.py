@@ -103,29 +103,11 @@ class CompatibilityPage(ScrollArea):
         self.resize(1000, 800)
         self.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setViewportMargins(0, 120, 0, 20)
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
 
         # Enable transparent background for proper styling
         self.enableTransparentBackground()
-
-        # Step indicator - positioned absolutely outside the scroll area
-        self.step_label = BodyLabel("STEP 2 OF 4", self)
-        self.step_label.setStyleSheet("color: #0078D4; font-weight: bold;")
-        self.step_label.move(36, 30)
-
-        # Title label - positioned absolutely outside the scroll area
-        self.title_label = TitleLabel("Hardware Compatibility", self)
-        setFont(self.title_label, 28, QFont.Weight.DemiBold)
-        self.title_label.move(36, 50)
-
-        # Subtitle with improved styling
-        self.subtitle_label = StrongBodyLabel(
-            "Review hardware compatibility with macOS", self)
-        self.subtitle_label.setStyleSheet(
-            f"color: {COLORS['text_secondary']};")
-        self.subtitle_label.move(36, 90)
 
         # Initialize layout for compatibility cards
         self.__initLayout()
@@ -133,8 +115,29 @@ class CompatibilityPage(ScrollArea):
     def __initLayout(self):
         """Initialize the expand layout with compatibility cards"""
         # Set layout spacing and margins
-        self.expandLayout.setSpacing(28)
+        self.expandLayout.setSpacing(SPACING['large'])
         self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
+
+        # Step indicator
+        step_label = BodyLabel("STEP 2 OF 4")
+        step_label.setStyleSheet(f"color: {COLORS['primary']}; font-weight: bold;")
+        self.expandLayout.addWidget(step_label)
+
+        # Header section with title and description
+        header_container = QWidget()
+        header_layout = QVBoxLayout(header_container)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(SPACING['tiny'])
+
+        title_label = SubtitleLabel("Hardware Compatibility")
+        header_layout.addWidget(title_label)
+
+        subtitle_label = BodyLabel("Review hardware compatibility with macOS")
+        subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        header_layout.addWidget(subtitle_label)
+
+        self.expandLayout.addWidget(header_container)
+        self.expandLayout.addSpacing(SPACING['medium'])
 
         # macOS version support card - positioned at the top of content area
         self.macos_version_card = CardWidget(self.scrollWidget)
