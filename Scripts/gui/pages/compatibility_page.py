@@ -137,7 +137,7 @@ class CompatibilityPage(ScrollArea):
         header_layout.addWidget(subtitle_label)
 
         self.expandLayout.addWidget(header_container)
-        self.expandLayout.addSpacing(SPACING['medium'])
+        self.expandLayout.addSpacing(SPACING['large'])
 
         # macOS version support card - positioned at the top of content area
         self.macos_version_card = CardWidget(self.scrollWidget)

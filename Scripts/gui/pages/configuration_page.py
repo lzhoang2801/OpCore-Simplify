@@ -80,7 +80,7 @@ class ConfigurationPage(QWidget):
         header_layout.addWidget(subtitle_label)
 
         main_layout.addWidget(header_container)
-        main_layout.addSpacing(SPACING['medium'])
+        main_layout.addSpacing(SPACING['large'])
 
         # Cards layout - directly in main layout without scroll area container
         self.cards_layout = main_layout
