@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QFileDialog, QTextEdit
 )
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, QTimer
+from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject
 from PyQt6.QtGui import QIcon, QFont
 from qfluentwidgets import (
     FluentWindow, NavigationItemPosition, FluentIcon,
@@ -23,7 +23,7 @@ from .styles import COLORS, SPACING
 from .pages import HomePage, UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, SettingsPage, ConfigEditorPage
 from .custom_dialogs import (
     show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
-    show_before_using_efi_dialog, show_wifi_network_count_dialog, show_codec_layout_dialog
+    show_wifi_network_count_dialog, show_codec_layout_dialog
 )
 
 # Import from Scripts package
@@ -111,6 +111,12 @@ class OpCoreGUI(FluentWindow):
     update_gathering_progress_signal = pyqtSignal(dict)  # progress_info dict
     # message, level, to_console, to_build_log
     log_message_signal = pyqtSignal(str, str, bool, bool)
+    # Signal for build completion with success status and bios_requirements
+    build_complete_signal = pyqtSignal(bool, object)  # success, bios_requirements
+    # Signal for loading hardware report
+    load_hardware_report_signal = pyqtSignal(str, object)  # report_path, report_data
+    # Signal for opening result folder
+    open_result_folder_signal = pyqtSignal(str)  # folder_path
 
     def __init__(self, ocpe_instance):
         """
@@ -187,6 +193,9 @@ class OpCoreGUI(FluentWindow):
         self.update_gathering_progress_signal.connect(
             self._update_gathering_progress_on_main_thread)
         self.log_message_signal.connect(self._log_message_on_main_thread)
+        self.build_complete_signal.connect(self._handle_build_complete)
+        self.load_hardware_report_signal.connect(self._handle_load_hardware_report)
+        self.open_result_folder_signal.connect(self._handle_open_result_folder)
 
         # Set up GUI handlers - using new direct handler approach
         self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
@@ -300,6 +309,19 @@ class OpCoreGUI(FluentWindow):
         if to_build_log and self.build_log:
             for line in lines:
                 self.build_log.append(line)
+
+    def _handle_build_complete(self, success, bios_requirements):
+        """Handle build completion signal on main thread"""
+        if hasattr(self, 'buildPage') and hasattr(self.buildPage, 'on_build_complete'):
+            self.buildPage.on_build_complete(success, bios_requirements)
+
+    def _handle_load_hardware_report(self, report_path, report_data):
+        """Handle hardware report loading signal on main thread"""
+        self.load_hardware_report(report_path, report_data)
+
+    def _handle_open_result_folder(self, folder_path):
+        """Handle opening result folder signal on main thread"""
+        self.ocpe.u.open_folder(folder_path)
 
     def _dispatch_backend_log(self, message, level="Info", to_build_log=False):
         """Callback passed to backend utils to surface logs in the GUI."""
@@ -602,9 +624,8 @@ class OpCoreGUI(FluentWindow):
                 report_data = self.ocpe.u.read_file(report_path)
                 self.ocpe.ac.read_acpi_tables(acpitables_dir)
 
-                # Load the report
-                QTimer.singleShot(0, lambda: self.load_hardware_report(
-                    report_path, report_data))
+                # Load the report using signal
+                self.load_hardware_report_signal.emit(report_path, report_data)
 
         thread = threading.Thread(target=export_thread, daemon=True)
         thread.start()
@@ -635,15 +656,21 @@ class OpCoreGUI(FluentWindow):
         # Run build in background thread
         def build_thread():
             try:
-                # Gather bootloader and kexts (uses Darwin version)
+                # Phase 1: Gathering bootloader and kexts
                 self.update_status_signal.emit(
-                    "Gathering bootloader and kexts...", 'info')
+                    "Phase 1/2: Gathering required files...", 'info')
+                self.log_message("\nPhase 1: Gathering Files", to_console=False, to_build_log=True)
+                self.log_message("-" * 60, to_console=False, to_build_log=True)
+                
                 self.ocpe.o.gather_bootloader_kexts(
                     self.ocpe.k.kexts, self.macos_version)
 
-                # Build EFI (uses Darwin version)
+                # Phase 2: Building EFI structure
                 self.update_status_signal.emit(
-                    "Building OpenCore EFI...", 'info')
+                    "Phase 2/2: Building OpenCore EFI structure...", 'info')
+                self.log_message("\nPhase 2: Building EFI", to_console=False, to_build_log=True)
+                self.log_message("-" * 60, to_console=False, to_build_log=True)
+                
                 self.ocpe.build_opencore_efi(
                     self.customized_hardware,
                     self.disabled_devices,
@@ -653,20 +680,38 @@ class OpCoreGUI(FluentWindow):
                 )
 
                 self.update_status_signal.emit(
-                    "OpenCore EFI built successfully!", 'success')
+                    "✓ Build completed successfully!", 'success')
 
-                # Show "Before Using EFI" dialog on main thread
-                QTimer.singleShot(0, self.show_before_using_efi_dialog)
+                # Calculate BIOS requirements for display on build page
+                bios_requirements = self.ocpe.check_bios_requirements(
+                    self.hardware_report_data, self.customized_hardware)
+
+                # Notify build page of successful completion with requirements using signal
+                self.build_complete_signal.emit(True, bios_requirements)
+
+                # Auto-open folder if setting is enabled (no dialog needed)
+                from Scripts.settings import Settings
+                settings = Settings()
+                if settings.get_open_folder_after_build():
+                    self.open_result_folder_signal.emit(self.ocpe.result_dir)
 
             except Exception as e:
                 self.update_status_signal.emit(
                     f"Build failed: {str(e)}", 'error')
                 import traceback
-                print(traceback.format_exc())
-                # Re-enable build button on error
-                if self.build_btn:
-                    QTimer.singleShot(
-                        0, lambda: self.build_btn.setEnabled(True))
+                error_trace = traceback.format_exc()
+                print(error_trace)
+                
+                # Log error to build log
+                self.log_message("\n" + "="*60, to_console=False, to_build_log=True)
+                self.log_message("❌ Build Failed", to_console=False, to_build_log=True)
+                self.log_message("="*60, to_console=False, to_build_log=True)
+                self.log_message(f"\nError: {str(e)}", to_console=False, to_build_log=True)
+                self.log_message("\nDetails:", to_console=False, to_build_log=True)
+                self.log_message(error_trace, to_console=False, to_build_log=True)
+                
+                # Notify build page of failure using signal
+                self.build_complete_signal.emit(False, None)
 
         thread = threading.Thread(target=build_thread, daemon=True)
         thread.start()
@@ -686,35 +731,49 @@ class OpCoreGUI(FluentWindow):
         self.update_gathering_progress(progress_info)
 
     def update_gathering_progress(self, progress_info):
-        """Update gathering files progress in GUI"""
+        """Update gathering files progress in GUI with enhanced messaging"""
         current = progress_info.get('current', 0)
         total = progress_info.get('total', 1)
         product_name = progress_info.get('product_name', '')
         status = progress_info.get('status', 'downloading')
 
-        # Update progress bar
+        # Update progress bar - gathering phase uses 0-40% of total progress
         if self.progress_bar:
-            progress_percent = int((current / total) * 100) if total > 0 else 0
-            self.progress_bar.setValue(progress_percent)
+            if status == 'complete':
+                # Set to 40% when gathering is complete (building phase starts at 40%)
+                self.progress_bar.setValue(40)
+            else:
+                # Map gathering progress (0-100%) to 0-40% range
+                progress_percent = int((current / total) * 40) if total > 0 else 0
+                self.progress_bar.setValue(progress_percent)
 
-        # Update progress label
+        # Update progress label with enhanced messaging
         if self.progress_label:
             if status == 'complete':
                 self.progress_label.setText(
-                    "✓ All files gathered successfully!")
+                    "✓ All files gathered successfully! Starting build...")
+                self.progress_label.setStyleSheet(f"color: {COLORS['success']};") if hasattr(self, 'COLORS') else None
             elif status == 'downloading':
                 self.progress_label.setText(
-                    f"⬇ Downloading {current}/{total}: {product_name}")
+                    f"⬇ Downloading ({current}/{total}): {product_name}")
             elif status == 'processing':
                 self.progress_label.setText(
-                    f"✓ Processing {current}/{total}: {product_name}")
+                    f"✓ Processing ({current}/{total}): {product_name}")
 
+        # Enhanced logging with better structure
         if status == 'complete':
-            self.log_message(
-                "\n✓ All files gathered successfully!", to_build_log=True)
+            self.log_message("\n" + "="*60, to_console=False, to_build_log=True)
+            self.log_message("✓ File Gathering Complete!", to_console=False, to_build_log=True)
+            self.log_message("="*60, to_console=False, to_build_log=True)
+            self.log_message(f"  Total files downloaded: {total}\n", to_console=False, to_build_log=True)
         elif status == 'downloading':
             self.log_message(
-                f"⬇ {current}/{total}: {product_name}", to_build_log=True)
+                f"  [{current}/{total}] ⬇ Downloading: {product_name}", 
+                to_console=False, to_build_log=True)
+        elif status == 'processing':
+            self.log_message(
+                f"  [{current}/{total}] ✓ Extracted: {product_name}", 
+                to_console=False, to_build_log=True)
 
     def update_build_progress_threadsafe(self, title, steps, current_step_index, progress, done):
         """Thread-safe wrapper for update_build_progress that can be called from any thread"""
@@ -734,29 +793,46 @@ class OpCoreGUI(FluentWindow):
             title, steps, current_step_index, progress, done)
 
     def update_build_progress(self, title, steps, current_step_index, progress, done):
-        """Update build progress in GUI"""
-        # Update progress bar
+        """Update build progress in GUI with enhanced messaging"""
+        # Update progress bar - map build phase to 40-100% range
         if self.progress_bar:
-            self.progress_bar.setValue(progress)
+            # Gathering phase uses 0-40%, building phase uses 40-100%
+            if "Building" in title:
+                # Map internal progress (0-100) to 40-100% range
+                adjusted_progress = 40 + int(progress * 0.6)
+                self.progress_bar.setValue(adjusted_progress)
+            else:
+                self.progress_bar.setValue(progress)
 
-        # Update progress label
+        # Update progress label with enhanced messaging
         if self.progress_label:
             if done:
-                self.progress_label.setText(f"✓ {title} - Complete!")
+                self.progress_label.setText(f"✓ {title} complete!")
+                self.progress_label.setStyleSheet(f"color: {COLORS['success']};") if hasattr(self, 'COLORS') else None
             else:
                 step_text = steps[current_step_index] if current_step_index < len(
                     steps) else "Processing"
-                self.progress_label.setText(f"⚙ {step_text}...")
-
+                # Add step counter for better context
+                step_counter = f"Step {current_step_index + 1}/{len(steps)}"
+                self.progress_label.setText(f"⚙ {step_counter}: {step_text}...")
+                
+        # Enhanced logging with better structure
         if done:
-            self.log_message(f"\n✓ {title} - Complete!", to_build_log=True)
-            for step in steps:
+            self.log_message("\n" + "="*60, to_console=False, to_build_log=True)
+            self.log_message(f"✓ {title} Complete!", to_console=False, to_build_log=True)
+            self.log_message("="*60 + "\n", to_console=False, to_build_log=True)
+            # Log completed steps in a concise list
+            for idx, step in enumerate(steps, 1):
                 self.log_message(
-                    f"  ✓ {step}", to_console=False, to_build_log=True)
+                    f"  {idx}. ✓ {step}", to_console=False, to_build_log=True)
+            self.log_message("", to_console=False, to_build_log=True)
         else:
             step_text = steps[current_step_index] if current_step_index < len(
                 steps) else "Processing"
-            self.log_message(f"\n> {step_text}...", to_build_log=True)
+            # Show step number in log
+            self.log_message(
+                f"\n[Step {current_step_index + 1}/{len(steps)}] {step_text}...", 
+                to_console=False, to_build_log=True)
 
     def show_before_using_efi_dialog(self):
         """Show Before Using EFI dialog after successful build"""

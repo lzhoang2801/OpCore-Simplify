@@ -218,7 +218,10 @@ class ResourceFetcher:
             response = self._make_request(resource_url)
 
             if not response:
-                print(f"Failed to fetch content from {resource_url}. Retrying...")
+                # Only log retries in CLI mode or if it's the final attempt
+                if not self.utils.gui_callback or attempt == MAX_ATTEMPTS:
+                    self.utils.log_gui(f"⚠ Failed to fetch content. Retrying... (attempt {attempt}/{MAX_ATTEMPTS})", 
+                                     level="Warning", to_build_log=True, fallback_stdout=False)
                 time.sleep(RETRY_DELAY_SECONDS)
                 continue
 
@@ -226,11 +229,12 @@ class ResourceFetcher:
                 with open(destination_path, "wb") as local_file:
                     self._download_with_progress(response, local_file)
             except Exception as e:
-                print(f"Error during download: {e}")
+                self.utils.log_gui(f"❌ Error during download: {e}", level="Error", to_build_log=True, fallback_stdout=False)
                 if os.path.exists(destination_path):
                     os.remove(destination_path)
                 if attempt < MAX_ATTEMPTS:
-                    print(f"Retrying download (attempt {attempt + 1}/{MAX_ATTEMPTS})...")
+                    if not self.utils.gui_callback:
+                        print(f"Retrying download (attempt {attempt + 1}/{MAX_ATTEMPTS})...")
                     time.sleep(RETRY_DELAY_SECONDS)
                     continue
                 else:
@@ -244,26 +248,29 @@ class ResourceFetcher:
 
             if os.path.exists(destination_path) and os.path.getsize(destination_path) > 0:
                 if sha256_hash:
-                    print("Verifying SHA256 checksum...")
+                    self.utils.log_gui("  🔒 Verifying SHA256 checksum...", to_build_log=True, fallback_stdout=False)
                     downloaded_hash = self.integrity_checker.get_sha256(destination_path)
                     if downloaded_hash.lower() == sha256_hash.lower():
-                        print("Checksum verified successfully.")
+                        self.utils.log_gui("  ✓ Checksum verified successfully", to_build_log=True, fallback_stdout=False)
                         return True
                     else:
-                        print("Checksum mismatch! Removing file and retrying download...")
+                        self.utils.log_gui("  ⚠ Checksum mismatch! Retrying download...", level="Warning", to_build_log=True)
                         os.remove(destination_path)
                         time.sleep(RETRY_DELAY_SECONDS)
                         continue
                 else:
-                    print("No SHA256 hash provided. Downloading file without verification.")
+                    # No hash provided - skip verification silently in GUI mode
+                    if not self.utils.gui_callback:
+                        print("No SHA256 hash provided. Downloading file without verification.")
                     return True
             
             if os.path.exists(destination_path):
                 os.remove(destination_path)
 
             if attempt < MAX_ATTEMPTS:
-                print(f"Download failed for {resource_url}. Retrying...")
+                if not self.utils.gui_callback:
+                    print(f"Download failed for {resource_url}. Retrying...")
                 time.sleep(RETRY_DELAY_SECONDS)
 
-        print(f"Failed to download {resource_url} after {MAX_ATTEMPTS} attempts.")
+        self.utils.log_gui(f"❌ Failed to download after {MAX_ATTEMPTS} attempts", level="Error", to_build_log=True)
         return False

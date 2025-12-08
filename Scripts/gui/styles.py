@@ -40,6 +40,7 @@ COLORS = {
     'warning_bg': '#FFF3E0',
     'warning_border': '#FF9800',
     'warning_text': '#F57C00',
+    'success_bg': '#F3FAF3',
 
     # Border colors
     'border': '#D1D1D1',

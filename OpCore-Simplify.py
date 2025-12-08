@@ -359,12 +359,15 @@ class OCPE:
                 else:
                     os.remove(file_path)
             except Exception as e:
-                print("Failed to remove file: {}".format(e))
+                # Log file removal errors
+                self.u.log_gui(f"⚠ Failed to remove file {os.path.basename(file_path)}: {e}", level="Warning", to_build_log=True, fallback_stdout=False)
         
         self.u.progress_bar(title, steps, len(steps), done=True)
         
-        print("OpenCore EFI build complete.")
-        time.sleep(2)
+        # Final completion message (suppressed in GUI mode)
+        if not self.u.gui_callback:
+            print("OpenCore EFI build complete.")
+            time.sleep(2)
         
     def check_bios_requirements(self, org_hardware_report, hardware_report):
         requirements = []
