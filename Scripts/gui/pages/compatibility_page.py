@@ -1,142 +1,61 @@
 """
-Step 2: Compatibility checker - qfluentwidgets version
+Step 2: Compatibility checker - displays hardware compatibility information.
 """
-from ...datasets import os_data, pci_data
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout
+
+import sys
+from pathlib import Path
+
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from qfluentwidgets import (
-    PushButton, SubtitleLabel, BodyLabel, CardWidget, TextEdit,
-    StrongBodyLabel, ScrollArea, FluentIcon, GroupHeaderCardWidget,
-    TitleLabel, setFont
+    SubtitleLabel, BodyLabel, ScrollArea, FluentIcon,
+    GroupHeaderCardWidget, StrongBodyLabel
 )
 
 from ..styles import COLORS, SPACING
-
-# Import os_data and pci_data for version names and device checks
-import sys
-import os
-from pathlib import Path
+from ..ui_utils import create_info_widget, colored_icon, add_group_with_indent, create_step_indicator, \
+    get_compatibility_icon
+from ...datasets import os_data, pci_data
 
 # Add Scripts directory to path for dataset imports
 scripts_path = Path(__file__).parent.parent.parent
 if str(scripts_path) not in sys.path:
     sys.path.insert(0, str(scripts_path))
 
-# Create a reusable empty widget instance - REMOVED as it can cause layout issues
-# Each addGroup call should get its own QWidget instance
-
-
-def create_info_widget(text, color=None):
-    """Create a simple label widget for displaying information"""
-    if not text:
-        # Return new empty widget if no text (don't reuse)
-        return QWidget()
-    label = BodyLabel(text)
-    label.setWordWrap(True)
-    if color:
-        label.setStyleSheet(f"color: {color};")
-    return label
-
-
-def colored_icon(icon, color_hex):
-    """Return a Fluent icon tinted for both light and dark themes"""
-    if not icon or not color_hex:
-        return icon
-    tint = QColor(color_hex)
-    return icon.colored(tint, tint)
-
-
-def add_group_with_indent(card, icon, title, content, widget=None, indent_level=0):
-    """
-    Add a group to a GroupHeaderCardWidget with optional indentation.
-
-    Args:
-        card: The GroupHeaderCardWidget instance
-        icon: Icon for the group
-        title: Title text
-        content: Content/description text
-        widget: Widget to add (default: new empty QWidget)
-        indent_level: 0 for main items, 1+ for child items (each level adds 20px left margin)
-
-    Returns:
-        The created CardGroupWidget
-    """
-    if widget is None:
-        widget = QWidget()  # Create new instance each time
-
-    group = card.addGroup(icon, title, content, widget)
-
-    # Apply indentation if needed
-    if indent_level > 0:
-        # Get the horizontal layout (hBoxLayout) and adjust left margin
-        # Default margins are (24, 10, 24, 10) - left, top, right, bottom
-        base_margin = 24
-        indent = 20 * indent_level
-        group.hBoxLayout.setContentsMargins(base_margin + indent, 10, 24, 10)
-
-    return group
-
-
-def get_compatibility_icon(compat_tuple):
-    """
-    Get the appropriate FluentIcon based on compatibility status.
-
-    Args:
-        compat_tuple: Compatibility tuple (max_version, min_version) or (None, None)
-
-    Returns:
-        FluentIcon: ACCEPT for supported, CLOSE for unsupported
-    """
-    if not compat_tuple or compat_tuple == (None, None):
-        return colored_icon(FluentIcon.CLOSE, COLORS['error'])
-    return colored_icon(FluentIcon.ACCEPT, COLORS['success'])
-
-
 class CompatibilityPage(ScrollArea):
-    """Step 2: View hardware compatibility"""
+    """Step 2: View hardware compatibility."""
 
     def __init__(self, parent):
         super().__init__(parent)
         self.setObjectName("compatibilityPage")
         self.controller = parent
         self.scrollWidget = QWidget()
-        self.expandLayout = QVBoxLayout()
+        self.expandLayout = QVBoxLayout(self.scrollWidget)
+        
+        # Initialize widget references
         self.contentWidget = None
         self.contentLayout = None
         self.version_support_container = None
         self.native_support_label = None
         self.ocl_support_label = None
-        # Explicitly set the layout on the scroll widget to ensure proper display
-        self.scrollWidget.setLayout(self.expandLayout)
+        
         self.setup_ui()
 
     def setup_ui(self):
-        """Setup the compatibility page UI"""
-        self.resize(1000, 800)
-        self.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        """Setup the compatibility page UI."""
+        # Configure scroll area
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
-
-        # Enable transparent background for proper styling
         self.enableTransparentBackground()
 
-        # Initialize layout for compatibility cards
-        self.__initLayout()
-
-    def __initLayout(self):
-        """Initialize the expand layout with compatibility cards"""
         # Set layout spacing and margins
+        self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
+                                             SPACING['xxlarge'], SPACING['xlarge'])
         self.expandLayout.setSpacing(SPACING['large'])
-        self.expandLayout.setContentsMargins(
-            SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
 
         # Step indicator
-        step_label = BodyLabel("STEP 2 OF 4")
-        step_label.setStyleSheet(
-            f"color: {COLORS['primary']}; font-weight: bold;")
-        self.expandLayout.addWidget(step_label)
+        self.expandLayout.addWidget(create_step_indicator(2))
 
         # Header section with title and description
         header_container = QWidget()

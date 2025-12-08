@@ -1,34 +1,27 @@
 """
-Step 4: Build EFI - qfluentwidgets version with enhanced UI/UX
+Step 4: Build EFI - allows users to build their customized OpenCore EFI.
 """
 
 import platform
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
+
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from qfluentwidgets import (
-    PushButton, SubtitleLabel, BodyLabel, CardWidget, TextEdit,
+    SubtitleLabel, BodyLabel, CardWidget, TextEdit,
     StrongBodyLabel, ProgressBar, PrimaryPushButton, FluentIcon,
     ScrollArea, InfoBar, InfoBarPosition, TitleLabel
 )
 
 from ..styles import COLORS, SPACING, RADIUS
+from ..ui_utils import build_icon_label, create_step_indicator
 
 # Constants for build log formatting
 LOG_SEPARATOR = "═" * 60
 DEFAULT_LOG_TEXT = "Build log will appear here..."
 
 
-def build_icon_label(icon, color, size=32):
-    """Create a QLabel with a tinted Fluent icon pixmap"""
-    label = QLabel()
-    label.setPixmap(icon.icon(color=color).pixmap(size, size))
-    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    label.setFixedSize(size + 12, size + 12)
-    return label
-
-
 class BuildPage(ScrollArea):
-    """Step 4: Build OpenCore EFI with enhanced UI/UX"""
+    """Step 4: Build OpenCore EFI with enhanced UI/UX."""
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -41,7 +34,7 @@ class BuildPage(ScrollArea):
         self.setup_ui()
 
     def setup_ui(self):
-        """Setup the build page UI with improved qfluentwidgets components"""
+        """Setup the build page UI with improved qfluentwidgets components."""
         # Configure scroll area
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidget(self.scrollWidget)
@@ -56,9 +49,7 @@ class BuildPage(ScrollArea):
         layout = self.expandLayout
 
         # Step indicator with title
-        step_label = BodyLabel("STEP 4 OF 4")
-        step_label.setStyleSheet(f"color: {COLORS['primary']}; font-weight: bold;")
-        layout.addWidget(step_label)
+        layout.addWidget(create_step_indicator(4))
 
         # Title section with better typography
         title_label = TitleLabel("Build OpenCore EFI")

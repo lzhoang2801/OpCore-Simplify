@@ -1,19 +1,20 @@
 """
-Step 1: Upload hardware report and ACPI tables - qfluentwidgets version
+Step 1: Upload hardware report and ACPI tables.
 """
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from PyQt6.QtCore import Qt
 from qfluentwidgets import (
     PushButton, SubtitleLabel, BodyLabel, CardWidget,
     FluentIcon, StrongBodyLabel, InfoBar, InfoBarPosition
 )
 
-from ..styles import COLORS, SPACING
+from ..styles import SPACING
+from ..ui_utils import create_step_indicator
 
 
 class UploadPage(QWidget):
-    """Step 1: Upload hardware report and ACPI tables"""
+    """Step 1: Upload hardware report and ACPI tables."""
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -22,16 +23,14 @@ class UploadPage(QWidget):
         self.setup_ui()
 
     def setup_ui(self):
-        """Setup the upload page UI"""
+        """Setup the upload page UI."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
                                   SPACING['xxlarge'], SPACING['xlarge'])
         layout.setSpacing(SPACING['large'])
 
         # Step indicator
-        step_label = BodyLabel("STEP 1 OF 4")
-        step_label.setStyleSheet("color: #0078D4; font-weight: bold;")
-        layout.addWidget(step_label)
+        layout.addWidget(create_step_indicator(1))
 
         # Title
         title_label = SubtitleLabel("Upload Hardware Report")
@@ -59,7 +58,7 @@ class UploadPage(QWidget):
         self.select_btn.clicked.connect(self.select_report)
         upload_layout.addWidget(self.select_btn)
 
-        # Export button (Windows only)
+        # Export button (Windows only) - import os only when needed
         import os
         if os.name == 'nt':
             self.export_btn = PushButton(
@@ -107,34 +106,35 @@ class UploadPage(QWidget):
         layout.addStretch()
 
     def select_report(self):
-        """Select hardware report file"""
+        """Select hardware report file."""
         file_path = self.controller.select_hardware_report_gui()
-        if file_path:
-            # Validate and load report
-            is_valid, errors, warnings, data = self.controller.ocpe.v.validate_report(
-                file_path)
+        if not file_path:
+            return
+        
+        # Validate and load report
+        is_valid, errors, warnings, data = self.controller.ocpe.v.validate_report(file_path)
 
-            if not is_valid or errors:
-                InfoBar.error(
-                    title='Invalid Report',
-                    content='The selected report file is invalid. Please try again.',
-                    orient=Qt.Orientation.Horizontal,
-                    isClosable=True,
-                    position=InfoBarPosition.TOP_RIGHT,
-                    duration=5000,
-                    parent=self
-                )
-                return
+        if not is_valid or errors:
+            InfoBar.error(
+                title='Invalid Report',
+                content='The selected report file is invalid. Please try again.',
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=5000,
+                parent=self
+            )
+            return
 
-            # Load the report
-            self.controller.load_hardware_report(file_path, data)
+        # Load the report
+        self.controller.load_hardware_report(file_path, data)
 
     def export_report(self):
-        """Export hardware report"""
+        """Export hardware report."""
         self.controller.export_hardware_report()
 
     def update_status(self):
-        """Update status display"""
+        """Update status display."""
         if self.controller.hardware_report_path != "Not selected":
             self.status_label.setText(
                 f"Loaded: {self.controller.hardware_report_path}")
@@ -142,5 +142,5 @@ class UploadPage(QWidget):
             self.status_label.setText("No hardware report loaded")
 
     def refresh(self):
-        """Refresh page content"""
+        """Refresh page content."""
         self.update_status()

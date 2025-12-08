@@ -79,6 +79,7 @@ class HardwareCustomizer:
             self.utils.head("Device Selection Summary")
             print("")
             print("Selected devices:")
+            self.utils.log_gui("📋 Device Selection Summary:", to_build_log=True)
             print("")
             print("Type          Device                                     Device ID")
             print("------------------------------------------------------------------")
@@ -86,6 +87,7 @@ class HardwareCustomizer:
                 for device_name, device_props in device_dict.items():
                     device_id = device_props.get("Device ID", "Unknown")
                     print("{:<13} {:<42} {}".format(device_type, device_name[:38], device_id))
+                    self.utils.log_gui(f"  • {device_type}: {device_name[:38]} ({device_id})", to_build_log=True)
             print("")
             print("All other devices of the same type have been disabled.")
             print("")
@@ -123,6 +125,7 @@ class HardwareCustomizer:
 
         if len(devices) > 1:       
             print("\n*** Multiple {} Devices Detected".format(device_type))
+            self.utils.log_gui(f"⚠️ Multiple {device_type} devices detected", level="Warning", to_build_log=True)
             if device_type == "WiFi" or device_type == "Bluetooth":
                 print(f"macOS works best with only one {device_type} device enabled.")
             elif device_type == "GPU":

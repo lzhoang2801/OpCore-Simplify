@@ -1,6 +1,6 @@
-"""Welcome/Home page showing introduction and important notices"""
+"""Welcome/Home page showing introduction and important notices."""
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QGridLayout, QFrame
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFrame
 from PyQt6.QtCore import Qt
 from qfluentwidgets import (
     SubtitleLabel, BodyLabel, CardWidget, StrongBodyLabel,
@@ -8,15 +8,7 @@ from qfluentwidgets import (
 )
 
 from ..styles import COLORS, SPACING, RADIUS
-
-
-def build_icon_label(icon, color, size=32):
-    """Create a QLabel with a tinted Fluent icon pixmap"""
-    label = QLabel()
-    label.setPixmap(icon.icon(color=color).pixmap(size, size))
-    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    label.setFixedSize(size + 12, size + 12)
-    return label
+from ..ui_utils import build_icon_label
 
 
 class HomePage(ScrollArea):

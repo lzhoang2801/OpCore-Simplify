@@ -140,6 +140,7 @@ class KextMaestro:
         self.utils.head("Select Required Kernel Extensions")
         print("")
         print("Checking for required kernel extensions...")
+        self.utils.log_gui("Checking for required kernel extensions...", to_build_log=True)
 
         for kext in self.kexts:
             kext.checked = kext.required
@@ -240,6 +241,7 @@ class KextMaestro:
                     black_screen_warning = 'If you experience black screen after verbose mode, remove "-v debug=0x100 keepsyms=1" from boot-args in config.plist'
                     
                     print("\n*** Found {} is AMD {} GPU.".format(gpu_name, gpu_props.get("Codename")))
+                    self.utils.log_gui(f"🎮 Found {gpu_name} - AMD {gpu_props.get('Codename')} GPU", to_build_log=True)
                     print("")
                     print("\033[91mImportant: Black Screen Fix\033[0m")
                     print("If you experience a black screen after verbose mode:")
@@ -289,8 +291,15 @@ class KextMaestro:
                         print("\033[91mImportant:\033[0m NootRX kext is not compatible with Intel GPUs")
                         print("Automatically selecting WhateverGreen kext due to Intel GPU compatibility")
                         print("")
-                        # Skip "Press Enter" prompt in GUI mode
-                        if not self.utils.gui_callback:
+                        
+                        # Show info dialog in GUI mode, or prompt in CLI mode
+                        if self.utils.gui_handler:
+                            message = (
+                                "Important: NootRX kext is not compatible with Intel GPUs.\n\n"
+                                "WhateverGreen kext will be automatically selected due to Intel GPU compatibility."
+                            )
+                            self.utils.show_info_dialog('NootRX Incompatibility Notice', message)
+                        elif not self.utils.gui_callback:
                             self.utils.request_input("Press Enter to continue...")
                         continue
 
@@ -343,8 +352,17 @@ class KextMaestro:
                     print("The current recommendation is to not use WhateverGreen.")
                     print("However, you can still try adding it to see if it works on your system.")
                     print("")
-                    # Skip "Press Enter" prompt in GUI mode
-                    if not self.utils.gui_callback:
+                    
+                    # Show info dialog in GUI mode, or prompt in CLI mode
+                    if self.utils.gui_handler:
+                        message = (
+                            f"Found {gpu_name} is AMD {gpu_props.get('Codename')} GPU.\n\n"
+                            "Note: Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD GPUs.\n\n"
+                            "The current recommendation is to not use WhateverGreen.\n"
+                            "However, you can still try adding it to see if it works on your system."
+                        )
+                        self.utils.show_info_dialog('AMD GPU Detected - WhateverGreen Notice', message)
+                    elif not self.utils.gui_callback:
                         self.utils.request_input("Press Enter to continue...")
                     break
 
@@ -377,6 +395,7 @@ class KextMaestro:
                 
                 # Print to CLI with formatting
                 print("\n*** Found {} is Intel WiFi device.".format(network_name))
+                self.utils.log_gui(f"📶 Found {network_name} - Intel WiFi device", to_build_log=True)
                 print("")
                 print("\033[1;93mNote:\033[0m Intel WiFi devices have two available kext options:")
                 print("")

@@ -130,6 +130,7 @@ class WifiProfileExtractor:
             self.utils.head("WiFi Network Retrieval")
             print("")
             print("Found {} WiFi networks on this device.".format(total_networks))
+            self.utils.log_gui(f"📶 Found {total_networks} WiFi networks on this device", to_build_log=True)
             print("")
             print("How many networks would you like to process?")
             print("  1-{} - Specific number (default: 5)".format(total_networks))

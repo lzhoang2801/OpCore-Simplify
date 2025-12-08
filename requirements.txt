@@ -1,5 +1,6 @@
 # OpCore Simplify Requirements
 # GUI Framework
+certifi>=2025.11.12
 PyQt6>=6.10.1
 pyqt6-sip>=13.10.3
 PyQt6-Fluent-Widgets>=1.10.1

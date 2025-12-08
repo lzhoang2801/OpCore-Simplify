@@ -265,13 +265,16 @@ class gatheringFiles:
                 }
                 self.utils.gui_gathering_progress_callback(progress_info)
 
-            # Log download start (suppressed in GUI mode to avoid duplicate messages)
+            # Log download start
             if not self.utils.gui_callback:
                 print("")
                 print(f"Downloading {index + 1}/{total_products}: {product_name}")
                 if product_download_url:
                     print(f"from {product_download_url}")
                     print("")
+            else:
+                # Log to GUI build log
+                self.utils.log_gui(f"⬇️ Downloading {product_name} ({index + 1}/{total_products})", to_build_log=True)
             
             if not product_download_url:
                 self.utils.log_gui(f"❌ Could not find download URL for {product_name}", level="Error", to_build_log=True)
@@ -292,9 +295,11 @@ class gatheringFiles:
                 else:
                     raise Exception(f"Could not download {product_name} at this time. Please try again later.")
             
-            # Log extraction (suppressed in GUI mode)
+            # Log extraction
             if not self.utils.gui_callback:
                 print(f"Extracting {product_name}...")
+            else:
+                self.utils.log_gui(f"📦 Extracting {product_name}...", to_build_log=True)
             self.utils.extract_zip_file(zip_path)
             self.utils.create_folder(asset_dir, remove_content=True)
             
@@ -327,6 +332,8 @@ class gatheringFiles:
                     print("Downloading OcBinaryData...")
                     print(f"from {self.ocbinarydata_url}")
                     print("")
+                else:
+                    self.utils.log_gui("⬇️ Downloading OcBinaryData...", to_build_log=True)
                 
                 self.fetcher.download_and_save_file(self.ocbinarydata_url, oc_binary_data_zip_path)
 
@@ -338,9 +345,11 @@ class gatheringFiles:
                     shutil.rmtree(self.temporary_dir, ignore_errors=True)
                     return False
                 
-                # Log extraction (suppressed in GUI mode)
+                # Log extraction
                 if not self.utils.gui_callback:
                     print("Extracting OcBinaryData...")
+                else:
+                    self.utils.log_gui("📦 Extracting OcBinaryData...", to_build_log=True)
                 self.utils.extract_zip_file(oc_binary_data_zip_path)
             
             # Update progress for processing
@@ -353,9 +362,11 @@ class gatheringFiles:
                 }
                 self.utils.gui_gathering_progress_callback(progress_info)
             
-            # Log processing (suppressed in GUI mode)
+            # Log processing
             if not self.utils.gui_callback:
                 print(f"Processing {product_name}...")
+            else:
+                self.utils.log_gui(f"⚙️ Processing {product_name}...", to_build_log=True)
             
             if self.move_bootloader_kexts_to_product_directory(product_name):
                 self.integrity_checker.generate_folder_manifest(asset_dir, manifest_path)
@@ -391,9 +402,18 @@ class gatheringFiles:
             print("")
             print("Please try again later or apply them manually.")
             print("")
-            # Only show "Press Enter to continue" prompt in CLI mode
-            if not self.utils.gui_callback:
+            
+            # Show error dialog in GUI mode, or prompt in CLI mode
+            if self.utils.gui_handler:
+                message = (
+                    f"Unable to download {patches_name} at this time from:\n"
+                    f"{patches_url}\n\n"
+                    "Please try again later or apply them manually."
+                )
+                self.utils.show_info_dialog('Download Failed', message)
+            elif not self.utils.gui_callback:
                 self.utils.request_input()
+                
             return []
         
     def _update_download_history(self, download_history, product_name, product_id, product_url, sha256_hash):

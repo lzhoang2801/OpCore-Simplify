@@ -1,26 +1,26 @@
-"""Main GUI application with sidebar navigation using qfluentwidgets"""
+"""Main GUI application with sidebar navigation using qfluentwidgets."""
 
-from ..datasets import os_data, mac_model_data
-import sys
 import os
-import threading
-import time
 import platform
 import re
+import sys
+import threading
+from typing import Optional
 
-from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QFileDialog, QTextEdit
-)
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject
-from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt, pyqtSignal, QObject
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QFileDialog
 from qfluentwidgets import (
     FluentWindow, NavigationItemPosition, FluentIcon,
     setTheme, Theme, InfoBar, InfoBarPosition
 )
 
-from .styles import COLORS, SPACING
-from .pages import HomePage, UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, SettingsPage, ConfigEditorPage
+from ..datasets import os_data, mac_model_data
+from .models import HardwareReportState, MacOSVersionState, SMBIOSState, BuildState
+from .pages import (
+    HomePage, UploadPage, CompatibilityPage, ConfigurationPage, 
+    BuildPage, ConsolePage, SettingsPage, ConfigEditorPage
+)
 from .custom_dialogs import (
     show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
     show_wifi_network_count_dialog, show_codec_layout_dialog
@@ -31,15 +31,25 @@ scripts_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if scripts_path not in sys.path:
     sys.path.insert(0, scripts_path)
 
+# Constants
+WINDOW_MIN_SIZE = (1000, 700)
+WINDOW_DEFAULT_SIZE = (1200, 800)
+
 
 class ConsoleRedirector(QObject):
     """Thread-safe stream redirector that feeds ConsolePage metrics and keeps stdout/stderr mirrored."""
 
     append_text_signal = pyqtSignal(str, str)
-    LEVEL_PATTERN = re.compile(
-        r"\[(info|warning|error|debug)\]", re.IGNORECASE)
+    LEVEL_PATTERN = re.compile(r"\[(info|warning|error|debug)\]", re.IGNORECASE)
+    
+    # Log level detection keywords
+    LEVEL_KEYWORDS = {
+        "Error": ("error", "traceback", "failed"),
+        "Warning": ("warning", "warn"),
+        "Debug": ("debug",),
+    }
 
-    def __init__(self, controller, original_stdout=None, default_level="Info"):
+    def __init__(self, controller, original_stdout=None, default_level: str = "Info"):
         super().__init__()
         self.controller = controller
         self.original_stdout = original_stdout or sys.__stdout__
@@ -48,7 +58,8 @@ class ConsoleRedirector(QObject):
 
         self.append_text_signal.connect(self._append_text_on_main_thread)
 
-    def write(self, text):
+    def write(self, text: str):
+        """Write text to the redirector and original stdout."""
         if not text:
             return
 
@@ -62,7 +73,8 @@ class ConsoleRedirector(QObject):
         if self.original_stdout:
             self.original_stdout.write(text)
 
-    def _emit_line(self, line):
+    def _emit_line(self, line: str):
+        """Emit a single line to the appropriate handler."""
         message = line.rstrip('\r')
         level = self._detect_level(message)
 
@@ -71,107 +83,101 @@ class ConsoleRedirector(QObject):
         else:
             self.append_text_signal.emit(message, level)
 
-    def _append_text_on_main_thread(self, text, level):
-        """Slot that appends text on the main thread"""
+    def _append_text_on_main_thread(self, text: str, level: str):
+        """Slot that appends text on the main thread."""
         self.controller.log_message(text, level, to_build_log=False)
 
-    def _detect_level(self, text):
+    def _detect_level(self, text: str) -> str:
+        """
+        Detect log level from text content.
+        
+        Args:
+            text: Log message text
+            
+        Returns:
+            str: Detected log level (Info, Warning, Error, Debug)
+        """
+        # Try pattern match first (e.g., "[INFO]", "[ERROR]")
         match = self.LEVEL_PATTERN.search(text)
         if match:
             return match.group(1).capitalize()
 
+        # Fallback to keyword detection using mapping
         lowered = text.lower()
-        if lowered.startswith("error") or "traceback" in lowered:
-            return "Error"
-        if lowered.startswith("warning") or lowered.startswith("warn"):
-            return "Warning"
-        if lowered.startswith("debug"):
-            return "Debug"
-        if "failed" in lowered:
-            return "Error"
+        for level, keywords in self.LEVEL_KEYWORDS.items():
+            if any(keyword in lowered for keyword in keywords):
+                return level
+            
         return self.default_level
 
     def flush(self):
+        """Flush any remaining buffered content."""
         if self._buffer:
             self._emit_line(self._buffer)
             self._buffer = ""
         if self.original_stdout:
             self.original_stdout.flush()
 
-
 class OpCoreGUI(FluentWindow):
-    """Main GUI application with modern sidebar layout using qfluentwidgets"""
+    """Main GUI application with modern sidebar layout using qfluentwidgets."""
 
     # Signals for thread-safe GUI operations
-    # prompt_type, prompt_text, options, result_holder
-    gui_prompt_signal = pyqtSignal(str, str, object, object)
+    gui_prompt_signal = pyqtSignal(str, str, object, object)  # prompt_type, prompt_text, options, result_holder
     update_status_signal = pyqtSignal(str, str)  # message, status_type
-    # title, steps, current_step_index, progress, done
-    update_build_progress_signal = pyqtSignal(str, list, int, int, bool)
+    update_build_progress_signal = pyqtSignal(str, list, int, int, bool)  # title, steps, current_step_index, progress, done
     update_gathering_progress_signal = pyqtSignal(dict)  # progress_info dict
-    # message, level, to_console, to_build_log
-    log_message_signal = pyqtSignal(str, str, bool, bool)
-    # Signal for build completion with success status and bios_requirements
+    log_message_signal = pyqtSignal(str, str, bool, bool)  # message, level, to_console, to_build_log
     build_complete_signal = pyqtSignal(bool, object)  # success, bios_requirements
-    # Signal for loading hardware report
     load_hardware_report_signal = pyqtSignal(str, object)  # report_path, report_data
-    # Signal for opening result folder
     open_result_folder_signal = pyqtSignal(str)  # folder_path
+    
+    # Platform-specific font families
+    PLATFORM_FONTS = {
+        "Windows": "Segoe UI",
+        "Darwin": "SF Pro Display",  # macOS
+        "Linux": "Ubuntu"
+    }
 
     def __init__(self, ocpe_instance):
         """
-        Initialize the GUI application
+        Initialize the GUI application.
 
         Args:
             ocpe_instance: Instance of OCPE class from OpCore-Simplify.py
         """
         super().__init__()
         self.ocpe = ocpe_instance
+        
+        # Initialize state
+        self._init_state()
+        
+        # Setup window
+        self._setup_window()
+        
+        # Setup theme
+        self._apply_theme()
+        
+        # Connect signals
+        self._connect_signals()
+        
+        # Setup backend handlers
+        self._setup_backend_handlers()
+        
+        # Initialize navigation and pages
+        self.init_navigation()
 
-        # Set window properties
-        self.setWindowTitle("OpCore Simplify")
-        self.resize(1200, 800)
-        self.setMinimumSize(1000, 700)
-
-        # Set cross-platform font with fallbacks
-        font = QFont()
-        # Use platform-appropriate fonts with fallbacks
-        if platform.system() == "Windows":
-            font.setFamily("Segoe UI")
-        elif platform.system() == "Darwin":  # macOS
-            font.setFamily("SF Pro Display")
-        else:  # Linux and others
-            font.setFamily("Ubuntu")
-        # Set fallback fonts
-        font.setStyleHint(QFont.StyleHint.SansSerif)
-        self.setFont(font)
-
-        # Apply theme from settings
-        from Scripts.settings import Settings
-        settings = Settings()
-        theme_setting = settings.get_theme()
-        if theme_setting == "dark":
-            setTheme(Theme.DARK)
-        else:
-            setTheme(Theme.LIGHT)
-
-        # Variables for tracking state
-        self.hardware_report_path = "Not selected"
-        self.macos_version_text = "Not selected"
-        self.macos_version = ""  # Darwin version format (e.g., "22.0.0")
-        self.smbios_model_text = "Not selected"
-        self.disabled_devices_text = "None"
-
-        # Data storage
-        self.hardware_report = None
-        self.hardware_report_data = None
-        self.customized_hardware = None
-        self.disabled_devices = None
-        self.native_macos_version = None
-        self.ocl_patched_macos_version = None
-        self.needs_oclp = False
-
-        # Placeholder for widgets that will be created by pages
+    def _init_state(self):
+        """Initialize application state variables using dataclass models."""
+        # Use structured state management
+        self.hardware_state = HardwareReportState()
+        self.macos_state = MacOSVersionState()
+        self.smbios_state = SMBIOSState()
+        self.build_state = BuildState()
+        
+        # Backward compatibility properties (delegated to state objects)
+        # These will be removed in future versions
+        
+        # Widget references (will be created by pages)
         self.build_btn = None
         self.progress_var = None
         self.progress_bar = None
@@ -182,46 +188,169 @@ class OpCoreGUI(FluentWindow):
         self.stdout_redirector = None
         self.stderr_redirector = None
 
-        # Console redirection
+        # Console redirection flag
         self.console_redirected = False
+    
+    @property
+    def hardware_report_path(self) -> str:
+        """Get hardware report path."""
+        return self.hardware_state.path
+    
+    @hardware_report_path.setter
+    def hardware_report_path(self, value: str):
+        """Set hardware report path."""
+        self.hardware_state.path = value
+    
+    @property
+    def hardware_report(self):
+        """Get hardware report."""
+        return self.hardware_state.hardware_report
+    
+    @hardware_report.setter
+    def hardware_report(self, value):
+        """Set hardware report."""
+        self.hardware_state.hardware_report = value
+    
+    @property
+    def hardware_report_data(self):
+        """Get hardware report data."""
+        return self.hardware_state.data
+    
+    @hardware_report_data.setter
+    def hardware_report_data(self, value):
+        """Set hardware report data."""
+        self.hardware_state.data = value
+    
+    @property
+    def customized_hardware(self):
+        """Get customized hardware."""
+        return self.hardware_state.customized_hardware
+    
+    @customized_hardware.setter
+    def customized_hardware(self, value):
+        """Set customized hardware."""
+        self.hardware_state.customized_hardware = value
+    
+    @property
+    def disabled_devices(self):
+        """Get disabled devices."""
+        return self.hardware_state.disabled_devices
+    
+    @disabled_devices.setter
+    def disabled_devices(self, value):
+        """Set disabled devices."""
+        self.hardware_state.disabled_devices = value
+    
+    @property
+    def disabled_devices_text(self) -> str:
+        """Get disabled devices text."""
+        return self.hardware_state.disabled_devices_text
+    
+    @disabled_devices_text.setter
+    def disabled_devices_text(self, value: str):
+        """Set disabled devices text."""
+        self.hardware_state.disabled_devices_text = value
+    
+    @property
+    def macos_version_text(self) -> str:
+        """Get macOS version text."""
+        return self.macos_state.version_text
+    
+    @macos_version_text.setter
+    def macos_version_text(self, value: str):
+        """Set macOS version text."""
+        self.macos_state.version_text = value
+    
+    @property
+    def macos_version(self) -> str:
+        """Get macOS version (Darwin format)."""
+        return self.macos_state.version_darwin
+    
+    @macos_version.setter
+    def macos_version(self, value: str):
+        """Set macOS version (Darwin format)."""
+        self.macos_state.version_darwin = value
+    
+    @property
+    def native_macos_version(self):
+        """Get native macOS version."""
+        return self.macos_state.native_version
+    
+    @native_macos_version.setter
+    def native_macos_version(self, value):
+        """Set native macOS version."""
+        self.macos_state.native_version = value
+    
+    @property
+    def ocl_patched_macos_version(self):
+        """Get OCL patched macOS version."""
+        return self.macos_state.ocl_patched_version
+    
+    @ocl_patched_macos_version.setter
+    def ocl_patched_macos_version(self, value):
+        """Set OCL patched macOS version."""
+        self.macos_state.ocl_patched_version = value
+    
+    @property
+    def needs_oclp(self) -> bool:
+        """Get needs OCLP flag."""
+        return self.macos_state.needs_oclp
+    
+    @needs_oclp.setter
+    def needs_oclp(self, value: bool):
+        """Set needs OCLP flag."""
+        self.macos_state.needs_oclp = value
+    
+    @property
+    def smbios_model_text(self) -> str:
+        """Get SMBIOS model text."""
+        return self.smbios_state.model_text
+    
+    @smbios_model_text.setter
+    def smbios_model_text(self, value: str):
+        """Set SMBIOS model text."""
+        self.smbios_state.model_text = value
 
-        # Connect signals to slots for thread-safe GUI operations
+    def _setup_window(self):
+        """Setup window properties and appearance."""
+        self.setWindowTitle("OpCore Simplify")
+        self.resize(*WINDOW_DEFAULT_SIZE)
+        self.setMinimumSize(*WINDOW_MIN_SIZE)
+
+        # Set cross-platform font
+        font = QFont()
+        system = platform.system()
+        font_family = self.PLATFORM_FONTS.get(system, "Ubuntu")
+        font.setFamily(font_family)
+        font.setStyleHint(QFont.StyleHint.SansSerif)
+        self.setFont(font)
+
+    def _apply_theme(self):
+        """Apply theme from settings."""
+        from Scripts.settings import Settings
+        settings = Settings()
+        theme_setting = settings.get_theme()
+        theme = Theme.DARK if theme_setting == "dark" else Theme.LIGHT
+        setTheme(theme)
+
+    def _connect_signals(self):
+        """Connect all signals to their slots."""
         self.gui_prompt_signal.connect(self._handle_gui_prompt_on_main_thread)
         self.update_status_signal.connect(self.update_status)
-        self.update_build_progress_signal.connect(
-            self._update_build_progress_on_main_thread)
-        self.update_gathering_progress_signal.connect(
-            self._update_gathering_progress_on_main_thread)
+        self.update_build_progress_signal.connect(self._update_build_progress_on_main_thread)
+        self.update_gathering_progress_signal.connect(self._update_gathering_progress_on_main_thread)
         self.log_message_signal.connect(self._log_message_on_main_thread)
         self.build_complete_signal.connect(self._handle_build_complete)
         self.load_hardware_report_signal.connect(self._handle_load_hardware_report)
         self.open_result_folder_signal.connect(self._handle_open_result_folder)
 
-        # Set up GUI handlers - using new direct handler approach
+    def _setup_backend_handlers(self):
+        """Setup GUI handlers for backend operations."""
+        # ACPI callback
         self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
 
-        # Set gui_handler to self for all utils instances (new direct dialog approach)
-        self.ocpe.u.gui_handler = self
-        self.ocpe.u.gui_progress_callback = self.update_build_progress_threadsafe
-        self.ocpe.u.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
-
-        self.ocpe.h.utils.gui_handler = self
-        self.ocpe.k.utils.gui_handler = self
-        self.ocpe.c.utils.gui_handler = self
-        self.ocpe.co.utils.gui_handler = self
-        self.ocpe.o.utils.gui_handler = self
-        self.ocpe.o.utils.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
-        self.ocpe.ac.utils.gui_handler = self
-
-        # Keep old gui_callback for backward compatibility during migration
-        self.ocpe.u.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.h.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.k.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.c.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.co.utils.gui_callback = self.handle_gui_prompt_threadsafe
-        self.ocpe.o.utils.gui_callback = self.handle_gui_prompt_threadsafe
-
-        utils_with_logging = {
+        # GUI handler for all utils instances
+        utils_instances = [
             self.ocpe.u,
             self.ocpe.h.utils,
             self.ocpe.k.utils,
@@ -229,12 +358,21 @@ class OpCoreGUI(FluentWindow):
             self.ocpe.co.utils,
             self.ocpe.o.utils,
             self.ocpe.ac.utils,
-        }
-        for utils_instance in utils_with_logging:
-            if hasattr(utils_instance, "gui_log_callback"):
-                utils_instance.gui_log_callback = self._dispatch_backend_log
+        ]
+        
+        for utils in utils_instances:
+            utils.gui_handler = self
+            utils.gui_callback = self.handle_gui_prompt_threadsafe
 
-        self.init_navigation()
+        # Progress callbacks
+        self.ocpe.u.gui_progress_callback = self.update_build_progress_threadsafe
+        self.ocpe.u.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
+        self.ocpe.o.utils.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
+
+        # Logging callbacks
+        for utils in utils_instances:
+            if hasattr(utils, "gui_log_callback"):
+                utils.gui_log_callback = self._dispatch_backend_log
 
     def init_navigation(self):
         """Initialize navigation sidebar and pages"""

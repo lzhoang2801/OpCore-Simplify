@@ -1,52 +1,20 @@
 """
-Step 3: Configuration - qfluentwidgets version
+Step 3: Configuration - allows users to customize OpenCore EFI settings.
 """
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from qfluentwidgets import (
-    PushButton, SubtitleLabel, BodyLabel, CardWidget,
-    StrongBodyLabel, ComboBox, PrimaryPushButton, FluentIcon,
+    PushButton, SubtitleLabel, BodyLabel,
+    FluentIcon,
     GroupHeaderCardWidget
 )
 
-from ..styles import COLORS, SPACING
-
-
-def add_group_with_indent(card, icon, title, content, widget=None, indent_level=0):
-    """
-    Add a group to a GroupHeaderCardWidget with optional indentation.
-    This pattern is consistent with compatibility_page.py.
-
-    Args:
-        card: The GroupHeaderCardWidget instance
-        icon: Icon for the group
-        title: Title text
-        content: Content/description text
-        widget: Widget to add (default: new empty QWidget)
-        indent_level: 0 for main items, 1+ for child items (each level adds 20px left margin)
-
-    Returns:
-        The created CardGroupWidget
-    """
-    if widget is None:
-        widget = QWidget()  # Create new instance each time
-
-    group = card.addGroup(icon, title, content, widget)
-
-    # Apply indentation if needed
-    if indent_level > 0:
-        # Get the horizontal layout (hBoxLayout) and adjust left margin
-        # Default margins are (24, 10, 24, 10) - left, top, right, bottom
-        base_margin = 24
-        indent = 20 * indent_level
-        group.hBoxLayout.setContentsMargins(base_margin + indent, 10, 24, 10)
-
-    return group
+from ..styles import SPACING, COLORS
+from ..ui_utils import add_group_with_indent, create_step_indicator
 
 
 class ConfigurationPage(QWidget):
-    """Step 3: Configuration options"""
+    """Step 3: Configuration options."""
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -55,16 +23,14 @@ class ConfigurationPage(QWidget):
         self.setup_ui()
 
     def setup_ui(self):
-        """Setup the configuration page UI"""
+        """Setup the configuration page UI."""
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
                                        SPACING['xxlarge'], SPACING['xlarge'])
         main_layout.setSpacing(SPACING['large'])
 
         # Step indicator
-        step_label = BodyLabel("STEP 3 OF 4")
-        step_label.setStyleSheet("color: #0078D4; font-weight: bold;")
-        main_layout.addWidget(step_label)
+        main_layout.addWidget(create_step_indicator(3))
 
         # Header section with title and description
         header_container = QWidget()

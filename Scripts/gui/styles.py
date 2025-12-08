@@ -1,11 +1,12 @@
 """
-Centralized styling and theming for OpCore Simplify GUI with qfluentwidgets
+Centralized styling and theming for OpCore Simplify GUI with qfluentwidgets.
+This module provides consistent design tokens following Microsoft's Fluent Design System.
 """
 
-from PyQt6.QtGui import QColor
+from typing import Final
 
 # Color palette - Fluent Design System inspired
-COLORS = {
+COLORS: Final[dict[str, str]] = {
     # Primary colors
     'primary': '#0078D4',
     'primary_dark': '#005A9E',
@@ -48,8 +49,8 @@ COLORS = {
     'border_focus': '#0078D4',
 }
 
-# Spacing and sizing
-SPACING = {
+# Spacing and sizing constants
+SPACING: Final[dict[str, int]] = {
     'tiny': 4,
     'small': 8,
     'medium': 12,
@@ -59,7 +60,7 @@ SPACING = {
     'xxxlarge': 32,
 }
 
-SIZES = {
+SIZES: Final[dict[str, int]] = {
     'sidebar_width': 220,
     'sidebar_item_height': 40,
     'button_height': 32,
@@ -69,8 +70,8 @@ SIZES = {
     'icon_size': 16,
 }
 
-# Border radius
-RADIUS = {
+# Border radius values
+RADIUS: Final[dict[str, int]] = {
     'small': 4,
     'medium': 6,
     'large': 8,

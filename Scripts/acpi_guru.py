@@ -143,10 +143,14 @@ class ACPIGuru:
                     return self.read_acpi_tables(os.path.join(path,"ACPI"))
                 print(" - No valid .aml files were found!")
                 print("")
-                #self.u.grab("Press [enter] to return...")
-                # Only show "Press Enter to continue" prompt in CLI mode
-                if not self.utils.gui_callback:
+                
+                # Show error dialog in GUI mode, or prompt in CLI mode
+                if self.utils.gui_handler:
+                    message = "No valid .aml files were found in the selected directory."
+                    self.utils.show_info_dialog('ACPI Files Not Found', message)
+                elif not self.utils.gui_callback:
                     self.utils.request_input()
+                    
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -161,10 +165,15 @@ class ACPIGuru:
                     print(" - {}".format(d))
                 print("\nOnly one is allowed at a time.  Please remove one of the above and try again.")
                 print("")
-                #self.u.grab("Press [enter] to return...")
-                # Only show "Press Enter to continue" prompt in CLI mode
-                if not self.utils.gui_callback:
+                
+                # Show error dialog in GUI mode, or prompt in CLI mode
+                if self.utils.gui_handler:
+                    files_list = "\n".join([f" - {d}" for d in self.sorted_nicely(dsdt_list)])
+                    message = f"Multiple files with DSDT signature found:\n\n{files_list}\n\nOnly one is allowed at a time. Please remove one of the above and try again."
+                    self.utils.show_info_dialog('Multiple DSDT Files Found', message)
+                elif not self.utils.gui_callback:
                     self.utils.request_input()
+                    
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -187,10 +196,14 @@ class ACPIGuru:
                 # Not a DSDT, we aren't applying pre-patches
                 print("\n{} could not be disassembled!".format(os.path.basename(path)))
                 print("")
-                #self.u.grab("Press [enter] to return...")
-                # Only show "Press Enter to continue" prompt in CLI mode
-                if not self.utils.gui_callback:
+                
+                # Show error dialog in GUI mode, or prompt in CLI mode
+                if self.utils.gui_handler:
+                    message = f"The file '{os.path.basename(path)}' could not be disassembled."
+                    self.utils.show_info_dialog('ACPI Disassembly Failed', message)
+                elif not self.utils.gui_callback:
                     self.utils.request_input()
+                    
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -203,10 +216,14 @@ class ACPIGuru:
         else:
             print("Passed file/folder does not exist!")
             print("")
-            #self.u.grab("Press [enter] to return...")
-            # Only show "Press Enter to continue" prompt in CLI mode
-            if not self.utils.gui_callback:
+            
+            # Show error dialog in GUI mode, or prompt in CLI mode
+            if self.utils.gui_handler:
+                message = "The selected file or folder does not exist."
+                self.utils.show_info_dialog('File Not Found', message)
+            elif not self.utils.gui_callback:
                 self.utils.request_input()
+                
             # Restore any prior tables
             self.acpi.acpi_tables = prior_tables
             return
@@ -257,10 +274,14 @@ class ACPIGuru:
             if not fixed:
                 print("\n{} could not be disassembled!".format(trouble_dsdt))
                 print("")
-                #self.u.grab("Press [enter] to return...")
-                # Only show "Press Enter to continue" prompt in CLI mode
-                if not self.utils.gui_callback:
+                
+                # Show error dialog in GUI mode, or prompt in CLI mode
+                if self.utils.gui_handler:
+                    message = f"The DSDT file '{trouble_dsdt}' could not be disassembled."
+                    self.utils.show_info_dialog('DSDT Disassembly Failed', message)
+                elif not self.utils.gui_callback:
                     self.utils.request_input()
+                    
                 if temp:
                     shutil.rmtree(temp,ignore_errors=True)
                 # Restore any prior tables

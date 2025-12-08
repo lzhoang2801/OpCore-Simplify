@@ -84,6 +84,7 @@ class SMBIOS:
             preserved = self.load_preserved_smbios()
             if preserved and preserved.get("SystemProductName") == smbios_model:
                 print("Using preserved SMBIOS values")
+                self.utils.log_gui("💾 Using preserved SMBIOS values", to_build_log=True)
                 self.utils.debug_log(f"Loaded preserved SMBIOS for {smbios_model}")
                 return preserved
         
@@ -103,6 +104,7 @@ class SMBIOS:
                     "SystemUUID": str(uuid.uuid4()).upper(),
                 }
                 print("Using custom SMBIOS values")
+                self.utils.log_gui("⚙️ Using custom SMBIOS values", to_build_log=True)
                 self.utils.debug_log(f"Using custom SMBIOS: Serial={custom_serial[:4]}..., MLB={custom_mlb[:4]}...")
                 if self.settings.get_preserve_smbios():
                     self.save_preserved_smbios(smbios_data)
