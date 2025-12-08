@@ -9,6 +9,7 @@ from .configuration_page import ConfigurationPage
 from .build_page import BuildPage
 from .console_page import ConsolePage
 from .settings_page import SettingsPage
+from .config_editor_page import ConfigEditorPage
 
 __all__ = [
     'HomePage',
@@ -18,4 +19,5 @@ __all__ = [
     'BuildPage',
     'ConsolePage',
     'SettingsPage',
+    'ConfigEditorPage',
 ]

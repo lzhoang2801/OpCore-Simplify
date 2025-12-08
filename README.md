@@ -102,6 +102,17 @@ The GUI provides an easy-to-follow step-by-step wizard while still allowing CLI 
    - Custom ACPI patches, kexts, and SMBIOS adjustments (**not recommended**).
    - Force load kexts on unsupported macOS versions.
 
+6. **Config.plist Editor** 🆕  
+   A powerful TreeView-based editor for managing OpenCore configurations:
+   
+   - **Interactive TreeView**: Browse and edit your config.plist with a clear hierarchical display
+   - **OC Snapshot**: Automatically scan and sync ACPI, Kexts, Drivers, and Tools from your EFI folder (based on [ProperTree](https://github.com/corpnewt/ProperTree))
+   - **Validation**: Comprehensive checks for path lengths, structure, duplicates, and kext dependencies
+   - **Type-aware Editing**: Edit values with appropriate controls for Boolean, Number, String, and Data types
+   - **File Operations**: Load, Save, and Save As functionality with plist format preservation
+   
+   See [Config Editor Documentation](docs/CONFIG_EDITOR.md) for detailed usage instructions.
+
 ## 🚀 **How To Use**
 
 1. **Download OpCore Simplify**:

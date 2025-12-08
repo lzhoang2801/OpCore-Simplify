@@ -20,7 +20,7 @@ from qfluentwidgets import (
 )
 
 from .styles import COLORS, SPACING
-from .pages import HomePage, UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, SettingsPage
+from .pages import HomePage, UploadPage, CompatibilityPage, ConfigurationPage, BuildPage, ConsolePage, SettingsPage, ConfigEditorPage
 from .custom_dialogs import (
     show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
     show_before_using_efi_dialog, show_wifi_network_count_dialog, show_codec_layout_dialog
@@ -235,6 +235,7 @@ class OpCoreGUI(FluentWindow):
         self.compatibilityPage = CompatibilityPage(self)
         self.configurationPage = ConfigurationPage(self)
         self.buildPage = BuildPage(self)
+        self.configEditorPage = ConfigEditorPage(self)
         self.consolePage = ConsolePage(self)
         self.settingsPage = SettingsPage(self)
 
@@ -252,6 +253,8 @@ class OpCoreGUI(FluentWindow):
 
         # Add tools section
         self.navigationInterface.addSeparator()
+        self.addSubInterface(self.configEditorPage, FluentIcon.DOCUMENT,
+                             "Config Editor", NavigationItemPosition.BOTTOM)
         self.addSubInterface(self.consolePage, FluentIcon.CODE,
                              "Console Log", NavigationItemPosition.BOTTOM)
         self.addSubInterface(self.settingsPage, FluentIcon.SETTING,
