@@ -2,44 +2,41 @@
 Welcome/Home page showing introduction and important notices from README
 """
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt
 from qfluentwidgets import (
     SubtitleLabel, BodyLabel, CardWidget, StrongBodyLabel,
-    FluentIcon, IconWidget, InfoBarIcon
+    FluentIcon, IconWidget, InfoBarIcon, ScrollArea
 )
 
 from ..styles import COLORS, SPACING
 
 
-class HomePage(QWidget):
+class HomePage(ScrollArea):
     """Welcome/Home page with introduction and important information"""
 
     def __init__(self, parent):
         super().__init__(parent)
         self.setObjectName("homePage")
         self.controller = parent
+        self.scrollWidget = QWidget()
+        self.expandLayout = QVBoxLayout(self.scrollWidget)
         self.setup_ui()
 
     def setup_ui(self):
         """Setup the home page UI"""
-        # Create main layout
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
+        # Configure scroll area
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setWidget(self.scrollWidget)
+        self.setWidgetResizable(True)
+        self.enableTransparentBackground()
 
-        # Create scroll area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # Set layout spacing and margins
+        self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
+                                             SPACING['xxlarge'], SPACING['xlarge'])
+        self.expandLayout.setSpacing(SPACING['large'])
 
-        # Create content widget
-        content_widget = QWidget()
-        layout = QVBoxLayout(content_widget)
-        layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
-                                  SPACING['xxlarge'], SPACING['xlarge'])
-        layout.setSpacing(SPACING['large'])
+        layout = self.expandLayout
 
         # Welcome header
         welcome_label = SubtitleLabel("Welcome to OpCore Simplify")
@@ -167,10 +164,6 @@ class HomePage(QWidget):
         layout.addWidget(getting_started_card)
 
         layout.addStretch()
-
-        # Set content widget to scroll area
-        scroll.setWidget(content_widget)
-        main_layout.addWidget(scroll)
 
     def refresh(self):
         """Refresh page content"""

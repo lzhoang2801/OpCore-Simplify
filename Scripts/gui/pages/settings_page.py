@@ -74,7 +74,7 @@ class SettingsPage(ScrollArea):
         """Initialize the layout with all setting groups"""
         # Set layout spacing and margins
         self.expandLayout.setSpacing(28)
-        self.expandLayout.setContentsMargins(36, 10, 36, 0)
+        self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
 
         # Build Settings Group
         self.build_group = self.create_build_settings_group()

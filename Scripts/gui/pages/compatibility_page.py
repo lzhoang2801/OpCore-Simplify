@@ -134,7 +134,7 @@ class CompatibilityPage(ScrollArea):
         """Initialize the expand layout with compatibility cards"""
         # Set layout spacing and margins
         self.expandLayout.setSpacing(28)
-        self.expandLayout.setContentsMargins(36, 10, 36, 0)
+        self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
 
         # macOS version support card - positioned at the top of content area
         self.macos_version_card = CardWidget(self.scrollWidget)
