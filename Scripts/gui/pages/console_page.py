@@ -23,12 +23,15 @@ from qfluentwidgets import (
     SwitchButton,
     TextEdit,
     FluentIcon,
+    ScrollArea,
+    CommandBar,
+    Action,
 )
 
 from ..styles import COLORS, SPACING, RADIUS
 
 
-class ConsolePage(QWidget):
+class ConsolePage(ScrollArea):
     """Console log viewer with rich filtering and controls"""
 
     LEVELS = ("All", "Info", "Warning", "Error", "Debug")
@@ -37,6 +40,9 @@ class ConsolePage(QWidget):
         super().__init__(parent)
         self.setObjectName("consolePage")
         self.controller = parent
+        
+        self.scrollWidget = QWidget()
+        self.expandLayout = QVBoxLayout(self.scrollWidget)
 
         self._log_entries: list[tuple[str, str]] = []
         self._auto_scroll_enabled = True
@@ -46,7 +52,14 @@ class ConsolePage(QWidget):
         self._apply_filters()
 
     def setup_ui(self):
-        layout = QVBoxLayout(self)
+        # Configure scroll area
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setWidget(self.scrollWidget)
+        self.setWidgetResizable(True)
+        self.enableTransparentBackground()
+        
+        # Set layout spacing and margins
+        layout = self.expandLayout
         layout.setContentsMargins(
             SPACING['xxlarge'],
             SPACING['xlarge'],
@@ -55,79 +68,104 @@ class ConsolePage(QWidget):
         )
         layout.setSpacing(SPACING['large'])
 
+        # Page header
+        header_container = QWidget()
+        header_layout = QVBoxLayout(header_container)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(SPACING['tiny'])
 
+        title_label = SubtitleLabel("Console Log")
+        header_layout.addWidget(title_label)
 
-        header_row = QHBoxLayout()
+        subtitle_label = BodyLabel("Real-time application logs and events")
+        subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        header_layout.addWidget(subtitle_label)
 
-        header_row.addStretch()
+        layout.addWidget(header_container)
 
-
-
-        self.lines_value = StrongBodyLabel("0")
-        self.last_update_value = StrongBodyLabel("--")
-        self.filter_value = StrongBodyLabel("Showing all levels")
-
-
-        controls_card = CardWidget()
-        controls_layout = QVBoxLayout(controls_card)
-        controls_layout.setContentsMargins(
+        # Simple filter controls in a single clean card
+        filter_card = CardWidget()
+        filter_layout = QVBoxLayout(filter_card)
+        filter_layout.setContentsMargins(
             SPACING['large'],
             SPACING['large'],
             SPACING['large'],
             SPACING['large'],
         )
-        controls_layout.setSpacing(SPACING['medium'])
+        filter_layout.setSpacing(SPACING['medium'])
 
-        controls_header = QHBoxLayout()
-        controls_header.addWidget(SubtitleLabel("Live Console Stream"))
-        controls_header.addStretch()
-        self.filter_status_label = BodyLabel("Showing all logs")
-        self.filter_status_label.setStyleSheet(
-            f"color: {COLORS['text_secondary']};"
-        )
-        controls_header.addWidget(self.filter_status_label)
-        controls_layout.addLayout(controls_header)
-
+        # Filter row with level and search side by side
         filter_row = QHBoxLayout()
         filter_row.setSpacing(SPACING['medium'])
 
+        # Level filter
+        level_label = BodyLabel("Level:")
+        filter_row.addWidget(level_label)
+        
         self.level_filter = ComboBox()
         self.level_filter.addItems(self.LEVELS)
         self.level_filter.currentTextChanged.connect(self._apply_filters)
         self.level_filter.setMinimumWidth(140)
         filter_row.addWidget(self.level_filter)
 
+        # Search input
         self.search_input = LineEdit()
-        self.search_input.setPlaceholderText("Search message text...")
+        self.search_input.setPlaceholderText("Search in logs...")
+        self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self._apply_filters)
         filter_row.addWidget(self.search_input, stretch=1)
 
-        controls_layout.addLayout(filter_row)
+        filter_layout.addLayout(filter_row)
 
+        # Toggle switches row
         toggle_row = QHBoxLayout()
         toggle_row.setSpacing(SPACING['large'])
 
+        # Auto-scroll toggle
+        auto_scroll_container = QWidget()
+        auto_scroll_layout = QHBoxLayout(auto_scroll_container)
+        auto_scroll_layout.setContentsMargins(0, 0, 0, 0)
+        auto_scroll_layout.setSpacing(SPACING['small'])
+        
+        auto_scroll_label = BodyLabel("Auto-scroll")
+        auto_scroll_layout.addWidget(auto_scroll_label)
+        
         self.auto_scroll_switch = SwitchButton()
         self.auto_scroll_switch.setChecked(True)
         self.auto_scroll_switch.checkedChanged.connect(self._toggle_auto_scroll)
+        auto_scroll_layout.addWidget(self.auto_scroll_switch)
+        auto_scroll_layout.addStretch()
+        
+        toggle_row.addWidget(auto_scroll_container)
 
-        auto_scroll_container = self._build_toggle_container(
-            "Auto-scroll", "Stick to the most recent entry", self.auto_scroll_switch
-        )
-        toggle_row.addWidget(auto_scroll_container, stretch=1)
-
+        # Word wrap toggle
+        wrap_container = QWidget()
+        wrap_layout = QHBoxLayout(wrap_container)
+        wrap_layout.setContentsMargins(0, 0, 0, 0)
+        wrap_layout.setSpacing(SPACING['small'])
+        
+        wrap_label = BodyLabel("Word Wrap")
+        wrap_layout.addWidget(wrap_label)
+        
         self.wrap_switch = SwitchButton()
         self.wrap_switch.setChecked(True)
         self.wrap_switch.checkedChanged.connect(self._toggle_wrap_mode)
+        wrap_layout.addWidget(self.wrap_switch)
+        wrap_layout.addStretch()
+        
+        toggle_row.addWidget(wrap_container)
+        toggle_row.addStretch()
 
-        wrap_container = self._build_toggle_container(
-            "Soft wrap", "Wrap long lines for readability", self.wrap_switch
-        )
-        toggle_row.addWidget(wrap_container, stretch=1)
+        filter_layout.addLayout(toggle_row)
 
-        controls_layout.addLayout(toggle_row)
-        layout.addWidget(controls_card)
+        # Filter status
+        self.filter_status_label = BodyLabel("Showing all logs")
+        self.filter_status_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 12px;")
+        filter_layout.addWidget(self.filter_status_label)
 
+        layout.addWidget(filter_card)
+
+        # Console output card
         console_card = CardWidget()
         console_layout = QVBoxLayout(console_card)
         console_layout.setContentsMargins(
@@ -138,93 +176,67 @@ class ConsolePage(QWidget):
         )
         console_layout.setSpacing(SPACING['medium'])
 
-        toolbar = QHBoxLayout()
-        toolbar.setSpacing(SPACING['small'])
+        # Console header with CommandBar
+        console_header = QHBoxLayout()
+        console_title = StrongBodyLabel("Console Output")
+        console_header.addWidget(console_title)
+        console_header.addStretch()
 
-        clear_btn = PushButton(FluentIcon.DELETE, "Clear")
-        clear_btn.clicked.connect(self.clear_console)
-        toolbar.addWidget(clear_btn)
+        # Create CommandBar with actions
+        self.command_bar = CommandBar(self.scrollWidget)
+        
+        # Clear action
+        clear_action = Action(FluentIcon.DELETE, "Clear")
+        clear_action.triggered.connect(self.clear_console)
+        clear_action.setToolTip("Clear all console logs")
+        self.command_bar.addAction(clear_action)
+        
+        # Copy action
+        copy_action = Action(FluentIcon.COPY, "Copy")
+        copy_action.triggered.connect(self.copy_console)
+        copy_action.setToolTip("Copy visible logs to clipboard")
+        self.command_bar.addAction(copy_action)
+        
+        # Export action (primary)
+        export_action = Action(FluentIcon.SAVE, "Export")
+        export_action.triggered.connect(self.save_console)
+        export_action.setToolTip("Export logs to file")
+        self.command_bar.addAction(export_action)
+        
+        self.command_bar.addSeparator()
+        
+        # Jump to bottom action
+        jump_action = Action(FluentIcon.DOWN, "Jump to Bottom")
+        jump_action.triggered.connect(self.scroll_to_bottom)
+        jump_action.setToolTip("Scroll to the bottom of the console")
+        self.command_bar.addAction(jump_action)
+        
+        console_header.addWidget(self.command_bar)
+        console_layout.addLayout(console_header)
 
-        copy_btn = PushButton(FluentIcon.COPY, "Copy")
-        copy_btn.clicked.connect(self.copy_console)
-        toolbar.addWidget(copy_btn)
-
-        save_btn = PrimaryPushButton(FluentIcon.SAVE, "Export")
-        save_btn.clicked.connect(self.save_console)
-        toolbar.addWidget(save_btn)
-
-        toolbar.addStretch()
-
-        jump_btn = PushButton(FluentIcon.DOWN, "Jump to bottom")
-        jump_btn.clicked.connect(self.scroll_to_bottom)
-        toolbar.addWidget(jump_btn)
-
-        console_layout.addLayout(toolbar)
-
+        # Console text area
         self.console_text = TextEdit()
         self.console_text.setReadOnly(True)
         self.console_text.setPlaceholderText(
-            "Waiting for console events..."
+            "Console logs will appear here...\n\n"
+            "Waiting for application events..."
         )
-        self.console_text.setMinimumHeight(520)
+        self.console_text.setMinimumHeight(450)
         self.console_text.setStyleSheet(
             f"background: {COLORS['bg_secondary']};"
             f"border: 1px solid {COLORS['border_light']};"
             f"border-radius: {RADIUS['card']}px;"
-            "font-family: 'JetBrains Mono', 'SFMono-Regular', monospace;"
+            "font-family: 'Consolas', 'Monaco', 'Courier New', monospace;"
             "font-size: 13px;"
+            "padding: 8px;"
         )
         console_layout.addWidget(self.console_text)
 
         layout.addWidget(console_card)
-
-    def _build_metric_card(self, title: str, value_widget: StrongBodyLabel, caption: str) -> CardWidget:
-        card = CardWidget()
-        card.setObjectName("consoleMetricCard")
-        card.setStyleSheet(
-            f"CardWidget#consoleMetricCard {{"
-            f"background: rgba(0, 0, 0, 0.25);"
-            "border: 1px solid rgba(255,255,255,0.28);"
-            f"border-radius: {RADIUS['card']}px;"
-            "}}"
-        )
-
-        layout = QVBoxLayout(card)
-        layout.setSpacing(SPACING['tiny'])
-
-        title_label = BodyLabel(title)
-        title_label.setStyleSheet("color: rgba(255,255,255,0.85);")
-        layout.addWidget(title_label)
-
-        value_widget.setStyleSheet("color: #FFFFFF; font-size: 26px;")
-        layout.addWidget(value_widget)
-
-        caption_label = BodyLabel(caption)
-        caption_label.setStyleSheet("color: rgba(255,255,255,0.7);")
-        layout.addWidget(caption_label)
-
-        return card
-
-    def _build_toggle_container(self, title: str, description: str, switch: SwitchButton) -> CardWidget:
-        container = CardWidget()
-        inner_layout = QHBoxLayout(container)
-        inner_layout.setContentsMargins(SPACING['medium'], SPACING['small'], SPACING['medium'], SPACING['small'])
-        inner_layout.setSpacing(SPACING['medium'])
-
-        text_column = QVBoxLayout()
-        text_column.setSpacing(0)
-        text_column.addWidget(StrongBodyLabel(title))
-        desc_label = BodyLabel(description)
-        desc_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
-        text_column.addWidget(desc_label)
-
-        inner_layout.addLayout(text_column)
-        inner_layout.addStretch()
-        inner_layout.addWidget(switch)
-
-        return container
+        layout.addStretch()
 
     def _apply_filters(self):
+        """Apply current filter settings to log entries"""
         level = self.level_filter.currentText() if hasattr(self, 'level_filter') else self.LEVELS[0]
         query = self.search_input.text().strip().lower() if hasattr(self, 'search_input') else ""
 
@@ -239,10 +251,8 @@ class ConsolePage(QWidget):
         if filtered:
             self.console_text.setPlainText("\n".join(filtered))
         else:
-            placeholder = "No console entries match the current filters." if self._log_entries else "Waiting for console events..."
+            placeholder = "No logs match the current filters." if self._log_entries else "Console logs will appear here...\n\nWaiting for application events..."
             self.console_text.setPlainText(placeholder)
-
-        self.filter_value.setText(f"{level} filter")
 
         if self._auto_scroll_enabled and filtered:
             self.scroll_to_bottom()
@@ -250,11 +260,23 @@ class ConsolePage(QWidget):
         self._update_metrics(len(filtered), level)
 
     def _update_metrics(self, visible_count: int, level: str):
-        self.lines_value.setText(str(len(self._log_entries)))
-        self.last_update_value.setText(self._last_update_text)
-        self.filter_status_label.setText(
-            f"{visible_count} line(s) visible · {level}"
-        )
+        """Update the filter status display"""
+        # Update filter status label with detailed information
+        if len(self._log_entries) == 0:
+            status_text = "No logs yet"
+        elif visible_count == len(self._log_entries):
+            status_text = f"Showing all {visible_count} log(s)"
+        else:
+            status_text = f"Showing {visible_count} of {len(self._log_entries)} log(s)"
+        
+        if level != "All":
+            status_text += f" · Filter: {level}"
+        
+        search_query = self.search_input.text().strip() if hasattr(self, 'search_input') else ""
+        if search_query:
+            status_text += f" · Search: '{search_query}'"
+            
+        self.filter_status_label.setText(status_text)
 
     def _toggle_auto_scroll(self, checked: bool):
         self._auto_scroll_enabled = checked
