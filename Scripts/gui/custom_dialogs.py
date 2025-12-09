@@ -285,28 +285,22 @@ def show_question_dialog(
     default: str = 'no', 
     warning: Optional[str] = None
 ) -> bool:
-    """
-    Show a yes/no question dialog.
-
-    Args:
-        parent: Parent widget
-        title: Dialog title
-        content: Dialog content/question
-        default: Default option ('yes' or 'no')
-        warning: Optional warning message to append
-
-    Returns:
-        bool: True if Yes was clicked, False otherwise
-    """
-    # Add warning to content if provided
     if warning:
         content = f"{content}\n\n⚠️ {warning}"
 
     dialog = MessageBox(title, content, parent)
+    
+    if '<' in content and '>' in content:
+        dialog.contentLabel.setTextFormat(Qt.TextFormat.RichText)
+        dialog.contentLabel.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse | 
+            Qt.TextInteractionFlag.LinksAccessibleByMouse
+        )
+        dialog.contentLabel.setOpenExternalLinks(True)
+        
     dialog.yesButton.setText("Yes")
     dialog.cancelButton.setText("No")
 
-    # exec() returns QDialog.DialogCode.Accepted if Yes is clicked, Rejected otherwise
     return dialog.exec() == QDialog.DialogCode.Accepted
 
 

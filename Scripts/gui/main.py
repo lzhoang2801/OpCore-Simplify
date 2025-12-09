@@ -434,21 +434,6 @@ class OpCoreGUI(FluentWindow):
                 "Please load a hardware report first", 'warning')
             return
 
-        if self.macos_state.needs_oclp:
-            result = show_question_dialog(
-                self,
-                "OpenCore Legacy Patcher Warning",
-                "OpenCore Legacy Patcher is required for your configuration.\n\n"
-                "Important considerations:\n"
-                "1. OCLP is the only solution for dropped GPU and WiFi support\n"
-                "2. OCLP disables macOS security features (SIP, AMFI)\n"
-                "3. OCLP is not officially supported for Hackintosh\n\n"
-                "Do you want to continue?"
-            )
-
-            if not result:
-                return
-
         def build_thread():
             try:
                 self.update_status_signal.emit(

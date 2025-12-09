@@ -14,6 +14,7 @@ from qfluentwidgets import (
 
 from ..styles import COLORS, SPACING, RADIUS
 from ..ui_utils import build_icon_label, create_step_indicator
+from ..custom_dialogs import show_question_dialog
 
 # Constants for build log formatting
 LOG_SEPARATOR = "═" * 60
@@ -319,6 +320,24 @@ class BuildPage(ScrollArea):
                 parent=self
             )
             return
+
+        if self.controller.macos_state.needs_oclp:
+            content = (
+                "<p>1. OpenCore Legacy Patcher is the only solution to enable dropped GPU and Broadcom WiFi<br>"
+                "support in newer macOS versions, as well as to bring back AppleHDA for macOS Tahoe 26.</p>"
+                "<p>2. OpenCore Legacy Patcher disables macOS security features including SIP and AMFI, which may <br>"
+                "lead to issues such as requiring full installers for updates, application crashes, and<br>"
+                "system instability.</p>"
+                "<p>3. OpenCore Legacy Patcher is not officially supported for Hackintosh community.</p>"
+                "<p><b><font color='{error_color}'>Important:</font></b><br>"
+                "Please consider these risks carefully before proceeding.</p>"
+                "<p><b><font color='{info_color}'>Support for macOS Tahoe 26:</font></b><br>"
+                "To patch macOS Tahoe 26, you must download OpenCore-Patcher 3.0.0 or newer from<br>"
+                "my repository: <a href='https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0'>lzhoang2801/OpenCore-Legacy-Patcher</a> on GitHub.<br>"
+                "Older or official Dortania releases are NOT supported for Tahoe 26.</p>"
+            ).format(error_color=COLORS['error'], info_color='#00BCD4')
+            if not show_question_dialog(self.window(), "OpenCore Legacy Patcher Warning", content):
+                return
 
         # Update UI state for build in progress
         self.build_in_progress = True
