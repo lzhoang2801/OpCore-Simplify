@@ -15,7 +15,7 @@ class gatheringFiles:
     def __init__(self):
         self.utils = utils.Utils()
         self.settings = settings_module.Settings()
-        self.github = github.Github(utils_instance=self.utils)
+        self.github = github.Github()
         self.kext = kext_maestro.KextMaestro()
         self.fetcher = resource_fetcher.ResourceFetcher(utils_instance=self.utils)
         self.integrity_checker = integrity_checker.IntegrityChecker()

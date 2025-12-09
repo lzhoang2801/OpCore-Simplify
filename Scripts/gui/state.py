@@ -4,8 +4,8 @@ from typing import Optional, Dict, List, Any
 
 @dataclass
 class HardwareReportState:
-    path: str = "Not selected"
-    data: Optional[Dict[str, Any]] = None
+    report_path: str = "Not selected"
+    acpi_dir: str = "Not selected"
     hardware_report: Optional[Dict[str, Any]] = None
     compatibility_error: Optional[str] = None
     customized_hardware: Optional[Dict[str, Any]] = None

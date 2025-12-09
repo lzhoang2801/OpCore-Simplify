@@ -10,7 +10,7 @@ class DSDT:
     def __init__(self, utils_instance=None, **kwargs):
         #self.dl = downloader.Downloader()
         self.u = utils_instance if utils_instance is not None else utils.Utils()
-        self.github = github.Github(utils_instance=self.u)
+        self.github = github.Github()
         self.fetcher = resource_fetcher.ResourceFetcher(utils_instance=self.u)
         self.r  = run.Run()
         self.iasl_url_macOS = "https://raw.githubusercontent.com/acidanthera/MaciASL/master/Dist/iasl-stable"

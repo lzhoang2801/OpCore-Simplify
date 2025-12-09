@@ -308,7 +308,7 @@ class BuildPage(ScrollArea):
     def start_build(self):
         """Start building EFI with enhanced UI feedback"""
         # Check if hardware report is loaded
-        if not self.controller.hardware_report:
+        if not self.controller.hardware_state.hardware_report:
             InfoBar.warning(
                 title='Hardware Report Required',
                 content='Please load a hardware report before building.',
@@ -348,9 +348,9 @@ class BuildPage(ScrollArea):
         
         # Log build configuration
         self.controller.log_message("Build Configuration:", to_console=False, to_build_log=True)
-        self.controller.log_message(f"  • macOS Version: {self.controller.macos_version_text}", to_console=False, to_build_log=True)
-        self.controller.log_message(f"  • SMBIOS Model: {self.controller.smbios_model_text}", to_console=False, to_build_log=True)
-        if self.controller.needs_oclp:
+        self.controller.log_message(f"  • macOS Version: {self.controller.macos_state.version_text}", to_console=False, to_build_log=True)
+        self.controller.log_message(f"  • SMBIOS Model: {self.controller.smbios_state.model_text}", to_console=False, to_build_log=True)
+        if self.controller.macos_state.needs_oclp:
             self.controller.log_message(f"  • OpenCore Legacy Patcher: Required", to_console=False, to_build_log=True)
         self.controller.log_message("", to_console=False, to_build_log=True)
 

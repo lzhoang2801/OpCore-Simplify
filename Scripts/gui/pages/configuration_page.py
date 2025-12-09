@@ -150,7 +150,7 @@ class ConfigurationPage(QWidget):
         macos_widget = QWidget()
         macos_widget_layout = QHBoxLayout(macos_widget)
         macos_widget_layout.setContentsMargins(0, 0, 0, 0)
-        self.macos_value = BodyLabel(self.controller.macos_version_text if hasattr(
+        self.macos_value = BodyLabel(self.controller.macos_state.version_text if hasattr(
             self.controller, 'macos_version_text') else "Not selected")
         self.macos_value.setStyleSheet(f"color: {COLORS['text_secondary']};")
         macos_widget_layout.addWidget(self.macos_value)
@@ -167,7 +167,7 @@ class ConfigurationPage(QWidget):
         smbios_widget = QWidget()
         smbios_widget_layout = QHBoxLayout(smbios_widget)
         smbios_widget_layout.setContentsMargins(0, 0, 0, 0)
-        self.smbios_value = BodyLabel(self.controller.smbios_model_text if hasattr(
+        self.smbios_value = BodyLabel(self.controller.smbios_state.model_text if hasattr(
             self.controller, 'smbios_model_text') else "Not selected")
         self.smbios_value.setStyleSheet(f"color: {COLORS['text_secondary']};")
         smbios_widget_layout.addWidget(self.smbios_value)
@@ -181,8 +181,8 @@ class ConfigurationPage(QWidget):
         )
 
         # Disabled Devices - display each device vertically
-        disabled_devices = self.controller.disabled_devices if hasattr(
-            self.controller, 'disabled_devices') and self.controller.disabled_devices is not None else {}
+        disabled_devices = self.controller.hardware_state.disabled_devices if hasattr(
+            self.controller, 'disabled_devices') and self.controller.hardware_state.disabled_devices is not None else {}
 
         if disabled_devices:
             # Add header for disabled devices section
@@ -235,7 +235,7 @@ class ConfigurationPage(QWidget):
     def select_macos(self):
         """Select macOS version"""
         # Check if hardware report is loaded
-        if not self.controller.hardware_report:
+        if not self.controller.hardware_state.hardware_report:
             self.controller.update_status(
                 "Please load a hardware report first", 'warning')
             return
@@ -246,9 +246,9 @@ class ConfigurationPage(QWidget):
         # Show the macOS version selection dialog
         selected_version, ok = show_macos_version_dialog(
             self.controller,
-            self.controller.hardware_report,
-            self.controller.native_macos_version,
-            self.controller.ocl_patched_macos_version,
+            self.controller.hardware_state.hardware_report,
+            self.controller.macos_state.native_version,
+            self.controller.macos_state.ocl_patched_version,
             self.controller.ocpe.u
         )
 
@@ -256,12 +256,12 @@ class ConfigurationPage(QWidget):
             # Apply the selected macOS version
             self.controller.apply_macos_version(selected_version)
             self.controller.update_status(
-                f"macOS version updated to {self.controller.macos_version_text}", 'success')
+                f"macOS version updated to {self.controller.macos_state.version_text}", 'success')
 
     def customize_acpi(self):
         """Customize ACPI patches"""
         # Check if hardware report is loaded
-        if not self.controller.customized_hardware:
+        if not self.controller.hardware_state.customized_hardware:
             self.controller.update_status(
                 "Please load a hardware report first", 'warning')
             return
@@ -282,7 +282,7 @@ class ConfigurationPage(QWidget):
     def customize_kexts(self):
         """Customize kexts"""
         # Check if hardware report is loaded
-        if not self.controller.customized_hardware:
+        if not self.controller.hardware_state.customized_hardware:
             self.controller.update_status(
                 "Please load a hardware report first", 'warning')
             return
@@ -294,7 +294,7 @@ class ConfigurationPage(QWidget):
         ok = show_kexts_dialog(
             self.controller,
             self.controller.ocpe.k,
-            self.controller.macos_version
+            self.controller.macos_state.version_darwin
         )
 
         if ok:
@@ -304,7 +304,7 @@ class ConfigurationPage(QWidget):
     def customize_smbios(self):
         """Customize SMBIOS model"""
         # Check if hardware report is loaded
-        if not self.controller.customized_hardware:
+        if not self.controller.hardware_state.customized_hardware:
             self.controller.update_status(
                 "Please load a hardware report first", 'warning')
             return
@@ -314,12 +314,12 @@ class ConfigurationPage(QWidget):
         from ..custom_dialogs import show_smbios_dialog
 
         # Get current state
-        current_model = self.controller.smbios_model_text
+        current_model = self.controller.smbios_state.model_text
         default_model = self.controller.ocpe.s.select_smbios_model(
-            self.controller.customized_hardware,
-            self.controller.macos_version  # Use Darwin version
+            self.controller.hardware_state.customized_hardware,
+            self.controller.macos_state.version_darwin  # Use Darwin version
         )
-        is_laptop = "Laptop" == self.controller.customized_hardware.get(
+        is_laptop = "Laptop" == self.controller.hardware_state.customized_hardware.get(
             "Motherboard").get("Platform")
 
         # Show SMBIOS selection dialog
@@ -328,20 +328,20 @@ class ConfigurationPage(QWidget):
             mac_devices,
             current_model,
             default_model,
-            self.controller.macos_version,  # Use Darwin version
+            self.controller.macos_state.version_darwin,  # Use Darwin version
             is_laptop,
             self.controller.ocpe.u
         )
 
         if ok and selected_model != current_model:
             # Update the selected SMBIOS model
-            self.controller.smbios_model_text = selected_model
+            self.controller.smbios_state.model_text = selected_model
 
             # Apply SMBIOS-specific options
             self.controller.ocpe.s.smbios_specific_options(
-                self.controller.customized_hardware,
+                self.controller.hardware_state.customized_hardware,
                 selected_model,
-                self.controller.macos_version,  # Use Darwin version
+                self.controller.macos_state.version_darwin,  # Use Darwin version
                 self.controller.ocpe.ac.patches,
                 self.controller.ocpe.k
             )

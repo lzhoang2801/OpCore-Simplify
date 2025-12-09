@@ -1,9 +1,5 @@
-"""
-GUI pages package - qfluentwidgets version
-"""
-
 from .home_page import HomePage
-from .upload_page import UploadPage
+from .select_hardware_report_page import SelectHardwareReportPage
 from .compatibility_page import CompatibilityPage
 from .configuration_page import ConfigurationPage
 from .build_page import BuildPage
@@ -13,7 +9,7 @@ from .config_editor_page import ConfigEditorPage
 
 __all__ = [
     'HomePage',
-    'UploadPage',
+    'SelectHardwareReportPage',
     'CompatibilityPage',
     'ConfigurationPage',
     'BuildPage',

@@ -144,18 +144,18 @@ class CompatibilityPage(ScrollArea):
         self.contentLayout.addStretch()
 
     def update_status_banner(self):
-        if not self.controller.hardware_report:
+        if not self.controller.hardware_state.hardware_report:
             self.status_banner.setVisible(False)
             return
 
-        if self.controller.compatibility_error:
+        if self.controller.hardware_state.compatibility_error:
             self._show_error_banner()
             return
 
         self._show_support_banner()
 
     def _show_error_banner(self):
-        codes = self.controller.compatibility_error
+        codes = self.controller.hardware_state.compatibility_error
         if isinstance(codes, str):
             codes = [codes]
 
@@ -202,16 +202,16 @@ class CompatibilityPage(ScrollArea):
         )
 
     def _show_support_banner(self):
-        if self.controller.native_macos_version:
-            min_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[0])
-            max_ver_name = os_data.get_macos_name_by_darwin(self.controller.native_macos_version[-1])
+        if self.controller.macos_state.native_version:
+            min_ver_name = os_data.get_macos_name_by_darwin(self.controller.macos_state.native_version[0])
+            max_ver_name = os_data.get_macos_name_by_darwin(self.controller.macos_state.native_version[-1])
             native_range = min_ver_name if min_ver_name == max_ver_name else f"{min_ver_name} to {max_ver_name}"
             
             message = f"Native support: {native_range}"
             
-            if self.controller.ocl_patched_macos_version:
-                 oclp_max_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[0])
-                 oclp_min_name = os_data.get_macos_name_by_darwin(self.controller.ocl_patched_macos_version[-1])
+            if self.controller.macos_state.ocl_patched_version:
+                 oclp_max_name = os_data.get_macos_name_by_darwin(self.controller.macos_state.ocl_patched_version[0])
+                 oclp_min_name = os_data.get_macos_name_by_darwin(self.controller.macos_state.ocl_patched_version[-1])
                  oclp_range = oclp_min_name if oclp_min_name == oclp_max_name else f"{oclp_min_name} to {oclp_max_name}"
                  message += f"\nOCLP support: {oclp_range}"
 
@@ -249,13 +249,13 @@ class CompatibilityPage(ScrollArea):
             if widget:
                 widget.deleteLater()
 
-        if not self.controller.hardware_report:
+        if not self.controller.hardware_state.hardware_report:
             if self.version_support_container:
                 self.version_support_container.setVisible(False)
             self._show_placeholder()
             return
 
-        report = self.controller.hardware_report
+        report = self.controller.hardware_state.hardware_report
         cards_added = 0
 
         cards_added += self._add_cpu_card(report)
@@ -547,29 +547,25 @@ class CompatibilityPage(ScrollArea):
 
     def _add_biometric_card(self, report):
         if 'Biometric' not in report or not report['Biometric']: return 0
-        
         bio_card = GroupHeaderCardWidget(self.scrollWidget)
         bio_card.setTitle("Biometric")
+
+        add_group_with_indent(
+            bio_card,
+            colored_icon(FluentIcon.CLOSE, COLORS['warning']),
+            "Hardware Limitation",
+            "Biometric authentication in macOS requires Apple T2 Chip, which is not available for Hackintosh systems.",
+            create_info_widget("", COLORS['warning']),
+            indent_level=0
+        )
 
         for bio_device, bio_props in report['Biometric'].items():
             add_group_with_indent(
                 bio_card,
-                colored_icon(FluentIcon.FINGERPRINT, COLORS['warning']),
+                colored_icon(FluentIcon.FINGERPRINT, COLORS['error']),
                 bio_device,
                 "Unsupported",
                 indent_level=0
-            )
-
-            compat = bio_props.get('Compatibility', (None, None))
-            self._add_compatibility_group(bio_card, "macOS Compatibility", compat)
-
-            add_group_with_indent(
-                bio_card,
-                colored_icon(FluentIcon.WARNING, COLORS['warning']),
-                "Hardware Limitation",
-                "Biometric authentication in macOS requires Apple T2 Chip, which is not available for Hackintosh systems.",
-                create_info_widget("", COLORS['warning']),
-                indent_level=1
             )
 
         self.contentLayout.addWidget(bio_card)

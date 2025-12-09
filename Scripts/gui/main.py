@@ -6,15 +6,12 @@ import threading
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QFileDialog
-from qfluentwidgets import (
-    FluentWindow, NavigationItemPosition, FluentIcon,
-    setTheme, Theme, InfoBar, InfoBarPosition
-)
+from qfluentwidgets import FluentWindow, NavigationItemPosition, FluentIcon, setTheme, Theme, InfoBar, InfoBarPosition
 
 from ..datasets import os_data
-from .models import HardwareReportState, MacOSVersionState, SMBIOSState, BuildState
+from .state import HardwareReportState, MacOSVersionState, SMBIOSState, BuildState
 from .pages import (
-    HomePage, UploadPage, CompatibilityPage, ConfigurationPage, 
+    HomePage, SelectHardwareReportPage, CompatibilityPage, ConfigurationPage, 
     BuildPage, ConsolePage, SettingsPage, ConfigEditorPage
 )
 from .custom_dialogs import (
@@ -39,7 +36,6 @@ class OpCoreGUI(FluentWindow):
     update_gathering_progress_signal = pyqtSignal(dict)
     log_message_signal = pyqtSignal(str, str, bool, bool)
     build_complete_signal = pyqtSignal(bool, object)
-    load_hardware_report_signal = pyqtSignal(str, object)
     open_result_folder_signal = pyqtSignal(str)
     
     PLATFORM_FONTS = {
@@ -53,15 +49,10 @@ class OpCoreGUI(FluentWindow):
         self.ocpe = ocpe_instance
         
         self._init_state()
-        
         self._setup_window()
-        
         self._apply_theme()
-        
         self._connect_signals()
-        
         self._setup_backend_handlers()
-        
         self.init_navigation()
 
     def _init_state(self):
@@ -81,110 +72,6 @@ class OpCoreGUI(FluentWindow):
         self.stderr_redirector = None
 
         self.console_redirected = False
-    
-    @property
-    def hardware_report_path(self) -> str:
-        return self.hardware_state.path
-    
-    @hardware_report_path.setter
-    def hardware_report_path(self, value: str):
-        self.hardware_state.path = value
-    
-    @property
-    def hardware_report(self):
-        return self.hardware_state.hardware_report
-    
-    @hardware_report.setter
-    def hardware_report(self, value):
-        self.hardware_state.hardware_report = value
-    
-    @property
-    def compatibility_error(self):
-        return self.hardware_state.compatibility_error
-
-    @compatibility_error.setter
-    def compatibility_error(self, value):
-        self.hardware_state.compatibility_error = value
-
-    @property
-    def hardware_report_data(self):
-        return self.hardware_state.data
-    
-    @hardware_report_data.setter
-    def hardware_report_data(self, value):
-        self.hardware_state.data = value
-    
-    @property
-    def customized_hardware(self):
-        return self.hardware_state.customized_hardware
-    
-    @customized_hardware.setter
-    def customized_hardware(self, value):
-        self.hardware_state.customized_hardware = value
-    
-    @property
-    def disabled_devices(self):
-        return self.hardware_state.disabled_devices
-    
-    @disabled_devices.setter
-    def disabled_devices(self, value):
-        self.hardware_state.disabled_devices = value
-    
-    @property
-    def disabled_devices_text(self) -> str:
-        return self.hardware_state.disabled_devices_text
-    
-    @disabled_devices_text.setter
-    def disabled_devices_text(self, value: str):
-        self.hardware_state.disabled_devices_text = value
-    
-    @property
-    def macos_version_text(self) -> str:
-        return self.macos_state.version_text
-    
-    @macos_version_text.setter
-    def macos_version_text(self, value: str):
-        self.macos_state.version_text = value
-    
-    @property
-    def macos_version(self) -> str:
-        return self.macos_state.version_darwin
-    
-    @macos_version.setter
-    def macos_version(self, value: str):
-        self.macos_state.version_darwin = value
-    
-    @property
-    def native_macos_version(self):
-        return self.macos_state.native_version
-    
-    @native_macos_version.setter
-    def native_macos_version(self, value):
-        self.macos_state.native_version = value
-    
-    @property
-    def ocl_patched_macos_version(self):
-        return self.macos_state.ocl_patched_version
-    
-    @ocl_patched_macos_version.setter
-    def ocl_patched_macos_version(self, value):
-        self.macos_state.ocl_patched_version = value
-    
-    @property
-    def needs_oclp(self) -> bool:
-        return self.macos_state.needs_oclp
-    
-    @needs_oclp.setter
-    def needs_oclp(self, value: bool):
-        self.macos_state.needs_oclp = value
-    
-    @property
-    def smbios_model_text(self) -> str:
-        return self.smbios_state.model_text
-    
-    @smbios_model_text.setter
-    def smbios_model_text(self, value: str):
-        self.smbios_state.model_text = value
 
     def _setup_window(self):
         self.setWindowTitle("OpCore Simplify")
@@ -212,7 +99,6 @@ class OpCoreGUI(FluentWindow):
         self.update_gathering_progress_signal.connect(self._update_gathering_progress_on_main_thread)
         self.log_message_signal.connect(self._log_message_on_main_thread)
         self.build_complete_signal.connect(self._handle_build_complete)
-        self.load_hardware_report_signal.connect(self._handle_load_hardware_report)
         self.open_result_folder_signal.connect(self._handle_open_result_folder)
 
     def _setup_backend_handlers(self):
@@ -242,7 +128,7 @@ class OpCoreGUI(FluentWindow):
 
     def init_navigation(self):
         self.homePage = HomePage(self)
-        self.uploadPage = UploadPage(self)
+        self.SelectHardwareReportPage = SelectHardwareReportPage(self)
         self.compatibilityPage = CompatibilityPage(self)
         self.configurationPage = ConfigurationPage(self)
         self.buildPage = BuildPage(self)
@@ -257,7 +143,7 @@ class OpCoreGUI(FluentWindow):
             NavigationItemPosition.TOP
         )
         self.addSubInterface(
-            self.uploadPage,
+            self.SelectHardwareReportPage,
             FluentIcon.FOLDER_ADD,
             "1. Upload Report",
             NavigationItemPosition.TOP
@@ -343,9 +229,6 @@ class OpCoreGUI(FluentWindow):
         if hasattr(self, 'buildPage') and hasattr(self.buildPage, 'on_build_complete'):
             self.buildPage.on_build_complete(success, bios_requirements)
 
-    def _handle_load_hardware_report(self, report_path, report_data):
-        self.load_hardware_report(report_path, report_data)
-
     def _handle_open_result_folder(self, folder_path):
         self.ocpe.u.open_folder(folder_path)
 
@@ -394,18 +277,6 @@ class OpCoreGUI(FluentWindow):
                 duration=3000,
                 parent=self
             )
-
-    def select_hardware_report_gui(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select Hardware Report",
-            "",
-            "JSON Files (*.json)"
-        )
-
-        if file_path:
-            return file_path
-        return None
 
     def select_acpi_folder_gui(self):
         folder_path = QFileDialog.getExistingDirectory(
@@ -512,116 +383,58 @@ class OpCoreGUI(FluentWindow):
         finally:
             event.set()
 
-    def load_hardware_report(self, path, data=None):
-        self.hardware_report_path = path
-
-        if data is None:
-            data = self.ocpe.u.read_file(path)
-
-        self.hardware_report_data = data
-
-        self.hardware_report, self.native_macos_version, self.ocl_patched_macos_version, self.compatibility_error = self.ocpe.c.check_compatibility(data)
-
-        self.auto_select_macos_version()
-
-        self.uploadPage.update_status()
-        self.compatibilityPage.update_display()
-
-        self.update_status("Hardware report loaded successfully", 'success')
-
     def auto_select_macos_version(self):
-        if self.compatibility_error:
+        if self.hardware_state.compatibility_error:
             return
-        if not self.native_macos_version or not isinstance(self.native_macos_version, tuple) or not all(self.native_macos_version):
+        if not self.macos_state.native_version or not isinstance(self.macos_state.native_version, tuple) or not all(self.macos_state.native_version):
             return
 
-        suggested_macos_version = self.native_macos_version[1]
-        self.macos_version_text = os_data.get_macos_name_by_darwin(
+        suggested_macos_version = self.macos_state.native_version[1]
+        self.macos_state.version_text = os_data.get_macos_name_by_darwin(
             suggested_macos_version)
 
         self.apply_macos_version(suggested_macos_version)
 
     def apply_macos_version(self, version, defer_kext_selection=False):
-        self.macos_version = version
-        self.macos_version_text = os_data.get_macos_name_by_darwin(version)
+        self.macos_state.version_darwin = version
+        self.macos_state.version_text = os_data.get_macos_name_by_darwin(version)
 
-        self.customized_hardware, self.disabled_devices, self.needs_oclp = \
-            self.ocpe.h.hardware_customization(self.hardware_report, version)
+        self.hardware_state.customized_hardware, self.hardware_state.disabled_devices, self.macos_state.needs_oclp = \
+            self.ocpe.h.hardware_customization(self.hardware_state.hardware_report, version)
 
-        self.smbios_model_text = self.ocpe.s.select_smbios_model(
-            self.customized_hardware, version)
+        self.smbios_state.model_text = self.ocpe.s.select_smbios_model(
+            self.hardware_state.customized_hardware, version)
 
         if not self.ocpe.ac.ensure_dsdt():
             self.ocpe.ac.select_acpi_tables()
         self.ocpe.ac.select_acpi_patches(
-            self.customized_hardware, self.disabled_devices)
+            self.hardware_state.customized_hardware, self.hardware_state.disabled_devices)
 
         if not defer_kext_selection:
-            self.needs_oclp = self.ocpe.k.select_required_kexts(
-                self.customized_hardware, version, self.needs_oclp, self.ocpe.ac.patches
+            self.macos_state.needs_oclp = self.ocpe.k.select_required_kexts(
+                self.hardware_state.customized_hardware, version, self.macos_state.needs_oclp, self.ocpe.ac.patches
             )
 
         self.ocpe.s.smbios_specific_options(
-            self.customized_hardware, self.smbios_model_text, version,
+            self.hardware_state.customized_hardware, self.smbios_state.model_text, version,
             self.ocpe.ac.patches, self.ocpe.k
         )
 
-        if self.disabled_devices:
-            self.disabled_devices_text = ", ".join(
-                self.disabled_devices.keys())
+        if self.hardware_state.disabled_devices:
+            self.hardware_state.disabled_devices_text = ", ".join(
+                self.hardware_state.disabled_devices.keys())
         else:
-            self.disabled_devices_text = "None"
+            self.hardware_state.disabled_devices_text = "None"
 
         self.configurationPage.update_display()
 
-    def export_hardware_report(self):
-        hardware_sniffer = self.ocpe.o.gather_hardware_sniffer()
-
-        if not hardware_sniffer:
-            self.update_status("Hardware Sniffer not found", 'error')
-            return
-
-        report_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "SysReport")
-
-        self.update_status("Exporting hardware report...", 'info')
-
-        def export_thread():
-            output = self.ocpe.r.run({
-                "args": [hardware_sniffer, "-e", "-o", report_dir]
-            })
-
-            if output[-1] != 0:
-                error_code = output[-1]
-                if error_code == 3:
-                    error_message = "Error collecting hardware."
-                elif error_code == 4:
-                    error_message = "Error generating hardware report."
-                elif error_code == 5:
-                    error_message = "Error dumping ACPI tables."
-                else:
-                    error_message = "Unknown error."
-
-                self.update_status_signal.emit(
-                    f"Export failed: {error_message}", 'error')
-            else:
-                report_path = os.path.join(report_dir, "Report.json")
-                acpitables_dir = os.path.join(report_dir, "ACPI")
-
-                report_data = self.ocpe.u.read_file(report_path)
-                self.ocpe.ac.read_acpi_tables(acpitables_dir)
-
-                self.load_hardware_report_signal.emit(report_path, report_data)
-
-        thread = threading.Thread(target=export_thread, daemon=True)
-        thread.start()
-
     def build_efi(self):
-        if not self.customized_hardware:
+        if not self.hardware_state.customized_hardware:
             self.update_status(
                 "Please load a hardware report first", 'warning')
             return
 
-        if self.needs_oclp:
+        if self.macos_state.needs_oclp:
             result = show_question_dialog(
                 self,
                 "OpenCore Legacy Patcher Warning",
@@ -644,7 +457,7 @@ class OpCoreGUI(FluentWindow):
                 self.log_message("-" * 60, to_console=False, to_build_log=True)
                 
                 self.ocpe.o.gather_bootloader_kexts(
-                    self.ocpe.k.kexts, self.macos_version)
+                    self.ocpe.k.kexts, self.macos_state.version_darwin)
 
                 self.update_status_signal.emit(
                     "Phase 2/2: Building OpenCore EFI structure...", 'info')
@@ -652,18 +465,18 @@ class OpCoreGUI(FluentWindow):
                 self.log_message("-" * 60, to_console=False, to_build_log=True)
                 
                 self.ocpe.build_opencore_efi(
-                    self.customized_hardware,
-                    self.disabled_devices,
-                    self.smbios_model_text,
-                    self.macos_version,
-                    self.needs_oclp
+                    self.hardware_state.customized_hardware,
+                    self.hardware_state.disabled_devices,
+                    self.smbios_state.model_text,
+                    self.macos_state.version_darwin,
+                    self.macos_state.needs_oclp
                 )
 
                 self.update_status_signal.emit(
                     "✓ Build completed successfully!", 'success')
 
                 bios_requirements = self.ocpe.check_bios_requirements(
-                    self.hardware_report_data, self.customized_hardware)
+                    self.hardware_state.data, self.hardware_state.customized_hardware)
 
                 self.build_complete_signal.emit(True, bios_requirements)
 
@@ -786,7 +599,7 @@ class OpCoreGUI(FluentWindow):
 
     def show_before_using_efi_dialog(self):
         bios_requirements = self.ocpe.check_bios_requirements(
-            self.hardware_report_data, self.customized_hardware)
+            self.hardware_state.data, self.hardware_state.customized_hardware)
 
         result = show_before_using_efi_dialog(
             self, bios_requirements, self.ocpe.result_dir)
