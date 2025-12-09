@@ -8,7 +8,8 @@ from qfluentwidgets import (
     SettingCardGroup, SwitchSettingCard, ComboBoxSettingCard,
     PushSettingCard, ExpandSettingCard, SpinBox,
     OptionsConfigItem, OptionsValidator, HyperlinkCard,
-    StrongBodyLabel, CaptionLabel, SettingCard, SubtitleLabel
+    StrongBodyLabel, CaptionLabel, SettingCard, SubtitleLabel,
+    setTheme, Theme
 )
 
 from ..custom_dialogs import show_question_dialog
@@ -399,11 +400,13 @@ class SettingsPage(ScrollArea):
     def create_appearance_group(self):
         group = SettingCardGroup("Appearance", self.scrollWidget)
 
-        theme_values = ["light", "dark"]
-        theme_texts = ["Light", "Dark"]
-        theme_value = self.settings.get("theme", "light")
+        theme_values = [
+            "Light",
+            "Dark",
+        ]
+        theme_value = self.settings.get("theme", "Light")
         if theme_value not in theme_values:
-            theme_value = "light"
+            theme_value = "Light"
 
         self.theme_config = OptionsConfigItem(
             "Appearance",
@@ -411,14 +414,22 @@ class SettingsPage(ScrollArea):
             theme_value,
             OptionsValidator(theme_values)
         )
-        self.theme_config.valueChanged.connect(lambda value: self.settings.set("theme", value))
+
+        def on_theme_changed(value):
+            self.settings.set("theme", value)
+            if value == "Dark":
+                setTheme(Theme.DARK)
+            else:
+                setTheme(Theme.LIGHT)
+
+        self.theme_config.valueChanged.connect(on_theme_changed)
 
         self.theme_card = ComboBoxSettingCard(
             self.theme_config,
             FluentIcon.BRUSH,
             "Theme",
             "Selects the application color theme.",
-            theme_texts,
+            theme_values,
             group
         )
         self.theme_card.setObjectName("theme")

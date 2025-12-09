@@ -32,7 +32,7 @@ class Settings:
             "secure_boot_model": "Disabled",
             "random_smbios": True,
             "preserve_smbios": False,
-            "theme": "light",
+            "theme": "Light",
             "auto_update_check": True,
             "enable_debug_logging": False,
         }
@@ -41,17 +41,15 @@ class Settings:
         self.settings = self.load_settings()
 
     def _get_settings_file_path(self):
-        script_dir = os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__)))
+        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         return os.path.join(script_dir, "settings.json")
 
     def load_settings(self):
-        loaded_settings = None
-
         try:
             loaded_settings = self.u.read_file(self.settings_file)
-
-            return loaded_settings
+            
+            if loaded_settings is not None:
+                return loaded_settings
         except Exception as e:
             print(f"Error loading settings: {e}")
 
