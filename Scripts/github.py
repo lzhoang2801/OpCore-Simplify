@@ -136,6 +136,8 @@ class Github:
 
         if "Sniffer" in file_name:
             asset_name = file_name.split(".")[0]
+        if asset_name == "IntelBluetooth":
+            asset_name = "IntelBluetoothFirmware"
         if "unsupported" in file_name:
             asset_name += "-unsupported"
         elif "rtsx" in file_name:
