@@ -204,16 +204,7 @@ class Utils:
         else:
             return input(prompt)
     
-    # ==================== End Dialog Methods ====================
-
-    def clean_temporary_dir(self):
-        """Clean temporary directories created by OpCore Simplify"""
-        # Check if clean_temp_files_on_exit is enabled
-        if hasattr(self, 'settings') and self.settings:
-            if not self.settings.get_clean_temp_files_on_exit():
-                self.debug_log("Skipping temp file cleanup (disabled in settings)")
-                return
-        
+    def clean_temporary_dir(self):        
         temporary_dir = tempfile.gettempdir()
         
         for file in os.listdir(temporary_dir):
