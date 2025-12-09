@@ -17,6 +17,7 @@ from qfluentwidgets import (
 )
 
 from .styles import COLORS
+from ..datasets import os_data
 
 # Dialog size constants
 MIN_DIALOG_WIDTH = 400
@@ -1002,94 +1003,43 @@ def show_acpi_patches_dialog(parent, acpi_guru):
 
 
 class MacOSVersionDialog(QDialog):
-    """Custom dialog for macOS version selection"""
-
-    def __init__(self, hardware_report, native_macos_version, ocl_patched_macos_version, utils, parent=None):
-        """
-        Initialize macOS Version dialog
-
-        Args:
-            hardware_report: Hardware report data dictionary
-            native_macos_version: Tuple of (min, suggested, max) native Darwin versions
-            ocl_patched_macos_version: Tuple of (max, min) OCLP Darwin versions or None
-            utils: Utils instance for version parsing
-            parent: Parent widget
-        """
+    def __init__(self, parent, native_macos_version, ocl_patched_macos_version, suggested_version, utils):
         super().__init__(parent)
-        self.hardware_report = hardware_report
+        self.parent = parent
         self.native_macos_version = native_macos_version
         self.ocl_patched_macos_version = ocl_patched_macos_version
+        self.suggested_version = suggested_version
         self.utils = utils
         self.result_version = None
-        
-        # Calculate suggested version (same logic as CLI)
-        self.suggested_macos_version = self.calculate_suggested_version()
-        
+        self.button_group = QButtonGroup(self)
+
         self.setWindowTitle("Select macOS Version")
         self.setMinimumSize(700, 600)
-        self.setup_ui()
+        self.dialog()
 
-    def calculate_suggested_version(self):
-        """Calculate suggested macOS version based on hardware compatibility"""
-        from ..datasets import os_data
-        
-        suggested_macos_version = self.native_macos_version[1]
-        
-        # Check device compatibility constraints
-        for device_type in ("GPU", "Network", "Bluetooth", "SD Controller"):
-            if device_type in self.hardware_report:
-                for device_name, device_props in self.hardware_report[device_type].items():
-                    if device_props.get("Compatibility", (None, None)) != (None, None):
-                        if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
-                            device_id = device_props.get("Device ID", "00000000")[5:]
-
-                            if device_props.get("Manufacturer") == "AMD" or device_id.startswith(("59", "87C0")):
-                                suggested_macos_version = "22.99.99"
-                            elif device_id.startswith(("09", "19")):
-                                suggested_macos_version = "21.99.99"
-
-                        if self.utils.parse_darwin_version(suggested_macos_version) > self.utils.parse_darwin_version(device_props.get("Compatibility")[0]):
-                            suggested_macos_version = device_props.get("Compatibility")[0]
-        
-        # Avoid beta versions by decrementing to previous major version
-        while True:
-            if "Beta" in os_data.get_macos_name_by_darwin(suggested_macos_version):
-                suggested_macos_version = "{}{}".format(int(suggested_macos_version[:2]) - 1, suggested_macos_version[2:])
-            else:
-                break
-        
-        return suggested_macos_version
-
-    def setup_ui(self):
-        """Setup the dialog UI"""
-        from ..datasets import os_data
-        
+    def dialog(self):        
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
 
-        # Title
         title_label = QLabel("Select macOS Version")
         title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
         layout.addWidget(title_label)
 
-        # Suggestion message if suggested differs from native
-        if self.native_macos_version[1][:2] != self.suggested_macos_version[:2]:
+        if self.native_macos_version[1][:2] != self.suggested_version[:2]:
             suggestion_label = BodyLabel(
                 f"Suggested: For better compatibility and stability, we suggest you to use only "
-                f"{os_data.get_macos_name_by_darwin(self.suggested_macos_version)} or older."
+                f"{os_data.get_macos_name_by_darwin(self.suggested_version)} or older."
             )
             suggestion_label.setWordWrap(True)
             suggestion_label.setStyleSheet(f"color: {COLORS['info']}; font-weight: 500; padding: 10px; "
                                           f"background-color: #E1F5FE; border-radius: 4px;")
             layout.addWidget(suggestion_label)
 
-        # Description
         desc_label = BodyLabel("Available macOS versions:")
         desc_label.setStyleSheet("color: #605E5C; font-weight: 500;")
         layout.addWidget(desc_label)
 
-        # Scroll area for versions
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet("""
@@ -1100,20 +1050,17 @@ class MacOSVersionDialog(QDialog):
             }
         """)
 
-        # Container widget for scroll area
         scroll_widget = QWidget()
         self.scroll_layout = QVBoxLayout(scroll_widget)
         self.scroll_layout.setSpacing(5)
         self.scroll_layout.setContentsMargins(10, 10, 10, 10)
 
-        # Radio button group
         self.button_group = QButtonGroup(self)
         self.populate_versions()
 
         scroll.setWidget(scroll_widget)
-        layout.addWidget(scroll, 1)  # Give it stretch factor
+        layout.addWidget(scroll, 1)
 
-        # Note
         note_label = BodyLabel(
             "ℹ️ Note: Versions marked with 'Requires OpenCore Legacy Patcher' need OCLP to enable "
             "dropped GPU and WiFi support. The suggested version is recommended for optimal compatibility."
@@ -1122,12 +1069,10 @@ class MacOSVersionDialog(QDialog):
         note_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 11px; padding: 5px;")
         layout.addWidget(note_label)
 
-        # Buttons
         button_layout = QHBoxLayout()
         button_layout.setSpacing(10)
         button_layout.addStretch()
 
-        # Cancel and OK buttons
         cancel_btn = PushButton("Cancel")
         cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(cancel_btn)
@@ -1139,59 +1084,60 @@ class MacOSVersionDialog(QDialog):
         layout.addLayout(button_layout)
 
     def populate_versions(self):
-        """Populate the versions list with radio buttons"""
-        from ..datasets import os_data
-        
-        # Calculate version range
         oclp_min = int(self.ocl_patched_macos_version[-1][:2]) if self.ocl_patched_macos_version else 99
         oclp_max = int(self.ocl_patched_macos_version[0][:2]) if self.ocl_patched_macos_version else 0
-        min_version = min(int(self.native_macos_version[0][:2]), oclp_min)
-        max_version = max(int(self.native_macos_version[-1][:2]), oclp_max)
+        native_min = int(self.native_macos_version[0][:2])
+        native_max = int(self.native_macos_version[-1][:2])
 
-        suggested_darwin_major = int(self.suggested_macos_version[:2])
+        suggested_label = "(Suggested for you)"
+        suggested_darwin_major = int(
+            self.suggested_version.split('.')[0]) if self.suggested_version else -1
 
-        for darwin_version in range(min_version, max_version + 1):
-            name = os_data.get_macos_name_by_darwin(str(darwin_version))
-            requires_oclp = oclp_min <= darwin_version <= oclp_max
-            
-            # Build display text
-            display_text = f"{darwin_version}. {name}"
-            if requires_oclp:
-                display_text += " (Requires OpenCore Legacy Patcher)"
-            
-            # Create radio button
-            radio = QRadioButton(display_text)
-            radio.setProperty("darwin_version", darwin_version)
-            
-            # Style based on suggestion and OCLP requirement
-            if darwin_version == suggested_darwin_major:
-                radio.setChecked(True)
-                radio.setStyleSheet(
-                    "font-weight: bold; color: #107C10; padding: 8px;"
-                )
-            elif requires_oclp:
-                radio.setStyleSheet(
-                    f"color: {COLORS['warning']}; padding: 8px;"
-                )
-            else:
-                radio.setStyleSheet("padding: 8px;")
-            
-            # Connect to button group
-            self.button_group.addButton(radio, darwin_version)
-            self.scroll_layout.addWidget(radio)
+        for darwin_major in range(min(native_min, oclp_min), max(native_max, oclp_max) + 1):
+            is_oclp = oclp_min <= darwin_major <= oclp_max
+            is_native = native_min <= darwin_major <= native_max
+
+            if not is_oclp and not is_native:
+                continue
+
+            name = os_data.get_macos_name_by_darwin(str(darwin_major))
+            is_suggested = (darwin_major == suggested_darwin_major)
+
+            self.create_version_radio_button(
+                darwin_major, name, is_oclp, is_suggested, suggested_label)
 
         self.scroll_layout.addStretch()
 
+    def create_version_radio_button(self, darwin_major, name, is_oclp, is_suggested, suggested_label):
+        display_text = f"{darwin_major}. {name}"
+        if is_oclp:
+            display_text += " (Requires OpenCore Legacy Patcher)"
+        if is_suggested:
+            display_text += f" {suggested_label}"
+
+        radio = QRadioButton(display_text)
+        radio.setProperty("darwin_version", darwin_major)
+        
+        if is_suggested:
+            radio.setStyleSheet(
+                "font-weight: bold; color: #107C10; padding: 8px;"
+            )
+        elif is_oclp:
+            radio.setStyleSheet(
+                f"color: {COLORS['warning']}; padding: 8px;"
+            )
+        else:
+            radio.setStyleSheet("padding: 8px;")
+        
+        self.button_group.addButton(radio, darwin_major)
+        self.scroll_layout.addWidget(radio)
+
     def accept(self):
-        """Handle OK button click"""
-        # Get selected radio button
         checked_button = self.button_group.checkedButton()
         if checked_button:
             darwin_major = checked_button.property("darwin_version")
-            # Convert to full Darwin version format (e.g., "22.99.99")
             target_version = f"{darwin_major}.99.99"
             
-            # Validate the selected version is in valid range (same logic as CLI)
             is_valid = False
             if self.ocl_patched_macos_version:
                 if (self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) <= 
@@ -1208,9 +1154,6 @@ class MacOSVersionDialog(QDialog):
             if is_valid:
                 self.result_version = target_version
             else:
-                # This shouldn't happen since we only show valid versions
-                # but keeping it for safety
-                from qfluentwidgets import MessageBox
                 MessageBox(
                     "Invalid Version",
                     "The selected version is not valid for your hardware.",
@@ -1221,28 +1164,14 @@ class MacOSVersionDialog(QDialog):
         super().accept()
 
     def get_selected_version(self):
-        """Return the selected Darwin version"""
         return self.result_version
 
 
-def show_macos_version_dialog(parent, hardware_report, native_macos_version, ocl_patched_macos_version, utils):
-    """
-    Show macOS version selection dialog
-
-    Args:
-        parent: Parent widget
-        hardware_report: Hardware report data dictionary
-        native_macos_version: Tuple of (min, suggested, max) native Darwin versions
-        ocl_patched_macos_version: Tuple of (max, min) OCLP Darwin versions or None
-        utils: Utils instance for version parsing
-
-    Returns:
-        tuple: (darwin_version, ok) where darwin_version is selected version and ok is True if OK was clicked
-    """
-    dialog = MacOSVersionDialog(hardware_report, native_macos_version, ocl_patched_macos_version, utils, parent)
-    if dialog.exec() == QDialog.DialogCode.Accepted:
-        return dialog.get_selected_version(), True
-    return None, False
+def show_macos_version_dialog(parent, native_macos_version, ocl_patched_macos_version, suggested_version, utils):
+    dialog = MacOSVersionDialog(parent, native_macos_version, ocl_patched_macos_version, suggested_version, utils)
+    result = dialog.exec()
+    selected_version = dialog.get_selected_version()
+    return selected_version, result == QDialog.DialogCode.Accepted
 
 
 class BeforeUsingEFIDialog(QDialog):

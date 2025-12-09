@@ -383,17 +383,38 @@ class OpCoreGUI(FluentWindow):
         finally:
             event.set()
 
-    def auto_select_macos_version(self):
-        if self.hardware_state.compatibility_error:
-            return
-        if not self.macos_state.native_version or not isinstance(self.macos_state.native_version, tuple) or not all(self.macos_state.native_version):
-            return
+    def suggest_macos_version(self):
+        if not self.hardware_state.hardware_report or not self.macos_state.native_version:
+            return None
 
-        suggested_macos_version = self.macos_state.native_version[1]
-        self.macos_state.version_text = os_data.get_macos_name_by_darwin(
-            suggested_macos_version)
+        hardware_report = self.hardware_state.hardware_report
+        native_macos_version = self.macos_state.native_version
 
-        self.apply_macos_version(suggested_macos_version)
+        suggested_macos_version = native_macos_version[1]
+
+        for device_type in ("GPU", "Network", "Bluetooth", "SD Controller"):
+            if device_type in hardware_report:
+                for device_name, device_props in hardware_report[device_type].items():
+                    if device_props.get("Compatibility", (None, None)) != (None, None):
+                        if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
+                            device_id = device_props.get("Device ID", " " * 8)[5:]
+
+                            if device_props.get("Manufacturer") == "AMD" or device_id.startswith(("59", "87C0")):
+                                suggested_macos_version = "22.99.99"
+                            elif device_id.startswith(("09", "19")):
+                                suggested_macos_version = "21.99.99"
+
+                        if self.ocpe.u.parse_darwin_version(suggested_macos_version) > self.ocpe.u.parse_darwin_version(device_props.get("Compatibility")[0]):
+                            suggested_macos_version = device_props.get("Compatibility")[0]
+
+        while True:
+            if "Beta" in os_data.get_macos_name_by_darwin(suggested_macos_version):
+                suggested_macos_version = "{}{}".format(
+                    int(suggested_macos_version[:2]) - 1, suggested_macos_version[2:])
+            else:
+                break
+
+        return suggested_macos_version
 
     def apply_macos_version(self, version, defer_kext_selection=False):
         self.macos_state.version_darwin = version

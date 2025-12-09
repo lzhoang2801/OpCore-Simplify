@@ -179,7 +179,6 @@ class SelectHardwareReportPage(QWidget):
             return
 
         self.update_status()
-        self.controller.auto_select_macos_version()
         self.controller.configurationPage.update_display()
 
     def export_hardware_report(self):
