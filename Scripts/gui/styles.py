@@ -1,11 +1,5 @@
-"""
-Centralized styling and theming for OpCore Simplify GUI with qfluentwidgets.
-This module provides consistent design tokens following Microsoft's Fluent Design System.
-"""
-
 from typing import Final
 
-# Color palette - Fluent Design System inspired
 COLORS: Final[dict[str, str]] = {
     # Primary colors
     'primary': '#0078D4',
@@ -49,7 +43,6 @@ COLORS: Final[dict[str, str]] = {
     'border_focus': '#0078D4',
 }
 
-# Spacing and sizing constants
 SPACING: Final[dict[str, int]] = {
     'tiny': 4,
     'small': 8,
@@ -70,7 +63,6 @@ SIZES: Final[dict[str, int]] = {
     'icon_size': 16,
 }
 
-# Border radius values
 RADIUS: Final[dict[str, int]] = {
     'small': 4,
     'medium': 6,
