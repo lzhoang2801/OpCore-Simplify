@@ -65,7 +65,6 @@ class ResourceFetcher:
         response = None
 
         while attempt < 3:
-            # Close previous response from failed attempt before retrying
             if response:
                 response.close()
                 response = None
