@@ -1,5 +1,6 @@
 from Scripts import run
 from Scripts import utils
+from Scripts.custom_dialogs import ask_network_count, show_info, show_confirmation
 import platform
 import json
 
@@ -105,30 +106,14 @@ class WifiProfileExtractor:
         return self.validate_wifi_password(authentication_type, password)
 
     def ask_network_count(self, total_networks):
-        self.utils.head("WiFi Network Retrieval")
-        print("")
-        print("Found {} WiFi networks on this device.".format(total_networks))
-        print("")
-        print("How many networks would you like to process?")
-        print("  1-{} - Specific number (default: 5)".format(total_networks))
-        print("  A   - All available networks")
-        print("")
+        if self.utils.gui_handler:
+            result = ask_network_count(total_networks, parent=self.utils.gui_handler)
+            if result == 'a':
+                return total_networks
+            return int(result)
         
-        num_choice = self.utils.request_input("Enter your choice: ").strip().lower() or "5"
-        
-        if num_choice == "a":
-            print("Will process all available networks.")
-            return total_networks
-
-        try:
-            max_networks = min(int(num_choice), total_networks)
-            print("Will process up to {} networks.".format(max_networks))
-            return max_networks
-        except:
-            max_networks = min(5, total_networks)
-            print("Invalid choice. Will process up to {} networks.".format(max_networks))
-            return max_networks
-            
+        return 5
+    
     def process_networks(self, ssid_list, max_networks, get_password_func):
         networks = []
         processed_count = 0
@@ -199,11 +184,12 @@ class WifiProfileExtractor:
             
         max_networks = self.ask_network_count(len(ssid_list))
         
-        self.utils.head("Administrator Authentication Required")
-        print("")
-        print("To retrieve WiFi passwords from the Keychain, macOS will prompt")
-        print("you for administrator credentials for each WiFi network.")
-        print("")
+        if self.utils.gui_handler:
+            content = (
+                "To retrieve WiFi passwords from the Keychain, macOS will prompt<br>"
+                "you for administrator credentials for each WiFi network."
+            )
+            show_info("Administrator Authentication Required", content, parent=self.utils.gui_handler)
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_macos)
 
@@ -281,25 +267,20 @@ class WifiProfileExtractor:
         return interfaces
     
     def get_profiles(self):
-        self.utils.head("WiFi Profile Extractor")
-        print("")
-        print("\033[1;93mNote:\033[0m")
-        print("- When using itlwm kext, WiFi appears as Ethernet in macOS")
-        print("- You'll need Heliport app to manage WiFi connections in macOS")
-        print("- This step will enable auto WiFi connections at boot time")
-        print("  and is useful for users installing macOS via Recovery OS")
-        print("")
-        
-        while True:
-            user_input = self.utils.request_input("Would you like to scan for WiFi profiles? (Yes/no): ").strip().lower()
-            
-            if user_input == "yes":
-                break
-            elif user_input == "no":
+        if self.utils.gui_handler:
+            content = (
+                "<b>Note:</b><br>"
+                "<ul>"
+                "<li>When using itlwm kext, WiFi appears as Ethernet in macOS</li>"
+                "<li>You'll need Heliport app to manage WiFi connections in macOS</li>"
+                "<li>This step will enable auto WiFi connections at boot time<br>"
+                "and is useful for users installing macOS via Recovery OS</li>"
+                "</ul><br>"
+                "Would you like to scan for WiFi profiles?"
+            )
+            if not show_confirmation("WiFi Profile Extractor", content, parent=self.utils.gui_handler):
                 return []
-            else:
-                print("\033[91mInvalid selection, please try again.\033[0m\n\n")
-
+        
         profiles = []
         self.utils.log_gui("[WIFI PROFILE EXTRACTOR] Detecting WiFi Profiles", level="Info", to_build_log=True)
         
