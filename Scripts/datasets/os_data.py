@@ -1,3 +1,9 @@
+from Scripts.settings import Settings
+
+settings = Settings()
+
+INCLUDE_BETA = settings.get("include_beta_versions", False)
+
 class macOSVersionInfo:
     def __init__(self, name, macos_version, release_status = "final"):
         self.name = name
@@ -14,20 +20,10 @@ macos_versions = [
     macOSVersionInfo("Ventura", "13"),
     macOSVersionInfo("Sonoma", "14"),
     macOSVersionInfo("Sequoia", "15"),
-    macOSVersionInfo("Tahoe", "26")
+    macOSVersionInfo("Tahoe", "26", "beta")
 ]
 
-def get_latest_darwin_version(include_beta=True):
-    # Check settings if include_beta is not explicitly set
-    if include_beta:
-        try:
-            from Scripts.settings import Settings
-            settings = Settings()
-            include_beta = settings.get_include_beta_versions()
-        except:
-            # Fallback to default if settings not available
-            pass
-    
+def get_latest_darwin_version(include_beta=INCLUDE_BETA):
     for macos_version in macos_versions[::-1]:
         if include_beta:
             return "{}.{}.{}".format(macos_version.darwin_version, 99, 99)
