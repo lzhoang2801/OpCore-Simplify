@@ -366,12 +366,13 @@ class ConfigurationPage(ScrollArea):
         
         status_text = ""
         status_color = COLORS['text_secondary']
+        bg_color = COLORS['bg_card']
         icon = FluentIcon.INFO
         
         if disabled_devices:
             status_text = "Hardware components excluded from configuration"
             status_color = COLORS['text_secondary']
-            icon = FluentIcon.WARNING
+            bg_color = COLORS['warning_bg']
         elif not self.controller.hardware_state.hardware_report:
             status_text = "Please select hardware report first"
         elif not self.controller.macos_state.darwin_version:
@@ -379,29 +380,27 @@ class ConfigurationPage(ScrollArea):
         else:
             status_text = "All hardware components are compatible and enabled"
             status_color = COLORS['success']
+            bg_color = COLORS['success_bg']
             icon = FluentIcon.ACCEPT
 
         self.status_card = ExpandGroupSettingCard(
             icon,
             "Compatibility Status",
-            "",
+            status_text,
             self.scrollWidget
         )
         
-        status_label = BodyLabel(status_text)
-        status_label.setStyleSheet(f"color: {status_color};")
-        
-        self.status_card.setContent(status_text)
+        self.status_card.setStyleSheet("background-color: {};".format(bg_color))
         
         if hasattr(self.status_card, 'contentLabel'):
             self.status_card.contentLabel.setStyleSheet(f"color: {status_color};")
             
         if disabled_devices:
-            for device_name in disabled_devices.keys():
+            for device_name, device_info in disabled_devices.items():
                 self.status_card.addGroup(
                     FluentIcon.CLOSE,
                     device_name,
-                    "Incompatible or disabled",
+                    "Incompatible" if device_info.get("Compatibility") == (None, None) else "Disabled",
                     None
                 )
         else:
