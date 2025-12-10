@@ -391,14 +391,11 @@ class BuildPage(ScrollArea):
             self.status_icon_label.setPixmap(pixmap)
 
     def show_post_build_instructions(self, bios_requirements):
-        """Display post-build instructions card with BIOS and USB mapping info"""
-        # Clear existing content
         while self.instructions_after_content_layout.count():
             item = self.instructions_after_content_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
         
-        # BIOS/UEFI Settings section
         if bios_requirements:
             bios_header = StrongBodyLabel("1. BIOS/UEFI Settings Required:")
             bios_header.setStyleSheet(f"color: {COLORS['warning_text']}; font-size: 14px;")
@@ -412,28 +409,23 @@ class BuildPage(ScrollArea):
             
             self.instructions_after_content_layout.addSpacing(SPACING['medium'])
         
-        # USB Mapping section
         usb_header = StrongBodyLabel(f"{'2' if bios_requirements else '1'}. USB Port Mapping:")
         usb_header.setStyleSheet(f"color: {COLORS['warning_text']}; font-size: 14px;")
         self.instructions_after_content_layout.addWidget(usb_header)
         
-        # Determine path separator based on OS
         path_sep = "\\" if platform.system() == "Windows" else "/"
-        kexts_path = f"EFI{path_sep}OC{path_sep}Kexts"
         
-        usb_instructions = [
-            "Use USBToolBox tool to map USB ports",
-            f"Add created UTBMap.kext into the {kexts_path} folder",
-            f"Remove UTBDefault.kext from the {kexts_path} folder",
-            "Edit config.plist using ProperTree:",
-            "  - Open config.plist with ProperTree",
-            "  - Run OC Snapshot (Command/Ctrl + R)",
-            "  - Enable XhciPortLimit patch if you have more than 15 ports",
-            "  - Save the file"
-        ]
+        usb_mapping_instructions = (
+            "1. Use USBToolBox tool to map USB ports<br>",
+            "2. Add created UTBMap.kext into the EFI\\OC\\Kexts folder<br>"
+            "3. Remove UTBDefault.kext from the EFI\\OC\\Kexts folder<br>"
+            "4. Edit config.plist using ProperTree:",
+            "   a. Run OC Snapshot (Command/Ctrl + R)",
+            "   b. Enable XhciPortLimit quirk if you have more than 15 ports per controller",
+            "   c. Save the file when finished."
+        ).replace(path_sep)
         
-        usb_text = "\n".join([f"  • {inst}" for inst in usb_instructions])
-        usb_label = BodyLabel(usb_text)
+        usb_label = BodyLabel(usb_mapping_instructions)
         usb_label.setWordWrap(True)
         usb_label.setStyleSheet(f"color: {COLORS['text_secondary']}; margin-left: 10px;")
         self.instructions_after_content_layout.addWidget(usb_label)

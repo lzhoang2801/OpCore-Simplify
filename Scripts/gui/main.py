@@ -2,6 +2,7 @@ import os
 import platform
 import sys
 import threading
+from datetime import datetime
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
@@ -11,14 +12,15 @@ from ..datasets import os_data
 from .state import HardwareReportState, MacOSVersionState, SMBIOSState, BuildState
 from .pages import (
     HomePage, SelectHardwareReportPage, CompatibilityPage, ConfigurationPage, 
-    BuildPage, ConsolePage, SettingsPage, ConfigEditorPage
+    BuildPage, SettingsPage, ConfigEditorPage
 )
 from .custom_dialogs import (
     show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
-    show_wifi_network_count_dialog, show_codec_layout_dialog, show_before_using_efi_dialog
+    show_wifi_network_count_dialog, show_codec_layout_dialog
 )
 from .styles import COLORS
 from .ui_utils import ConsoleRedirector
+from Scripts.settings import Settings
 
 scripts_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if scripts_path not in sys.path:
@@ -33,7 +35,7 @@ class OpCoreGUI(FluentWindow):
     update_status_signal = pyqtSignal(str, str)
     update_build_progress_signal = pyqtSignal(str, list, int, int, bool)
     update_gathering_progress_signal = pyqtSignal(dict)
-    log_message_signal = pyqtSignal(str, str, bool, bool)
+    log_message_signal = pyqtSignal(str, str, bool)
     build_complete_signal = pyqtSignal(bool, object)
     open_result_folder_signal = pyqtSignal(str)
     
@@ -46,13 +48,29 @@ class OpCoreGUI(FluentWindow):
     def __init__(self, ocpe_instance):
         super().__init__()
         self.ocpe = ocpe_instance
-        
+        self.settings = Settings()
+        self.log_file_path = None
+        self._setup_logging()
+
         self._init_state()
         self._setup_window()
         self._apply_theme()
         self._connect_signals()
         self._setup_backend_handlers()
         self.init_navigation()
+
+    def _setup_logging(self):
+        if self.settings.get_enable_debug_logging():
+            try:
+                root_dir = os.path.dirname(scripts_path)
+                log_dir = os.path.join(root_dir, "Logs")
+                os.makedirs(log_dir, exist_ok=True)
+                timestamp = datetime.now()
+                self.log_file_path = os.path.join(log_dir, "ocs-{}.txt".format(timestamp.strftime("%Y-%m-%d-%H%M%S")))
+                with open(self.log_file_path, 'w', encoding='utf-8') as f:
+                    f.write("[{}] Application started\n".format(timestamp.strftime("%Y-%m-%d %H:%M:%S")))
+            except Exception as e:
+                print("Failed to setup logging: {}".format(e))
 
     def _init_state(self):
         self.hardware_state = HardwareReportState()
@@ -66,7 +84,6 @@ class OpCoreGUI(FluentWindow):
         self.progress_label = None
         self.build_log = None
         self.open_result_btn = None
-        self.console_log = None
         self.stdout_redirector = None
         self.stderr_redirector = None
 
@@ -85,10 +102,8 @@ class OpCoreGUI(FluentWindow):
         self.setFont(font)
 
     def _apply_theme(self):
-        from Scripts.settings import Settings
-        settings = Settings()
-        theme_setting = settings.get_theme()
-        theme = Theme.DARK if theme_setting == "dark" else Theme.LIGHT
+        theme_setting = self.settings.get_theme()
+        theme = Theme.DARK if theme_setting == "Dark" else Theme.LIGHT
         setTheme(theme)
 
     def _connect_signals(self):
@@ -130,7 +145,6 @@ class OpCoreGUI(FluentWindow):
         self.configurationPage = ConfigurationPage(self)
         self.buildPage = BuildPage(self)
         self.configEditorPage = ConfigEditorPage(self)
-        self.consolePage = ConsolePage(self)
         self.settingsPage = SettingsPage(self)
 
         self.addSubInterface(
@@ -172,19 +186,11 @@ class OpCoreGUI(FluentWindow):
             NavigationItemPosition.BOTTOM
         )
         self.addSubInterface(
-            self.consolePage,
-            FluentIcon.CODE,
-            "Console Log",
-            NavigationItemPosition.BOTTOM
-        )
-        self.addSubInterface(
             self.settingsPage,
             FluentIcon.SETTING,
             "Settings",
             NavigationItemPosition.BOTTOM
         )
-
-        self.console_log = self.consolePage.console_text
 
         if not self.console_redirected:
             self.stdout_redirector = ConsoleRedirector(
@@ -201,22 +207,27 @@ class OpCoreGUI(FluentWindow):
             sys.stderr = self.stderr_redirector
             self.console_redirected = True
 
-    def log_message(self, message, level="Info", *, to_console=True, to_build_log=True):
+    def log_message(self, message, level="Info", *, to_build_log=True):
         if threading.current_thread() != threading.main_thread():
             self.log_message_signal.emit(
-                message, level, to_console, to_build_log)
+                message, level, to_build_log)
             return
         self._log_message_on_main_thread(
-            message, level, to_console, to_build_log)
+            message, level, to_build_log)
 
-    def _log_message_on_main_thread(self, message, level, to_console, to_build_log):
+    def _log_message_on_main_thread(self, message, level, to_build_log):
         lines = message.splitlines()
         if not lines:
             lines = [""]
 
-        if to_console and hasattr(self, "consolePage") and self.consolePage:
-            for line in lines:
-                self.consolePage.append_log(line, level)
+        if self.log_file_path:
+            try:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                with open(self.log_file_path, 'a', encoding='utf-8') as f:
+                    for line in lines:
+                        f.write("[{}] [{}] {}\n".format(timestamp, level, line))
+            except Exception:
+                pass
 
         if to_build_log and self.build_log:
             for line in lines:
@@ -230,8 +241,7 @@ class OpCoreGUI(FluentWindow):
         self.ocpe.u.open_folder(folder_path)
 
     def _dispatch_backend_log(self, message, level="Info", to_build_log=False):
-        self.log_message(message, level, to_console=True,
-                         to_build_log=to_build_log)
+        self.log_message(message, level, to_build_log=to_build_log)
 
     def update_status(self, message, status_type='info'):
         if status_type == 'success':
@@ -437,16 +447,16 @@ class OpCoreGUI(FluentWindow):
             try:
                 self.update_status_signal.emit(
                     "Phase 1/2: Gathering required files...", 'info')
-                self.log_message("\nPhase 1: Gathering Files", to_console=False, to_build_log=True)
-                self.log_message("-" * 60, to_console=False, to_build_log=True)
+                self.log_message("\nPhase 1: Gathering Files", to_build_log=True)
+                self.log_message("-" * 60, to_build_log=True)
                 
                 self.ocpe.o.gather_bootloader_kexts(
                     self.ocpe.k.kexts, self.macos_state.darwin_version)
 
                 self.update_status_signal.emit(
                     "Phase 2/2: Building OpenCore EFI structure...", 'info')
-                self.log_message("\nPhase 2: Building EFI", to_console=False, to_build_log=True)
-                self.log_message("-" * 60, to_console=False, to_build_log=True)
+                self.log_message("\nPhase 2: Building EFI", to_build_log=True)
+                self.log_message("-" * 60, to_build_log=True)
                 
                 self.ocpe.build_opencore_efi(
                     self.hardware_state.customized_hardware,
@@ -476,12 +486,12 @@ class OpCoreGUI(FluentWindow):
                 error_trace = traceback.format_exc()
                 print(error_trace)
                 
-                self.log_message("\n" + "="*60, to_console=False, to_build_log=True)
-                self.log_message("❌ Build Failed", to_console=False, to_build_log=True)
-                self.log_message("="*60, to_console=False, to_build_log=True)
-                self.log_message(f"\nError: {str(e)}", to_console=False, to_build_log=True)
-                self.log_message("\nDetails:", to_console=False, to_build_log=True)
-                self.log_message(error_trace, to_console=False, to_build_log=True)
+                self.log_message("\n" + "="*60, to_build_log=True)
+                self.log_message("❌ Build Failed", to_build_log=True)
+                self.log_message("="*60, to_build_log=True)
+                self.log_message(f"\nError: {str(e)}", to_build_log=True)
+                self.log_message("\nDetails:", to_build_log=True)
+                self.log_message(error_trace, to_build_log=True)
                 
                 self.build_complete_signal.emit(False, None)
 
@@ -523,18 +533,18 @@ class OpCoreGUI(FluentWindow):
                     f"✓ Processing ({current}/{total}): {product_name}")
 
         if status == 'complete':
-            self.log_message("\n" + "="*60, to_console=False, to_build_log=True)
-            self.log_message("✓ File Gathering Complete!", to_console=False, to_build_log=True)
-            self.log_message("="*60, to_console=False, to_build_log=True)
-            self.log_message(f"  Total files downloaded: {total}\n", to_console=False, to_build_log=True)
+            self.log_message("\n" + "="*60, to_build_log=True)
+            self.log_message("✓ File Gathering Complete!", to_build_log=True)
+            self.log_message("="*60, to_build_log=True)
+            self.log_message(f"  Total files downloaded: {total}\n", to_build_log=True)
         elif status == 'downloading':
             self.log_message(
                 f"  [{current}/{total}] ⬇ Downloading: {product_name}", 
-                to_console=False, to_build_log=True)
+                to_build_log=True)
         elif status == 'processing':
             self.log_message(
                 f"  [{current}/{total}] ✓ Extracted: {product_name}", 
-                to_console=False, to_build_log=True)
+                to_build_log=True)
 
     def update_build_progress_threadsafe(self, title, steps, current_step_index, progress, done):
         if threading.current_thread() == threading.main_thread():
@@ -567,38 +577,19 @@ class OpCoreGUI(FluentWindow):
                 self.progress_label.setText(f"⚙ {step_counter}: {step_text}...")
                 
         if done:
-            self.log_message("\n" + "="*60, to_console=False, to_build_log=True)
-            self.log_message(f"✓ {title} Complete!", to_console=False, to_build_log=True)
-            self.log_message("="*60 + "\n", to_console=False, to_build_log=True)
+            self.log_message("\n" + "="*60, to_build_log=True)
+            self.log_message(f"✓ {title} Complete!", to_build_log=True)
+            self.log_message("="*60 + "\n", to_build_log=True)
             for idx, step in enumerate(steps, 1):
                 self.log_message(
-                    f"  {idx}. ✓ {step}", to_console=False, to_build_log=True)
-            self.log_message("", to_console=False, to_build_log=True)
+                    f"  {idx}. ✓ {step}", to_build_log=True)
+            self.log_message("", to_build_log=True)
         else:
             step_text = steps[current_step_index] if current_step_index < len(
                 steps) else "Processing"
             self.log_message(
                 f"\n[Step {current_step_index + 1}/{len(steps)}] {step_text}...", 
-                to_console=False, to_build_log=True)
-
-    def show_before_using_efi_dialog(self):
-        bios_requirements = self.ocpe.check_bios_requirements(
-            self.hardware_state.data, self.hardware_state.customized_hardware)
-
-        result = show_before_using_efi_dialog(
-            self, bios_requirements, self.ocpe.result_dir)
-
-        if result:
-            from Scripts.settings import Settings
-            settings = Settings()
-            if settings.get_open_folder_after_build():
-                self.ocpe.u.open_folder(self.ocpe.result_dir)
-
-            if self.open_result_btn:
-                self.open_result_btn.setEnabled(True)
-
-        if self.build_btn:
-            self.build_btn.setEnabled(True)
+                to_build_log=True)
 
     def run(self):
         self.show()
