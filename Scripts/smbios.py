@@ -4,12 +4,11 @@ from Scripts.datasets import os_data
 from Scripts import gathering_files
 from Scripts import run
 from Scripts import utils
-from Scripts import settings as settings_module
+from Scripts import settings
 import os
 import uuid
 import random
 import platform
-import json
 
 os_name = platform.system()
 
@@ -18,9 +17,8 @@ class SMBIOS:
         self.g = gathering_files.gatheringFiles()
         self.run = run.Run().run
         self.utils = utils.Utils()
-        self.settings = settings_module.Settings()
+        self.settings = settings.Settings()
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
-        self.preserved_smbios_file = os.path.join(os.path.dirname(self.script_dir), "preserved_smbios.json")
 
     def check_macserial(self, retry_count=0):
         max_retries = 3
@@ -32,6 +30,7 @@ class SMBIOS:
         elif os_name == "Darwin":
             macserial_binary = ["macserial"]
         else:
+            self.utils.log_gui("[SMBIOS] Unknown OS for macserial", level="Error")
             raise Exception("Unknown OS for macserial")
 
         for binary in macserial_binary:
@@ -40,6 +39,7 @@ class SMBIOS:
                 return macserial_path
 
         if retry_count >= max_retries:
+            self.utils.log_gui("[SMBIOS] Failed to find macserial after {} attempts".format(max_retries), level="Error")
             raise Exception("Failed to find macserial after {} attempts".format(max_retries))
         
         download_history = self.utils.read_file(self.g.download_history_file)
@@ -57,59 +57,8 @@ class SMBIOS:
     def generate_random_mac(self):
         random_mac = ''.join([format(random.randint(0, 255), '02X') for _ in range(6)])
         return random_mac
-    
-    def load_preserved_smbios(self):
-        """Load preserved SMBIOS values from file"""
-        if os.path.exists(self.preserved_smbios_file):
-            try:
-                with open(self.preserved_smbios_file, 'r') as f:
-                    return json.load(f)
-            except:
-                return None
-        return None
-    
-    def save_preserved_smbios(self, smbios_data):
-        """Save SMBIOS values to file for preservation"""
-        try:
-            with open(self.preserved_smbios_file, 'w') as f:
-                json.dump(smbios_data, f, indent=4)
-        except Exception as e:
-            self.utils.log_gui(f"Warning: Could not save preserved SMBIOS: {e}", level="Warning", to_build_log=True)
 
     def generate_smbios(self, smbios_model):
-        self.utils.debug_log(f"Generating SMBIOS for model: {smbios_model}")
-        
-        # Check if we should use preserved SMBIOS
-        if self.settings.get_preserve_smbios():
-            preserved = self.load_preserved_smbios()
-            if preserved and preserved.get("SystemProductName") == smbios_model:
-                self.utils.log_gui("💾 Using preserved SMBIOS values", to_build_log=True)
-                self.utils.debug_log(f"Loaded preserved SMBIOS for {smbios_model}")
-                return preserved
-        
-        # Check if custom SMBIOS values are provided
-        if not self.settings.get_random_smbios():
-            custom_serial = self.settings.get_custom_serial_number()
-            custom_mlb = self.settings.get_custom_mlb()
-            custom_rom = self.settings.get_custom_rom()
-            
-            # If all custom values are provided, use them
-            if custom_serial and custom_mlb and custom_rom:
-                smbios_data = {
-                    "MLB": custom_mlb,
-                    "ROM": custom_rom,
-                    "SystemProductName": smbios_model,
-                    "SystemSerialNumber": custom_serial,
-                    "SystemUUID": str(uuid.uuid4()).upper(),
-                }
-                self.utils.log_gui("⚙️ Using custom SMBIOS values", to_build_log=True)
-                self.utils.debug_log(f"Using custom SMBIOS: Serial={custom_serial[:4]}..., MLB={custom_mlb[:4]}...")
-                if self.settings.get_preserve_smbios():
-                    self.save_preserved_smbios(smbios_data)
-                return smbios_data
-        
-        # Generate random SMBIOS (default behavior)
-        self.utils.debug_log("Generating random SMBIOS")
         macserial = self.check_macserial()
 
         random_mac_address = self.generate_random_mac()
@@ -123,19 +72,21 @@ class SMBIOS:
         else:
             serial = output[0].splitlines()[0].split(" | ")
 
-        smbios_data = {
+        smbios_info = {
             "MLB": "A" + "0"*15 + "Z" if not serial else serial[-1],
             "ROM": random_mac_address,
             "SystemProductName": smbios_model,
             "SystemSerialNumber": "A" + "0"*10 + "9" if not serial else serial[0],
             "SystemUUID": str(uuid.uuid4()).upper(),
         }
-        
-        # Save for preservation if enabled
-        if self.settings.get_preserve_smbios():
-            self.save_preserved_smbios(smbios_data)
-        
-        return smbios_data
+
+        self.utils.log_gui("[SMBIOS] Generated SMBIOS info: MLB: {}..., ROM: {}..., SystemProductName: {}, SystemSerialNumber: {}..., SystemUUID: {}...".format(
+            smbios_info["MLB"][:5],
+            smbios_info["ROM"][:5],
+            smbios_info["SystemProductName"],
+            smbios_info["SystemSerialNumber"][:5],
+            smbios_info["SystemUUID"].split("-")[0]), level="Info")
+        return smbios_info
     
     def smbios_specific_options(self, hardware_report, smbios_model, macos_version, acpi_patches, kext_maestro):
         for patch in acpi_patches:
@@ -221,4 +172,5 @@ class SMBIOS:
         elif "Ice Lake" in codename:
             smbios_model = "MacBookAir9,1"
 
+        self.utils.log_gui("[SMBIOS] Suggested SMBIOS model: {}".format(smbios_model), level="Info")
         return smbios_model
