@@ -124,6 +124,8 @@ class OpCoreGUI(FluentWindow):
             self.ocpe.co.utils,
             self.ocpe.o.utils,
             self.ocpe.ac.utils,
+            self.ocpe.s.utils,
+            self.ocpe.v.u,
         ]
         
         for utils in utils_instances:
@@ -209,11 +211,10 @@ class OpCoreGUI(FluentWindow):
 
     def log_message(self, message, level="Info", *, to_build_log=True):
         if threading.current_thread() != threading.main_thread():
-            self.log_message_signal.emit(
-                message, level, to_build_log)
+            self.log_message_signal.emit(message, level, to_build_log)
             return
-        self._log_message_on_main_thread(
-            message, level, to_build_log)
+            
+        self._log_message_on_main_thread(message, level, to_build_log)
 
     def _log_message_on_main_thread(self, message, level, to_build_log):
         lines = message.splitlines()
@@ -286,6 +287,7 @@ class OpCoreGUI(FluentWindow):
             )
 
     def handle_gui_prompt(self, prompt_type, prompt_text, options=None):
+        self.log_message(f"User interaction required ({prompt_type}): {prompt_text}", level="Debug", to_build_log=False)
         if prompt_type == 'input':
             text, ok = show_input_dialog(self, "Input Required", prompt_text)
             if ok:
@@ -383,6 +385,8 @@ class OpCoreGUI(FluentWindow):
         if not self.hardware_state.hardware_report or not self.macos_state.native_version:
             return None
 
+        self.log_message("Analyzing hardware for suggested macOS version...", level="Info", to_build_log=False)
+
         hardware_report = self.hardware_state.hardware_report
         native_macos_version = self.macos_state.native_version
 
@@ -410,25 +414,34 @@ class OpCoreGUI(FluentWindow):
             else:
                 break
 
+        self.log_message(f"Suggested macOS version: {suggested_macos_version}", level="Info", to_build_log=False)
         return suggested_macos_version
 
     def apply_macos_version(self, version, defer_kext_selection=False):
+        self.log_message(f"Applying macOS version: {version} ({os_data.get_macos_name_by_darwin(version)})", level="Info", to_build_log=False)
         self.macos_state.darwin_version = version
         self.macos_state.macos_version_name = os_data.get_macos_name_by_darwin(version)
 
         self.hardware_state.customized_hardware, self.hardware_state.disabled_devices, self.macos_state.needs_oclp = \
             self.ocpe.h.hardware_customization(self.hardware_state.hardware_report, version)
+        
+        self.log_message(f"Hardware customization complete. Disabled {len(self.hardware_state.disabled_devices)} incompatible devices.", level="Info", to_build_log=False)
 
         self.smbios_state.model_name = self.ocpe.s.select_smbios_model(
             self.hardware_state.customized_hardware, version)
+        
+        self.log_message(f"Selected SMBIOS model: {self.smbios_state.model_name}", level="Info", to_build_log=False)
 
         self.ocpe.ac.select_acpi_patches(
             self.hardware_state.customized_hardware, self.hardware_state.disabled_devices)
+        
+        self.log_message(f"Selected {len(self.ocpe.ac.patches)} ACPI patches.", level="Info", to_build_log=False)
 
         if not defer_kext_selection:
             self.macos_state.needs_oclp = self.ocpe.k.select_required_kexts(
                 self.hardware_state.customized_hardware, version, self.macos_state.needs_oclp, self.ocpe.ac.patches
             )
+            self.log_message(f"Kext selection complete. OCLP required: {self.macos_state.needs_oclp}", level="Info", to_build_log=False)
 
         self.ocpe.s.smbios_specific_options(
             self.hardware_state.customized_hardware, self.smbios_state.model_name, version,
@@ -445,6 +458,8 @@ class OpCoreGUI(FluentWindow):
 
         def build_thread():
             try:
+                self.log_message(f"Starting EFI build process for Model: {self.smbios_state.model_name}, macOS: {self.macos_state.darwin_version}", level="Info", to_build_log=True)
+
                 self.update_status_signal.emit(
                     "Phase 1/2: Gathering required files...", 'info')
                 self.log_message("\nPhase 1: Gathering Files", to_build_log=True)
@@ -468,6 +483,8 @@ class OpCoreGUI(FluentWindow):
 
                 self.update_status_signal.emit(
                     "✓ Build completed successfully!", 'success')
+                
+                self.log_message("\nBuild process finished successfully.", level="Info", to_build_log=True)
 
                 bios_requirements = self.ocpe.check_bios_requirements(
                     self.hardware_state.data, self.hardware_state.customized_hardware)
@@ -534,9 +551,9 @@ class OpCoreGUI(FluentWindow):
 
         if status == 'complete':
             self.log_message("\n" + "="*60, to_build_log=True)
-            self.log_message("✓ File Gathering Complete!", to_build_log=True)
+            self.log_message("✓ File Gathering Phase Complete!", to_build_log=True)
             self.log_message("="*60, to_build_log=True)
-            self.log_message(f"  Total files downloaded: {total}\n", to_build_log=True)
+            self.log_message(f"  Total files processed: {total}\n", to_build_log=True)
         elif status == 'downloading':
             self.log_message(
                 f"  [{current}/{total}] ⬇ Downloading: {product_name}", 

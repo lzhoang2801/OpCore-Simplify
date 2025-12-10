@@ -8,6 +8,7 @@ from Scripts import smbios
 from Scripts import dsdt
 from Scripts import run
 from Scripts import utils
+from Scripts.gui.custom_dialogs import show_info_dialog
 import os
 import binascii
 import re
@@ -147,7 +148,7 @@ class ACPIGuru:
                 # Show error dialog in GUI mode, or prompt in CLI mode
                 if self.utils.gui_handler:
                     message = "No valid .aml files were found in the selected directory."
-                    self.utils.show_info_dialog('ACPI Files Not Found', message)
+                    show_info_dialog(self.utils.gui_handler, 'ACPI Files Not Found', message)
                 elif not self.utils.gui_callback:
                     self.utils.request_input()
                     
@@ -170,7 +171,7 @@ class ACPIGuru:
                 if self.utils.gui_handler:
                     files_list = "\n".join([f" - {d}" for d in self.sorted_nicely(dsdt_list)])
                     message = f"Multiple files with DSDT signature found:\n\n{files_list}\n\nOnly one is allowed at a time. Please remove one of the above and try again."
-                    self.utils.show_info_dialog('Multiple DSDT Files Found', message)
+                    show_info_dialog(self.utils.gui_handler, 'Multiple DSDT Files Found', message)
                 elif not self.utils.gui_callback:
                     self.utils.request_input()
                     
@@ -200,7 +201,7 @@ class ACPIGuru:
                 # Show error dialog in GUI mode, or prompt in CLI mode
                 if self.utils.gui_handler:
                     message = f"The file '{os.path.basename(path)}' could not be disassembled."
-                    self.utils.show_info_dialog('ACPI Disassembly Failed', message)
+                    show_info_dialog(self.utils.gui_handler, 'ACPI Disassembly Failed', message)
                 elif not self.utils.gui_callback:
                     self.utils.request_input()
                     
@@ -220,7 +221,7 @@ class ACPIGuru:
             # Show error dialog in GUI mode, or prompt in CLI mode
             if self.utils.gui_handler:
                 message = "The selected file or folder does not exist."
-                self.utils.show_info_dialog('File Not Found', message)
+                show_info_dialog(self.utils.gui_handler, 'File Not Found', message)
             elif not self.utils.gui_callback:
                 self.utils.request_input()
                 
@@ -278,7 +279,7 @@ class ACPIGuru:
                 # Show error dialog in GUI mode, or prompt in CLI mode
                 if self.utils.gui_handler:
                     message = f"The DSDT file '{trouble_dsdt}' could not be disassembled."
-                    self.utils.show_info_dialog('DSDT Disassembly Failed', message)
+                    show_info_dialog(self.utils.gui_handler, 'DSDT Disassembly Failed', message)
                 elif not self.utils.gui_callback:
                     self.utils.request_input()
                     

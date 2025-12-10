@@ -3,6 +3,7 @@ from Scripts.datasets import kext_data
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts.datasets import codec_layouts
+from Scripts.gui.custom_dialogs import show_choice_dialog, show_info_dialog, show_question_dialog
 from Scripts import utils
 import os
 import shutil
@@ -193,7 +194,8 @@ class KextMaestro:
                     ]
                     
                     while True:
-                        kext_option = self.utils.show_choice_dialog(
+                        kext_option = show_choice_dialog(
+                            self.utils.gui_handler,
                             'Select Audio Kext',
                             'Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext.\n\nChoose your audio solution:',
                             choices,
@@ -298,7 +300,7 @@ class KextMaestro:
                                 "Important: NootRX kext is not compatible with Intel GPUs.\n\n"
                                 "WhateverGreen kext will be automatically selected due to Intel GPU compatibility."
                             )
-                            self.utils.show_info_dialog('NootRX Incompatibility Notice', message)
+                            show_info_dialog(self.utils.gui_handler, 'NootRX Incompatibility Notice', message)
                         elif not self.utils.gui_callback:
                             self.utils.request_input("Press Enter to continue...")
                         continue
@@ -324,7 +326,8 @@ class KextMaestro:
                             'description': '• No GPU kext will be installed\n• May work for some systems without GPU acceleration'
                         })
                     
-                    kext_option = self.utils.show_choice_dialog(
+                    kext_option = show_choice_dialog(
+                        self.utils.gui_handler,
                         'Select AMD GPU Kext',
                         f'Select kext for your AMD {gpu_props.get("Codename")} GPU.\n\nNote: Since macOS Tahoe 26, WhateverGreen has known connector patching issues.',
                         gui_choices,
@@ -361,7 +364,7 @@ class KextMaestro:
                             "The current recommendation is to not use WhateverGreen.\n"
                             "However, you can still try adding it to see if it works on your system."
                         )
-                        self.utils.show_info_dialog('AMD GPU Detected - WhateverGreen Notice', message)
+                        show_info_dialog(self.utils.gui_handler, 'AMD GPU Detected - WhateverGreen Notice', message)
                     elif not self.utils.gui_callback:
                         self.utils.request_input("Press Enter to continue...")
                     break
@@ -425,14 +428,14 @@ class KextMaestro:
                     print("")
                     # Show info dialog with full context
                     message = intel_wifi_info + '\n\nImportant: For macOS Beta versions, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
-                    self.utils.show_info_dialog('Intel WiFi Kext - Beta Version', message)
+                    show_info_dialog(self.utils.gui_handler, 'Intel WiFi Kext - Beta Version', message)
                     selected_option = recommended_option
                 elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
                     print("\033[91mImportant:\033[0m For macOS Tahoe 26, only itlwm kext is supported")
                     print("")
                     # Show info dialog with full context
                     message = intel_wifi_info + '\n\nImportant: For macOS Tahoe 26, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
-                    self.utils.show_info_dialog('Intel WiFi Kext - macOS Tahoe 26', message)
+                    show_info_dialog(self.utils.gui_handler, 'Intel WiFi Kext - macOS Tahoe 26', message)
                     selected_option = recommended_option
                 else:
                     # Build choice list for dialog
@@ -451,7 +454,8 @@ class KextMaestro:
                     
                     note = 'Since macOS Sonoma 14, iServices may not work with AirportItlwm unless using OCLP root patch' if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else None
                     
-                    kext_option = self.utils.show_choice_dialog(
+                    kext_option = show_choice_dialog(
+                        self.utils.gui_handler,
                         'Select WiFi Kext',
                         'Intel WiFi devices have two available kext options.\n\nChoose the one that best fits your needs:',
                         choices,
@@ -478,7 +482,8 @@ class KextMaestro:
                         print("")
                         
                         while True:
-                            option = self.utils.show_question_dialog(
+                            option = show_question_dialog(
+                                self.utils.gui_handler,
                                 'Apply OCLP Root Patch',
                                 'Since macOS Sonoma 14, iServices won\'t work with AirportItlwm without patches.\n\nDo you want to apply OpenCore Legacy Patcher root patch to fix iServices?',
                                 default='no'
@@ -838,7 +843,8 @@ class KextMaestro:
             
             message = f'The following kexts are incompatible with macOS version {target_darwin_version}:\n\n{kext_list}\n\nWith Lilu plugins, using the "-lilubetaall" boot argument will force them to load.\n\nForcing unsupported kexts can cause system instability. Proceed with caution.\n\nDo you want to force load {"these kexts" if len(incompatible_kexts) > 1 else "this kext"} on the unsupported macOS version?'
             
-            option = self.utils.show_question_dialog(
+            option = show_question_dialog(
+                self.utils.gui_handler,
                 'Kext Compatibility Warning',
                 message,
                 default='no',

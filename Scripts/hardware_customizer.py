@@ -1,6 +1,7 @@
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts import compatibility_checker
+from Scripts.gui.custom_dialogs import show_info_dialog, show_question_dialog
 from Scripts import utils
 
 class HardwareCustomizer:
@@ -36,7 +37,8 @@ class HardwareCustomizer:
                     print("")
 
                     while True:
-                        answer = self.utils.show_question_dialog(
+                        answer = show_question_dialog(
+                            self.utils.gui_handler,
                             'Firmware Type Selection',
                             'Your BIOS Firmware Type is not UEFI.\n\nDo you want to build the EFI for UEFI?\n\nIf yes, please make sure to update your BIOS and enable UEFI Boot Mode in your BIOS settings.\nYou can still proceed with Legacy if you prefer.',
                             default='yes'
@@ -91,7 +93,8 @@ class HardwareCustomizer:
             print("")
             print("All other devices of the same type have been disabled.")
             print("")
-            self.utils.show_info_dialog(
+            show_info_dialog(
+                self.utils.gui_handler,
                 'Device Selection Summary',
                 'Selected devices have been configured.\n\nAll other devices of the same type have been disabled.'
             )

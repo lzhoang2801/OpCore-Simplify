@@ -425,6 +425,10 @@ class ConfigurationPage(ScrollArea):
             self.controller.update_status("Please select hardware report first", 'warning')
             return
 
+        if self.controller.hardware_state.compatibility_error:
+            self.controller.update_status("Incompatible hardware detected, please select different hardware report and try again", 'warning')
+            return
+
         suggested_version = self.controller.suggest_macos_version()
 
         selected_version, ok = show_macos_version_dialog(

@@ -3,6 +3,7 @@ from Scripts import kext_maestro
 from Scripts import integrity_checker
 from Scripts import resource_fetcher
 from Scripts import utils
+from Scripts.gui.custom_dialogs import show_info_dialog
 from Scripts import settings as settings_module
 import os
 import shutil
@@ -410,7 +411,7 @@ class gatheringFiles:
                     f"{patches_url}\n\n"
                     "Please try again later or apply them manually."
                 )
-                self.utils.show_info_dialog('Download Failed', message)
+                show_info_dialog(self.utils.gui_handler, 'Download Failed', message)
             elif not self.utils.gui_callback:
                 self.utils.request_input()
                 
