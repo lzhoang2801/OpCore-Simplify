@@ -3,6 +3,7 @@ from Scripts.datasets import kext_data
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts.datasets import codec_layouts
+from Scripts.gui.custom_dialogs import show_choice_dialog, show_info_dialog, show_question_dialog
 from Scripts import utils
 import os
 import shutil
@@ -137,9 +138,6 @@ class KextMaestro:
                     other_kext.checked = False
 
     def select_required_kexts(self, hardware_report, macos_version, needs_oclp, acpi_patches):
-        self.utils.head("Select Required Kernel Extensions")
-        print("")
-        print("Checking for required kernel extensions...")
         self.utils.log_gui("Checking for required kernel extensions...", to_build_log=True)
 
         for kext in self.kexts:
@@ -164,21 +162,6 @@ class KextMaestro:
         for codec_properties in hardware_report.get("Sound", {}).values():
             if codec_properties.get("Device ID") in codec_layouts.data:
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                    print("\n\033[1;93mNote:\033[0m Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext.")
-                    print("To use AppleALC, you must rollback AppleHDA. Alternatively, you can use VoodooHDA.")
-                    print("")
-                    print("1. \033[1mAppleALC\033[0m")
-                    print("   • High quality native audio")
-                    print("   • Requires AppleHDA rollback with \033[1;93mOpenCore Legacy Patcher\033[0m")
-                    print("   • Recommended for best audio experience")
-                    print("")
-                    print("2. \033[1mVoodooHDA\033[0m")
-                    print("   • Lower audio quality")
-                    print("   • Manual injection to /Library/Extensions required")
-                    print("   • No OCLP dependency")
-                    print("   • Alternative if OCLP is not desired")
-                    print("")
-                    
                     choices = [
                         {
                             'value': '1',
@@ -192,18 +175,17 @@ class KextMaestro:
                         }
                     ]
                     
-                    while True:
-                        kext_option = self.utils.show_choice_dialog(
-                            'Select Audio Kext',
-                            'Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext.\n\nChoose your audio solution:',
-                            choices,
-                            default_value='1',
-                            warning='AppleALC requires OpenCore Legacy Patcher for AppleHDA rollback'
-                        ) or ''
-                        if kext_option in ['1', '2']:
-                            break
-                        else:
-                            print("\033[91mInvalid selection, please try again.\033[0m\n\n")
+                    kext_option, _ = show_choice_dialog(
+                        self.utils.gui_handler,
+                        'Select Audio Kext',
+                        'Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext.\n\nChoose your audio solution:',
+                        choices,
+                        default_value='1',
+                        warning='AppleALC requires OpenCore Legacy Patcher for AppleHDA rollback'
+                    )
+                    
+                    if not kext_option:
+                        kext_option = "1"
                     
                     if kext_option == "1":
                         needs_oclp = True
@@ -240,67 +222,23 @@ class KextMaestro:
                     # Black screen fix warning message
                     black_screen_warning = 'If you experience black screen after verbose mode, remove "-v debug=0x100 keepsyms=1" from boot-args in config.plist'
                     
-                    print("\n*** Found {} is AMD {} GPU.".format(gpu_name, gpu_props.get("Codename")))
                     self.utils.log_gui(f"🎮 Found {gpu_name} - AMD {gpu_props.get('Codename')} GPU", to_build_log=True)
-                    print("")
-                    print("\033[91mImportant: Black Screen Fix\033[0m")
-                    print("If you experience a black screen after verbose mode:")
-                    print("    1. Use ProperTree to open config.plist")
-                    print("    2. Navigate to NVRAM -> Add -> 7C436110-AB2A-4BBB-A880-FE41995C9F82 -> boot-args")
-                    print("    3. Remove \"-v debug=0x100 keepsyms=1\" from boot-args")
-                    print("")
+                    
                     if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
                         recommended_option = 1
                         recommended_name = "NootRX"
                         max_option = 3
-                        print("\033[1;93mNote:\033[0m Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD {} GPUs.".format(gpu_props.get("Codename")))
-                        print("To avoid this, you can use NootRX or choose not to install a GPU kext.")
-                        print("")
-                        print("1. \033[1mNootRX\033[0m")
-                        print("   • Uses latest GPU firmware")
-                        print("   • Modern kext with better support")
-                        print("   • Recommended for most systems")
-                        print("")
-                        print("2. \033[1mWhateverGreen\033[0m")
-                        print("   • Uses original Apple firmware")
-                        print("   • Traditional/legacy kext")
-                        print("   • May have connector patching issues on macOS Tahoe 26")
-                        print("")
-                        print("3. \033[1mDon't use any kext\033[0m")
-                        print("   • No GPU kext will be installed")
-                        print("   • May work for some systems without GPU acceleration")
                     else:
                         recommended_option = 2
                         recommended_name = "WhateverGreen"
                         max_option = 2
-                        print("\033[1;93mNote:\033[0m")
-                        print("- AMD {} GPUs have two available kext options:".format(gpu_props.get("Codename")))
-                        print("- You can try different kexts after installation to find the best one for your system")
-                        print("")
-                        print("1. \033[1mNootRX\033[0m")
-                        print("   • Uses latest GPU firmware")
-                        print("   • Modern kext with better support")
-                        print("   • Recommended for most systems")
-                        print("")
-                        print("2. \033[1mWhateverGreen\033[0m")
-                        print("   • Uses original Apple firmware")
-                        print("   • Traditional/legacy kext")
-                    print("")
 
                     if any(other_gpu_props.get("Manufacturer") == "Intel" for other_gpu_props in hardware_report.get("GPU", {}).values()):
-                        print("\033[91mImportant:\033[0m NootRX kext is not compatible with Intel GPUs")
-                        print("Automatically selecting WhateverGreen kext due to Intel GPU compatibility")
-                        print("")
-                        
-                        # Show info dialog in GUI mode, or prompt in CLI mode
-                        if self.utils.gui_handler:
-                            message = (
-                                "Important: NootRX kext is not compatible with Intel GPUs.\n\n"
-                                "WhateverGreen kext will be automatically selected due to Intel GPU compatibility."
-                            )
-                            self.utils.show_info_dialog('NootRX Incompatibility Notice', message)
-                        elif not self.utils.gui_callback:
-                            self.utils.request_input("Press Enter to continue...")
+                        message = (
+                            "Important: NootRX kext is not compatible with Intel GPUs.\n\n"
+                            "WhateverGreen kext will be automatically selected due to Intel GPU compatibility."
+                        )
+                        show_info_dialog(self.utils.gui_handler, 'NootRX Incompatibility Notice', message)
                         continue
 
                     # Build GUI options
@@ -324,19 +262,19 @@ class KextMaestro:
                             'description': '• No GPU kext will be installed\n• May work for some systems without GPU acceleration'
                         })
                     
-                    kext_option = self.utils.show_choice_dialog(
+                    kext_option, _ = show_choice_dialog(
+                        self.utils.gui_handler,
                         'Select AMD GPU Kext',
                         f'Select kext for your AMD {gpu_props.get("Codename")} GPU.\n\nNote: Since macOS Tahoe 26, WhateverGreen has known connector patching issues.',
                         gui_choices,
                         default_value=str(recommended_option),
                         warning=black_screen_warning
-                    ) or str(recommended_option)
+                    )
                     
-                    if kext_option.isdigit() and 0 < int(kext_option) < max_option + 1:
-                        selected_option = int(kext_option)
-                    else:
-                        print("\033[93mInvalid selection, using recommended option: {}\033[0m".format(recommended_option))
-                        selected_option = recommended_option
+                    if not kext_option:
+                         kext_option = str(recommended_option)
+                    
+                    selected_option = int(kext_option)
 
                     if selected_option == 1:
                         selected_kexts.append("NootRX")
@@ -346,24 +284,13 @@ class KextMaestro:
                     continue
 
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                    print("\n*** Found {} is AMD {} GPU.".format(gpu_name, gpu_props.get("Codename")))
-                    print("")
-                    print("\033[1;93mNote:\033[0m Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD GPUs.")
-                    print("The current recommendation is to not use WhateverGreen.")
-                    print("However, you can still try adding it to see if it works on your system.")
-                    print("")
-                    
-                    # Show info dialog in GUI mode, or prompt in CLI mode
-                    if self.utils.gui_handler:
-                        message = (
-                            f"Found {gpu_name} is AMD {gpu_props.get('Codename')} GPU.\n\n"
-                            "Note: Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD GPUs.\n\n"
-                            "The current recommendation is to not use WhateverGreen.\n"
-                            "However, you can still try adding it to see if it works on your system."
-                        )
-                        self.utils.show_info_dialog('AMD GPU Detected - WhateverGreen Notice', message)
-                    elif not self.utils.gui_callback:
-                        self.utils.request_input("Press Enter to continue...")
+                    message = (
+                        f"Found {gpu_name} is AMD {gpu_props.get('Codename')} GPU.\n\n"
+                        "Note: Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD GPUs.\n\n"
+                        "The current recommendation is to not use WhateverGreen.\n"
+                        "However, you can still try adding it to see if it works on your system."
+                    )
+                    show_info_dialog(self.utils.gui_handler, 'AMD GPU Detected - WhateverGreen Notice', message)
                     break
 
                 selected_kexts.append("WhateverGreen")
@@ -393,46 +320,20 @@ class KextMaestro:
                 # Get the detailed Intel WiFi information
                 intel_wifi_info = self.get_intel_wifi_info_message(macos_version, network_name)
                 
-                # Print to CLI with formatting
-                print("\n*** Found {} is Intel WiFi device.".format(network_name))
                 self.utils.log_gui(f"📶 Found {network_name} - Intel WiFi device", to_build_log=True)
-                print("")
-                print("\033[1;93mNote:\033[0m Intel WiFi devices have two available kext options:")
-                print("")
-                print("1. \033[1mAirportItlwm\033[0m")
-                print("   • Uses native WiFi settings menu")
-                print("   • Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support")
-                print("   • Supports enterprise-level security")
-
-                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
-                    print("   • \033[91mSince macOS Sequoia 15\033[0m: Can work with OCLP root patch but may cause issues")
-                elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                    print("   • \033[91mOn macOS Sonoma 14\033[0m: iServices won't work unless using OCLP root patch")
-                
-                print("")
-                print("2. \033[1mitlwm\033[0m")
-                print("   • More stable overall")
-                print("   • Works with HeliPort app instead of native WiFi settings menu")
-                print("   • No Apple Continuity features and enterprise-level security")
-                print("   • Can connect to Hidden Networks")
-                print("")
 
                 recommended_option = 2 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else 1
                 recommended_name = "itlwm" if recommended_option == 2 else "AirportItlwm"
 
                 if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
-                    print("\033[91mImportant:\033[0m For macOS Beta versions, only itlwm kext is supported")
-                    print("")
                     # Show info dialog with full context
                     message = intel_wifi_info + '\n\nImportant: For macOS Beta versions, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
-                    self.utils.show_info_dialog('Intel WiFi Kext - Beta Version', message)
+                    show_info_dialog(self.utils.gui_handler, 'Intel WiFi Kext - Beta Version', message)
                     selected_option = recommended_option
                 elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                    print("\033[91mImportant:\033[0m For macOS Tahoe 26, only itlwm kext is supported")
-                    print("")
                     # Show info dialog with full context
                     message = intel_wifi_info + '\n\nImportant: For macOS Tahoe 26, only itlwm kext is supported.\n\nitlwm will be automatically selected.'
-                    self.utils.show_info_dialog('Intel WiFi Kext - macOS Tahoe 26', message)
+                    show_info_dialog(self.utils.gui_handler, 'Intel WiFi Kext - macOS Tahoe 26', message)
                     selected_option = recommended_option
                 else:
                     # Build choice list for dialog
@@ -451,19 +352,19 @@ class KextMaestro:
                     
                     note = 'Since macOS Sonoma 14, iServices may not work with AirportItlwm unless using OCLP root patch' if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else None
                     
-                    kext_option = self.utils.show_choice_dialog(
+                    kext_option, _ = show_choice_dialog(
+                        self.utils.gui_handler,
                         'Select WiFi Kext',
                         'Intel WiFi devices have two available kext options.\n\nChoose the one that best fits your needs:',
                         choices,
                         default_value=str(recommended_option),
                         note=note
-                    ) or str(recommended_option)
+                    )
                     
-                    if kext_option.isdigit() and 0 < int(kext_option) < 3:
-                        selected_option = int(kext_option)
-                    else:
-                        print("\033[91mInvalid selection, using recommended option: {}\033[0m".format(recommended_option))
-                        selected_option = recommended_option
+                    if not kext_option:
+                        kext_option = str(recommended_option)
+                    
+                    selected_option = int(kext_option)
                 
                 if selected_option == 2:
                     selected_kexts.append("itlwm")
@@ -473,22 +374,15 @@ class KextMaestro:
                     if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
                         selected_kexts.append("IOSkywalkFamily")
                     elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                        print("")
-                        print("\033[1;93mNote:\033[0m Since macOS Sonoma 14, iServices won't work with AirportItlwm without patches")
-                        print("")
                         
-                        while True:
-                            option = self.utils.show_question_dialog(
-                                'Apply OCLP Root Patch',
-                                'Since macOS Sonoma 14, iServices won\'t work with AirportItlwm without patches.\n\nDo you want to apply OpenCore Legacy Patcher root patch to fix iServices?',
-                                default='no'
-                            )
-                            if option == "yes" or option == "no":
-                                break
-                            else:
-                                print("\033[91mInvalid selection, please try again.\033[0m\n\n")
+                        option = show_question_dialog(
+                            self.utils.gui_handler,
+                            'Apply OCLP Root Patch',
+                            'Since macOS Sonoma 14, iServices won\'t work with AirportItlwm without patches.\n\nDo you want to apply OpenCore Legacy Patcher root patch to fix iServices?',
+                            default='no'
+                        )
                         
-                        if option == "yes":
+                        if option:
                             selected_kexts.append("IOSkywalkFamily")
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 selected_kexts.append("corecaptureElCap")
@@ -820,83 +714,25 @@ class KextMaestro:
         if not incompatible_kexts:
             return False
         
-        while True:
-            self.utils.head("Kext Compatibility Check")
-            print("\nIncompatible kexts for the current macOS version ({}):\n".format(target_darwin_version))
-            
-            for index, (kext_name, is_lilu_dependent) in enumerate(incompatible_kexts, start=1):
-                print("{:2}. {:25}{}".format(index, kext_name, " - Lilu Plugin" if is_lilu_dependent else ""))
-            
-            print("\n\033[1;93mNote:\033[0m")
-            print("- With Lilu plugins, using the \"-lilubetaall\" boot argument will force them to load.")
-            print("- Forcing unsupported kexts can cause system instability. \033[0;31mProceed with caution.\033[0m")
-            print("")
-            
-            # Build list of kext names for dialog
-            kext_list = "\n".join([f"  • {kext_name}{' (Lilu Plugin)' if is_lilu else ''}" 
-                                  for kext_name, is_lilu in incompatible_kexts])
-            
-            message = f'The following kexts are incompatible with macOS version {target_darwin_version}:\n\n{kext_list}\n\nWith Lilu plugins, using the "-lilubetaall" boot argument will force them to load.\n\nForcing unsupported kexts can cause system instability. Proceed with caution.\n\nDo you want to force load {"these kexts" if len(incompatible_kexts) > 1 else "this kext"} on the unsupported macOS version?'
-            
-            option = self.utils.show_question_dialog(
-                'Kext Compatibility Warning',
-                message,
-                default='no',
-                warning='This may cause system instability!'
-            )
-            
-            if option.lower() == "yes":
-                return True
-            elif option.lower() == "no":
-                return False
+        # Build list of kext names for dialog
+        kext_list = "\n".join([f"  • {kext_name}{' (Lilu Plugin)' if is_lilu else ''}" 
+                              for kext_name, is_lilu in incompatible_kexts])
+        
+        message = f'The following kexts are incompatible with macOS version {target_darwin_version}:\n\n{kext_list}\n\nWith Lilu plugins, using the "-lilubetaall" boot argument will force them to load.\n\nForcing unsupported kexts can cause system instability. Proceed with caution.\n\nDo you want to force load {"these kexts" if len(incompatible_kexts) > 1 else "this kext"} on the unsupported macOS version?'
+        
+        option = show_question_dialog(
+            self.utils.gui_handler,
+            'Kext Compatibility Warning',
+            message,
+            default='no',
+            warning='This may cause system instability!'
+        )
+        
+        if option:  # show_question_dialog returns True/False
+            return True
+        else:
+            return False
 
     def kext_configuration_menu(self, macos_version):
-        current_category = None
-
-        while True:
-            contents = []
-            contents.append("")
-            contents.append("List of available kexts:")
-            for index, kext in enumerate(self.kexts, start=1):
-                if kext.category != current_category:
-                    current_category = kext.category
-                    category_header = "Category: {}".format(current_category if current_category else "Uncategorized")
-                    contents.append(f"\n{category_header}\n" + "=" * len(category_header))
-                checkbox = "[*]" if kext.checked else "[ ]"
-                
-                line = "{} {:2}. {:35} - {:60}".format(checkbox, index, kext.name, kext.description)
-                if kext.checked:
-                    line = "\033[1;32m{}\033[0m".format(line)
-                elif not self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(kext.max_darwin_version):
-                    line = "\033[90m{}\033[0m".format(line)
-                contents.append(line)
-            contents.append("")
-            contents.append("\033[1;93mNote:\033[0m")
-            contents.append("- Lines in gray indicate kexts that are not supported by the current macOS version ({}).".format(macos_version))
-            contents.append("- When a plugin of a kext is selected, the entire kext will be automatically selected.")
-            contents.append("- You can select multiple kexts by entering their indices separated by commas (e.g., '1, 2, 3').")
-            contents.append("")
-            contents.append("B. Back")
-            contents.append("Q. Quit")
-            contents.append("")
-            content = "\n".join(contents)
-
-            self.utils.adjust_window_size(content)
-            self.utils.head("Configure Kernel Extensions", resize=False)
-            print(content)
-            option = self.utils.request_input("Select your option: ")
-            if option.lower() == "b":
-                return
-            if option.lower() == "q":
-                self.utils.exit_program()
-            indices = [int(i.strip()) -1 for i in option.split(",") if i.strip().isdigit()]
-
-            allow_unsupported_kexts = self.verify_kext_compatibility(indices, macos_version)
-    
-            for index in indices:
-                if index >= 0 and index < len(self.kexts):
-                    kext = self.kexts[index]
-                    if kext.checked and not kext.required:
-                        self.uncheck_kext(index)
-                    else:
-                        self.check_kext(index, macos_version, allow_unsupported_kexts)
+        # This method is no longer used in GUI mode
+        pass

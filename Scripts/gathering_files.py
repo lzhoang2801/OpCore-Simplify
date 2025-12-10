@@ -3,6 +3,7 @@ from Scripts import kext_maestro
 from Scripts import integrity_checker
 from Scripts import resource_fetcher
 from Scripts import utils
+from Scripts.gui.custom_dialogs import show_info_dialog
 from Scripts import settings as settings_module
 import os
 import shutil
@@ -266,21 +267,11 @@ class gatheringFiles:
                 self.utils.gui_gathering_progress_callback(progress_info)
 
             # Log download start
-            if not self.utils.gui_callback:
-                print("")
-                print(f"Downloading {index + 1}/{total_products}: {product_name}")
-                if product_download_url:
-                    print(f"from {product_download_url}")
-                    print("")
-            else:
-                # Log to GUI build log
-                self.utils.log_gui(f"⬇️ Downloading {product_name} ({index + 1}/{total_products})", to_build_log=True)
+            # Log to GUI build log
+            self.utils.log_gui(f"⬇️ Downloading {product_name} ({index + 1}/{total_products})", to_build_log=True)
             
             if not product_download_url:
                 self.utils.log_gui(f"❌ Could not find download URL for {product_name}", level="Error", to_build_log=True)
-                # Only show "Press Enter to continue" prompt in CLI mode
-                if not self.utils.gui_callback:
-                    self.utils.request_input()
                 shutil.rmtree(self.temporary_dir, ignore_errors=True)
                 return False
 
@@ -296,10 +287,7 @@ class gatheringFiles:
                     raise Exception(f"Could not download {product_name} at this time. Please try again later.")
             
             # Log extraction
-            if not self.utils.gui_callback:
-                print(f"Extracting {product_name}...")
-            else:
-                self.utils.log_gui(f"📦 Extracting {product_name}...", to_build_log=True)
+            self.utils.log_gui(f"📦 Extracting {product_name}...", to_build_log=True)
             self.utils.extract_zip_file(zip_path)
             self.utils.create_folder(asset_dir, remove_content=True)
             
@@ -326,30 +314,18 @@ class gatheringFiles:
                 
                 oc_binary_data_zip_path = os.path.join(self.temporary_dir, "OcBinaryData.zip")
                 
-                # Log OcBinaryData download (suppressed in GUI mode)
-                if not self.utils.gui_callback:
-                    print("")
-                    print("Downloading OcBinaryData...")
-                    print(f"from {self.ocbinarydata_url}")
-                    print("")
-                else:
-                    self.utils.log_gui("⬇️ Downloading OcBinaryData...", to_build_log=True)
+                # Log OcBinaryData download
+                self.utils.log_gui("⬇️ Downloading OcBinaryData...", to_build_log=True)
                 
                 self.fetcher.download_and_save_file(self.ocbinarydata_url, oc_binary_data_zip_path)
 
                 if not os.path.exists(oc_binary_data_zip_path):
                     self.utils.log_gui("❌ Could not download OcBinaryData at this time. Please try again later.", level="Error", to_build_log=True)
-                    # Only show "Press Enter to continue" prompt in CLI mode
-                    if not self.utils.gui_callback:
-                        self.utils.request_input()
                     shutil.rmtree(self.temporary_dir, ignore_errors=True)
                     return False
                 
                 # Log extraction
-                if not self.utils.gui_callback:
-                    print("Extracting OcBinaryData...")
-                else:
-                    self.utils.log_gui("📦 Extracting OcBinaryData...", to_build_log=True)
+                self.utils.log_gui("📦 Extracting OcBinaryData...", to_build_log=True)
                 self.utils.extract_zip_file(oc_binary_data_zip_path)
             
             # Update progress for processing
@@ -363,10 +339,7 @@ class gatheringFiles:
                 self.utils.gui_gathering_progress_callback(progress_info)
             
             # Log processing
-            if not self.utils.gui_callback:
-                print(f"Processing {product_name}...")
-            else:
-                self.utils.log_gui(f"⚙️ Processing {product_name}...", to_build_log=True)
+            self.utils.log_gui(f"⚙️ Processing {product_name}...", to_build_log=True)
             
             if self.move_bootloader_kexts_to_product_directory(product_name):
                 self.integrity_checker.generate_folder_manifest(asset_dir, manifest_path)
@@ -384,10 +357,6 @@ class gatheringFiles:
             }
             self.utils.gui_gathering_progress_callback(progress_info)
         
-        # Final message (suppressed in GUI mode)
-        if not self.utils.gui_callback:
-            print("")
-            print("All files gathered successfully!")
         return True
     
     def get_kernel_patches(self, patches_name, patches_url):
@@ -396,23 +365,12 @@ class gatheringFiles:
 
             return response["Kernel"]["Patch"]
         except: 
-            print("")
-            print(f"Unable to download {patches_name} at this time")
-            print("from " + patches_url)
-            print("")
-            print("Please try again later or apply them manually.")
-            print("")
-            
-            # Show error dialog in GUI mode, or prompt in CLI mode
-            if self.utils.gui_handler:
-                message = (
-                    f"Unable to download {patches_name} at this time from:\n"
-                    f"{patches_url}\n\n"
-                    "Please try again later or apply them manually."
-                )
-                self.utils.show_info_dialog('Download Failed', message)
-            elif not self.utils.gui_callback:
-                self.utils.request_input()
+            message = (
+                f"Unable to download {patches_name} at this time from:\n"
+                f"{patches_url}\n\n"
+                "Please try again later or apply them manually."
+            )
+            show_info_dialog(self.utils.gui_handler, 'Download Failed', message)
                 
             return []
         
@@ -438,7 +396,7 @@ class gatheringFiles:
         if os_name != "Windows":
             return
 
-        self.utils.head("Gathering Hardware Sniffer")
+        self.utils.log_gui("Gathering Hardware Sniffer")
 
         PRODUCT_NAME = "Hardware-Sniffer-CLI.exe"
         REPO_OWNER = "lzhoang2801"
@@ -461,11 +419,6 @@ class gatheringFiles:
                 break
 
         if not all([product_id, product_download_url, sha256_hash]):
-            print("")
-            print(f"Could not find release information for {PRODUCT_NAME}.")
-            print("Please try again later.")
-            print("")
-            self.utils.request_input()
             raise Exception(f"Could not find release information for {PRODUCT_NAME}.")
 
         download_history = self.utils.read_file(self.download_history_file)
@@ -484,23 +437,14 @@ class gatheringFiles:
                 file_is_valid = (sha256_hash == local_hash)
 
             if is_latest_id and file_is_valid:
-                print("")
-                print(f"Latest version of {PRODUCT_NAME} already downloaded.")
+                self.utils.log_gui(f"Latest version of {PRODUCT_NAME} already downloaded.")
                 return destination_path
 
-        print("")
-        print("Updating" if product_history_index is not None else "Please wait for download", end=" ")
-        print(f"{PRODUCT_NAME}...")
-        print("")
-        print(f"from {product_download_url}")
-        print("")
+        self.utils.log_gui(f"Downloading {PRODUCT_NAME} from {product_download_url}...")
         
         if not self.fetcher.download_and_save_file(product_download_url, destination_path, sha256_hash):
             manual_download_url = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/releases/latest"
-            print(f"Go to {manual_download_url} to download {PRODUCT_NAME} manually.")
-            print("")
-            self.utils.request_input()
-            raise Exception(f"Failed to download {PRODUCT_NAME}.")
+            raise Exception(f"Failed to download {PRODUCT_NAME}. Go to {manual_download_url} to download it manually.")
 
         self._update_download_history(download_history, PRODUCT_NAME, product_id, product_download_url, sha256_hash)
         

@@ -81,7 +81,6 @@ def create_vertical_spacer(spacing: int = SPACING['medium']) -> QWidget:
 
 
 class ConsoleRedirector(QObject):
-    append_text_signal = pyqtSignal(str, str)
     LEVEL_PATTERN = re.compile(r"\[(info|warning|error|debug)\]", re.IGNORECASE)
     
     LEVEL_KEYWORDS = {
@@ -96,8 +95,6 @@ class ConsoleRedirector(QObject):
         self.original_stdout = original_stdout or sys.__stdout__
         self.default_level = default_level
         self._buffer = ""
-
-        self.append_text_signal.connect(self._append_text_on_main_thread)
 
     def write(self, text: str):
         if not text:
@@ -116,14 +113,7 @@ class ConsoleRedirector(QObject):
     def _emit_line(self, line: str):
         message = line.rstrip('\r')
         level = self._detect_level(message)
-
-        if threading.current_thread() == threading.main_thread():
-            self.controller.log_message(message, level, to_build_log=False)
-        else:
-            self.append_text_signal.emit(message, level)
-
-    def _append_text_on_main_thread(self, text: str, level: str):
-        self.controller.log_message(text, level, to_build_log=False)
+        self.controller.log_message(message, level, to_build_log=False)
 
     def _detect_level(self, text: str) -> str:
         match = self.LEVEL_PATTERN.search(text)

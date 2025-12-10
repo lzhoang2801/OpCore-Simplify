@@ -171,7 +171,7 @@ class SettingsPage(ScrollArea):
 
         theme_values = [
             "Light",
-            "Dark",
+            #"Dark",
         ]
         theme_value = self.settings.get("theme", "Light")
         if theme_value not in theme_values:

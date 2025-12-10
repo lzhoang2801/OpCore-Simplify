@@ -31,7 +31,7 @@ class WifiProfileExtractor:
         return None
 
     def validate_wifi_password(self, authentication_type=None, password=None):
-        print("Validating password with authentication type: {}".format(authentication_type))
+        self.log(f"Validating password with authentication type: {authentication_type}", level="Debug")
 
         if password is None:
             return None
@@ -118,39 +118,14 @@ class WifiProfileExtractor:
             )
             
             if ok and count:
-                print(f"Will process up to {count} networks.")
+                self.log(f"Will process up to {count} networks.")
                 return count
             else:
                 # User cancelled - use default
                 max_networks = min(5, total_networks)
-                print(f"Using default: Will process up to {max_networks} networks.")
+                self.log(f"Using default: Will process up to {max_networks} networks.")
                 return max_networks
-        else:
-            # CLI mode
-            self.utils.head("WiFi Network Retrieval")
-            print("")
-            print("Found {} WiFi networks on this device.".format(total_networks))
-            self.utils.log_gui(f"📶 Found {total_networks} WiFi networks on this device", to_build_log=True)
-            print("")
-            print("How many networks would you like to process?")
-            print("  1-{} - Specific number (default: 5)".format(total_networks))
-            print("  A   - All available networks")
-            print("")
-            
-            num_choice = self.utils.request_input("Enter your choice: ").strip().lower() or "5"
-            
-            if num_choice == "a":
-                print("Will process all available networks.")
-                return total_networks
-
-            try:
-                max_networks = min(int(num_choice), total_networks)
-                print("Will process up to {} networks.".format(max_networks))
-                return max_networks
-            except:
-                max_networks = min(5, total_networks)
-                print("Invalid choice. Will process up to {} networks.".format(max_networks))
-                return max_networks
+        return min(5, total_networks)
             
     def process_networks(self, ssid_list, max_networks, get_password_func):
         networks = []
@@ -164,9 +139,6 @@ class WifiProfileExtractor:
             try:
                 self.log("")
                 self.log("Processing {}/{}: {}".format(processed_count + 1, len(ssid_list), ssid))
-                if os_name == "Darwin" and not self.utils.gui_callback:
-                    # Only show this hint in CLI mode
-                    print("Please enter your administrator name and password or click 'Deny' to skip this network.")
                 
                 password = get_password_func(ssid)
                 if password is not None:
@@ -187,12 +159,8 @@ class WifiProfileExtractor:
                             self.log("Auto-continuing to next network...")
                             consecutive_failures = 0
                         else:
-                            continue_input = self.utils.request_input("\nUnable to retrieve passwords. Continue trying? (Yes/no): ").strip().lower() or "yes"
-                            
-                            if continue_input != "yes":
-                                break
+                            break
 
-                            consecutive_failures = 0
             except Exception as e:
                 consecutive_failures += 1 if os_name == "Darwin" else 0
                 self.log("Error processing network '{}': {}".format(ssid, str(e)))
@@ -203,12 +171,7 @@ class WifiProfileExtractor:
                         self.log("Auto-continuing to next network...")
                         consecutive_failures = 0
                     else:
-                        continue_input = self.utils.request_input("\nUnable to retrieve passwords. Continue trying? (Yes/no): ").strip().lower() or "yes"
-
-                        if continue_input != "yes":
-                            break
-
-                        consecutive_failures = 0
+                        break
             finally:
                 processed_count += 1
             
@@ -218,12 +181,7 @@ class WifiProfileExtractor:
                     self.log("Auto-continuing to retrieve more networks...")
                     consecutive_failures = 0
                 else:
-                    continue_input = self.utils.request_input("\nOnly retrieved {}/{} networks. Try more to reach your target? (Yes/no): ".format(len(networks), max_networks)).strip().lower() or "yes"
-                    
-                    if continue_input != "yes":
-                        break
-
-                    consecutive_failures = 0
+                    break
         
         return networks
 
@@ -241,14 +199,6 @@ class WifiProfileExtractor:
             return []
             
         max_networks = self.ask_network_count(len(ssid_list))
-        
-        # In CLI mode, show a brief notice about admin authentication
-        if not self.utils.gui_callback:
-            self.utils.head("Administrator Authentication Required")
-            print("")
-            print("To retrieve WiFi passwords from the Keychain, macOS will prompt")
-            print("you for administrator credentials for each WiFi network.")
-            print("")
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_macos)
 
@@ -276,9 +226,7 @@ class WifiProfileExtractor:
 
         max_networks = len(ssid_list)
     
-        self.utils.head("WiFi Profile Extractor")
-        print("")
-        print("Retrieving passwords for {} network(s)...".format(len(ssid_list)))
+        self.log("Retrieving passwords for {} network(s)...".format(len(ssid_list)))
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_windows)
 
@@ -297,9 +245,7 @@ class WifiProfileExtractor:
             
         max_networks = len(ssid_list)
     
-        self.utils.head("WiFi Profile Extractor")
-        print("")
-        print("Retrieving passwords for {} network(s)...".format(len(ssid_list)))
+        self.log("Retrieving passwords for {} network(s)...".format(len(ssid_list)))
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_linux)
 
@@ -359,27 +305,9 @@ class WifiProfileExtractor:
             if user_wants_scan_result != "yes":
                 return []
         else:
-            # CLI mode - use original prompts
-            self.utils.head("WiFi Profile Extractor")
-            print("")
-            print("\033[1;93mNote:\033[0m")
-            # Print each line of the note (remove the 'Note:\n' prefix and split)
-            for line in wifi_note_message.split('\n')[1:]:
-                print(line)
-            print("")
-            
-            while True:
-                user_input = self.utils.request_input("Would you like to scan for WiFi profiles? (Yes/no): ").strip().lower()
-                
-                if user_input == "yes":
-                    break
-                elif user_input == "no":
-                    return []
-                else:
-                    print("\033[91mInvalid selection, please try again.\033[0m\n\n")
+            return []
 
         profiles = []
-        self.utils.head("Detecting WiFi Profiles")
         self.log("")
         self.log("🔍 Scanning for WiFi profiles...")
         
@@ -415,10 +343,6 @@ class WifiProfileExtractor:
             self.log("  • The WiFi adapter is disabled or not available")
             self.log("")
             self.log("=" * 60)
-            
-            # Only show "Press Enter to continue" prompt in CLI mode
-            if not self.utils.gui_callback:
-                self.utils.request_input()
         else:
             # Just log - no dialog needed, results are already visible in build log
             self.log("")
@@ -435,7 +359,4 @@ class WifiProfileExtractor:
             self.log("=" * 60)
             self.log("")
             
-            # Only show "Press Enter to continue" prompt in CLI mode
-            if not self.utils.gui_callback:
-                self.utils.request_input()
         return profiles
