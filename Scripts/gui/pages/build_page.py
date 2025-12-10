@@ -334,7 +334,7 @@ class BuildPage(ScrollArea):
                 "<p><b><font color='{info_color}'>Support for macOS Tahoe 26:</font></b><br>"
                 "To patch macOS Tahoe 26, you must download OpenCore-Patcher 3.0.0 or newer from<br>"
                 "my repository: <a href='https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0'>lzhoang2801/OpenCore-Legacy-Patcher</a> on GitHub.<br>"
-                "Older or official Dortania releases are NOT supported for Tahoe 26.</p>"
+                "Official Dortania releases or older patches will NOT work with macOS Tahoe 26.</p>"
             ).format(error_color=COLORS['error'], info_color='#00BCD4')
             if not show_question_dialog(self.window(), "OpenCore Legacy Patcher Warning", content):
                 return

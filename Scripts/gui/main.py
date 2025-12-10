@@ -54,7 +54,7 @@ class OpCoreGUI(FluentWindow):
 
         self._init_state()
         self._setup_window()
-        self._apply_theme()
+        #self._apply_theme()
         self._connect_signals()
         self._setup_backend_handlers()
         self.init_navigation()
