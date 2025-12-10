@@ -10,13 +10,12 @@ class HardwareReportState:
     compatibility_error: Optional[str] = None
     customized_hardware: Optional[Dict[str, Any]] = None
     disabled_devices: Optional[Dict[str, str]] = None
-    disabled_devices_text: str = "None"
     
     
 @dataclass
 class MacOSVersionState:
-    version_text: str = "Not selected"
-    version_darwin: str = ""
+    macos_version_name: str = "Not selected"
+    darwin_version: str = ""
     native_version: Optional[tuple] = None
     ocl_patched_version: Optional[tuple] = None
     needs_oclp: bool = False
@@ -24,7 +23,7 @@ class MacOSVersionState:
 
 @dataclass
 class SMBIOSState:
-    model_text: str = "Not selected"
+    model_name: str = "Not selected"
 
 
 @dataclass

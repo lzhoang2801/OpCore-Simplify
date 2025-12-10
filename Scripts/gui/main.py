@@ -5,7 +5,6 @@ import threading
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QFileDialog
 from qfluentwidgets import FluentWindow, NavigationItemPosition, FluentIcon, setTheme, Theme, InfoBar, InfoBarPosition
 
 from ..datasets import os_data
@@ -102,8 +101,6 @@ class OpCoreGUI(FluentWindow):
         self.open_result_folder_signal.connect(self._handle_open_result_folder)
 
     def _setup_backend_handlers(self):
-        self.ocpe.ac.gui_folder_callback = self.select_acpi_folder_gui
-
         utils_instances = [
             self.ocpe.u,
             self.ocpe.h.utils,
@@ -278,17 +275,6 @@ class OpCoreGUI(FluentWindow):
                 parent=self
             )
 
-    def select_acpi_folder_gui(self):
-        folder_path = QFileDialog.getExistingDirectory(
-            self,
-            "Select ACPI Folder",
-            ""
-        )
-
-        if folder_path:
-            return folder_path
-        return None
-
     def handle_gui_prompt(self, prompt_type, prompt_text, options=None):
         if prompt_type == 'input':
             text, ok = show_input_dialog(self, "Input Required", prompt_text)
@@ -417,17 +403,15 @@ class OpCoreGUI(FluentWindow):
         return suggested_macos_version
 
     def apply_macos_version(self, version, defer_kext_selection=False):
-        self.macos_state.version_darwin = version
-        self.macos_state.version_text = os_data.get_macos_name_by_darwin(version)
+        self.macos_state.darwin_version = version
+        self.macos_state.macos_version_name = os_data.get_macos_name_by_darwin(version)
 
         self.hardware_state.customized_hardware, self.hardware_state.disabled_devices, self.macos_state.needs_oclp = \
             self.ocpe.h.hardware_customization(self.hardware_state.hardware_report, version)
 
-        self.smbios_state.model_text = self.ocpe.s.select_smbios_model(
+        self.smbios_state.model_name = self.ocpe.s.select_smbios_model(
             self.hardware_state.customized_hardware, version)
 
-        if not self.ocpe.ac.ensure_dsdt():
-            self.ocpe.ac.select_acpi_tables()
         self.ocpe.ac.select_acpi_patches(
             self.hardware_state.customized_hardware, self.hardware_state.disabled_devices)
 
@@ -437,15 +421,9 @@ class OpCoreGUI(FluentWindow):
             )
 
         self.ocpe.s.smbios_specific_options(
-            self.hardware_state.customized_hardware, self.smbios_state.model_text, version,
+            self.hardware_state.customized_hardware, self.smbios_state.model_name, version,
             self.ocpe.ac.patches, self.ocpe.k
         )
-
-        if self.hardware_state.disabled_devices:
-            self.hardware_state.disabled_devices_text = ", ".join(
-                self.hardware_state.disabled_devices.keys())
-        else:
-            self.hardware_state.disabled_devices_text = "None"
 
         self.configurationPage.update_display()
 
@@ -463,7 +441,7 @@ class OpCoreGUI(FluentWindow):
                 self.log_message("-" * 60, to_console=False, to_build_log=True)
                 
                 self.ocpe.o.gather_bootloader_kexts(
-                    self.ocpe.k.kexts, self.macos_state.version_darwin)
+                    self.ocpe.k.kexts, self.macos_state.darwin_version)
 
                 self.update_status_signal.emit(
                     "Phase 2/2: Building OpenCore EFI structure...", 'info')
@@ -473,8 +451,8 @@ class OpCoreGUI(FluentWindow):
                 self.ocpe.build_opencore_efi(
                     self.hardware_state.customized_hardware,
                     self.hardware_state.disabled_devices,
-                    self.smbios_state.model_text,
-                    self.macos_state.version_darwin,
+                    self.smbios_state.model_name,
+                    self.macos_state.darwin_version,
                     self.macos_state.needs_oclp
                 )
 

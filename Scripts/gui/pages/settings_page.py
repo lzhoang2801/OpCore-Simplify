@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt
 from qfluentwidgets import (
     ScrollArea, BodyLabel, PushButton, LineEdit, FluentIcon,
     SettingCardGroup, SwitchSettingCard, ComboBoxSettingCard,
-    PushSettingCard, ExpandSettingCard, SpinBox,
+    PushSettingCard, SpinBox,
     OptionsConfigItem, OptionsValidator, HyperlinkCard,
     StrongBodyLabel, CaptionLabel, SettingCard, SubtitleLabel,
     setTheme, Theme
@@ -77,8 +77,7 @@ class SettingsPage(ScrollArea):
         
         self.bottom_widget = QWidget()
         bottom_layout = QHBoxLayout(self.bottom_widget)
-        bottom_layout.setContentsMargins(
-            0, SPACING['large'], 0, SPACING['large'])
+        bottom_layout.setContentsMargins(0, SPACING['large'], 0, SPACING['large'])
         bottom_layout.setSpacing(SPACING['medium'])
 
         version_container = QHBoxLayout()

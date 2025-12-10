@@ -367,8 +367,8 @@ class BuildPage(ScrollArea):
         
         # Log build configuration
         self.controller.log_message("Build Configuration:", to_console=False, to_build_log=True)
-        self.controller.log_message(f"  • macOS Version: {self.controller.macos_state.version_text}", to_console=False, to_build_log=True)
-        self.controller.log_message(f"  • SMBIOS Model: {self.controller.smbios_state.model_text}", to_console=False, to_build_log=True)
+        self.controller.log_message(f"  • macOS Version: {self.controller.macos_state.macos_version_name}", to_console=False, to_build_log=True)
+        self.controller.log_message(f"  • SMBIOS Model: {self.controller.smbios_state.model_name}", to_console=False, to_build_log=True)
         if self.controller.macos_state.needs_oclp:
             self.controller.log_message(f"  • OpenCore Legacy Patcher: Required", to_console=False, to_build_log=True)
         self.controller.log_message("", to_console=False, to_build_log=True)
