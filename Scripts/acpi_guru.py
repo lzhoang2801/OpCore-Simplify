@@ -30,7 +30,6 @@ class ACPIGuru:
         self.smbios_model = None
         self.dsdt = None
         self.lpc_bus_device = None
-        self.gui_folder_callback = None  # Callback for GUI folder selection
         self.osi_strings = {
             "Windows 2000": "Windows 2000",
             "Windows XP": "Windows 2001",
@@ -120,7 +119,7 @@ class ACPIGuru:
     def read_acpi_tables(self, path):
         if not path:
             return
-        self.utils.head("Loading ACPI Table(s)")
+        self.utils.log_gui("Loading ACPI Table(s)")
         print("by CorpNewt")
         print("")
         tables = []
@@ -3247,27 +3246,10 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
             "Delete": deletes
         }
 
-    def select_acpi_tables(self):
-        # If GUI callback is available, use it instead of console input
-        if self.gui_folder_callback:
-            path = self.gui_folder_callback()
-            if path:
-                return self.read_acpi_tables(path)
-            return None
-        
-        # Console mode - original behavior
-        while True:
-            self.utils.head("Select ACPI Tables")
-            print("")
-            print("Q. Quit")
-            print(" ")
-            menu = self.utils.request_input("Please select or drag and drop ACPI Tables folder here: ")
-            if menu.lower() == "q":
-                self.utils.exit_program()
-            path = self.utils.normalize_path(menu)
-            if not path: 
-                continue
+    def select_acpi_tables(self, path=None):
+        if path:
             return self.read_acpi_tables(path)
+        return None
 
     def get_patch_index(self, name):
         for index, patch in enumerate(self.patches):
@@ -3380,8 +3362,8 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
             contents.append("")
             content = "\n".join(contents)
 
-            self.utils.adjust_window_size(content)
-            self.utils.head("Customize ACPI Patch Selections", resize=False)
+            
+            self.utils.log_gui("Customize ACPI Patch Selections", resize=False)
             print(content)
             option = self.utils.request_input("Select your option: ")
             if option.lower() == "q":
