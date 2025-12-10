@@ -1,7 +1,7 @@
-from typing import Union
+from typing import Union, List, Optional, Dict, Any
 import re
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QRadioButton, QButtonGroup, QVBoxLayout, QCheckBox, QScrollArea, QLabel
 from qfluentwidgets import MessageBoxBase, SubtitleLabel, BodyLabel, LineEdit, PushButton
 
 class CustomMessageDialog(MessageBoxBase):
@@ -26,6 +26,7 @@ class CustomMessageDialog(MessageBoxBase):
         
         self.custom_widget = None
         self.input_field = None
+        self.button_group = None
         
     def add_input(self, placeholder: str = "", default_value: str = ""):
         self.input_field = LineEdit(self.widget)
@@ -42,6 +43,93 @@ class CustomMessageDialog(MessageBoxBase):
         self.custom_widget = widget
         self.viewLayout.addWidget(widget)
 
+    def add_radio_options(self, options: List[str], default_index: int = 0) -> QButtonGroup:
+        self.button_group = QButtonGroup(self)
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(10, 5, 10, 5)
+        
+        for i, option_text in enumerate(options):
+            is_html = bool(re.search(r'<[^>]+>', option_text))
+            
+            if is_html:
+                row_widget = QWidget()
+                row_layout = QHBoxLayout(row_widget)
+                row_layout.setContentsMargins(0, 0, 0, 0)
+                row_layout.setSpacing(8)
+                
+                radio = QRadioButton()
+                label = BodyLabel(option_text)
+                label.setTextFormat(Qt.TextFormat.RichText)
+                label.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+                label.setOpenExternalLinks(True)
+                label.setWordWrap(True)
+                
+                row_layout.addWidget(radio)
+                row_layout.addWidget(label, 1)
+                
+                layout.addWidget(row_widget)
+            else:
+                radio = QRadioButton(option_text)
+                layout.addWidget(radio)
+            
+            self.button_group.addButton(radio, i)
+            
+            if i == default_index:
+                radio.setChecked(True)
+                
+        self.viewLayout.addWidget(container)
+        return self.button_group
+    
+    def add_checklist(self, items: List[Union[str, Dict[str, Any]]], checked_indices: List[int] = None) -> List[QCheckBox]:
+        if checked_indices is None:
+            checked_indices = []
+            
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFixedHeight(400)
+        
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        
+        checkboxes = []
+        current_category = None
+        
+        for i, item in enumerate(items):
+            label_text = item
+            category = None
+            supported = True
+            
+            if isinstance(item, dict):
+                label_text = item.get('label', '')
+                category = item.get('category')
+                supported = item.get('supported', True)
+            
+            if category and category != current_category:
+                current_category = category
+                
+                if i > 0:
+                    layout.addSpacing(10)
+                    
+                header = QLabel(f"Category: {category}")
+                header.setStyleSheet("font-weight: bold; color: #0078D4; padding-top: 5px; padding-bottom: 5px; border-bottom: 1px solid #E1DFDD;")
+                layout.addWidget(header)
+                
+            cb = QCheckBox(label_text)
+            if i in checked_indices:
+                cb.setChecked(True)
+                
+            if not supported:
+                cb.setStyleSheet("color: #A19F9D;")
+                
+            layout.addWidget(cb)
+            checkboxes.append(cb)
+            
+        layout.addStretch()
+        scroll.setWidget(container)
+        self.viewLayout.addWidget(scroll)
+        return checkboxes
+
     def configure_buttons(self, yes_text: str = "OK", no_text: str = "Cancel", show_cancel: bool = True):
         self.yesButton.setText(yes_text)
         self.cancelButton.setText(no_text)
@@ -56,6 +144,24 @@ def show_confirmation(title: str, content: str, parent=None, yes_text="Yes", no_
     dialog = CustomMessageDialog(title, content, parent)
     dialog.configure_buttons(yes_text=yes_text, no_text=no_text, show_cancel=True)
     return dialog.exec()
+
+def show_options_dialog(title: str, content: str, options: List[str], default_index: int = 0, parent=None) -> Optional[int]:
+    dialog = CustomMessageDialog(title, content, parent)
+    dialog.add_radio_options(options, default_index)
+    dialog.configure_buttons(yes_text="OK", show_cancel=True)
+    
+    if dialog.exec():
+        return dialog.button_group.checkedId()
+    return None
+
+def show_checklist_dialog(title: str, content: str, items: List[Union[str, Dict[str, Any]]], checked_indices: List[int] = None, parent=None) -> Optional[List[int]]:
+    dialog = CustomMessageDialog(title, content, parent)
+    checkboxes = dialog.add_checklist(items, checked_indices)
+    dialog.configure_buttons(yes_text="OK", show_cancel=True)
+    
+    if dialog.exec():
+        return [i for i, cb in enumerate(checkboxes) if cb.isChecked()]
+    return None
 
 def ask_network_count(total_networks: int, parent=None) -> Union[int, str]:
     content = (

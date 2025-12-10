@@ -360,18 +360,18 @@ class BuildPage(ScrollArea):
         self.build_log.clear()
         
         # Log start with enhanced header
-        self.controller.log_message(LOG_SEPARATOR, to_console=False, to_build_log=True)
-        self.controller.log_message("🚀 OpenCore EFI Build Started", to_console=False, to_build_log=True)
-        self.controller.log_message(LOG_SEPARATOR, to_console=False, to_build_log=True)
-        self.controller.log_message("", to_console=False, to_build_log=True)
+        self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
+        self.controller.log_message("🚀 OpenCore EFI Build Started", to_build_log=True)
+        self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
+        self.controller.log_message("", to_build_log=True)
         
         # Log build configuration
-        self.controller.log_message("Build Configuration:", to_console=False, to_build_log=True)
-        self.controller.log_message(f"  • macOS Version: {self.controller.macos_state.macos_version_name}", to_console=False, to_build_log=True)
-        self.controller.log_message(f"  • SMBIOS Model: {self.controller.smbios_state.model_name}", to_console=False, to_build_log=True)
+        self.controller.log_message("Build Configuration:", to_build_log=True)
+        self.controller.log_message(f"  • macOS Version: {self.controller.macos_state.macos_version_name}", to_build_log=True)
+        self.controller.log_message(f"  • SMBIOS Model: {self.controller.smbios_state.model_name}", to_build_log=True)
         if self.controller.macos_state.needs_oclp:
-            self.controller.log_message(f"  • OpenCore Legacy Patcher: Required", to_console=False, to_build_log=True)
-        self.controller.log_message("", to_console=False, to_build_log=True)
+            self.controller.log_message(f"  • OpenCore Legacy Patcher: Required", to_build_log=True)
+        self.controller.log_message("", to_build_log=True)
 
         # Call controller build method
         self.controller.build_efi()
@@ -457,10 +457,10 @@ class BuildPage(ScrollArea):
             self.build_btn.setEnabled(True)
             
             # Log completion
-            self.controller.log_message("", to_console=False, to_build_log=True)
-            self.controller.log_message(LOG_SEPARATOR, to_console=False, to_build_log=True)
-            self.controller.log_message("✓ Build Completed Successfully!", to_console=False, to_build_log=True)
-            self.controller.log_message(LOG_SEPARATOR, to_console=False, to_build_log=True)
+            self.controller.log_message("", to_build_log=True)
+            self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
+            self.controller.log_message("✓ Build Completed Successfully!", to_build_log=True)
+            self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
             
             # Show success notification
             success_message = 'Your OpenCore EFI has been built successfully!'
@@ -490,10 +490,10 @@ class BuildPage(ScrollArea):
             self.success_card.setVisible(False)
             
             # Log error
-            self.controller.log_message("", to_console=False, to_build_log=True)
-            self.controller.log_message(LOG_SEPARATOR, to_console=False, to_build_log=True)
-            self.controller.log_message("✗ Build Failed", to_console=False, to_build_log=True)
-            self.controller.log_message(LOG_SEPARATOR, to_console=False, to_build_log=True)
+            self.controller.log_message("", to_build_log=True)
+            self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
+            self.controller.log_message("✗ Build Failed", to_build_log=True)
+            self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
             
             # Show error notification
             InfoBar.error(

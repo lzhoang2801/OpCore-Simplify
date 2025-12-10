@@ -267,19 +267,18 @@ class WifiProfileExtractor:
         return interfaces
     
     def get_profiles(self):
-        if self.utils.gui_handler:
-            content = (
-                "<b>Note:</b><br>"
-                "<ul>"
-                "<li>When using itlwm kext, WiFi appears as Ethernet in macOS</li>"
-                "<li>You'll need Heliport app to manage WiFi connections in macOS</li>"
-                "<li>This step will enable auto WiFi connections at boot time<br>"
-                "and is useful for users installing macOS via Recovery OS</li>"
-                "</ul><br>"
-                "Would you like to scan for WiFi profiles?"
-            )
-            if not show_confirmation("WiFi Profile Extractor", content, parent=self.utils.gui_handler):
-                return []
+        content = (
+            "<b>Note:</b><br>"
+            "<ul>"
+            "<li>When using itlwm kext, WiFi appears as Ethernet in macOS</li>"
+            "<li>You'll need Heliport app to manage WiFi connections in macOS</li>"
+            "<li>This step will enable auto WiFi connections at boot time<br>"
+            "and is useful for users installing macOS via Recovery OS</li>"
+            "</ul><br>"
+            "Would you like to scan for WiFi profiles?"
+        )
+        if not show_confirmation("WiFi Profile Extractor", content, parent=self.utils.gui_handler):
+            return []
         
         profiles = []
         self.utils.log_gui("[WIFI PROFILE EXTRACTOR] Detecting WiFi Profiles", level="Info", to_build_log=True)

@@ -1,10 +1,9 @@
+from Scripts.custom_dialogs import show_info
 from Scripts import github
 from Scripts import kext_maestro
 from Scripts import integrity_checker
 from Scripts import resource_fetcher
 from Scripts import utils
-from Scripts.gui.custom_dialogs import show_info_dialog
-from Scripts import settings as settings_module
 import os
 import shutil
 import subprocess
@@ -15,10 +14,9 @@ os_name = platform.system()
 class gatheringFiles:
     def __init__(self):
         self.utils = utils.Utils()
-        self.settings = settings_module.Settings()
         self.github = github.Github()
         self.kext = kext_maestro.KextMaestro()
-        self.fetcher = resource_fetcher.ResourceFetcher(utils_instance=self.utils)
+        self.fetcher = resource_fetcher.ResourceFetcher()
         self.integrity_checker = integrity_checker.IntegrityChecker()
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
         self.ocbinarydata_url = "https://github.com/acidanthera/OcBinaryData/archive/refs/heads/master.zip"
@@ -88,7 +86,8 @@ class gatheringFiles:
     
     def move_bootloader_kexts_to_product_directory(self, product_name):
         if not os.path.exists(self.temporary_dir):
-            raise FileNotFoundError(f"The directory {self.temporary_dir} does not exist.")
+            self.utils.log_gui("[GATHERING FILES] The directory {} does not exist.".format(self.temporary_dir), level="Error", to_build_log=True)
+            raise FileNotFoundError("The directory {} does not exist.".format(self.temporary_dir))
         
         temp_product_dir = os.path.join(self.temporary_dir, product_name)
         
@@ -142,9 +141,7 @@ class gatheringFiles:
         return True
     
     def gather_bootloader_kexts(self, kexts, macos_version):
-        # Log gathering start
-        self.utils.log_gui("Preparing to download OpenCorePkg, kexts, and macserial...", to_build_log=True)
-        self.utils.log_gui("", to_build_log=True, fallback_stdout=False)
+        self.utils.log_gui("[GATHERING FILES] Please wait for download OpenCorePkg, kexts and macserial...", level="Info", to_build_log=True)
 
         download_history = self.utils.read_file(self.download_history_file)
         if not isinstance(download_history, list):
@@ -155,15 +152,8 @@ class gatheringFiles:
         self.utils.create_folder(self.temporary_dir)
 
         seen_download_urls = set()
-        
-        # Calculate total number of products to download for progress tracking
-        total_products = 0
-        products_to_download = []
-        
-        # First pass: collect products that need to be downloaded
-        all_products = kexts + [{"Name": "OpenCorePkg"}]
-        
-        for product in all_products:
+
+        for product in kexts + [{"Name": "OpenCorePkg"}]:
             if not isinstance(product, dict) and not product.checked:
                 continue
 
@@ -197,7 +187,7 @@ class gatheringFiles:
                     product_download_index = self.get_product_index(download_database, product.github_repo.get("repo"))
             
             if product_download_index is None:
-                self.utils.log_gui(f"⚠ Could not find download URL for {product_name}", level="Warning", to_build_log=True)
+                self.utils.log_gui("[GATHERING FILES] Could not find download URL for {}.".format(product_name), level="Warning", to_build_log=True)
                 continue
 
             product_info = download_database[product_download_index]
@@ -216,82 +206,33 @@ class gatheringFiles:
             if product_history_index is not None:
                 history_item = download_history[product_history_index]
                 is_latest_id = (product_id == history_item.get("id"))
+                folder_is_valid, _ = self.integrity_checker.verify_folder_integrity(asset_dir, manifest_path)
                 
-                # Check if force redownload is enabled
-                if not self.settings.get_force_redownload():
-                    folder_is_valid, _ = self.integrity_checker.verify_folder_integrity(asset_dir, manifest_path)
-                    
-                    if is_latest_id and folder_is_valid:
-                        # Skip this product - already up to date
-                        self.utils.log_gui(f"  ✓ {product_name} (already up to date)", to_build_log=True, fallback_stdout=False)
-                        continue
-                else:
-                    # Force redownload is enabled, remove existing files
-                    if os.path.exists(asset_dir):
-                        shutil.rmtree(asset_dir, ignore_errors=True)
-                    self.utils.log_gui(f"  ↻ Force redownloading {product_name}...", to_build_log=True)
-            
-            # Add to products to download list
-            products_to_download.append({
-                'product': product,
-                'product_name': product_name,
-                'product_id': product_id,
-                'product_download_url': product_download_url,
-                'sha256_hash': sha256_hash,
-                'product_history_index': product_history_index,
-                'asset_dir': asset_dir,
-                'manifest_path': manifest_path
-            })
-        
-        total_products = len(products_to_download)
-        
-        # Second pass: actually download the products with progress tracking
-        for index, download_item in enumerate(products_to_download):
-            product = download_item['product']
-            product_name = download_item['product_name']
-            product_id = download_item['product_id']
-            product_download_url = download_item['product_download_url']
-            sha256_hash = download_item['sha256_hash']
-            product_history_index = download_item['product_history_index']
-            asset_dir = download_item['asset_dir']
-            manifest_path = download_item['manifest_path']
-            
-            # Update progress for GUI mode
-            if self.utils.gui_callback and hasattr(self.utils, 'gui_gathering_progress_callback'):
-                progress_info = {
-                    'current': index + 1,
-                    'total': total_products,
-                    'product_name': product_name,
-                    'status': 'downloading'
-                }
-                self.utils.gui_gathering_progress_callback(progress_info)
+                if is_latest_id and folder_is_valid:
+                    self.utils.log_gui("[GATHERING FILES] Latest version of {} already downloaded.".format(product_name), level="Info", to_build_log=True)
+                    continue
 
-            # Log download start
-            # Log to GUI build log
-            self.utils.log_gui(f"⬇️ Downloading {product_name} ({index + 1}/{total_products})", to_build_log=True)
-            
-            if not product_download_url:
-                self.utils.log_gui(f"❌ Could not find download URL for {product_name}", level="Error", to_build_log=True)
+            self.utils.log_gui("[GATHERING FILES] Updating {}...".format(product_name), level="Info", to_build_log=True)
+            if product_download_url:
+                self.utils.log_gui("[GATHERING FILES] Downloading from {}".format(product_download_url), level="Info", to_build_log=True)
+            else:
+                self.utils.log_gui("[GATHERING FILES] Could not find download URL for {}.".format(product_name), level="Error", to_build_log=True)
                 shutil.rmtree(self.temporary_dir, ignore_errors=True)
                 return False
 
             zip_path = os.path.join(self.temporary_dir, product_name) + ".zip"
-            # Pass verify_download_integrity setting to download function
-            sha256_to_verify = sha256_hash if self.settings.get_verify_download_integrity() else None
-            if not self.fetcher.download_and_save_file(product_download_url, zip_path, sha256_to_verify):
+            if not self.fetcher.download_and_save_file(product_download_url, zip_path, sha256_hash):
                 folder_is_valid, _ = self.integrity_checker.verify_folder_integrity(asset_dir, manifest_path)
                 if product_history_index is not None and folder_is_valid:
-                    self.utils.log_gui(f"  ⚠ Download failed, using cached version of {product_name}", level="Warning", to_build_log=True)
+                    self.utils.log_gui("[GATHERING FILES] Using previously downloaded version of {}.".format(product_name), level="Info", to_build_log=True)
                     continue
                 else:
-                    raise Exception(f"Could not download {product_name} at this time. Please try again later.")
+                    self.utils.log_gui("[GATHERING FILES] Could not download {} at this time. Please try again later.".format(product_name), level="Error", to_build_log=True)
+                    raise Exception("Could not download {} at this time. Please try again later.".format(product_name))
             
-            # Log extraction
-            self.utils.log_gui(f"📦 Extracting {product_name}...", to_build_log=True)
             self.utils.extract_zip_file(zip_path)
             self.utils.create_folder(asset_dir, remove_content=True)
             
-            # Extract nested zips
             while True:
                 nested_zip_files = self.utils.find_matching_paths(os.path.join(self.temporary_dir, product_name), extension_filter=".zip")
                 if not nested_zip_files:
@@ -302,61 +243,23 @@ class gatheringFiles:
                     os.remove(full_zip_path)
 
             if "OpenCore" in product_name:
-                # Update progress for OcBinaryData download
-                if self.utils.gui_callback and hasattr(self.utils, 'gui_gathering_progress_callback'):
-                    progress_info = {
-                        'current': index + 1,
-                        'total': total_products,
-                        'product_name': 'OcBinaryData (for OpenCore)',
-                        'status': 'downloading'
-                    }
-                    self.utils.gui_gathering_progress_callback(progress_info)
-                
                 oc_binary_data_zip_path = os.path.join(self.temporary_dir, "OcBinaryData.zip")
-                
-                # Log OcBinaryData download
-                self.utils.log_gui("⬇️ Downloading OcBinaryData...", to_build_log=True)
-                
+                self.utils.log_gui("[GATHERING FILES] Please wait for download OcBinaryData...", level="Info", to_build_log=True)
+                self.utils.log_gui("[GATHERING FILES] Downloading from {}".format(self.ocbinarydata_url), level="Info", to_build_log=True)
                 self.fetcher.download_and_save_file(self.ocbinarydata_url, oc_binary_data_zip_path)
 
                 if not os.path.exists(oc_binary_data_zip_path):
-                    self.utils.log_gui("❌ Could not download OcBinaryData at this time. Please try again later.", level="Error", to_build_log=True)
+                    self.utils.log_gui("[GATHERING FILES] Could not download OcBinaryData at this time. Please try again later.", level="Error", to_build_log=True)
                     shutil.rmtree(self.temporary_dir, ignore_errors=True)
                     return False
                 
-                # Log extraction
-                self.utils.log_gui("📦 Extracting OcBinaryData...", to_build_log=True)
                 self.utils.extract_zip_file(oc_binary_data_zip_path)
-            
-            # Update progress for processing
-            if self.utils.gui_callback and hasattr(self.utils, 'gui_gathering_progress_callback'):
-                progress_info = {
-                    'current': index + 1,
-                    'total': total_products,
-                    'product_name': product_name,
-                    'status': 'processing'
-                }
-                self.utils.gui_gathering_progress_callback(progress_info)
-            
-            # Log processing
-            self.utils.log_gui(f"⚙️ Processing {product_name}...", to_build_log=True)
-            
+
             if self.move_bootloader_kexts_to_product_directory(product_name):
                 self.integrity_checker.generate_folder_manifest(asset_dir, manifest_path)
                 self._update_download_history(download_history, product_name, product_id, product_download_url, sha256_hash)
 
         shutil.rmtree(self.temporary_dir, ignore_errors=True)
-        
-        # Final progress update for GUI
-        if self.utils.gui_callback and hasattr(self.utils, 'gui_gathering_progress_callback'):
-            progress_info = {
-                'current': total_products,
-                'total': total_products,
-                'product_name': 'Complete',
-                'status': 'complete'
-            }
-            self.utils.gui_gathering_progress_callback(progress_info)
-        
         return True
     
     def get_kernel_patches(self, patches_name, patches_url):
@@ -364,14 +267,9 @@ class gatheringFiles:
             response = self.fetcher.fetch_and_parse_content(patches_url, "plist")
 
             return response["Kernel"]["Patch"]
-        except: 
-            message = (
-                f"Unable to download {patches_name} at this time from:\n"
-                f"{patches_url}\n\n"
-                "Please try again later or apply them manually."
-            )
-            show_info_dialog(self.utils.gui_handler, 'Download Failed', message)
-                
+        except:
+            self.utils.log_gui("[GATHERING FILES] Unable to download {} at this time".format(patches_name), level="Warning", to_build_log=True)
+            show_info("Download Failed", "Unable to download {} at this time. Please try again later or apply them manually.".format(patches_name), parent=self.utils.gui_handler)
             return []
         
     def _update_download_history(self, download_history, product_name, product_id, product_url, sha256_hash):
@@ -396,7 +294,7 @@ class gatheringFiles:
         if os_name != "Windows":
             return
 
-        self.utils.log_gui("Gathering Hardware Sniffer")
+        self.utils.log_gui("[GATHERING FILES] Gathering Hardware Sniffer...", level="Info")
 
         PRODUCT_NAME = "Hardware-Sniffer-CLI.exe"
         REPO_OWNER = "lzhoang2801"
@@ -419,7 +317,8 @@ class gatheringFiles:
                 break
 
         if not all([product_id, product_download_url, sha256_hash]):
-            raise Exception(f"Could not find release information for {PRODUCT_NAME}.")
+            show_info("Release Information Not Found", "Could not find release information for {}. Please try again later.".format(PRODUCT_NAME), parent=self.utils.gui_handler)
+            raise Exception("Could not find release information for {}.".format(PRODUCT_NAME))
 
         download_history = self.utils.read_file(self.download_history_file)
         if not isinstance(download_history, list):
@@ -437,14 +336,15 @@ class gatheringFiles:
                 file_is_valid = (sha256_hash == local_hash)
 
             if is_latest_id and file_is_valid:
-                self.utils.log_gui(f"Latest version of {PRODUCT_NAME} already downloaded.")
+                self.utils.log_gui("[GATHERING FILES] Latest version of {} already downloaded.".format(PRODUCT_NAME), level="Info")
                 return destination_path
 
-        self.utils.log_gui(f"Downloading {PRODUCT_NAME} from {product_download_url}...")
+        self.utils.log_gui("[GATHERING FILES] {} {}...".format("Updating" if product_history_index is not None else "Please wait for download", PRODUCT_NAME), level="Info")
         
         if not self.fetcher.download_and_save_file(product_download_url, destination_path, sha256_hash):
             manual_download_url = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/releases/latest"
-            raise Exception(f"Failed to download {PRODUCT_NAME}. Go to {manual_download_url} to download it manually.")
+            show_info("Download Failed", "Go to {} to download {} manually.".format(manual_download_url, PRODUCT_NAME), parent=self.utils.gui_handler)
+            raise Exception("Failed to download {}.".format(PRODUCT_NAME))
 
         self._update_download_history(download_history, PRODUCT_NAME, product_id, product_download_url, sha256_hash)
         

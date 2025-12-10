@@ -11,7 +11,7 @@ class DSDT:
         #self.dl = downloader.Downloader()
         self.u = utils_instance if utils_instance is not None else utils.Utils()
         self.github = github.Github()
-        self.fetcher = resource_fetcher.ResourceFetcher(utils_instance=self.u)
+        self.fetcher = resource_fetcher.ResourceFetcher()
         self.r  = run.Run()
         self.iasl_url_macOS = "https://raw.githubusercontent.com/acidanthera/MaciASL/master/Dist/iasl-stable"
         self.iasl_url_macOS_legacy = "https://raw.githubusercontent.com/acidanthera/MaciASL/master/Dist/iasl-legacy"

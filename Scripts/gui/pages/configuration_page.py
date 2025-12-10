@@ -462,17 +462,8 @@ class ConfigurationPage(ScrollArea):
             self.controller.update_status("Please select target macOS version first", 'warning')
             return
 
-        from ..custom_dialogs import show_kexts_dialog
-
-        ok = show_kexts_dialog(
-            self.controller,
-            self.controller.ocpe.k,
-            self.controller.macos_state.darwin_version
-        )
-
-        if ok:
-            self.controller.update_status(
-                "Kext configuration updated successfully", 'success')
+        self.controller.ocpe.k.kext_configuration_menu(self.controller.macos_state.darwin_version)
+        self.controller.update_status("Kext configuration updated successfully", 'success')
 
     def customize_smbios(self):
         if not self.controller.hardware_state.hardware_report:
