@@ -2,9 +2,9 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from PyQt6.QtCore import Qt
 from qfluentwidgets import (
     ScrollArea, SubtitleLabel, BodyLabel, FluentIcon, 
-    GroupHeaderCardWidget, SettingCardGroup, PushSettingCard, 
-    ExpandGroupSettingCard, SpinBox, LineEdit, PushButton, 
-    SwitchButton, ComboBox, IndicatorPosition
+    PushSettingCard, ExpandGroupSettingCard, SpinBox, 
+    LineEdit, PushButton, SwitchButton, ComboBox, 
+    IndicatorPosition, SettingCard
 )
 
 from ..custom_dialogs import show_macos_version_dialog
@@ -253,6 +253,31 @@ class SMBIOSGroup(ExpandGroupSettingCard):
         self.modelLabel.setText(self.controller.smbios_state.model_name)
 
 
+class macOSCard(SettingCard):
+    def __init__(self, controller, on_select_version, parent=None):
+        super().__init__(
+            FluentIcon.GLOBE,
+            "macOS Version",
+            "Target operating system version",
+            parent
+        )
+        self.controller = controller
+        
+        self.versionLabel = BodyLabel(self.controller.macos_state.macos_version_name)
+        self.versionLabel.setStyleSheet(f"color: {COLORS['text_secondary']}; margin-right: 10px;")
+        
+        self.selectVersionBtn = PushButton("Select Version")
+        self.selectVersionBtn.clicked.connect(on_select_version)
+        self.selectVersionBtn.setFixedWidth(150)
+        
+        self.hBoxLayout.addWidget(self.versionLabel)
+        self.hBoxLayout.addWidget(self.selectVersionBtn)
+        self.hBoxLayout.addSpacing(16)
+
+    def update_version(self):
+        self.versionLabel.setText(self.controller.macos_state.macos_version_name)
+
+
 class ConfigurationPage(ScrollArea):
     def __init__(self, parent):
         super().__init__()
@@ -266,6 +291,8 @@ class ConfigurationPage(ScrollArea):
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.enableTransparentBackground()
+        
+        self.status_card = None
         
         self.page()
 
@@ -290,135 +317,97 @@ class ConfigurationPage(ScrollArea):
         self.main_layout.addWidget(header_container)
         self.main_layout.addSpacing(SPACING['large'])
 
-        self.config_card = None
-        self.cards_start_index = self.main_layout.count()
-        self._build_config_card()
+        self.status_start_index = self.main_layout.count()
+        self._update_status_card()
 
-        self.custom_card = SettingCardGroup("Customization Options", self.scrollWidget)
-        
-        self.macos_card = PushSettingCard(
-            "Select Version",
-            FluentIcon.GLOBE,
-            "macOS Version",
-            "Choose your target macOS version for optimal compatibility",
-            self.custom_card
-        )
-        self.macos_card.clicked.connect(self.select_macos_version)
-        self.custom_card.addSettingCard(self.macos_card)
+        self.macos_card = macOSCard(self.controller, self.select_macos_version, self.scrollWidget)
+        self.main_layout.addWidget(self.macos_card)
 
         self.acpi_card = PushSettingCard(
             "Configure Patches",
             FluentIcon.DEVELOPER_TOOLS,
             "ACPI Patches",
             "Customize system ACPI table modifications for hardware compatibility",
-            self.custom_card
+            self.scrollWidget
         )
         self.acpi_card.clicked.connect(self.customize_acpi)
-        self.custom_card.addSettingCard(self.acpi_card)
+        self.main_layout.addWidget(self.acpi_card)
 
         self.kexts_card = PushSettingCard(
             "Manage Kexts",
             FluentIcon.CODE,
             "Kernel Extensions",
             "Configure kexts required for your hardware",
-            self.custom_card
+            self.scrollWidget
         )
         self.kexts_card.clicked.connect(self.customize_kexts)
-        self.custom_card.addSettingCard(self.kexts_card)
+        self.main_layout.addWidget(self.kexts_card)
 
-        self.boot_picker_card = PickerGroup(self.settings, self.custom_card)
-        self.custom_card.addSettingCard(self.boot_picker_card)
+        self.boot_picker_card = PickerGroup(self.settings, self.scrollWidget)
+        self.main_layout.addWidget(self.boot_picker_card)
 
-        self.security_config_card = SecurityConfigGroup(self.settings, self.custom_card)
-        self.custom_card.addSettingCard(self.security_config_card)
+        self.security_config_card = SecurityConfigGroup(self.settings, self.scrollWidget)
+        self.main_layout.addWidget(self.security_config_card)
 
-        self.boot_args_card = BootArgsGroup(self.settings, self.custom_card)
-        self.custom_card.addSettingCard(self.boot_args_card)
+        self.boot_args_card = BootArgsGroup(self.settings, self.scrollWidget)
+        self.main_layout.addWidget(self.boot_args_card)
 
-        self.smbios_card = SMBIOSGroup(self.settings, self.controller, self.customize_smbios, self.custom_card)
-        self.custom_card.addSettingCard(self.smbios_card)
-
-        self.main_layout.addWidget(self.custom_card)
+        self.smbios_card = SMBIOSGroup(self.settings, self.controller, self.customize_smbios, self.scrollWidget)
+        self.main_layout.addWidget(self.smbios_card)
         self.main_layout.addStretch()
 
-    def _build_config_card(self):
-        if self.config_card is not None:
-            self.main_layout.removeWidget(self.config_card)
-            self.config_card.deleteLater()
-
-        self.config_card = GroupHeaderCardWidget("Current Configuration", self.scrollWidget)
-
-        macos_widget = QWidget()
-        macos_widget_layout = QHBoxLayout(macos_widget)
-        macos_widget_layout.setContentsMargins(0, 0, 0, 0)
-        self.macos_value = BodyLabel(self.controller.macos_state.macos_version_name)
-        self.macos_value.setStyleSheet(f"color: {COLORS['text_secondary']};")
-        macos_widget_layout.addWidget(self.macos_value)
-        macos_widget_layout.addStretch()
-
-        self.config_card.addGroup(
-            FluentIcon.GLOBE,
-            "macOS Version",
-            "Target operating system version",
-            macos_widget
-        )
+    def _update_status_card(self):
+        if self.status_card is not None:
+            self.main_layout.removeWidget(self.status_card)
+            self.status_card.deleteLater()
+            self.status_card = None
 
         disabled_devices = self.controller.hardware_state.disabled_devices or {}
-
+        
+        status_text = ""
+        status_color = COLORS['text_secondary']
+        icon = FluentIcon.INFO
+        
         if disabled_devices:
-            header_widget = QWidget()
-            header_layout = QVBoxLayout(header_widget)
-            header_layout.setContentsMargins(0, 0, 0, 0)
-            header_label = BodyLabel("Hardware components excluded from configuration")
-            header_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
-            header_layout.addWidget(header_label)
+            status_text = "Hardware components excluded from configuration"
+            status_color = COLORS['text_secondary']
+            icon = FluentIcon.WARNING
+        elif not self.controller.hardware_state.hardware_report:
+            status_text = "Please select hardware report first"
+        elif not self.controller.macos_state.darwin_version:
+            status_text = "Please select target macOS version first"
+        else:
+            status_text = "All hardware components are compatible and enabled"
+            status_color = COLORS['success']
+            icon = FluentIcon.ACCEPT
 
-            self.config_card.addGroup(
-                FluentIcon.CLOSE,
-                "Disabled Devices",
-                "",
-                header_widget
-            )
-
+        self.status_card = ExpandGroupSettingCard(
+            icon,
+            "Compatibility Status",
+            "",
+            self.scrollWidget
+        )
+        
+        status_label = BodyLabel(status_text)
+        status_label.setStyleSheet(f"color: {status_color};")
+        
+        self.status_card.setContent(status_text)
+        
+        if hasattr(self.status_card, 'contentLabel'):
+            self.status_card.contentLabel.setStyleSheet(f"color: {status_color};")
+            
+        if disabled_devices:
             for device_name in disabled_devices.keys():
-                add_group_with_indent(
-                    self.config_card,
-                    FluentIcon.INFO,
+                self.status_card.addGroup(
+                    FluentIcon.CLOSE,
                     device_name,
-                    "",
-                    None,
-                    indent_level=1
+                    "Incompatible or disabled",
+                    None
                 )
         else:
-            status_widget = QWidget()
-            status_layout = QVBoxLayout(status_widget)
-            status_layout.setContentsMargins(0, 0, 0, 0)
-            
-            if not self.controller.hardware_state.hardware_report:
-                status_text = "Please select hardware report first"
-                status_color = COLORS['text_secondary']
-                status_icon = FluentIcon.INFO
-            elif not self.controller.macos_state.darwin_version:
-                status_text = "Please select target macOS version first"
-                status_color = COLORS['text_secondary']
-                status_icon = FluentIcon.INFO
-            else:
-                status_text = "All hardware components are compatible and enabled"
-                status_color = COLORS['success']
-                status_icon = FluentIcon.ACCEPT
-            
-            status_label = BodyLabel(status_text)
-            status_label.setStyleSheet(f"color: {status_color};")
-            status_layout.addWidget(status_label)
+             pass
 
-            self.config_card.addGroup(
-                status_icon,
-                "Disabled Devices",
-                "",
-                status_widget
-            )
-
-        self.main_layout.insertWidget(self.cards_start_index, self.config_card)
+        self.main_layout.insertWidget(self.status_start_index, self.status_card)
 
     def select_macos_version(self):
         if not self.controller.hardware_state.hardware_report:
@@ -438,6 +427,8 @@ class ConfigurationPage(ScrollArea):
         if ok and selected_version:
             self.controller.apply_macos_version(selected_version)
             self.controller.update_status("macOS version updated to {}".format(self.controller.macos_state.macos_version_name), 'success')
+            if hasattr(self, 'macos_card'):
+                self.macos_card.update_version()
 
     def customize_acpi(self):
         if not self.controller.hardware_state.hardware_report:
@@ -524,7 +515,9 @@ class ConfigurationPage(ScrollArea):
             self.controller.update_status("SMBIOS model updated to {}".format(selected_model), 'success')
 
     def update_display(self):
-        self._build_config_card()
+        self._update_status_card()
+        if hasattr(self, 'macos_card'):
+            self.macos_card.update_version()
         if hasattr(self, 'smbios_card'):
             self.smbios_card.update_model()
 
