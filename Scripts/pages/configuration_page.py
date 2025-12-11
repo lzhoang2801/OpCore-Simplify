@@ -8,9 +8,9 @@ from qfluentwidgets import (
 )
 
 from Scripts.custom_dialogs import show_macos_version_dialog
-from ..styles import SPACING, COLORS
-from ..ui_utils import create_step_indicator
-from ...settings import Settings
+from Scripts.styles import SPACING, COLORS
+from Scripts import utils
+from Scripts.settings import Settings
 
 
 class PickerGroup(ExpandGroupSettingCard):
@@ -90,7 +90,6 @@ class PickerGroup(ExpandGroupSettingCard):
             "Timeout in seconds in the OpenCore picker before automatic booting of the default boot entry. Set to 0 to disable.", 
             self.timeoutSpin
         )
-
 
 class SecurityConfigGroup(ExpandGroupSettingCard):
     def __init__(self, settings, parent=None):
@@ -286,7 +285,7 @@ class ConfigurationPage(ScrollArea):
         self.settings = Settings()
         self.scrollWidget = QWidget()
         self.main_layout = QVBoxLayout(self.scrollWidget)
-        
+        self.utils = utils.Utils()
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -300,7 +299,7 @@ class ConfigurationPage(ScrollArea):
         self.main_layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.main_layout.setSpacing(SPACING['large'])
 
-        self.main_layout.addWidget(create_step_indicator(3))
+        self.main_layout.addWidget(self.utils.create_step_indicator(3))
 
         header_container = QWidget()
         header_layout = QVBoxLayout(header_container)

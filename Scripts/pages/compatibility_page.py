@@ -3,9 +3,9 @@ from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel
 from qfluentwidgets import SubtitleLabel, BodyLabel, ScrollArea, FluentIcon, GroupHeaderCardWidget
 
-from ..styles import COLORS, SPACING
-from ..ui_utils import create_info_widget, colored_icon, add_group_with_indent, create_step_indicator, get_compatibility_icon
-from ...datasets import os_data, pci_data
+from Scripts.styles import COLORS, SPACING
+from Scripts import utils
+from Scripts.datasets import os_data, pci_data
 
 
 class CompatibilityStatusBanner(QFrame):
@@ -84,7 +84,7 @@ class CompatibilityPage(ScrollArea):
         self.controller = parent
         self.scrollWidget = QWidget()
         self.expandLayout = QVBoxLayout(self.scrollWidget)
-        
+        self.utils = utils.Utils()
         self.contentWidget = None
         self.contentLayout = None
         self.version_support_container = None
@@ -102,7 +102,7 @@ class CompatibilityPage(ScrollArea):
         self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.expandLayout.setSpacing(SPACING['large'])
 
-        self.expandLayout.addWidget(create_step_indicator(2))
+        self.expandLayout.addWidget(self.utils.create_step_indicator(2))
 
         header_container = QWidget()
         header_layout = QHBoxLayout(header_container)
@@ -288,12 +288,12 @@ class CompatibilityPage(ScrollArea):
 
     def _add_compatibility_group(self, card, title, compat):
         compat_text, compat_color = self.format_compatibility(compat)
-        add_group_with_indent(
+        self.utils.add_group_with_indent(
             card,
-            get_compatibility_icon(compat),
+            self.utils.get_compatibility_icon(compat),
             title,
             compat_text,
-            create_info_widget("", compat_color),
+            self.utils.create_info_widget("", compat_color),
             indent_level=1
         )
 
@@ -306,9 +306,9 @@ class CompatibilityPage(ScrollArea):
         cpu_card.setTitle("CPU")
         
         name = cpu_info.get('Processor Name', 'Unknown')
-        add_group_with_indent(
+        self.utils.add_group_with_indent(
             cpu_card,
-            colored_icon(FluentIcon.TAG, COLORS['primary']),
+            self.utils.colored_icon(FluentIcon.TAG, COLORS['primary']),
             "Processor",
             name,
             indent_level=0
@@ -323,9 +323,9 @@ class CompatibilityPage(ScrollArea):
             details.append(f"Cores: {cpu_info.get('Core Count')}")
 
         if details:
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 cpu_card,
-                colored_icon(FluentIcon.INFO, COLORS['info']),
+                self.utils.colored_icon(FluentIcon.INFO, COLORS['info']),
                 "Details",
                 " • ".join(details),
                 indent_level=1
@@ -342,9 +342,9 @@ class CompatibilityPage(ScrollArea):
 
         for idx, (gpu_name, gpu_info) in enumerate(report['GPU'].items()):
             device_type = gpu_info.get('Device Type', 'Unknown')
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 gpu_card,
-                colored_icon(FluentIcon.PHOTO, COLORS['primary']),
+                self.utils.colored_icon(FluentIcon.PHOTO, COLORS['primary']),
                 gpu_name,
                 f"Type: {device_type}",
                 indent_level=0
@@ -355,12 +355,12 @@ class CompatibilityPage(ScrollArea):
             if 'OCLP Compatibility' in gpu_info:
                 oclp_compat = gpu_info.get('OCLP Compatibility')
                 oclp_text, oclp_color = self.format_compatibility(oclp_compat)
-                add_group_with_indent(
+                self.utils.add_group_with_indent(
                     gpu_card,
-                    colored_icon(FluentIcon.IOT, COLORS['primary']),
+                    self.utils.colored_icon(FluentIcon.IOT, COLORS['primary']),
                     "OCLP Compatibility",
                     oclp_text,
-                    create_info_widget("Extended support with OpenCore Legacy Patcher", COLORS['text_secondary']),
+                    self.utils.create_info_widget("Extended support with OpenCore Legacy Patcher", COLORS['text_secondary']),
                     indent_level=1
                 )
 
@@ -388,9 +388,9 @@ class CompatibilityPage(ScrollArea):
                 connected_monitors.append(monitor_str)
 
         if connected_monitors:
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 gpu_card,
-                colored_icon(FluentIcon.VIEW, COLORS['info']),
+                self.utils.colored_icon(FluentIcon.VIEW, COLORS['info']),
                 "Connected Displays",
                 ", ".join(connected_monitors),
                 indent_level=1
@@ -403,9 +403,9 @@ class CompatibilityPage(ScrollArea):
         sound_card.setTitle("Audio")
 
         for audio_device, audio_props in report['Sound'].items():
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 sound_card,
-                colored_icon(FluentIcon.MUSIC, COLORS['primary']),
+                self.utils.colored_icon(FluentIcon.MUSIC, COLORS['primary']),
                 audio_device,
                 "",
                 indent_level=0
@@ -415,9 +415,9 @@ class CompatibilityPage(ScrollArea):
 
             endpoints = audio_props.get('Audio Endpoints', [])
             if endpoints:
-                add_group_with_indent(
+                self.utils.add_group_with_indent(
                     sound_card,
-                    colored_icon(FluentIcon.HEADPHONE, COLORS['info']),
+                    self.utils.colored_icon(FluentIcon.HEADPHONE, COLORS['info']),
                     "Audio Endpoints",
                     ", ".join(endpoints),
                     indent_level=1
@@ -433,9 +433,9 @@ class CompatibilityPage(ScrollArea):
         network_card.setTitle("Network")
 
         for device_name, device_props in report['Network'].items():
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 network_card,
-                colored_icon(FluentIcon.WIFI, COLORS['primary']),
+                self.utils.colored_icon(FluentIcon.WIFI, COLORS['primary']),
                 device_name,
                 "",
                 indent_level=0
@@ -446,12 +446,12 @@ class CompatibilityPage(ScrollArea):
             if 'OCLP Compatibility' in device_props:
                 oclp_compat = device_props.get('OCLP Compatibility')
                 oclp_text, oclp_color = self.format_compatibility(oclp_compat)
-                add_group_with_indent(
+                self.utils.add_group_with_indent(
                     network_card,
-                    colored_icon(FluentIcon.IOT, COLORS['primary']),
+                    self.utils.colored_icon(FluentIcon.IOT, COLORS['primary']),
                     "OCLP Compatibility",
                     oclp_text,
-                    create_info_widget("Extended support with OpenCore Legacy Patcher", COLORS['text_secondary']),
+                    self.utils.create_info_widget("Extended support with OpenCore Legacy Patcher", COLORS['text_secondary']),
                     indent_level=1
                 )
 
@@ -478,12 +478,12 @@ class CompatibilityPage(ScrollArea):
             continuity_color = COLORS['error']
 
         if continuity_info:
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 network_card,
-                colored_icon(FluentIcon.SYNC, continuity_color),
+                self.utils.colored_icon(FluentIcon.SYNC, continuity_color),
                 "Continuity Features",
                 continuity_info,
-                create_info_widget("", continuity_color),
+                self.utils.create_info_widget("", continuity_color),
                 indent_level=1
             )
 
@@ -494,9 +494,9 @@ class CompatibilityPage(ScrollArea):
         storage_card.setTitle("Storage")
 
         for controller_name, controller_props in report['Storage Controllers'].items():
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 storage_card,
-                colored_icon(FluentIcon.FOLDER, COLORS['primary']),
+                self.utils.colored_icon(FluentIcon.FOLDER, COLORS['primary']),
                 controller_name,
                 "",
                 indent_level=0
@@ -506,9 +506,9 @@ class CompatibilityPage(ScrollArea):
 
             disk_drives = controller_props.get("Disk Drives", [])
             if disk_drives:
-                add_group_with_indent(
+                self.utils.add_group_with_indent(
                     storage_card,
-                    colored_icon(FluentIcon.FOLDER, COLORS['info']),
+                    self.utils.colored_icon(FluentIcon.FOLDER, COLORS['info']),
                     "Disk Drives",
                     ", ".join(disk_drives),
                     indent_level=1
@@ -524,9 +524,9 @@ class CompatibilityPage(ScrollArea):
         bluetooth_card.setTitle("Bluetooth")
 
         for bluetooth_name, bluetooth_props in report['Bluetooth'].items():
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 bluetooth_card,
-                colored_icon(FluentIcon.BLUETOOTH, COLORS['primary']),
+                self.utils.colored_icon(FluentIcon.BLUETOOTH, COLORS['primary']),
                 bluetooth_name,
                 "",
                 indent_level=0
@@ -542,19 +542,19 @@ class CompatibilityPage(ScrollArea):
         bio_card = GroupHeaderCardWidget(self.scrollWidget)
         bio_card.setTitle("Biometric")
 
-        add_group_with_indent(
+        self.utils.add_group_with_indent(
             bio_card,
-            colored_icon(FluentIcon.CLOSE, COLORS['warning']),
+            self.utils.colored_icon(FluentIcon.CLOSE, COLORS['warning']),
             "Hardware Limitation",
             "Biometric authentication in macOS requires Apple T2 Chip, which is not available for Hackintosh systems.",
-            create_info_widget("", COLORS['warning']),
+            self.utils.create_info_widget("", COLORS['warning']),
             indent_level=0
         )
 
         for bio_device, bio_props in report['Biometric'].items():
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 bio_card,
-                colored_icon(FluentIcon.FINGERPRINT, COLORS['error']),
+                self.utils.colored_icon(FluentIcon.FINGERPRINT, COLORS['error']),
                 bio_device,
                 "Unsupported",
                 indent_level=0
@@ -570,9 +570,9 @@ class CompatibilityPage(ScrollArea):
         sd_card.setTitle("SD Controller")
 
         for controller_name, controller_props in report['SD Controller'].items():
-            add_group_with_indent(
+            self.utils.add_group_with_indent(
                 sd_card,
-                colored_icon(FluentIcon.SAVE, COLORS['primary']),
+                self.utils.colored_icon(FluentIcon.SAVE, COLORS['primary']),
                 controller_name,
                 "",
                 indent_level=0

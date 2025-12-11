@@ -6,10 +6,10 @@ from qfluentwidgets import (
     IconWidget, ExpandGroupSettingCard
 )
 
-from ..styles import SPACING, COLORS, RADIUS
-from ..ui_utils import create_step_indicator, build_icon_label
+from Scripts.styles import SPACING, COLORS, RADIUS
+from Scripts import utils
 from Scripts.custom_dialogs import show_info, show_confirmation
-from ..state import HardwareReportState, MacOSVersionState, SMBIOSState
+from Scripts.state import HardwareReportState, MacOSVersionState, SMBIOSState
 
 import os
 import threading
@@ -94,6 +94,7 @@ class SelectHardwareReportPage(QWidget):
         self.setObjectName("SelectHardwareReport")
         self.controller = parent
         self._connect_signals()
+        self.utils = utils.Utils()
         self.page()
 
     def _connect_signals(self):
@@ -105,7 +106,7 @@ class SelectHardwareReportPage(QWidget):
         self.main_layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.main_layout.setSpacing(SPACING['large'])
 
-        self.main_layout.addWidget(create_step_indicator(1))
+        self.main_layout.addWidget(self.utils.create_step_indicator(1))
         
         header_layout = QVBoxLayout()
         header_layout.setSpacing(SPACING['small'])
@@ -141,7 +142,7 @@ class SelectHardwareReportPage(QWidget):
         layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
         layout.setSpacing(SPACING['large'])
 
-        icon = build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=40)
+        icon = self.utils.build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=40)
         layout.addWidget(icon, 0, Qt.AlignmentFlag.AlignVCenter)
 
         text_layout = QVBoxLayout()

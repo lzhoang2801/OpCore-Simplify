@@ -1,6 +1,5 @@
 import os
 import platform
-import sys
 import threading
 from datetime import datetime
 
@@ -8,18 +7,14 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from qfluentwidgets import FluentWindow, NavigationItemPosition, FluentIcon, setTheme, Theme, InfoBar, InfoBarPosition
 
-from ..datasets import os_data
-from .state import HardwareReportState, MacOSVersionState, SMBIOSState, BuildState
-from .pages import (
+from Scripts.datasets import os_data
+from Scripts.state import HardwareReportState, MacOSVersionState, SMBIOSState, BuildState
+from Scripts.pages import (
     HomePage, SelectHardwareReportPage, CompatibilityPage, ConfigurationPage, 
-    BuildPage, SettingsPage, ConfigEditorPage
+    BuildPage, SettingsPage #, ConfigEditorPage
 )
-from .styles import COLORS
+from Scripts.styles import COLORS
 from Scripts.settings import Settings
-
-scripts_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if scripts_path not in sys.path:
-    sys.path.insert(0, scripts_path)
 
 WINDOW_MIN_SIZE = (1000, 700)
 WINDOW_DEFAULT_SIZE = (1200, 800)
@@ -56,8 +51,7 @@ class OpCoreGUI(FluentWindow):
     def _setup_logging(self):
         if self.settings.get_enable_debug_logging():
             try:
-                root_dir = os.path.dirname(scripts_path)
-                log_dir = os.path.join(root_dir, "Logs")
+                log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Logs")
                 os.makedirs(log_dir, exist_ok=True)
                 timestamp = datetime.now()
                 self.log_file_path = os.path.join(log_dir, "ocs-{}.txt".format(timestamp.strftime("%Y-%m-%d-%H%M%S")))
@@ -136,7 +130,7 @@ class OpCoreGUI(FluentWindow):
         self.compatibilityPage = CompatibilityPage(self)
         self.configurationPage = ConfigurationPage(self)
         self.buildPage = BuildPage(self)
-        self.configEditorPage = ConfigEditorPage(self)
+        #self.configEditorPage = ConfigEditorPage(self)
         self.settingsPage = SettingsPage(self)
 
         self.addSubInterface(
@@ -171,12 +165,12 @@ class OpCoreGUI(FluentWindow):
         )
 
         self.navigationInterface.addSeparator()
-        self.addSubInterface(
-            self.configEditorPage,
-            FluentIcon.DOCUMENT,
-            "Config Editor",
-            NavigationItemPosition.BOTTOM
-        )
+        #self.addSubInterface(
+        #    self.configEditorPage,
+        #    FluentIcon.DOCUMENT,
+        #    "Config Editor",
+        #    NavigationItemPosition.BOTTOM
+        #)
         self.addSubInterface(
             self.settingsPage,
             FluentIcon.SETTING,

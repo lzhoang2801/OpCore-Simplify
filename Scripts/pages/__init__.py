@@ -4,7 +4,7 @@ from .compatibility_page import CompatibilityPage
 from .configuration_page import ConfigurationPage
 from .build_page import BuildPage
 from .settings_page import SettingsPage
-from .config_editor_page import ConfigEditorPage
+#from .config_editor_page import ConfigEditorPage
 
 __all__ = [
     'HomePage',
@@ -13,5 +13,5 @@ __all__ = [
     'ConfigurationPage',
     'BuildPage',
     'SettingsPage',
-    'ConfigEditorPage',
+    #'ConfigEditorPage',
 ]

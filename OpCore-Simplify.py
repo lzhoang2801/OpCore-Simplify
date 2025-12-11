@@ -6,10 +6,10 @@ from Scripts import gathering_files
 from Scripts import hardware_customizer
 from Scripts import kext_maestro
 from Scripts import report_validator
+from Scripts import settings
 from Scripts import run
 from Scripts import smbios
 from Scripts import utils
-from Scripts import settings as settings_module
 import updater
 import os
 import sys
@@ -30,15 +30,11 @@ class OCPE:
         self.s = smbios.SMBIOS()
         self.v = report_validator.ReportValidator()
         self.r = run.Run()
-        self.settings = settings_module.Settings()
+        self.settings = settings.Settings()
         
-        # Use custom output directory if set, otherwise use temporary directory
-        custom_output_dir = self.settings.get_build_output_directory()
+        custom_output_dir = self.settings.get("build_output_directory")
         if custom_output_dir:
-            # Create a timestamped subdirectory in the custom output location
-            timestamp = time.strftime("%Y%m%d_%H%M%S")
-            self.result_dir = os.path.join(custom_output_dir, f"EFI_Build_{timestamp}")
-            os.makedirs(self.result_dir, exist_ok=True)
+            self.result_dir = self.u.create_folder(custom_output_dir, remove_content=True)
         else:
             self.result_dir = self.u.get_temporary_dir()
 
@@ -228,7 +224,7 @@ if __name__ == '__main__':
     o = OCPE()
             
     from PyQt6.QtWidgets import QApplication
-    from Scripts.gui import OpCoreGUI
+    from main import OpCoreGUI
     
     app = QApplication(sys.argv)
     

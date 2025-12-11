@@ -12,8 +12,8 @@ from qfluentwidgets import (
     ScrollArea, InfoBar, InfoBarPosition, TitleLabel
 )
 
-from ..styles import COLORS, SPACING, RADIUS
-from ..ui_utils import build_icon_label, create_step_indicator
+from Scripts.styles import COLORS, SPACING, RADIUS
+from Scripts import utils
 from Scripts.custom_dialogs import show_confirmation
 
 # Constants for build log formatting
@@ -32,6 +32,7 @@ class BuildPage(ScrollArea):
         self.expandLayout = QVBoxLayout(self.scrollWidget)
         self.build_in_progress = False
         self.build_successful = False
+        self.utils = utils.Utils()
         self.setup_ui()
 
     def setup_ui(self):
@@ -50,7 +51,7 @@ class BuildPage(ScrollArea):
         layout = self.expandLayout
 
         # Step indicator with title
-        layout.addWidget(create_step_indicator(4))
+        layout.addWidget(self.utils.create_step_indicator(4))
 
         # Title section with better typography
         title_label = TitleLabel("Build OpenCore EFI")
@@ -73,7 +74,7 @@ class BuildPage(ScrollArea):
         # Card header with icon
         header_layout = QHBoxLayout()
         header_layout.setSpacing(SPACING['medium'])
-        instructions_icon = build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=28)
+        instructions_icon = self.utils.build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=28)
         header_layout.addWidget(instructions_icon)
         
         header_title = SubtitleLabel("Before You Build")
@@ -108,7 +109,7 @@ class BuildPage(ScrollArea):
         # Card header
         control_header_layout = QHBoxLayout()
         control_header_layout.setSpacing(SPACING['medium'])
-        control_icon = build_icon_label(FluentIcon.DEVELOPER_TOOLS, COLORS['primary'], size=28)
+        control_icon = self.utils.build_icon_label(FluentIcon.DEVELOPER_TOOLS, COLORS['primary'], size=28)
         control_header_layout.addWidget(control_icon)
         
         control_title = SubtitleLabel("Build Control")
@@ -175,7 +176,7 @@ class BuildPage(ScrollArea):
         # Card header
         log_header_layout = QHBoxLayout()
         log_header_layout.setSpacing(SPACING['medium'])
-        log_icon = build_icon_label(FluentIcon.DOCUMENT, COLORS['primary'], size=28)
+        log_icon = self.utils.build_icon_label(FluentIcon.DOCUMENT, COLORS['primary'], size=28)
         log_header_layout.addWidget(log_icon)
         
         log_title = SubtitleLabel("Build Log")
@@ -228,7 +229,7 @@ class BuildPage(ScrollArea):
         # Card header
         success_header_layout = QHBoxLayout()
         success_header_layout.setSpacing(SPACING['medium'])
-        success_icon = build_icon_label(FluentIcon.COMPLETED, COLORS['success'], size=32)
+        success_icon = self.utils.build_icon_label(FluentIcon.COMPLETED, COLORS['success'], size=32)
         success_header_layout.addWidget(success_icon)
         
         success_title = SubtitleLabel("Build Completed Successfully!")
@@ -279,7 +280,7 @@ class BuildPage(ScrollArea):
         # Card header
         warning_header_layout = QHBoxLayout()
         warning_header_layout.setSpacing(SPACING['medium'])
-        warning_icon = build_icon_label(FluentIcon.MEGAPHONE, COLORS['warning_text'], size=32)
+        warning_icon = self.utils.build_icon_label(FluentIcon.MEGAPHONE, COLORS['warning_text'], size=32)
         warning_header_layout.addWidget(warning_icon)
         
         warning_title = SubtitleLabel("Important: Before Using Your EFI")

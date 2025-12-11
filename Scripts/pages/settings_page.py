@@ -13,8 +13,8 @@ from qfluentwidgets import (
 )
 
 from Scripts.custom_dialogs import show_confirmation
-from ..styles import COLORS, SPACING
-from ...settings import Settings
+from Scripts.styles import COLORS, SPACING
+from Scripts.settings import Settings
 
 
 class SettingsPage(ScrollArea):
