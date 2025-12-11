@@ -284,7 +284,7 @@ class SelectHardwareReportPage(QWidget):
 
         self.controller.ocpe.ac.read_acpi_tables(acpi_dir)
         
-        if not self.controller.ocpe.ac.acpi.acpi_tables:
+        if not self.controller.ocpe.ac._ensure_dsdt():
             self.update_section_status('acpi', acpi_dir, 'error', "No ACPI tables found in selected folder.")
             show_info("No ACPI tables", "No ACPI tables found in ACPI folder.", self)
             return

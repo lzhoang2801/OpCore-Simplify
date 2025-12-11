@@ -9,7 +9,7 @@ from qfluentwidgets import (
 
 from Scripts.custom_dialogs import show_macos_version_dialog
 from ..styles import SPACING, COLORS
-from ..ui_utils import add_group_with_indent, create_step_indicator
+from ..ui_utils import create_step_indicator
 from ...settings import Settings
 
 
@@ -441,16 +441,8 @@ class ConfigurationPage(ScrollArea):
             self.controller.update_status("Please select target macOS version first", 'warning')
             return
 
-        from ..custom_dialogs import show_acpi_patches_dialog
-
-        ok = show_acpi_patches_dialog(
-            self.controller,
-            self.controller.ocpe.ac
-        )
-
-        if ok:
-            self.controller.update_status(
-                "ACPI patches configuration updated successfully", 'success')
+        self.controller.ocpe.ac.customize_patch_selection()
+        self.controller.update_status("ACPI patches configuration updated successfully", 'success')
 
     def customize_kexts(self):
         if not self.controller.hardware_state.hardware_report:
@@ -515,7 +507,7 @@ class ConfigurationPage(ScrollArea):
                 'is_compatible': is_compatible
             })
             
-        content = f"Lines in gray indicate mac models that are not officially supported by {self.controller.macos_state.macos_version_name}."
+        content = "Lines in gray indicate mac models that are not officially supported by {}.".format(self.controller.macos_state.macos_version_name)
 
         selected_model = show_smbios_selection_dialog(
             "Customize SMBIOS Model",
