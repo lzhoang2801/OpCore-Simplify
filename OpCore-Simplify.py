@@ -1,234 +1,329 @@
-from Scripts.datasets import chipset_data
-from Scripts import acpi_guru
-from Scripts import compatibility_checker
-from Scripts import config_prodigy
-from Scripts import gathering_files
-from Scripts import hardware_customizer
-from Scripts import kext_maestro
-from Scripts import report_validator
-from Scripts import settings
-from Scripts import run
-from Scripts import smbios
-from Scripts import utils
-import updater
 import os
 import sys
-import shutil
-import time
+import platform
+import traceback
 
-class OCPE:
-    def __init__(self):
-        self.u = utils.Utils()
-        self.u.setup_smart_exception_handler()
-        self.u.clean_temporary_dir()
-        self.ac = acpi_guru.ACPIGuru()
-        self.c = compatibility_checker.CompatibilityChecker()
-        self.co = config_prodigy.ConfigProdigy()
-        self.o = gathering_files.gatheringFiles()
-        self.h = hardware_customizer.HardwareCustomizer()
-        self.k = kext_maestro.KextMaestro()
-        self.s = smbios.SMBIOS()
-        self.v = report_validator.ReportValidator()
-        self.r = run.Run()
-        self.settings = settings.Settings()
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QApplication
+from qfluentwidgets import FluentWindow, NavigationItemPosition, FluentIcon, InfoBar, InfoBarPosition
+
+from Scripts.datasets import os_data
+from Scripts.state import HardwareReportState, MacOSVersionState, SMBIOSState, BuildState
+from Scripts.pages import HomePage, SelectHardwareReportPage, CompatibilityPage, ConfigurationPage, BuildPage, SettingsPage
+from Scripts.styles import COLORS
+from Scripts.settings import Settings
+from Scripts.backend import Backend
+from Scripts import ui_utils
+import updater
+
+WINDOW_MIN_SIZE = (1000, 700)
+WINDOW_DEFAULT_SIZE = (1200, 800)
+
+
+class OCS(FluentWindow):
+    open_result_folder_signal = pyqtSignal(str)
+    
+    PLATFORM_FONTS = {
+        "Windows": "Segoe UI",
+        "Darwin": "SF Pro Display",
+        "Linux": "Ubuntu"
+    }
+
+    def __init__(self, backend):
+        super().__init__()
+        self.backend = backend
+        self.settings = self.backend.settings
+        self.ui_utils = ui_utils.UIUtils()
         
-        custom_output_dir = self.settings.get("build_output_directory")
-        if custom_output_dir:
-            self.result_dir = self.u.create_folder(custom_output_dir, remove_content=True)
+        self._init_state()
+        self._setup_window()
+        self._connect_signals()
+        self._setup_backend_handlers()
+        self.init_navigation()
+
+    def _init_state(self):
+        self.hardware_state = HardwareReportState()
+        self.macos_state = MacOSVersionState()
+        self.smbios_state = SMBIOSState()
+        self.build_state = BuildState()
+        
+        self.build_btn = None
+        self.progress_bar = None
+        self.progress_label = None
+        self.build_log = None
+        self.open_result_btn = None
+
+    def _setup_window(self):
+        self.setWindowTitle("OpCore Simplify")
+        self.resize(*WINDOW_DEFAULT_SIZE)
+        self.setMinimumSize(*WINDOW_MIN_SIZE)
+
+        font = QFont()
+        system = platform.system()
+        font_family = self.PLATFORM_FONTS.get(system, "Ubuntu")
+        font.setFamily(font_family)
+        font.setStyleHint(QFont.StyleHint.SansSerif)
+        self.setFont(font)
+
+    def _connect_signals(self):
+        self.backend.log_message_signal.connect(
+            lambda message, level, to_build_log: (
+                [
+                    self.build_log.append(line)
+                    for line in (message.splitlines() or [""])
+                ]
+                if to_build_log and getattr(self, "build_log", None) else None
+            )
+        )
+        self.backend.build_progress_signal.connect(self.update_build_progress)
+        self.backend.update_status_signal.connect(self.update_status)
+        self.backend.build_complete_signal.connect(self._handle_build_complete)
+        
+        self.open_result_folder_signal.connect(self._handle_open_result_folder)
+
+    def _setup_backend_handlers(self):
+        self.backend.u.gui_handler = self
+
+    def init_navigation(self):
+        self.homePage = HomePage(self)
+        self.SelectHardwareReportPage = SelectHardwareReportPage(self)
+        self.compatibilityPage = CompatibilityPage(self)
+        self.configurationPage = ConfigurationPage(self)
+        self.buildPage = BuildPage(self)
+        self.settingsPage = SettingsPage(self)
+
+        self.addSubInterface(
+            self.homePage,
+            FluentIcon.HOME,
+            "Home",
+            NavigationItemPosition.TOP
+        )
+        self.addSubInterface(
+            self.SelectHardwareReportPage,
+            FluentIcon.FOLDER_ADD,
+            "1. Upload Report",
+            NavigationItemPosition.TOP
+        )
+        self.addSubInterface(
+            self.compatibilityPage,
+            FluentIcon.CHECKBOX,
+            "2. Compatibility",
+            NavigationItemPosition.TOP
+        )
+        self.addSubInterface(
+            self.configurationPage,
+            FluentIcon.EDIT,
+            "3. Configuration",
+            NavigationItemPosition.TOP
+        )
+        self.addSubInterface(
+            self.buildPage,
+            FluentIcon.DEVELOPER_TOOLS,
+            "4. Build EFI",
+            NavigationItemPosition.TOP
+        )
+
+        self.navigationInterface.addSeparator()
+        self.addSubInterface(
+            self.settingsPage,
+            FluentIcon.SETTING,
+            "Settings",
+            NavigationItemPosition.BOTTOM
+        )
+
+    def _handle_build_complete(self, success, bios_requirements):
+        if hasattr(self, 'buildPage') and hasattr(self.buildPage, 'on_build_complete'):
+            self.buildPage.on_build_complete(success, bios_requirements)
+            
+        if success:
+            if self.settings.get_open_folder_after_build():
+                self.open_result_folder_signal.emit(self.backend.result_dir)
+
+    def _handle_open_result_folder(self, folder_path):
+        self.backend.u.open_folder(folder_path)
+
+    def update_status(self, message, status_type='info'):
+        if status_type == 'success':
+            InfoBar.success(
+                title='Success',
+                content=message,
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=3000,
+                parent=self
+            )
+        elif status_type == 'error':
+            InfoBar.error(
+                title='Error',
+                content=message,
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=5000,
+                parent=self
+            )
+        elif status_type == 'warning':
+            InfoBar.warning(
+                title='Warning',
+                content=message,
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=4000,
+                parent=self
+            )
         else:
-            self.result_dir = self.u.get_temporary_dir()
+            InfoBar.info(
+                title='Info',
+                content=message,
+                orient=Qt.Orientation.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_RIGHT,
+                duration=3000,
+                parent=self
+            )
 
-    def build_opencore_efi(self, hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp):
-        # Check which kexts are enabled to determine which steps to show
-        itlwm_idx = kext_maestro.kext_data.kext_index_by_name.get("itlwm")
-        applealc_idx = kext_maestro.kext_data.kext_index_by_name.get("AppleALC")
-        itlwm_enabled = self.k.kexts[itlwm_idx].checked if itlwm_idx is not None else False
-        applealc_enabled = self.k.kexts[applealc_idx].checked if applealc_idx is not None else False
+    def suggest_macos_version(self):
+        if not self.hardware_state.hardware_report or not self.macos_state.native_version:
+            return None
+
+        hardware_report = self.hardware_state.hardware_report
+        native_macos_version = self.macos_state.native_version
+
+        suggested_macos_version = native_macos_version[1]
+
+        for device_type in ("GPU", "Network", "Bluetooth", "SD Controller"):
+            if device_type in hardware_report:
+                for device_name, device_props in hardware_report[device_type].items():
+                    if device_props.get("Compatibility", (None, None)) != (None, None):
+                        if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
+                            device_id = device_props.get("Device ID", " " * 8)[5:]
+
+                            if device_props.get("Manufacturer") == "AMD" or device_id.startswith(("59", "87C0")):
+                                suggested_macos_version = "22.99.99"
+                            elif device_id.startswith(("09", "19")):
+                                suggested_macos_version = "21.99.99"
+
+                        if self.backend.u.parse_darwin_version(suggested_macos_version) > self.backend.u.parse_darwin_version(device_props.get("Compatibility")[0]):
+                            suggested_macos_version = device_props.get("Compatibility")[0]
+
+        while True:
+            if "Beta" in os_data.get_macos_name_by_darwin(suggested_macos_version):
+                suggested_macos_version = "{}{}".format(
+                    int(suggested_macos_version[:2]) - 1, suggested_macos_version[2:])
+            else:
+                break
+
+        return suggested_macos_version
+
+    def apply_macos_version(self, version, defer_kext_selection=False):
+        self.backend.u.log_gui(f"Applying macOS version: {version} ({os_data.get_macos_name_by_darwin(version)})", level="Info", to_build_log=False)
+        self.macos_state.darwin_version = version
+        self.macos_state.macos_version_name = os_data.get_macos_name_by_darwin(version)
+
+        self.hardware_state.customized_hardware, self.hardware_state.disabled_devices, self.macos_state.needs_oclp = \
+            self.backend.h.hardware_customization(self.hardware_state.hardware_report, version)
         
-        # Build dynamic steps list based on enabled kexts
-        steps = [
-            "Copying EFI base to results folder",
-            "Applying ACPI patches",
-            "Installing kernel extensions"
-        ]
+        self.backend.u.log_gui(f"Hardware customization complete. Disabled {len(self.hardware_state.disabled_devices)} incompatible devices.", level="Info", to_build_log=False)
+
+        self.smbios_state.model_name = self.backend.s.select_smbios_model(
+            self.hardware_state.customized_hardware, version)
         
-        # Make the kext configuration step more descriptive based on what's enabled
-        kext_config_step = "Configuring kernel extensions"
-        if itlwm_enabled and applealc_enabled:
-            kext_config_step += " (WiFi profiles, audio codec)"
-        elif itlwm_enabled:
-            kext_config_step += " (WiFi profiles)"
-        elif applealc_enabled:
-            kext_config_step += " (audio codec)"
-        steps.append(kext_config_step)
+        self.backend.u.log_gui(f"Selected SMBIOS model: {self.smbios_state.model_name}", level="Info", to_build_log=False)
+
+        self.backend.ac.select_acpi_patches(
+            self.hardware_state.customized_hardware, self.hardware_state.disabled_devices)
         
-        steps.extend([
-            "Generating config.plist",
-            "Cleaning up unused drivers, resources, and tools"
-        ])
-        
-        title = "Building OpenCore EFI"
-        current_step = 0
+        if not defer_kext_selection:
+            self.macos_state.needs_oclp = self.backend.k.select_required_kexts(
+                self.hardware_state.customized_hardware, version, self.macos_state.needs_oclp, self.backend.ac.patches
+            )
+            self.backend.u.log_gui(f"Kext selection complete. OCLP required: {self.macos_state.needs_oclp}", level="Info", to_build_log=False)
 
-        self.u.progress_bar(title, steps, current_step)
-        current_step += 1
-        self.u.create_folder(self.result_dir, remove_content=True)
+        self.backend.s.smbios_specific_options(
+            self.hardware_state.customized_hardware, self.smbios_state.model_name, version,
+            self.backend.ac.patches, self.backend.k
+        )
 
-        if not os.path.exists(self.k.ock_files_dir):
-            raise Exception("Directory '{}' does not exist.".format(self.k.ock_files_dir))
-        
-        source_efi_dir = os.path.join(self.k.ock_files_dir, "OpenCorePkg")
-        shutil.copytree(source_efi_dir, self.result_dir, dirs_exist_ok=True)
+        self.configurationPage.update_display()
 
-        config_file = os.path.join(self.result_dir, "EFI", "OC", "config.plist")
-        config_data = self.u.read_file(config_file)
-        
-        if not config_data:
-            raise Exception("Error: The file {} does not exist.".format(config_file))
-        
-        self.u.progress_bar(title, steps, current_step)
-        current_step += 1
-        config_data["ACPI"]["Add"] = []
-        config_data["ACPI"]["Delete"] = []
-        config_data["ACPI"]["Patch"] = []
-        if self.ac.ensure_dsdt():
-            self.ac.hardware_report = hardware_report
-            self.ac.disabled_devices = disabled_devices
-            self.ac.acpi_directory = os.path.join(self.result_dir, "EFI", "OC", "ACPI")
-            self.ac.smbios_model = smbios_model
-            self.ac.lpc_bus_device = self.ac.get_lpc_name()
+    def build_efi(self):
+        if not self.hardware_state.customized_hardware:
+            self.update_status("Please load hardware report first", 'warning')
+            return
 
-            for patch in self.ac.patches:
-                if patch.checked:
-                    if patch.name == "BATP":
-                        patch.checked = getattr(self.ac, patch.function_name)()
-                        self.k.kexts[kext_maestro.kext_data.kext_index_by_name.get("ECEnabler")].checked = patch.checked
-                        continue
+        self.backend.start_build_process(
+            self.hardware_state.customized_hardware,
+            self.hardware_state.disabled_devices,
+            self.smbios_state.model_name,
+            self.macos_state.darwin_version,
+            self.macos_state.needs_oclp
+        )
 
-                    acpi_load = getattr(self.ac, patch.function_name)()
+    def update_build_progress(self, title, steps, current_step_index, progress, done):
+        if self.progress_bar:
+            if "Building" in title:
+                adjusted_progress = 40 + int(progress * 0.6)
+                self.progress_bar.setValue(adjusted_progress)
+            else:
+                self.progress_bar.setValue(progress)
 
-                    if not isinstance(acpi_load, dict):
-                        continue
-
-                    config_data["ACPI"]["Add"].extend(acpi_load.get("Add", []))
-                    config_data["ACPI"]["Delete"].extend(acpi_load.get("Delete", []))
-                    config_data["ACPI"]["Patch"].extend(acpi_load.get("Patch", []))
-        
-        config_data["ACPI"]["Patch"].extend(self.ac.dsdt_patches)
-        config_data["ACPI"]["Patch"] = self.ac.apply_acpi_patches(config_data["ACPI"]["Patch"])
-
-        self.u.progress_bar(title, steps, current_step)
-        current_step += 1
-        kexts_directory = os.path.join(self.result_dir, "EFI", "OC", "Kexts")
-        self.k.install_kexts_to_efi(macos_version, kexts_directory)
-        
-        # Progress to kext configuration step (WiFi extraction and codec selection happen here)
-        self.u.progress_bar(title, steps, current_step)
-        current_step += 1
-        
-        # Load kexts - this internally handles WiFi profile extraction and codec layout selection
-        config_data["Kernel"]["Add"] = self.k.load_kexts(hardware_report, macos_version, kexts_directory)
-
-        self.u.progress_bar(title, steps, current_step)
-        current_step += 1
-        self.co.genarate(hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp, self.k.kexts, config_data)
-        self.u.write_file(config_file, config_data)
-
-        self.u.progress_bar(title, steps, current_step)
-        current_step += 1
-        files_to_remove = []
-
-        drivers_directory = os.path.join(self.result_dir, "EFI", "OC", "Drivers")
-        driver_list = self.u.find_matching_paths(drivers_directory, extension_filter=".efi")
-        driver_loaded = [kext.get("Path") for kext in config_data.get("UEFI").get("Drivers")]
-        for driver_path, type in driver_list:
-            if not driver_path in driver_loaded:
-                files_to_remove.append(os.path.join(drivers_directory, driver_path))
-
-        resources_audio_dir = os.path.join(self.result_dir, "EFI", "OC", "Resources", "Audio")
-        if os.path.exists(resources_audio_dir):
-            files_to_remove.append(resources_audio_dir)
-
-        picker_variant = config_data.get("Misc", {}).get("Boot", {}).get("PickerVariant")
-        # Use settings if available
-        if hasattr(self, 'settings'):
-            settings_variant = self.settings.get_picker_variant()
-            if settings_variant and settings_variant != "Auto":
-                picker_variant = settings_variant
-        
-        if picker_variant in (None, "Auto"):
-            picker_variant = "Acidanthera/GoldenGate" 
-        if os.name == "nt":
-            picker_variant = picker_variant.replace("/", "\\")
-
-        resources_image_dir = os.path.join(self.result_dir, "EFI", "OC", "Resources", "Image")
-        available_picker_variants = self.u.find_matching_paths(resources_image_dir, type_filter="dir")
-
-        for variant_name, variant_type in available_picker_variants:
-            variant_path = os.path.join(resources_image_dir, variant_name)
-            if ".icns" in ", ".join(os.listdir(variant_path)):
-                if picker_variant not in variant_name:
-                    files_to_remove.append(variant_path)
-
-        tools_directory = os.path.join(self.result_dir, "EFI", "OC", "Tools")
-        tool_list = self.u.find_matching_paths(tools_directory, extension_filter=".efi")
-        tool_loaded = [tool.get("Path") for tool in config_data.get("Misc").get("Tools")]
-        for tool_path, type in tool_list:
-            if not tool_path in tool_loaded:
-                files_to_remove.append(os.path.join(tools_directory, tool_path))
-
-        if "manifest.json" in os.listdir(self.result_dir):
-            files_to_remove.append(os.path.join(self.result_dir, "manifest.json"))
-
-        for file_path in files_to_remove:
-            try:
-                if os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-                else:
-                    os.remove(file_path)
-            except Exception as e:
-                # Log file removal errors
-                self.u.log_gui(f"⚠ Failed to remove file {os.path.basename(file_path)}: {e}", level="Warning", to_build_log=True, fallback_stdout=False)
-        
-        self.u.progress_bar(title, steps, len(steps), done=True)
-        
-    def check_bios_requirements(self, org_hardware_report, hardware_report):
-        requirements = []
-        
-        org_firmware_type = org_hardware_report.get("BIOS", {}).get("Firmware Type", "Unknown")
-        firmware_type = hardware_report.get("BIOS", {}).get("Firmware Type", "Unknown")
-        if org_firmware_type == "Legacy" and firmware_type == "UEFI":
-            requirements.append("Enable UEFI mode (disable Legacy/CSM (Compatibility Support Module))")
-
-        secure_boot = hardware_report.get("BIOS", {}).get("Secure Boot", "Unknown")
-        if secure_boot != "Disabled":
-            requirements.append("Disable Secure Boot")
-        
-        if hardware_report.get("Motherboard", {}).get("Platform") == "Desktop" and hardware_report.get("Motherboard", {}).get("Chipset") in chipset_data.IntelChipsets[112:]:
-            resizable_bar_enabled = any(gpu_props.get("Resizable BAR", "Disabled") == "Enabled" for gpu_props in hardware_report.get("GPU", {}).values())
-            if not resizable_bar_enabled:
-                requirements.append("Enable Above 4G Decoding")
-                requirements.append("Disable Resizable BAR/Smart Access Memory")
+        if self.progress_label:
+            if done:
+                self.progress_label.setText(f"✓ {title} complete!")
+                self.progress_label.setStyleSheet(f"color: {COLORS['success']};") if hasattr(self, 'COLORS') else None
+            else:
+                step_text = steps[current_step_index] if current_step_index < len(steps) else "Processing"
+                step_counter = f"Step {current_step_index + 1}/{len(steps)}"
+                self.progress_label.setText(f"⚙ {step_counter}: {step_text}...")
                 
-        return requirements
+        if done:
+            self.backend.u.log_gui(f"[BUILD] {title} complete!", 'success', to_build_log=True)
+        else:
+            step_text = steps[current_step_index] if current_step_index < len(steps) else "Processing"
+            self.backend.u.log_gui(f"[BUILD] Step {current_step_index + 1}/{len(steps)}: {step_text}...", 'info', to_build_log=True)
+
+    def run(self):
+        self.show()
+
+    def setup_exception_hook(self):
+        def handle_exception(exc_type, exc_value, exc_traceback):
+            if issubclass(exc_type, KeyboardInterrupt):
+                sys.__excepthook__(exc_type, exc_value, exc_traceback)
+                return
+
+            error_details = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+            error_message = f"Uncaught exception detected:\n{error_details}"
+            
+            self.backend.u.log_gui(error_message, level="Error")
+            
+            try:
+                sys.__stderr__.write(f"\n[CRITICAL ERROR] {error_message}\n")
+            except:
+                pass
+
+        sys.excepthook = handle_exception
+
 
 if __name__ == '__main__':
-    from Scripts.settings import Settings
-    settings = Settings()
-    
-    if settings.get_auto_update_check():
-        update_flag = updater.Updater().run_update()
+    backend = Backend()
+
+    if backend.settings.get_auto_update_check():
+        update_flag = updater.Updater(
+            utils_instance=backend.u,
+            github_instance=backend.github,
+            resource_fetcher_instance=backend.resource_fetcher,
+            run_instance=backend.r
+        ).run_update()
         if update_flag:
             os.execv(sys.executable, ['python3'] + sys.argv)
-
-    o = OCPE()
             
-    from PyQt6.QtWidgets import QApplication
-    from main import OpCoreGUI
-    
     app = QApplication(sys.argv)
     
-    window = OpCoreGUI(o)
+    window = OCS(backend)
+    window.setup_exception_hook()
     window.show()
     
     sys.exit(app.exec())

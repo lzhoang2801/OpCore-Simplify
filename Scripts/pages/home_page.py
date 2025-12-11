@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt
 from qfluentwidgets import SubtitleLabel, BodyLabel, CardWidget, StrongBodyLabel, FluentIcon, ScrollArea
 
 from Scripts.styles import COLORS, SPACING, RADIUS
-from Scripts import utils
+from Scripts import ui_utils
 
 
 class HomePage(ScrollArea):
@@ -13,7 +13,7 @@ class HomePage(ScrollArea):
         self.controller = parent
         self.scrollWidget = QWidget()
         self.expandLayout = QVBoxLayout(self.scrollWidget)
-        self.utils = utils.Utils()
+        self.ui_utils = ui_utils.UIUtils()
         self.page()
 
     def page(self):
@@ -64,7 +64,7 @@ class HomePage(ScrollArea):
 
         hero_layout.addLayout(hero_text, 2)
 
-        robot_icon = self.utils.build_icon_label(FluentIcon.ROBOT, COLORS['primary'], size=64)
+        robot_icon = self.ui_utils.build_icon_label(FluentIcon.ROBOT, COLORS['primary'], size=64)
         hero_layout.addWidget(robot_icon, 1, Qt.AlignmentFlag.AlignVCenter)
 
         return hero_card
@@ -83,7 +83,7 @@ class HomePage(ScrollArea):
         note_layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
         note_layout.setSpacing(SPACING['large'])
 
-        note_icon = self.utils.build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=40)
+        note_icon = self.ui_utils.build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=40)
         note_layout.addWidget(note_icon, 0, Qt.AlignmentFlag.AlignVCenter)
 
         note_text_layout = QVBoxLayout()
@@ -122,7 +122,7 @@ class HomePage(ScrollArea):
         warning_layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
         warning_layout.setSpacing(SPACING['large'])
 
-        warning_icon = self.utils.build_icon_label(FluentIcon.MEGAPHONE, COLORS['warning_text'], size=40)
+        warning_icon = self.ui_utils.build_icon_label(FluentIcon.MEGAPHONE, COLORS['warning_text'], size=40)
         warning_layout.addWidget(warning_icon, 0, Qt.AlignmentFlag.AlignVCenter)
 
         warning_text_layout = QVBoxLayout()
@@ -185,7 +185,7 @@ class HomePage(ScrollArea):
         icon_layout.setContentsMargins(0, 0, 0, 0)
         icon_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         
-        row_icon = self.utils.build_icon_label(icon, COLORS['primary'], size=24)
+        row_icon = self.ui_utils.build_icon_label(icon, COLORS['primary'], size=24)
         icon_layout.addWidget(row_icon)
         
         row_layout.addWidget(icon_container)

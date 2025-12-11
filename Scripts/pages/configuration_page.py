@@ -9,7 +9,7 @@ from qfluentwidgets import (
 
 from Scripts.custom_dialogs import show_macos_version_dialog
 from Scripts.styles import SPACING, COLORS
-from Scripts import utils
+from Scripts import ui_utils
 from Scripts.settings import Settings
 
 
@@ -25,19 +25,19 @@ class PickerGroup(ExpandGroupSettingCard):
         
         self.showPickerSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
         self.showPickerSwitch.setOnText("On")
-        self.showPickerSwitch.setChecked(self.settings.get("show_picker", True))
+        self.showPickerSwitch.setChecked(self.settings.get_show_picker())
         self.showPickerSwitch.checkedChanged.connect(lambda c: self.settings.set("show_picker", c))
         
         self.pickerModeCombo = ComboBox()
         picker_mode_values = ["Builtin", "External"]
         self.pickerModeCombo.addItems(picker_mode_values)
-        self.pickerModeCombo.setCurrentText(self.settings.get("picker_mode", "External"))
+        self.pickerModeCombo.setCurrentText(self.settings.get_picker_mode())
         self.pickerModeCombo.currentTextChanged.connect(lambda t: self.settings.set("picker_mode", t))
         self.pickerModeCombo.setFixedWidth(150)
         
         self.hideAuxSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
         self.hideAuxSwitch.setOnText("On")
-        self.hideAuxSwitch.setChecked(self.settings.get("hide_auxiliary", False))
+        self.hideAuxSwitch.setChecked(self.settings.get_hide_auxiliary())
         self.hideAuxSwitch.checkedChanged.connect(lambda c: self.settings.set("hide_auxiliary", c))
         
         self.pickerVariantCombo = ComboBox()
@@ -48,13 +48,13 @@ class PickerGroup(ExpandGroupSettingCard):
             "Acidanthera/Chardonnay"
         ]
         self.pickerVariantCombo.addItems(picker_variant_values)
-        self.pickerVariantCombo.setCurrentText(self.settings.get("picker_variant", "Auto"))
+        self.pickerVariantCombo.setCurrentText(self.settings.get_picker_variant())
         self.pickerVariantCombo.currentTextChanged.connect(lambda t: self.settings.set("picker_variant", t))
         self.pickerVariantCombo.setFixedWidth(220)
         
         self.timeoutSpin = SpinBox()
         self.timeoutSpin.setRange(0, 60*10)
-        self.timeoutSpin.setValue(self.settings.get("picker_timeout", 5))
+        self.timeoutSpin.setValue(self.settings.get_picker_timeout())
         self.timeoutSpin.valueChanged.connect(lambda v: self.settings.set("picker_timeout", v))
         
         self.viewLayout.setContentsMargins(0, 0, 0, 0)
@@ -103,7 +103,7 @@ class SecurityConfigGroup(ExpandGroupSettingCard):
         
         self.disableSipSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
         self.disableSipSwitch.setOnText("On")
-        self.disableSipSwitch.setChecked(self.settings.get("disable_sip", True))
+        self.disableSipSwitch.setChecked(self.settings.get_disable_sip())
         self.disableSipSwitch.checkedChanged.connect(lambda c: self.settings.set("disable_sip", c))
         
         self.secureBootCombo = ComboBox()
@@ -129,7 +129,7 @@ class SecurityConfigGroup(ExpandGroupSettingCard):
             "x86legacy"
         ]
         self.secureBootCombo.addItems(secure_boot_values)
-        current_sb = self.settings.get("secure_boot_model", "Disabled")
+        current_sb = self.settings.get_secure_boot_model()
         if current_sb not in secure_boot_values:
             current_sb = "Disabled"
         self.secureBootCombo.setCurrentText(current_sb)
@@ -165,12 +165,12 @@ class BootArgsGroup(ExpandGroupSettingCard):
         
         self.verboseSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
         self.verboseSwitch.setOnText("On")
-        self.verboseSwitch.setChecked(self.settings.get("verbose_boot", True))
+        self.verboseSwitch.setChecked(self.settings.get_verbose_boot())
         self.verboseSwitch.checkedChanged.connect(lambda c: self.settings.set("verbose_boot", c))
         
         self.customArgsInput = LineEdit()
         self.customArgsInput.setPlaceholderText("e.g., -radcodec -raddvi")
-        self.customArgsInput.setText(self.settings.get("custom_boot_args", ""))
+        self.customArgsInput.setText(self.settings.get_custom_boot_args())
         self.customArgsInput.textChanged.connect(lambda t: self.settings.set("custom_boot_args", t))
         self.customArgsInput.setClearButtonEnabled(True)
         self.customArgsInput.setFixedWidth(400)
@@ -218,12 +218,12 @@ class SMBIOSGroup(ExpandGroupSettingCard):
         
         self.randomSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
         self.randomSwitch.setOnText("On")
-        self.randomSwitch.setChecked(self.settings.get("random_smbios", True))
+        self.randomSwitch.setChecked(self.settings.get_random_smbios())
         self.randomSwitch.checkedChanged.connect(lambda c: self.settings.set("random_smbios", c))
         
         self.preserveSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
         self.preserveSwitch.setOnText("On")
-        self.preserveSwitch.setChecked(self.settings.get("preserve_smbios", False))
+        self.preserveSwitch.setChecked(self.settings.get_preserve_smbios())
         self.preserveSwitch.checkedChanged.connect(lambda c: self.settings.set("preserve_smbios", c))
         
         self.viewLayout.setContentsMargins(0, 0, 0, 0)
@@ -282,10 +282,10 @@ class ConfigurationPage(ScrollArea):
         super().__init__()
         self.setObjectName("configurationPage")
         self.controller = parent
-        self.settings = Settings()
+        self.settings = self.controller.backend.settings
         self.scrollWidget = QWidget()
         self.main_layout = QVBoxLayout(self.scrollWidget)
-        self.utils = utils.Utils()
+        self.ui_utils = ui_utils.UIUtils()
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -299,7 +299,7 @@ class ConfigurationPage(ScrollArea):
         self.main_layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.main_layout.setSpacing(SPACING['large'])
 
-        self.main_layout.addWidget(self.utils.create_step_indicator(3))
+        self.main_layout.addWidget(self.ui_utils.create_step_indicator(3))
 
         header_container = QWidget()
         header_layout = QVBoxLayout(header_container)
@@ -440,7 +440,7 @@ class ConfigurationPage(ScrollArea):
             self.controller.update_status("Please select target macOS version first", 'warning')
             return
 
-        self.controller.ocpe.ac.customize_patch_selection()
+        self.controller.backend.ac.customize_patch_selection()
         self.controller.update_status("ACPI patches configuration updated successfully", 'success')
 
     def customize_kexts(self):
@@ -452,7 +452,7 @@ class ConfigurationPage(ScrollArea):
             self.controller.update_status("Please select target macOS version first", 'warning')
             return
 
-        self.controller.ocpe.k.kext_configuration_menu(self.controller.macos_state.darwin_version)
+        self.controller.backend.k.kext_configuration_menu(self.controller.macos_state.darwin_version)
         self.controller.update_status("Kext configuration updated successfully", 'success')
 
     def customize_smbios(self):
@@ -465,11 +465,11 @@ class ConfigurationPage(ScrollArea):
             return
 
         current_model = self.controller.smbios_state.model_name
-        selected_model = self.controller.ocpe.s.customize_smbios_model(self.controller.hardware_state.customized_hardware, current_model, self.controller.macos_state.darwin_version, self.controller.window())
+        selected_model = self.controller.backend.s.customize_smbios_model(self.controller.hardware_state.customized_hardware, current_model, self.controller.macos_state.darwin_version, self.controller.window())
 
         if selected_model and selected_model != current_model:
             self.controller.smbios_state.model_name = selected_model
-            self.controller.ocpe.s.smbios_specific_options(self.controller.hardware_state.customized_hardware, selected_model, self.controller.macos_state.darwin_version, self.controller.ocpe.ac.patches, self.controller.ocpe.k)
+            self.controller.backend.s.smbios_specific_options(self.controller.hardware_state.customized_hardware, selected_model, self.controller.macos_state.darwin_version, self.controller.backend.ac.patches, self.controller.backend.k)
 
             self.smbios_card.update_model()
             self.controller.update_status("SMBIOS model updated to {}".format(selected_model), 'success')

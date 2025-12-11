@@ -1,15 +1,3 @@
-from typing import Optional, Tuple, TYPE_CHECKING
-
-from PyQt6.QtWidgets import QWidget, QLabel
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
-from qfluentwidgets import FluentIcon, BodyLabel
-
-from .styles import SPACING, COLORS
-
-if TYPE_CHECKING:
-    from qfluentwidgets import GroupHeaderCardWidget, CardGroupWidget
-
 import os
 import sys
 import json
@@ -23,58 +11,12 @@ import zipfile
 import tempfile
 import traceback
 import contextlib
+import logging
 
 class Utils:
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(Utils, cls).__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
-
     def __init__(self):
-        if self._initialized:
-            return
-        self._initialized = True
-        self.gui_handler = None  # GUI handler object for direct dialog access
-        self.gui_log_callback = None  # Callback for logging to build log/console
-        self.gui_callback = None  # Callback for GUI prompts (backward compatibility)
-        self.gui_progress_callback = None  # Callback for updating build progress in GUI
-        self.gui_gathering_progress_callback = None  # Callback for updating gathering progress in GUI
-        
-        # Load settings for debug logging
-        try:
-            from Scripts import settings as settings_module
-            self.settings = settings_module.Settings()
-            self.debug_logging_enabled = self.settings.get_enable_debug_logging()
-        except:
-            self.settings = None
-            self.debug_logging_enabled = False
-    
-    def debug_log(self, message):
-        """Log debug messages if debug logging is enabled"""
-        if self.debug_logging_enabled:
-            self.log_gui(f"[DEBUG] {message}", level="Debug")
-
-    def setup_smart_exception_handler(self):
-        def handle_exception(exc_type, exc_value, exc_traceback):
-            if issubclass(exc_type, KeyboardInterrupt):
-                sys.__excepthook__(exc_type, exc_value, exc_traceback)
-                return
-
-            error_details = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-            error_message = f"Uncaught exception detected:\n{error_details}"
-            
-            self.log_gui(error_message, level="Error")
-            
-            try:
-                sys.__stderr__.write(f"\n[CRITICAL ERROR] {error_message}\n")
-            except:
-                pass
-
-        sys.excepthook = handle_exception
-        self.debug_log("Smart exception handler installed - unhandled errors will be auto-logged.")
+        self.gui_handler = None
+        self.logger = logging.getLogger("OpCoreSimplify")
 
     @contextlib.contextmanager
     def safe_block(self, task_name="Operation", suppress_error=True):
@@ -87,16 +29,14 @@ class Utils:
                 raise
 
     def log_gui(self, message, level="Info", to_build_log=False):
-        if self.gui_log_callback:
-            try:
-                self.gui_log_callback(message, level, to_build_log=to_build_log)
-            except TypeError:
-                self.gui_log_callback(message, level)
-            return True
-        return False
+        log_level = getattr(logging, level.upper(), logging.INFO)
+        
+        extra = {'to_build_log': to_build_log}
+        
+        self.logger.log(log_level, message, extra=extra)
+        return True
 
-    
-    def clean_temporary_dir(self):        
+    def clean_temporary_dir(self):
         temporary_dir = tempfile.gettempdir()
         
         for file in os.listdir(temporary_dir):
@@ -106,10 +46,9 @@ class Utils:
                     continue
 
                 try:
-                    self.debug_log(f"Cleaning temporary directory: {file}")
                     shutil.rmtree(os.path.join(temporary_dir, file))
                 except Exception as e:
-                    self.debug_log(f"Failed to remove temp directory {file}: {e}")
+                    self.log_gui("[UTILS] Failed to remove temp directory {}: {}".format(file, e), "Error")
                     pass
     
     def get_temporary_dir(self):
@@ -211,23 +150,6 @@ class Utils:
 
     def contains_any(self, data, search_item, start=0, end=None):
         return next((item for item in data[start:end] if item.lower() in search_item.lower()), None)
-
-    def normalize_path(self, path):
-        path = re.sub(r'^[\'"]+|[\'"]+$', '', path)
-        
-        path = path.strip()
-        
-        path = os.path.expanduser(path)
-        
-        if os.name == 'nt':
-            path = path.replace('\\', '/')
-            path = re.sub(r'/+', '/', path)
-        else:
-            path = path.replace('\\', '')
-        
-        path = os.path.normpath(path)
-        
-        return str(pathlib.Path(path).resolve())
     
     def parse_darwin_version(self, darwin_version):
         major, minor, patch = map(int, darwin_version.split('.'))
@@ -241,78 +163,3 @@ class Utils:
                 subprocess.run(['xdg-open', folder_path])
         elif os.name == 'nt':
             os.startfile(folder_path)
-
-    def progress_bar(self, title, steps, current_step_index, done=False):
-        if done:
-            progress = 100
-        else:
-            progress = int((current_step_index / len(steps)) * 100)
-        
-        self.gui_progress_callback(title, steps, current_step_index, progress, done)
-
-
-    def build_icon_label(self, icon: FluentIcon, color: str, size: int = 32) -> QLabel:
-        label = QLabel()
-        label.setPixmap(icon.icon(color=color).pixmap(size, size))
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        label.setFixedSize(size + 12, size + 12)
-        return label
-
-
-    def create_info_widget(self, text: str, color: Optional[str] = None) -> QWidget:
-        if not text:
-            return QWidget()
-        
-        label = BodyLabel(text)
-        label.setWordWrap(True)
-        if color:
-            label.setStyleSheet(f"color: {color};")
-        return label
-
-
-    def colored_icon(self, icon: FluentIcon, color_hex: str) -> FluentIcon:
-        if not icon or not color_hex:
-            return icon
-        
-        tint = QColor(color_hex)
-        return icon.colored(tint, tint)
-
-
-    def get_compatibility_icon(self, compat_tuple: Optional[Tuple[Optional[str], Optional[str]]]) -> FluentIcon:
-        if not compat_tuple or compat_tuple == (None, None):
-            return self.colored_icon(FluentIcon.CLOSE, COLORS['error'])
-        return self.colored_icon(FluentIcon.ACCEPT, COLORS['success'])
-
-
-    def add_group_with_indent(
-        self,
-        card: 'GroupHeaderCardWidget',
-        icon: FluentIcon, 
-        title: str, 
-        content: str, 
-        widget: Optional[QWidget] = None, 
-        indent_level: int = 0
-    ) -> 'CardGroupWidget':
-        if widget is None:
-            widget = QWidget()
-        
-        group = card.addGroup(icon, title, content, widget)
-        
-        if indent_level > 0:
-            base_margin = 24
-            indent = 20 * indent_level
-            group.hBoxLayout.setContentsMargins(base_margin + indent, 10, 24, 10)
-        
-        return group
-
-
-    def create_step_indicator(self, step_number: int, total_steps: int = 4, color: str = "#0078D4") -> BodyLabel:
-        label = BodyLabel(f"STEP {step_number} OF {total_steps}")
-        label.setStyleSheet(f"color: {color}; font-weight: bold;")
-        return label
-
-
-    def create_vertical_spacer(self, spacing: int = SPACING['medium']) -> QWidget:
-        spacer = QWidget()
-        spacer.setFixedHeight(spacing)
-        return spacer

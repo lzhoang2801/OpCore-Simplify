@@ -4,8 +4,8 @@ from Scripts.custom_dialogs import show_confirmation, show_info, show_options_di
 from Scripts import utils
 
 class HardwareCustomizer:
-    def __init__(self):
-        self.utils = utils.Utils()
+    def __init__(self, utils_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
 
     def show_macos_compatibility(self, device_compatibility):
         if not device_compatibility:
@@ -94,7 +94,7 @@ class HardwareCustomizer:
                     self._handle_device_selection(device_type if device_type != "Network" else "WiFi")
         
         if self.selected_devices:
-            content = "<p>The following devices have been selected for your configuration:</p>"
+            content = "The following devices have been selected for your configuration:<br>"
             content += "<table width='100%' cellpadding='4'>"
             content += "<tr>"
             content += "<td><b>Category</b></td>"

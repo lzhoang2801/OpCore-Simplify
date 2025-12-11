@@ -165,9 +165,9 @@ cython_debug/
 
 *.DS_Store
 OCK_Files
-*/iasl-*
+*.exe
 Scripts/iasl
 sha_version.txt
-macserial
-macserial.exe
-macserial.linux
+macserial*
+*Sys*
+Logs/

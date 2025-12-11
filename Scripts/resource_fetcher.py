@@ -20,14 +20,14 @@ else:
 MAX_ATTEMPTS = 3
 
 class ResourceFetcher:
-    def __init__(self, headers=None):
+    def __init__(self, utils_instance=None, integrity_checker_instance=None, headers=None):
         self.request_headers = headers or {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         }
-        self.utils = utils.Utils()
+        self.utils = utils_instance if utils_instance else utils.Utils()
         self.buffer_size = 16 * 1024
         self.ssl_context = self.create_ssl_context()
-        self.integrity_checker = integrity_checker.IntegrityChecker()
+        self.integrity_checker = integrity_checker_instance if integrity_checker_instance else integrity_checker.IntegrityChecker()
 
     def create_ssl_context(self):
         try:

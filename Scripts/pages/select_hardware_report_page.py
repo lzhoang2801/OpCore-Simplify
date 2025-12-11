@@ -7,7 +7,7 @@ from qfluentwidgets import (
 )
 
 from Scripts.styles import SPACING, COLORS, RADIUS
-from Scripts import utils
+from Scripts import ui_utils
 from Scripts.custom_dialogs import show_info, show_confirmation
 from Scripts.state import HardwareReportState, MacOSVersionState, SMBIOSState
 
@@ -94,7 +94,7 @@ class SelectHardwareReportPage(QWidget):
         self.setObjectName("SelectHardwareReport")
         self.controller = parent
         self._connect_signals()
-        self.utils = utils.Utils()
+        self.ui_utils = ui_utils.UIUtils()
         self.page()
 
     def _connect_signals(self):
@@ -106,7 +106,7 @@ class SelectHardwareReportPage(QWidget):
         self.main_layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.main_layout.setSpacing(SPACING['large'])
 
-        self.main_layout.addWidget(self.utils.create_step_indicator(1))
+        self.main_layout.addWidget(self.ui_utils.create_step_indicator(1))
         
         header_layout = QVBoxLayout()
         header_layout.setSpacing(SPACING['small'])
@@ -142,7 +142,7 @@ class SelectHardwareReportPage(QWidget):
         layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
         layout.setSpacing(SPACING['large'])
 
-        icon = self.utils.build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=40)
+        icon = self.ui_utils.build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=40)
         layout.addWidget(icon, 0, Qt.AlignmentFlag.AlignVCenter)
 
         text_layout = QVBoxLayout()
@@ -252,7 +252,7 @@ class SelectHardwareReportPage(QWidget):
         
         self.report_group.setExpand(True)
         
-        is_valid, errors, warnings, validated_data = self.controller.ocpe.v.validate_report(report_path)
+        is_valid, errors, warnings, validated_data = self.controller.backend.v.validate_report(report_path)
         
         if not is_valid or errors:
             msg = "Report Errors:\n" + "\n".join(errors)
@@ -268,7 +268,7 @@ class SelectHardwareReportPage(QWidget):
 
         self.controller.hardware_state.hardware_report = validated_data
 
-        self.controller.hardware_state.hardware_report, self.controller.macos_state.native_version, self.controller.macos_state.ocl_patched_version, self.controller.hardware_state.compatibility_error = self.controller.ocpe.c.check_compatibility(validated_data)
+        self.controller.hardware_state.hardware_report, self.controller.macos_state.native_version, self.controller.macos_state.ocl_patched_version, self.controller.hardware_state.compatibility_error = self.controller.backend.c.check_compatibility(validated_data)
         
         if self.controller.hardware_state.compatibility_error:
             error_msg = self.controller.hardware_state.compatibility_error
@@ -283,14 +283,14 @@ class SelectHardwareReportPage(QWidget):
             show_info("Incompatible Hardware", "Your hardware is not compatible with macOS:\n\n" + error_msg, self)
             return
 
-        self.controller.ocpe.ac.read_acpi_tables(acpi_dir)
+        self.controller.backend.ac.read_acpi_tables(acpi_dir)
         
-        if not self.controller.ocpe.ac._ensure_dsdt():
+        if not self.controller.backend.ac._ensure_dsdt():
             self.update_section_status('acpi', acpi_dir, 'error', "No ACPI tables found in selected folder.")
             show_info("No ACPI tables", "No ACPI tables found in ACPI folder.", self)
             return
         else:
-            count = len(self.controller.ocpe.ac.acpi.acpi_tables)
+            count = len(self.controller.backend.ac.acpi.acpi_tables)
             self.update_section_status('acpi', acpi_dir, 'success', f"ACPI Tables loaded: {count} tables found.")
 
         self.controller.update_status("Hardware report loaded successfully", 'success')
@@ -298,7 +298,7 @@ class SelectHardwareReportPage(QWidget):
         self.controller.compatibilityPage.update_display()
 
     def export_hardware_report(self):
-        hardware_sniffer = self.controller.ocpe.o.gather_hardware_sniffer()
+        hardware_sniffer = self.controller.backend.o.gather_hardware_sniffer()
         if not hardware_sniffer:
             self.controller.update_status("Hardware Sniffer not found", 'error')
             return
@@ -313,7 +313,7 @@ class SelectHardwareReportPage(QWidget):
             self.export_btn.setEnabled(False)
 
         def export_thread():
-            output = self.controller.ocpe.r.run({
+            output = self.controller.backend.r.run({
                 "args": [hardware_sniffer, "-e", "-o", report_dir]
             })
             

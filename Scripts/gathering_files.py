@@ -12,12 +12,12 @@ import platform
 os_name = platform.system()
 
 class gatheringFiles:
-    def __init__(self):
-        self.utils = utils.Utils()
-        self.github = github.Github()
-        self.kext = kext_maestro.KextMaestro()
-        self.fetcher = resource_fetcher.ResourceFetcher()
-        self.integrity_checker = integrity_checker.IntegrityChecker()
+    def __init__(self, utils_instance=None, github_instance=None, kext_maestro_instance=None, integrity_checker_instance=None, resource_fetcher_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
+        self.github = github_instance if github_instance else github.Github()
+        self.kext = kext_maestro_instance if kext_maestro_instance else kext_maestro.KextMaestro()
+        self.fetcher = resource_fetcher_instance if resource_fetcher_instance else resource_fetcher.ResourceFetcher()
+        self.integrity_checker = integrity_checker_instance if integrity_checker_instance else integrity_checker.IntegrityChecker()
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
         self.ocbinarydata_url = "https://github.com/acidanthera/OcBinaryData/archive/refs/heads/master.zip"
         self.amd_vanilla_patches_url = "https://raw.githubusercontent.com/AMD-OSX/AMD_Vanilla/beta/patches.plist"

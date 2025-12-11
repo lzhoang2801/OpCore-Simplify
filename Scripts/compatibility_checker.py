@@ -6,9 +6,9 @@ from Scripts import utils
 from Scripts import settings
 
 class CompatibilityChecker:
-    def __init__(self):
-        self.utils = utils.Utils()
-        self.settings = settings.Settings()
+    def __init__(self, utils_instance=None, settings_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
+        self.settings = settings_instance if settings_instance else settings.Settings()
         self.error_codes = []
 
     def is_low_end_intel_cpu(self, processor_name):

@@ -22,7 +22,7 @@ class SettingsPage(ScrollArea):
         super().__init__()
         self.controller = controller
         self.setObjectName("settingsPage")
-        self.settings = Settings()
+        self.settings = self.controller.backend.settings
         self.scrollWidget = QWidget()
         self.expandLayout = QVBoxLayout()
         self.scrollWidget.setLayout(self.expandLayout)
@@ -126,7 +126,7 @@ class SettingsPage(ScrollArea):
             "Browse",
             FluentIcon.FOLDER,
             "Output Directory",
-            self.settings.get("build_output_directory", "") or "Use temporary directory (default)",
+            self.settings.get("build_output_directory") or "Use temporary directory (default)",
             group
         )
         self.output_dir_card.setObjectName("build_output_directory")
@@ -141,10 +141,8 @@ class SettingsPage(ScrollArea):
             parent=group
         )
         self.open_folder_card.setObjectName("open_folder_after_build")
-        self.open_folder_card.switchButton.setChecked(
-            self.settings.get("open_folder_after_build", True))
-        self.open_folder_card.switchButton.checkedChanged.connect(
-            lambda checked: self.settings.set("open_folder_after_build", checked))
+        self.open_folder_card.switchButton.setChecked(self.settings.get_open_folder_after_build())
+        self.open_folder_card.switchButton.checkedChanged.connect(lambda checked: self.settings.set("open_folder_after_build", checked))
         group.addSettingCard(self.open_folder_card)
 
         return group
@@ -160,7 +158,7 @@ class SettingsPage(ScrollArea):
             parent=group
         )
         self.include_beta_card.setObjectName("include_beta_versions")
-        self.include_beta_card.switchButton.setChecked(self.settings.get("include_beta_versions", False))
+        self.include_beta_card.switchButton.setChecked(self.settings.get_include_beta_versions())
         self.include_beta_card.switchButton.checkedChanged.connect(lambda checked: self.settings.set("include_beta_versions", checked))
         group.addSettingCard(self.include_beta_card)
 
@@ -173,7 +171,7 @@ class SettingsPage(ScrollArea):
             "Light",
             #"Dark",
         ]
-        theme_value = self.settings.get("theme", "Light")
+        theme_value = self.settings.get_theme()
         if theme_value not in theme_values:
             theme_value = "Light"
 
@@ -217,7 +215,7 @@ class SettingsPage(ScrollArea):
             parent=group
         )
         self.auto_update_card.setObjectName("auto_update_check")
-        self.auto_update_card.switchButton.setChecked(self.settings.get("auto_update_check", True))
+        self.auto_update_card.switchButton.setChecked(self.settings.get_auto_update_check())
         self.auto_update_card.switchButton.checkedChanged.connect(lambda checked: self.settings.set("auto_update_check", checked))
         group.addSettingCard(self.auto_update_card)
 
@@ -234,7 +232,7 @@ class SettingsPage(ScrollArea):
             parent=group
         )
         self.debug_logging_card.setObjectName("enable_debug_logging")
-        self.debug_logging_card.switchButton.setChecked(self.settings.get("enable_debug_logging", False))
+        self.debug_logging_card.switchButton.setChecked(self.settings.get_enable_debug_logging())
         self.debug_logging_card.switchButton.checkedChanged.connect(lambda checked: self.settings.set("enable_debug_logging", checked))
         group.addSettingCard(self.debug_logging_card)
 
@@ -279,7 +277,7 @@ class SettingsPage(ScrollArea):
         folder = QFileDialog.getExistingDirectory(
             self,
             "Select Build Output Directory",
-            self.settings.get("build_output_directory", "") or os.path.expanduser("~")
+            os.path.expanduser("~")
         )
 
         if folder:

@@ -2,7 +2,7 @@ from Scripts.settings import Settings
 
 settings = Settings()
 
-INCLUDE_BETA = settings.get("include_beta_versions", False)
+INCLUDE_BETA = settings.get_include_beta_versions()
 
 class macOSVersionInfo:
     def __init__(self, name, macos_version, release_status = "final"):

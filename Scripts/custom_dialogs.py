@@ -1,10 +1,42 @@
 from typing import Union, List, Optional, Dict, Any
 import re
-from PyQt6.QtCore import Qt
+import functools
+from PyQt6.QtCore import Qt, QObject, QThread, QMetaObject, QCoreApplication, pyqtSlot
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QRadioButton, QButtonGroup, QVBoxLayout, QCheckBox, QScrollArea, QLabel
 from qfluentwidgets import MessageBoxBase, SubtitleLabel, BodyLabel, LineEdit, PushButton
 
 from Scripts.datasets import os_data
+
+class ThreadRunner(QObject):
+    def __init__(self, func, *args, **kwargs):
+        super().__init__()
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.result = None
+        self.exception = None
+
+    @pyqtSlot()
+    def run(self):
+        try:
+            self.result = self.func(*self.args, **self.kwargs)
+        except Exception as e:
+            self.exception = e
+
+def ensure_main_thread(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if QThread.currentThread() == QCoreApplication.instance().thread():
+            return func(*args, **kwargs)
+        
+        runner = ThreadRunner(func, *args, **kwargs)
+        runner.moveToThread(QCoreApplication.instance().thread())
+        QMetaObject.invokeMethod(runner, "run", Qt.ConnectionType.BlockingQueuedConnection)
+        
+        if runner.exception:
+            raise runner.exception
+        return runner.result
+    return wrapper
 
 class CustomMessageDialog(MessageBoxBase):
     def __init__(self, title: str, content: str, parent=None):
@@ -137,16 +169,19 @@ class CustomMessageDialog(MessageBoxBase):
         self.cancelButton.setText(no_text)
         self.cancelButton.setVisible(show_cancel)
 
+@ensure_main_thread
 def show_info(title: str, content: str, parent=None) -> None:
     dialog = CustomMessageDialog(title, content, parent)
     dialog.configure_buttons(yes_text="OK", show_cancel=False)
     dialog.exec()
 
+@ensure_main_thread
 def show_confirmation(title: str, content: str, parent=None, yes_text="Yes", no_text="No") -> bool:
     dialog = CustomMessageDialog(title, content, parent)
     dialog.configure_buttons(yes_text=yes_text, no_text=no_text, show_cancel=True)
     return dialog.exec()
 
+@ensure_main_thread
 def show_options_dialog(title: str, content: str, options: List[str], default_index: int = 0, parent=None) -> Optional[int]:
     dialog = CustomMessageDialog(title, content, parent)
     dialog.add_radio_options(options, default_index)
@@ -156,6 +191,7 @@ def show_options_dialog(title: str, content: str, options: List[str], default_in
         return dialog.button_group.checkedId()
     return None
 
+@ensure_main_thread
 def show_checklist_dialog(title: str, content: str, items: List[Union[str, Dict[str, Any]]], checked_indices: List[int] = None, parent=None) -> Optional[List[int]]:
     dialog = CustomMessageDialog(title, content, parent)
     checkboxes = dialog.add_checklist(items, checked_indices)
@@ -165,6 +201,7 @@ def show_checklist_dialog(title: str, content: str, items: List[Union[str, Dict[
         return [i for i, cb in enumerate(checkboxes) if cb.isChecked()]
     return None
 
+@ensure_main_thread
 def ask_network_count(total_networks: int, parent=None) -> Union[int, str]:
     content = (
         f"Found {total_networks} WiFi networks on this device.<br><br>"
@@ -302,8 +339,8 @@ def show_smbios_selection_dialog(title: str, content: str, items: List[Dict[str,
                 
         for w in item_widgets:
             if w['category_label']:
-                 w['category_label'].setVisible(w['item'].get('category') in visible_categories)
-                 
+                w['category_label'].setVisible(w['item'].get('category') in visible_categories)
+
     show_all_cb.stateChanged.connect(update_visibility)
     
     def restore_default():
@@ -340,8 +377,8 @@ def show_macos_version_dialog(native_macos_version, ocl_patched_macos_version, s
     
     native_min = int(native_macos_version[0][:2])
     native_max = int(native_macos_version[-1][:2])
-    oclp_min = int(ocl_patched_macos_version[-1][:2]) if ocl_patched_macos_version else native_min
-    oclp_max = int(ocl_patched_macos_version[0][:2]) if ocl_patched_macos_version else native_max
+    oclp_min = int(ocl_patched_macos_version[-1][:2]) if ocl_patched_macos_version else 99
+    oclp_max = int(ocl_patched_macos_version[0][:2]) if ocl_patched_macos_version else 0
     min_version = min(native_min, oclp_min)
     max_version = max(native_max, oclp_max)
 
@@ -353,7 +390,7 @@ def show_macos_version_dialog(native_macos_version, ocl_patched_macos_version, s
         
         label = ""
         if oclp_min <= darwin_version <= oclp_max:
-             label = " <i style='color: #FF8C00'>(Requires OpenCore Legacy Patcher)</i>"
+            label = " <i style='color: #FF8C00'>(Requires OpenCore Legacy Patcher)</i>"
         
         options.append("<span>{}{}</span>".format(name, label))
         version_values.append(darwin_version)

@@ -14,11 +14,11 @@ import platform
 os_name = platform.system()
 
 class SMBIOS:
-    def __init__(self):
-        self.g = gathering_files.gatheringFiles()
-        self.run = run.Run().run
-        self.utils = utils.Utils()
-        self.settings = settings.Settings()
+    def __init__(self, gathering_files_instance=None, run_instance=None, utils_instance=None, settings_instance=None):
+        self.g = gathering_files_instance if gathering_files_instance else gathering_files.gatheringFiles()
+        self.run = run_instance.run if run_instance else run.Run().run
+        self.utils = utils_instance if utils_instance else utils.Utils()
+        self.settings = settings_instance if settings_instance else settings.Settings()
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
 
     def check_macserial(self, retry_count=0):

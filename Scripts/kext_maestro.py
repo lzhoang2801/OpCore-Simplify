@@ -17,8 +17,8 @@ except NameError:
 from Scripts.custom_dialogs import show_options_dialog, show_info, show_confirmation, show_checklist_dialog
 
 class KextMaestro:
-    def __init__(self):
-        self.utils = utils.Utils()
+    def __init__(self, utils_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
         self.matching_keys = [
             "IOPCIMatch", 
             "IONameMatch", 

@@ -13,11 +13,11 @@ from Scripts.custom_dialogs import show_options_dialog
 import random
 
 class ConfigProdigy:
-    def __init__(self):
-        self.g = gathering_files.gatheringFiles()
-        self.settings = settings.Settings()
-        self.smbios = smbios.SMBIOS()
-        self.utils = utils.Utils()
+    def __init__(self, gathering_files_instance=None, settings_instance=None, smbios_instance=None, utils_instance=None):
+        self.g = gathering_files_instance if gathering_files_instance else gathering_files.gatheringFiles()
+        self.settings = settings_instance if settings_instance else settings.Settings()
+        self.smbios = smbios_instance if smbios_instance else smbios.SMBIOS()
+        self.utils = utils_instance if utils_instance else utils.Utils()
         self.cpuids = {
             "Ivy Bridge": "A9060300",
             "Haswell": "C3060300",
@@ -279,17 +279,11 @@ class ConfigProdigy:
         default_index = 0
         
         for i, layout in enumerate(available_layouts):
-            options.append(f"ID: {layout.id} - {layout.comment}")
+            options.append("{} - {}".format(layout.id, layout.comment))
             if layout == default_layout:
                 default_index = i
                 
-        content = (
-            "<b>Note:</b>"
-            "<ul>"
-            "<li>The default layout may not be optimal.</li>"
-            "<li>Test different layouts to find what works best for your system.</li>"
-            "</ul>"
-        )
+        content = "For best audio quality, please try multiple layouts to determine which works best with your hardware in post-install."
         
         selected_index = show_options_dialog(
             title="Choosing Codec Layout ID",
@@ -503,12 +497,11 @@ class ConfigProdigy:
     def boot_args(self, hardware_report, macos_version, needs_oclp, kexts, config):
         boot_args = []
 
-        if self.settings.get("verbose_boot"):
+        if self.settings.get_verbose_boot():
             boot_args.extend(("-v", "debug=0x100", "keepsyms=1"))
 
-        if self.settings.get("custom_boot_args"):
-            for arg in self.settings.get("custom_boot_args").split(" "):
-                boot_args.append(arg)
+        if self.settings.get_custom_boot_args():
+            boot_args.append(self.settings.get_custom_boot_args())
 
         if needs_oclp and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
             boot_args.append("amfi=0x80")
@@ -579,7 +572,7 @@ class ConfigProdigy:
         return " ".join(boot_args)
     
     def csr_active_config(self, macos_version):
-        if not self.settings.get("disable_sip"):
+        if not self.settings.get_disable_sip():
             return "00000000"
 
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
@@ -677,11 +670,11 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[4:20]
 
         config["Misc"]["BlessOverride"] = []
-        config["Misc"]["Boot"]["HideAuxiliary"] = self.settings.get("hide_auxiliary", False)
+        config["Misc"]["Boot"]["HideAuxiliary"] = self.settings.get_hide_auxiliary()
         config["Misc"]["Boot"]["PickerMode"] = self.settings.get("picker_mode", "Builtin" if hardware_report.get("BIOS").get("Firmware Type") != "UEFI" else "External")
-        config["Misc"]["Boot"]["PickerVariant"] = self.settings.get("picker_variant", "Auto")
-        config["Misc"]["Boot"]["ShowPicker"] = self.settings.get("show_picker", True)
-        config["Misc"]["Boot"]["Timeout"] = self.settings.get("picker_timeout", 5)
+        config["Misc"]["Boot"]["PickerVariant"] = self.settings.get_picker_variant()
+        config["Misc"]["Boot"]["ShowPicker"] = self.settings.get_show_picker()
+        config["Misc"]["Boot"]["Timeout"] = self.settings.get_picker_timeout()
         config["Misc"]["Debug"]["AppleDebug"] = config["Misc"]["Debug"]["ApplePanic"] = False
         config["Misc"]["Debug"]["DisableWatchDog"] = True
         config["Misc"]["Entries"] = []

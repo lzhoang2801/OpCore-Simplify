@@ -1,7 +1,3 @@
-"""
-Step 4: Build EFI - allows users to build their customized OpenCore EFI.
-"""
-
 import platform
 
 from PyQt6.QtCore import Qt
@@ -9,21 +5,17 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from qfluentwidgets import (
     SubtitleLabel, BodyLabel, CardWidget, TextEdit,
     StrongBodyLabel, ProgressBar, PrimaryPushButton, FluentIcon,
-    ScrollArea, InfoBar, InfoBarPosition, TitleLabel
+    ScrollArea, TitleLabel
 )
 
 from Scripts.styles import COLORS, SPACING, RADIUS
-from Scripts import utils
+from Scripts import ui_utils
 from Scripts.custom_dialogs import show_confirmation
 
-# Constants for build log formatting
-LOG_SEPARATOR = "═" * 60
 DEFAULT_LOG_TEXT = "Build log will appear here..."
 
 
 class BuildPage(ScrollArea):
-    """Step 4: Build OpenCore EFI with enhanced UI/UX."""
-
     def __init__(self, parent):
         super().__init__(parent)
         self.setObjectName("buildPage")
@@ -32,28 +24,22 @@ class BuildPage(ScrollArea):
         self.expandLayout = QVBoxLayout(self.scrollWidget)
         self.build_in_progress = False
         self.build_successful = False
-        self.utils = utils.Utils()
-        self.setup_ui()
+        self.ui_utils = ui_utils.UIUtils()
+        self.page()
 
-    def setup_ui(self):
-        """Setup the build page UI with improved qfluentwidgets components."""
-        # Configure scroll area
+    def page(self):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         self.enableTransparentBackground()
 
-        # Set layout spacing and margins
-        self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'],
-                                             SPACING['xxlarge'], SPACING['xlarge'])
+        self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.expandLayout.setSpacing(SPACING['xlarge'])
 
         layout = self.expandLayout
 
-        # Step indicator with title
-        layout.addWidget(self.utils.create_step_indicator(4))
+        layout.addWidget(self.ui_utils.create_step_indicator(4))
 
-        # Title section with better typography
         title_label = TitleLabel("Build OpenCore EFI")
         layout.addWidget(title_label)
 
@@ -63,53 +49,57 @@ class BuildPage(ScrollArea):
 
         layout.addSpacing(SPACING['medium'])
 
-        # Build instructions card using simple CardWidget
-        instructions_card = CardWidget(self.scrollWidget)
-        instructions_card.setBorderRadius(RADIUS['card'])
-        instructions_card_layout = QVBoxLayout(instructions_card)
-        instructions_card_layout.setContentsMargins(SPACING['large'], SPACING['large'], 
-                                                    SPACING['large'], SPACING['large'])
-        instructions_card_layout.setSpacing(SPACING['medium'])
+        self.instructions_after_build_card = CardWidget(self.scrollWidget)
         
-        # Card header with icon
-        header_layout = QHBoxLayout()
-        header_layout.setSpacing(SPACING['medium'])
-        instructions_icon = self.utils.build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=28)
-        header_layout.addWidget(instructions_icon)
-        
-        header_title = SubtitleLabel("Before You Build")
-        header_title.setStyleSheet(f"color: {COLORS['text_primary']}; font-weight: 600;")
-        header_layout.addWidget(header_title)
-        header_layout.addStretch()
-        instructions_card_layout.addLayout(header_layout)
-        
-        # Instructions content
-        instructions_text = BodyLabel(
-            "The build process will:\n\n"
-            "• Download the latest OpenCore bootloader and required kexts\n"
-            "• Apply your customized ACPI patches and configurations\n"
-            "• Generate a complete EFI folder ready for installation\n\n"
-            "⏱️ This process typically takes 2-5 minutes depending on your internet connection.\n"
-            "📊 Progress will be shown below with real-time status updates."
-        )
-        instructions_text.setWordWrap(True)
-        instructions_text.setStyleSheet(f"color: {COLORS['text_secondary']}; line-height: 1.9; font-size: 14px;")
-        instructions_card_layout.addWidget(instructions_text)
-        
-        layout.addWidget(instructions_card)
+        self.instructions_after_build_card.setStyleSheet(f"""
+            CardWidget {{
+                background-color: {COLORS['warning_bg']};
+                border: 1px solid rgba(245, 124, 0, 0.25);
+                border-radius: {RADIUS['card']}px;
+            }}
+        """)
+        instructions_after_layout = QHBoxLayout(self.instructions_after_build_card)
+        instructions_after_layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
+        instructions_after_layout.setSpacing(SPACING['large'])
 
-        # Build control card using simple CardWidget
+        warning_icon = self.ui_utils.build_icon_label(FluentIcon.MEGAPHONE, COLORS['warning_text'], size=40)
+        instructions_after_layout.addWidget(warning_icon, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        warning_text_layout = QVBoxLayout()
+        warning_text_layout.setSpacing(SPACING['small'])
+
+        warning_title = StrongBodyLabel("Before Using Your EFI")
+        warning_title.setStyleSheet("color: {}; font-size: 16px;".format(COLORS['warning_text']))
+        warning_text_layout.addWidget(warning_title)
+
+        instructions_after_intro = BodyLabel(
+            "Please complete these important steps before using the built EFI:"
+        )
+        instructions_after_intro.setWordWrap(True)
+        instructions_after_intro.setStyleSheet("color: #424242; line-height: 1.6;")
+        warning_text_layout.addWidget(instructions_after_intro)
+        
+        self.instructions_after_content = QWidget()
+        self.instructions_after_content_layout = QVBoxLayout(self.instructions_after_content)
+        self.instructions_after_content_layout.setContentsMargins(0, 0, 0, 0)
+        self.instructions_after_content_layout.setSpacing(SPACING['medium'])
+        warning_text_layout.addWidget(self.instructions_after_content)
+
+        instructions_after_layout.addLayout(warning_text_layout)
+        
+        self.instructions_after_build_card.setVisible(False)
+        layout.addWidget(self.instructions_after_build_card)
+
         build_control_card = CardWidget(self.scrollWidget)
         build_control_card.setBorderRadius(RADIUS['card'])
         build_control_layout = QVBoxLayout(build_control_card)
         build_control_layout.setContentsMargins(SPACING['large'], SPACING['large'],
                                                SPACING['large'], SPACING['large'])
-        build_control_layout.setSpacing(SPACING['large'])
+        build_control_layout.setSpacing(SPACING['xlarge'])
         
-        # Card header
         control_header_layout = QHBoxLayout()
         control_header_layout.setSpacing(SPACING['medium'])
-        control_icon = self.utils.build_icon_label(FluentIcon.DEVELOPER_TOOLS, COLORS['primary'], size=28)
+        control_icon = self.ui_utils.build_icon_label(FluentIcon.DEVELOPER_TOOLS, COLORS['primary'], size=28)
         control_header_layout.addWidget(control_icon)
         
         control_title = SubtitleLabel("Build Control")
@@ -118,25 +108,31 @@ class BuildPage(ScrollArea):
         control_header_layout.addStretch()
         build_control_layout.addLayout(control_header_layout)
 
-        # Build button - FULL WIDTH
+        action_section = QWidget()
+        action_layout = QVBoxLayout(action_section)
+        action_layout.setContentsMargins(0, 0, 0, 0)
+        action_layout.setSpacing(SPACING['medium'])
+
         self.build_btn = PrimaryPushButton(FluentIcon.DEVELOPER_TOOLS, "Build OpenCore EFI")
         self.build_btn.clicked.connect(self.start_build)
         self.build_btn.setFixedHeight(48)
         self.controller.build_btn = self.build_btn
-        build_control_layout.addWidget(self.build_btn)
-        
-        build_hint = BodyLabel("Click to start building your customized EFI")
-        build_hint.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 12px;")
-        build_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        build_control_layout.addWidget(build_hint)
+        action_layout.addWidget(self.build_btn)
 
-        # Progress section (initially hidden) - FULL WIDTH
+        self.open_result_btn = PrimaryPushButton(FluentIcon.FOLDER, "Open Result Folder")
+        self.open_result_btn.clicked.connect(self.open_result)
+        self.open_result_btn.setFixedHeight(48)
+        self.open_result_btn.setEnabled(False)
+        self.controller.open_result_btn = self.open_result_btn
+        action_layout.addWidget(self.open_result_btn)
+        
+        build_control_layout.addWidget(action_section)
+
         self.progress_container = QWidget()
         progress_layout = QVBoxLayout(self.progress_container)
-        progress_layout.setContentsMargins(0, SPACING['medium'], 0, 0)
+        progress_layout.setContentsMargins(0, 0, 0, 0)
         progress_layout.setSpacing(SPACING['medium'])
 
-        # Progress status with larger, more visible icon
         status_row = QHBoxLayout()
         status_row.setSpacing(SPACING['medium'])
         
@@ -151,7 +147,6 @@ class BuildPage(ScrollArea):
         
         progress_layout.addLayout(status_row)
 
-        # Progress bar with better visibility - FULL WIDTH
         self.progress_bar = ProgressBar()
         self.progress_bar.setValue(0)
         self.progress_bar.setFixedHeight(10)
@@ -165,7 +160,6 @@ class BuildPage(ScrollArea):
         build_control_layout.addWidget(self.progress_container)
         layout.addWidget(build_control_card)
 
-        # Build log card using simple CardWidget - FULL WIDTH
         log_card = CardWidget(self.scrollWidget)
         log_card.setBorderRadius(RADIUS['card'])
         log_card_layout = QVBoxLayout(log_card)
@@ -173,10 +167,9 @@ class BuildPage(ScrollArea):
                                           SPACING['large'], SPACING['large'])
         log_card_layout.setSpacing(SPACING['medium'])
         
-        # Card header
         log_header_layout = QHBoxLayout()
         log_header_layout.setSpacing(SPACING['medium'])
-        log_icon = self.utils.build_icon_label(FluentIcon.DOCUMENT, COLORS['primary'], size=28)
+        log_icon = self.ui_utils.build_icon_label(FluentIcon.DOCUMENT, COLORS['primary'], size=28)
         log_header_layout.addWidget(log_icon)
         
         log_title = SubtitleLabel("Build Log")
@@ -189,7 +182,6 @@ class BuildPage(ScrollArea):
         log_description.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 13px;")
         log_card_layout.addWidget(log_description)
 
-        # Build log text area - FULL WIDTH
         self.build_log = TextEdit()
         self.build_log.setReadOnly(True)
         self.build_log.setPlainText(DEFAULT_LOG_TEXT)
@@ -210,176 +202,53 @@ class BuildPage(ScrollArea):
         
         layout.addWidget(log_card)
 
-        # Success card using simple CardWidget (initially hidden)
-        self.success_card = CardWidget(self.scrollWidget)
-        self.success_card.setBorderRadius(RADIUS['card'])
-        success_card_layout = QVBoxLayout(self.success_card)
-        success_card_layout.setContentsMargins(SPACING['large'], SPACING['large'],
-                                              SPACING['large'], SPACING['large'])
-        success_card_layout.setSpacing(SPACING['medium'])
-        
-        # Success styling
-        self.success_card.setStyleSheet(f"""
-            CardWidget {{
-                background-color: {COLORS['success_bg']};
-                border: 2px solid {COLORS['success']};
-            }}
-        """)
-        
-        # Card header
-        success_header_layout = QHBoxLayout()
-        success_header_layout.setSpacing(SPACING['medium'])
-        success_icon = self.utils.build_icon_label(FluentIcon.COMPLETED, COLORS['success'], size=32)
-        success_header_layout.addWidget(success_icon)
-        
-        success_title = SubtitleLabel("Build Completed Successfully!")
-        success_title.setStyleSheet(f"color: {COLORS['success']}; font-weight: 600;")
-        success_header_layout.addWidget(success_title)
-        success_header_layout.addStretch()
-        success_card_layout.addLayout(success_header_layout)
-        
-        # Success content
-        success_message = BodyLabel(
-            "🎉 Your OpenCore EFI has been built successfully!\n\n"
-            "The EFI folder is ready for installation. You can now:\n"
-            "• Open the result folder to view your EFI\n"
-            "• Review the post-build instructions below\n"
-            "• Copy the EFI to your USB drive or EFI partition"
-        )
-        success_message.setWordWrap(True)
-        success_message.setStyleSheet(f"color: {COLORS['text_secondary']}; line-height: 1.9; font-size: 14px;")
-        success_card_layout.addWidget(success_message)
-
-        # Action button - FULL WIDTH
-        self.open_result_btn = PrimaryPushButton(FluentIcon.FOLDER, "Open Result Folder")
-        self.open_result_btn.clicked.connect(self.open_result)
-        self.open_result_btn.setFixedHeight(44)
-        success_card_layout.addWidget(self.open_result_btn)
-        
-        self.controller.open_result_btn = self.open_result_btn
-        
-        self.success_card.setVisible(False)
-        layout.addWidget(self.success_card)
-
-        # Post-build instructions card using simple CardWidget (initially hidden)
-        self.instructions_after_build_card = CardWidget(self.scrollWidget)
-        self.instructions_after_build_card.setBorderRadius(RADIUS['card'])
-        instructions_after_layout = QVBoxLayout(self.instructions_after_build_card)
-        instructions_after_layout.setContentsMargins(SPACING['large'], SPACING['large'],
-                                                     SPACING['large'], SPACING['large'])
-        instructions_after_layout.setSpacing(SPACING['medium'])
-        
-        # Warning styling
-        self.instructions_after_build_card.setStyleSheet(f"""
-            CardWidget {{
-                background-color: {COLORS['warning_bg']};
-                border: 2px solid {COLORS['warning']};
-            }}
-        """)
-        
-        # Card header
-        warning_header_layout = QHBoxLayout()
-        warning_header_layout.setSpacing(SPACING['medium'])
-        warning_icon = self.utils.build_icon_label(FluentIcon.MEGAPHONE, COLORS['warning_text'], size=32)
-        warning_header_layout.addWidget(warning_icon)
-        
-        warning_title = SubtitleLabel("Important: Before Using Your EFI")
-        warning_title.setStyleSheet(f"color: {COLORS['warning_text']}; font-weight: 600;")
-        warning_header_layout.addWidget(warning_title)
-        warning_header_layout.addStretch()
-        instructions_after_layout.addLayout(warning_header_layout)
-        
-        instructions_after_intro = BodyLabel(
-            "Please complete these important steps before using the built EFI:"
-        )
-        instructions_after_intro.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 14px;")
-        instructions_after_layout.addWidget(instructions_after_intro)
-        
-        # Content area for requirements (will be populated dynamically)
-        self.instructions_after_content = QWidget()
-        self.instructions_after_content_layout = QVBoxLayout(self.instructions_after_content)
-        self.instructions_after_content_layout.setContentsMargins(0, 0, 0, 0)
-        self.instructions_after_content_layout.setSpacing(SPACING['medium'])
-        instructions_after_layout.addWidget(self.instructions_after_content)
-        
-        self.instructions_after_build_card.setVisible(False)
-        layout.addWidget(self.instructions_after_build_card)
-
         layout.addStretch()
 
     def start_build(self):
-        """Start building EFI with enhanced UI feedback"""
-        # Check if hardware report is loaded
         if not self.controller.hardware_state.hardware_report:
-            InfoBar.warning(
-                title='Hardware Report Required',
-                content='Please load a hardware report before building.',
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP_RIGHT,
-                duration=5000,
-                parent=self
-            )
+            self.controller.update_status("Please select hardware report first", 'warning')
+            return
+
+        if self.controller.hardware_state.compatibility_error:
+            self.controller.update_status("Incompatible hardware detected, please select different hardware report and try again", 'warning')
+            return
+
+        if not self.controller.macos_state.darwin_version:
+            self.controller.update_status("Please select target macOS version first", 'warning')
             return
 
         if self.controller.macos_state.needs_oclp:
             content = (
-                "<p>1. OpenCore Legacy Patcher is the only solution to enable dropped GPU and Broadcom WiFi<br>"
-                "support in newer macOS versions, as well as to bring back AppleHDA for macOS Tahoe 26.</p>"
-                "<p>2. OpenCore Legacy Patcher disables macOS security features including SIP and AMFI, which may <br>"
-                "lead to issues such as requiring full installers for updates, application crashes, and<br>"
-                "system instability.</p>"
-                "<p>3. OpenCore Legacy Patcher is not officially supported for Hackintosh community.</p>"
-                "<p><b><font color='{error_color}'>Important:</font></b><br>"
-                "Please consider these risks carefully before proceeding.</p>"
-                "<p><b><font color='{info_color}'>Support for macOS Tahoe 26:</font></b><br>"
-                "To patch macOS Tahoe 26, you must download OpenCore-Patcher 3.0.0 or newer from<br>"
-                "my repository: <a href='https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0'>lzhoang2801/OpenCore-Legacy-Patcher</a> on GitHub.<br>"
-                "Official Dortania releases or older patches will NOT work with macOS Tahoe 26.</p>"
+                "1. OpenCore Legacy Patcher allows restoring support for dropped GPUs and Broadcom WiFi on newer versions of macOS, and also enables AppleHDA on macOS Tahoe 26.<br>"
+                "2. OpenCore Legacy Patcher needs SIP disabled for applying custom kernel patches, which can cause instability, security risks and update issues.<br>"
+                "3. OpenCore Legacy Patcher does not officially support the Hackintosh community.<br><br>"
+                "<b><font color='{info_color}'>Support for macOS Tahoe 26:</font></b><br>"
+                "To patch macOS Tahoe 26, you must download OpenCore-Patcher 3.0.0 or newer from my repository: <a href='https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0'>lzhoang2801/OpenCore-Legacy-Patcher</a>.<br>"
+                "Official Dortania releases or older patches will NOT work with macOS Tahoe 26."
             ).format(error_color=COLORS['error'], info_color='#00BCD4')
             if not show_confirmation("OpenCore Legacy Patcher Warning", content, parent=self.window()):
                 return
 
-        # Update UI state for build in progress
         self.build_in_progress = True
         self.build_successful = False
         self.build_btn.setEnabled(False)
         self.build_btn.setText("Building...")
+        self.open_result_btn.setEnabled(False)
         
-        # Show and reset progress
         self.progress_container.setVisible(True)
         self.progress_bar.setValue(0)
         
-        # Update status with icon
         self.update_status_icon("building")
         self.progress_label.setText("Preparing to build...")
         self.progress_label.setStyleSheet(f"color: {COLORS['primary']};")
         
-        # Hide success card and clear log
-        self.success_card.setVisible(False)
         self.instructions_after_build_card.setVisible(False)
         self.build_log.clear()
         
-        # Log start with enhanced header
-        self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
-        self.controller.log_message("🚀 OpenCore EFI Build Started", to_build_log=True)
-        self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
-        self.controller.log_message("", to_build_log=True)
-        
-        # Log build configuration
-        self.controller.log_message("Build Configuration:", to_build_log=True)
-        self.controller.log_message(f"  • macOS Version: {self.controller.macos_state.macos_version_name}", to_build_log=True)
-        self.controller.log_message(f"  • SMBIOS Model: {self.controller.smbios_state.model_name}", to_build_log=True)
-        if self.controller.macos_state.needs_oclp:
-            self.controller.log_message(f"  • OpenCore Legacy Patcher: Required", to_build_log=True)
-        self.controller.log_message("", to_build_log=True)
-
-        # Call controller build method
         self.controller.build_efi()
 
     def update_status_icon(self, status):
-        """Update status icon based on build state with improved visibility"""
-        icon_size = 28  # Increased size for better visibility
+        icon_size = 28
         icon_map = {
             "building": (FluentIcon.SYNC, COLORS['primary']),
             "success": (FluentIcon.COMPLETED, COLORS['success']),
@@ -405,7 +274,7 @@ class BuildPage(ScrollArea):
             bios_text = "\n".join([f"  • {req}" for req in bios_requirements])
             bios_label = BodyLabel(bios_text)
             bios_label.setWordWrap(True)
-            bios_label.setStyleSheet(f"color: {COLORS['text_secondary']}; margin-left: 10px;")
+            bios_label.setStyleSheet("color: #424242; line-height: 1.6;")
             self.instructions_after_content_layout.addWidget(bios_label)
             
             self.instructions_after_content_layout.addSpacing(SPACING['medium'])
@@ -417,131 +286,68 @@ class BuildPage(ScrollArea):
         path_sep = "\\" if platform.system() == "Windows" else "/"
         
         usb_mapping_instructions = (
-            "1. Use USBToolBox tool to map USB ports<br>",
-            "2. Add created UTBMap.kext into the EFI\\OC\\Kexts folder<br>"
-            "3. Remove UTBDefault.kext from the EFI\\OC\\Kexts folder<br>"
-            "4. Edit config.plist using ProperTree:",
-            "   a. Run OC Snapshot (Command/Ctrl + R)",
-            "   b. Enable XhciPortLimit quirk if you have more than 15 ports per controller",
+            "1. Use USBToolBox tool to map USB ports<br>"
+            "2. Add created UTBMap.kext into the EFI{path_sep}OC{path_sep}Kexts folder<br>"
+            "3. Remove UTBDefault.kext from the EFI{path_sep}OC{path_sep}Kexts folder<br>"
+            "4. Edit config.plist using ProperTree:<br>"
+            "   a. Run OC Snapshot (Command/Ctrl + R)<br>"
+            "   b. Enable XhciPortLimit quirk if you have more than 15 ports per controller<br>"
             "   c. Save the file when finished."
-        ).replace(path_sep)
+        ).format(path_sep=path_sep)
         
         usb_label = BodyLabel(usb_mapping_instructions)
         usb_label.setWordWrap(True)
-        usb_label.setStyleSheet(f"color: {COLORS['text_secondary']}; margin-left: 10px;")
+        usb_label.setStyleSheet("color: #424242; line-height: 1.6;")
         self.instructions_after_content_layout.addWidget(usb_label)
         
-        # Show the card
         self.instructions_after_build_card.setVisible(True)
 
     def on_build_complete(self, success=True, bios_requirements=None):
-        """Handle build completion with enhanced feedback"""
         self.build_in_progress = False
         self.build_successful = success
         
         if success:
-            # Success state
             self.update_status_icon("success")
             self.progress_label.setText("✓ Build completed successfully!")
             self.progress_label.setStyleSheet(f"color: {COLORS['success']};")
             self.progress_bar.setValue(100)
             
-            # Show success card
-            self.success_card.setVisible(True)
+            self.show_post_build_instructions(bios_requirements)
             
-            # Show post-build instructions if we have requirements
-            if bios_requirements is not None:
-                self.show_post_build_instructions(bios_requirements)
-            
-            # Reset build button
             self.build_btn.setText("Build OpenCore EFI")
             self.build_btn.setEnabled(True)
+            self.open_result_btn.setEnabled(True)
             
-            # Log completion
-            self.controller.log_message("", to_build_log=True)
-            self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
-            self.controller.log_message("✓ Build Completed Successfully!", to_build_log=True)
-            self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
-            
-            # Show success notification
             success_message = 'Your OpenCore EFI has been built successfully!'
             if bios_requirements is not None:
                 success_message += ' Review the important instructions below.'
             
-            InfoBar.success(
-                title='Build Complete',
-                content=success_message,
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP_RIGHT,
-                duration=5000,
-                parent=self
-            )
+            self.controller.update_status(success_message, 'success')
         else:
-            # Error state
             self.update_status_icon("error")
-            self.progress_label.setText("✗ Build failed - see log for details")
+            self.progress_label.setText("Build OpenCore EFI failed")
             self.progress_label.setStyleSheet(f"color: {COLORS['error']};")
             
-            # Reset build button
-            self.build_btn.setText("Retry Build")
+            self.build_btn.setText("Retry Build OpenCore EFI")
             self.build_btn.setEnabled(True)
+            self.open_result_btn.setEnabled(False)
             
-            # Hide success card
-            self.success_card.setVisible(False)
-            
-            # Log error
-            self.controller.log_message("", to_build_log=True)
-            self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
-            self.controller.log_message("✗ Build Failed", to_build_log=True)
-            self.controller.log_message(LOG_SEPARATOR, to_build_log=True)
-            
-            # Show error notification
-            InfoBar.error(
-                title='Build Failed',
-                content='An error occurred during the build. Check the log for details.',
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP_RIGHT,
-                duration=5000,
-                parent=self
-            )
+            self.controller.update_status("An error occurred during the build. Check the log for details.", 'error')
 
     def open_result(self):
-        """Open result folder"""
-        import os
-        import subprocess
-        import platform
-
-        result_dir = self.controller.ocpe.result_dir
-        if os.path.exists(result_dir):
-            if platform.system() == "Windows":
-                os.startfile(result_dir)
-            elif platform.system() == "Darwin":
-                subprocess.Popen(["open", result_dir])
-            else:
-                subprocess.Popen(["xdg-open", result_dir])
-        else:
-            InfoBar.warning(
-                title='Folder Not Found',
-                content='The result folder does not exist yet.',
-                orient=Qt.Orientation.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP_RIGHT,
-                duration=3000,
-                parent=self
-            )
+        result_dir = self.controller.backend.result_dir
+        try:
+            self.controller.backend.u.open_folder(result_dir)
+        except Exception as e:
+            self.controller.update_status("Failed to open result folder: {}".format(e), 'warning')
 
     def refresh(self):
-        """Refresh page content"""
-        # Reset UI state if not building
         if not self.build_in_progress:
             if self.build_successful:
-                self.success_card.setVisible(True)
                 self.progress_container.setVisible(True)
+                self.open_result_btn.setEnabled(True)
             else:
-                self.success_card.setVisible(False)
-                # Check if log has meaningful content
                 log_text = self.build_log.toPlainText()
                 if not log_text or log_text == DEFAULT_LOG_TEXT:
                     self.progress_container.setVisible(False)
+                self.open_result_btn.setEnabled(False)

@@ -7,9 +7,9 @@ import json
 os_name = platform.system()
 
 class WifiProfileExtractor:
-    def __init__(self):
-        self.run = run.Run().run
-        self.utils = utils.Utils()
+    def __init__(self, run_instance=None, utils_instance=None):
+        self.run = run_instance.run if run_instance else run.Run().run
+        self.utils = utils_instance if utils_instance else utils.Utils()
 
     def get_authentication_type(self, authentication_type):
         authentication_type = authentication_type.lower()
