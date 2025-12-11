@@ -1,14 +1,14 @@
 from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QFrame, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
 from qfluentwidgets import (
     PushButton, SubtitleLabel, BodyLabel, CardWidget, FluentIcon, 
     StrongBodyLabel, PrimaryPushButton, ProgressBar,
-    InfoBar, InfoBarPosition, IconWidget, ExpandGroupSettingCard, SettingCard
+    IconWidget, ExpandGroupSettingCard
 )
 
 from ..styles import SPACING, COLORS, RADIUS
 from ..ui_utils import create_step_indicator, build_icon_label
-from ..custom_dialogs import show_info_dialog, show_question_dialog
+from Scripts.custom_dialogs import show_info, show_confirmation
 from ..state import HardwareReportState, MacOSVersionState, SMBIOSState
 
 import os
@@ -196,7 +196,7 @@ class SelectHardwareReportPage(QWidget):
         progress_layout.addWidget(self.export_label)
         
         self.export_bar = ProgressBar()
-        self.export_bar.setRange(0, 0) # Indeterminate
+        self.export_bar.setRange(0, 0)
         progress_layout.addWidget(self.export_bar)
         
         layout.addWidget(self.export_progress_container)
@@ -227,12 +227,7 @@ class SelectHardwareReportPage(QWidget):
         
         acpi_dir = None
         if os.path.isdir(potential_acpi):
-            if show_question_dialog(
-                self, 
-                "ACPI Folder Detected", 
-                "Found an ACPI folder at: {}\n\nDo you want to use this ACPI folder?".format(potential_acpi),
-                default='yes'
-            ):
+            if show_confirmation("ACPI Folder Detected", "Found an ACPI folder at: {}\n\nDo you want to use this ACPI folder?".format(potential_acpi), self):
                 acpi_dir = potential_acpi
 
         if not acpi_dir:
@@ -261,7 +256,7 @@ class SelectHardwareReportPage(QWidget):
         if not is_valid or errors:
             msg = "Report Errors:\n" + "\n".join(errors)
             self.update_section_status('report', report_path, 'error', msg)
-            show_info_dialog(self, "Report Validation Failed", "The hardware report has errors:\n{}\n\nPlease select a valid report file.".format("\n".join(errors)))
+            show_info("Report Validation Failed", "The hardware report has errors:\n{}\n\nPlease select a valid report file.".format("\n".join(errors)), self)
             return
             
         elif warnings:
@@ -284,14 +279,14 @@ class SelectHardwareReportPage(QWidget):
             if "Compatibility Error" not in current_text:
                 self.update_section_status('report', report_path, 'error', current_text + compat_text)
             
-            show_info_dialog(self, "Incompatible Hardware", "Your hardware is not compatible with macOS:\n\n" + error_msg)
+            show_info("Incompatible Hardware", "Your hardware is not compatible with macOS:\n\n" + error_msg, self)
             return
 
         self.controller.ocpe.ac.read_acpi_tables(acpi_dir)
         
         if not self.controller.ocpe.ac.acpi.acpi_tables:
             self.update_section_status('acpi', acpi_dir, 'error', "No ACPI tables found in selected folder.")
-            show_info_dialog(self, "No ACPI tables", "No ACPI tables found in ACPI folder.")
+            show_info("No ACPI tables", "No ACPI tables found in ACPI folder.", self)
             return
         else:
             count = len(self.controller.ocpe.ac.acpi.acpi_tables)
