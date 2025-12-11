@@ -139,9 +139,9 @@ class WifiProfileExtractor:
                     consecutive_failures += 1 if os_name == "Darwin" else 0
 
                     if consecutive_failures >= max_consecutive_failures:
-                        continue_input = self.utils.request_input("\nUnable to retrieve passwords. Continue trying? (Yes/no): ").strip().lower() or "yes"
+                        result = show_confirmation("WiFi Profile Extractor", "Unable to retrieve passwords. Continue trying?", parent=self.utils.gui_handler)
                         
-                        if continue_input != "yes":
+                        if not result:
                             break
 
                         consecutive_failures = 0
@@ -150,9 +150,9 @@ class WifiProfileExtractor:
                 self.utils.log_gui("[WIFI PROFILE EXTRACTOR] Error processing network \"{}\": {}".format(ssid, str(e)), level="Error", to_build_log=True)
 
                 if consecutive_failures >= max_consecutive_failures:
-                    continue_input = self.utils.request_input("\nUnable to retrieve passwords. Continue trying? (Yes/no): ").strip().lower() or "yes"
-
-                    if continue_input != "yes":
+                    result = show_confirmation("WiFi Profile Extractor", "Unable to retrieve passwords. Continue trying?", parent=self.utils.gui_handler)
+                        
+                    if not result:
                         break
 
                     consecutive_failures = 0
@@ -160,12 +160,11 @@ class WifiProfileExtractor:
                 processed_count += 1
             
             if processed_count >= max_networks and len(networks) < max_networks and processed_count < len(ssid_list):
-                continue_input = self.utils.request_input("\nOnly retrieved {}/{} networks. Try more to reach your target? (Yes/no): ".format(len(networks), max_networks)).strip().lower() or "yes"
-                
-                if continue_input != "yes":
-                    break
 
-                consecutive_failures = 0
+                result = show_confirmation("WiFi Profile Extractor", "Only retrieved {}/{} networks. Try more to reach your target?".format(len(networks), max_networks), parent=self.utils.gui_handler)
+                        
+                if not result:
+                    break
         
         return networks
 

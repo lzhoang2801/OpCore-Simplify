@@ -1,10 +1,7 @@
 from typing import Optional, Tuple, TYPE_CHECKING
-import sys
-import re
-import threading
 
 from PyQt6.QtWidgets import QWidget, QLabel
-from PyQt6.QtCore import Qt, pyqtSignal, QObject
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 from qfluentwidgets import FluentIcon, BodyLabel
 
@@ -78,58 +75,3 @@ def create_vertical_spacer(spacing: int = SPACING['medium']) -> QWidget:
     spacer = QWidget()
     spacer.setFixedHeight(spacing)
     return spacer
-
-
-class ConsoleRedirector(QObject):
-    LEVEL_PATTERN = re.compile(r"\[(info|warning|error|debug)\]", re.IGNORECASE)
-    
-    LEVEL_KEYWORDS = {
-        "Error": ("error", "traceback", "failed"),
-        "Warning": ("warning", "warn"),
-        "Debug": ("debug",),
-    }
-
-    def __init__(self, controller, original_stdout=None, default_level: str = "Info"):
-        super().__init__()
-        self.controller = controller
-        self.original_stdout = original_stdout or sys.__stdout__
-        self.default_level = default_level
-        self._buffer = ""
-
-    def write(self, text: str):
-        if not text:
-            return
-
-        normalized = text.replace('\r', '\n')
-        self._buffer += normalized
-
-        while '\n' in self._buffer:
-            line, self._buffer = self._buffer.split('\n', 1)
-            self._emit_line(line)
-
-        if self.original_stdout:
-            self.original_stdout.write(text)
-
-    def _emit_line(self, line: str):
-        message = line.rstrip('\r')
-        level = self._detect_level(message)
-        self.controller.log_message(message, level, to_build_log=False)
-
-    def _detect_level(self, text: str) -> str:
-        match = self.LEVEL_PATTERN.search(text)
-        if match:
-            return match.group(1).capitalize()
-
-        lowered = text.lower()
-        for level, keywords in self.LEVEL_KEYWORDS.items():
-            if any(keyword in lowered for keyword in keywords):
-                return level
-            
-        return self.default_level
-
-    def flush(self):
-        if self._buffer:
-            self._emit_line(self._buffer)
-            self._buffer = ""
-        if self.original_stdout:
-            self.original_stdout.flush()

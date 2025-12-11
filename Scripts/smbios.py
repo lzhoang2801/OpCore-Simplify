@@ -210,15 +210,8 @@ class SMBIOS:
                 'is_compatible': is_compatible
             })
             
-        content = f"Lines in gray indicate mac models that are not officially supported by {macos_name}."
+        content = "Lines in gray indicate mac models that are not officially supported by {}.".format(macos_name)
         
-        result = show_smbios_selection_dialog(
-            "Customize SMBIOS Model",
-            content,
-            items,
-            selected_smbios_model,
-            default_smbios_model,
-            parent
-        )
+        result = show_smbios_selection_dialog("Customize SMBIOS Model", content, items, selected_smbios_model, default_smbios_model, parent)
         
         return result if result else selected_smbios_model

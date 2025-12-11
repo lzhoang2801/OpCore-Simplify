@@ -230,9 +230,6 @@ class Utils:
         elif os.name == 'nt':
             os.startfile(folder_path)
 
-    def request_input(self, prompt="Press Enter to continue...", gui_type=None, gui_options=None):
-        return self.gui_callback(gui_type, prompt, gui_options)
-
     def progress_bar(self, title, steps, current_step_index, done=False):
         if done:
             progress = 100

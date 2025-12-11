@@ -15,7 +15,6 @@ from .pages import (
     BuildPage, SettingsPage, ConfigEditorPage
 )
 from .styles import COLORS
-from .ui_utils import ConsoleRedirector
 from Scripts.settings import Settings
 
 scripts_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,7 +26,6 @@ WINDOW_DEFAULT_SIZE = (1200, 800)
 
 
 class OpCoreGUI(FluentWindow):
-    gui_prompt_signal = pyqtSignal(str, str, object, object)
     update_status_signal = pyqtSignal(str, str)
     update_build_progress_signal = pyqtSignal(str, list, int, int, bool)
     update_gathering_progress_signal = pyqtSignal(dict)
@@ -80,10 +78,7 @@ class OpCoreGUI(FluentWindow):
         self.progress_label = None
         self.build_log = None
         self.open_result_btn = None
-        self.stdout_redirector = None
-        self.stderr_redirector = None
 
-        self.console_redirected = False
 
     def _setup_window(self):
         self.setWindowTitle("OpCore Simplify")
@@ -103,7 +98,6 @@ class OpCoreGUI(FluentWindow):
         setTheme(theme)
 
     def _connect_signals(self):
-        self.gui_prompt_signal.connect(self._handle_gui_prompt_on_main_thread)
         self.update_status_signal.connect(self.update_status)
         self.update_build_progress_signal.connect(self._update_build_progress_on_main_thread)
         self.update_gathering_progress_signal.connect(self._update_gathering_progress_on_main_thread)
@@ -126,7 +120,7 @@ class OpCoreGUI(FluentWindow):
         
         for utils in utils_instances:
             utils.gui_handler = self
-            utils.gui_callback = self.handle_gui_prompt_threadsafe
+
 
         self.ocpe.u.gui_progress_callback = self.update_build_progress_threadsafe
         self.ocpe.u.gui_gathering_progress_callback = self.update_gathering_progress_threadsafe
@@ -190,20 +184,6 @@ class OpCoreGUI(FluentWindow):
             NavigationItemPosition.BOTTOM
         )
 
-        if not self.console_redirected:
-            self.stdout_redirector = ConsoleRedirector(
-                controller=self,
-                original_stdout=sys.__stdout__,
-                default_level="Info",
-            )
-            self.stderr_redirector = ConsoleRedirector(
-                controller=self,
-                original_stdout=sys.__stderr__,
-                default_level="Error",
-            )
-            sys.stdout = self.stdout_redirector
-            sys.stderr = self.stderr_redirector
-            self.console_redirected = True
 
     def log_message(self, message, level="Info", *, to_build_log=True):
         if threading.current_thread() != threading.main_thread():
@@ -281,81 +261,6 @@ class OpCoreGUI(FluentWindow):
                 duration=3000,
                 parent=self
             )
-
-    def handle_gui_prompt(self, prompt_type, prompt_text, options=None):
-        self.log_message(f"User interaction required ({prompt_type}): {prompt_text}", level="Debug", to_build_log=False)
-        if prompt_type == 'input':
-            text, ok = show_input_dialog(self, "Input Required", prompt_text)
-            if ok:
-                return text
-            return ""
-
-        elif prompt_type == 'choice':
-            if options:
-                title = options.get('title', 'Select Option')
-                message = options.get('message', prompt_text)
-                choices = options.get('choices', [])
-                default = options.get('default', None)
-                warning = options.get('warning', None)
-                note = options.get('note', None)
-
-                value, ok = show_choice_dialog(
-                    self, title, message, choices, default, warning, note)
-                if ok:
-                    return value
-            return None
-
-        elif prompt_type == 'confirm':
-            if options:
-                title = options.get('title', 'Confirmation')
-                message = options.get('message', prompt_text)
-                default = options.get('default', 'no')
-                warning = options.get('warning', None)
-
-                result = show_question_dialog(
-                    self, title, message, default, warning)
-            else:
-                result = show_question_dialog(
-                    self, "Confirmation", prompt_text)
-
-            return "yes" if result else "no"
-
-        elif prompt_type == 'info':
-            if options:
-                title = options.get('title', 'Information')
-                message = options.get('message', prompt_text)
-            else:
-                title = 'Information'
-                message = prompt_text
-
-            return show_info_dialog(self, title, message)
-
-        return None
-
-    def handle_gui_prompt_threadsafe(self, prompt_type, prompt_text, options=None):
-        if threading.current_thread() == threading.main_thread():
-            return self.handle_gui_prompt(prompt_type, prompt_text, options)
-
-        result_holder = {'result': None}
-        event = threading.Event()
-
-        self.gui_prompt_signal.emit(
-            prompt_type, prompt_text, options, (result_holder, event))
-
-        event.wait(timeout=None)
-
-        return result_holder['result']
-
-    def _handle_gui_prompt_on_main_thread(self, prompt_type, prompt_text, options, holder_tuple):
-        result_holder, event = holder_tuple
-        try:
-            result = self.handle_gui_prompt(prompt_type, prompt_text, options)
-            result_holder['result'] = result
-        except Exception as e:
-            print(f"Error in GUI prompt handler: {e}")
-            result_holder['result'] = None
-        finally:
-            event.set()
 
     def suggest_macos_version(self):
         if not self.hardware_state.hardware_report or not self.macos_state.native_version:
