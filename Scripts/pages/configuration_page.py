@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QWheelEvent
 from qfluentwidgets import (
     ScrollArea, SubtitleLabel, BodyLabel, FluentIcon, 
     PushSettingCard, ExpandGroupSettingCard, SpinBox, 
@@ -10,7 +11,6 @@ from qfluentwidgets import (
 from Scripts.custom_dialogs import show_macos_version_dialog
 from Scripts.styles import SPACING, COLORS
 from Scripts import ui_utils
-from Scripts.settings import Settings
 
 
 class PickerGroup(ExpandGroupSettingCard):
@@ -91,6 +91,17 @@ class PickerGroup(ExpandGroupSettingCard):
             self.timeoutSpin
         )
 
+    def wheelEvent(self, event: QWheelEvent):
+        parent = self.parent()
+
+        while parent:
+            if isinstance(parent, ScrollArea):
+                parent.wheelEvent(event)
+                return
+            parent = parent.parent()
+
+        super().wheelEvent(event)
+
 class SecurityConfigGroup(ExpandGroupSettingCard):
     def __init__(self, settings, parent=None):
         super().__init__(
@@ -152,6 +163,16 @@ class SecurityConfigGroup(ExpandGroupSettingCard):
             self.secureBootCombo
         )
 
+    def wheelEvent(self, event: QWheelEvent):
+        parent = self.parent()
+
+        while parent:
+            if isinstance(parent, ScrollArea):
+                parent.wheelEvent(event)
+                return
+            parent = parent.parent()
+
+        super().wheelEvent(event)
 
 class BootArgsGroup(ExpandGroupSettingCard):
     def __init__(self, settings, parent=None):
@@ -191,6 +212,16 @@ class BootArgsGroup(ExpandGroupSettingCard):
             self.customArgsInput
         )
 
+    def wheelEvent(self, event: QWheelEvent):
+        parent = self.parent()
+
+        while parent:
+            if isinstance(parent, ScrollArea):
+                parent.wheelEvent(event)
+                return
+            parent = parent.parent()
+
+        super().wheelEvent(event)
 
 class SMBIOSGroup(ExpandGroupSettingCard):
     def __init__(self, settings, controller, on_select_model, parent=None):
@@ -247,6 +278,17 @@ class SMBIOSGroup(ExpandGroupSettingCard):
             "Maintains the same SMBIOS values across multiple builds for consistency with iCloud and other services", 
             self.preserveSwitch
         )
+
+    def wheelEvent(self, event: QWheelEvent):
+        parent = self.parent()
+
+        while parent:
+            if isinstance(parent, ScrollArea):
+                parent.wheelEvent(event)
+                return
+            parent = parent.parent()
+
+        super().wheelEvent(event)
 
     def update_model(self):
         self.modelLabel.setText(self.controller.smbios_state.model_name)
