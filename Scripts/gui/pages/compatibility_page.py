@@ -269,7 +269,7 @@ class CompatibilityPage(ScrollArea):
         self.update()
 
     def _show_placeholder(self):
-        self.placeholder_label = BodyLabel("Load a hardware report to see compatibility information")
+        self.placeholder_label = BodyLabel("Load hardware report to see compatibility information")
         self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.placeholder_label.setStyleSheet("color: #605E5C; padding: 40px;")
         self.placeholder_label.setWordWrap(True)
