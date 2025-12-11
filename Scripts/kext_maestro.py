@@ -84,7 +84,7 @@ class KextMaestro:
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
                     content = (
                         "Since macOS Tahoe 26 DP2, Apple has removed AppleHDA and uses the Apple T2 chip for audio management.<br>"
-                        "Therefore, AppleALC is no longer functional until you rollback AppleHDA.<br>"
+                        "Therefore, AppleALC is no longer functional until you rollback AppleHDA."
                     )
                     options = [
                         "<b>AppleALC</b> - Requires rollback AppleHDA with <b>OpenCore Legacy Patcher</b>",
