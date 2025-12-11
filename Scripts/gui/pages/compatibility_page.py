@@ -164,17 +164,9 @@ class CompatibilityPage(ScrollArea):
                 "Missing required SSE4.x instruction set.",
                 "Your CPU is not supported by macOS versions newer than Sierra (10.12)."
             ),
-            "ERROR_NO_GPU": (
-                "No GPU found!",
-                "Please make sure to export the hardware report with the GPU information."
-            ),
-            "ERROR_NO_SUPPORTED_GPU": (
+            "ERROR_NO_COMPATIBLE_GPU": (
                 "You cannot install macOS without a supported GPU.",
                 "Please do NOT spam my inbox or issue tracker about this issue anymore!"
-            ),
-            "ERROR_NO_STORAGE": (
-                "No storage controller found!",
-                "Please make sure to export the hardware report with the storage controller information."
             ),
             "ERROR_INTEL_VMD": (
                 "Intel VMD controllers are not supported in macOS.",
