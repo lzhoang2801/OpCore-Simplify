@@ -4,6 +4,8 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QRadioButton, QButtonGroup, QVBoxLayout, QCheckBox, QScrollArea, QLabel
 from qfluentwidgets import MessageBoxBase, SubtitleLabel, BodyLabel, LineEdit, PushButton
 
+from Scripts.datasets import os_data
+
 class CustomMessageDialog(MessageBoxBase):
     def __init__(self, title: str, content: str, parent=None):
         super().__init__(parent)
@@ -279,7 +281,6 @@ def show_smbios_selection_dialog(title: str, content: str, items: List[Dict[str,
             'radio': radio
         }
         item_widgets.append(widget_data)
-
     layout.addStretch()
     scroll.setWidget(container)
     dialog.viewLayout.addWidget(scroll)
@@ -322,4 +323,47 @@ def show_smbios_selection_dialog(title: str, content: str, items: List[Dict[str,
         if selected_id >= 0:
             return items[selected_id].get('name')
             
+    return None
+
+def show_macos_version_dialog(native_macos_version, ocl_patched_macos_version, suggested_macos_version, parent=None) -> Optional[str]:
+    content = ""
+    
+    if native_macos_version[1][:2] != suggested_macos_version[:2]:
+        suggested_macos_name = os_data.get_macos_name_by_darwin(suggested_macos_version)
+        content += "<b style='color: #1565C0'>Suggested macOS version:</b> For better compatibility and stability, we suggest you to use only <b>{}</b> or older.<br><br>".format(suggested_macos_name)
+
+    content += "Please select the macOS version you want to use:"
+    
+    options = []
+    version_values = []
+    default_index = None
+    
+    native_min = int(native_macos_version[0][:2])
+    native_max = int(native_macos_version[-1][:2])
+    oclp_min = int(ocl_patched_macos_version[-1][:2]) if ocl_patched_macos_version else native_min
+    oclp_max = int(ocl_patched_macos_version[0][:2]) if ocl_patched_macos_version else native_max
+    min_version = min(native_min, oclp_min)
+    max_version = max(native_max, oclp_max)
+
+    for darwin_version in range(min_version, max_version + 1):
+        if not (native_min <= darwin_version <= native_max or oclp_min <= darwin_version <= oclp_max):
+            continue
+
+        name = os_data.get_macos_name_by_darwin(str(darwin_version))
+        
+        label = ""
+        if oclp_min <= darwin_version <= oclp_max:
+             label = " <i style='color: #FF8C00'>(Requires OpenCore Legacy Patcher)</i>"
+        
+        options.append("<span>{}{}</span>".format(name, label))
+        version_values.append(darwin_version)
+        
+        if darwin_version == int(suggested_macos_version[:2]):
+            default_index = len(options) - 1
+    
+    result = show_options_dialog("Select macOS Version", content, options, default_index, parent)
+    
+    if result is not None:
+        return "{}.99.99".format(version_values[result])
+
     return None

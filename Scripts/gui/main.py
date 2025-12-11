@@ -15,9 +15,7 @@ from .pages import (
     BuildPage, SettingsPage, ConfigEditorPage
 )
 from .custom_dialogs import (
-    show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
-    show_codec_layout_dialog
-)
+    show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog)
 from .styles import COLORS
 from .ui_utils import ConsoleRedirector
 from Scripts.settings import Settings
@@ -333,18 +331,6 @@ class OpCoreGUI(FluentWindow):
                 message = prompt_text
 
             return show_info_dialog(self, title, message)
-
-        elif prompt_type == 'codec_layout':
-            if options:
-                codec_id = options.get('codec_id')
-                available_layouts = options.get('available_layouts', [])
-                default_layout = options.get('default_layout')
-                recommended_layouts = options.get('recommended_layouts', [])
-
-                layout_id, ok = show_codec_layout_dialog(
-                    self, codec_id, available_layouts, default_layout, recommended_layouts)
-                return (layout_id, ok)
-            return (None, False)
 
         return None
 

@@ -7,7 +7,7 @@ from qfluentwidgets import (
     IndicatorPosition, SettingCard
 )
 
-from ..custom_dialogs import show_macos_version_dialog
+from Scripts.custom_dialogs import show_macos_version_dialog
 from ..styles import SPACING, COLORS
 from ..ui_utils import add_group_with_indent, create_step_indicator
 from ...settings import Settings
@@ -419,15 +419,14 @@ class ConfigurationPage(ScrollArea):
 
         suggested_version = self.controller.suggest_macos_version()
 
-        selected_version, ok = show_macos_version_dialog(
-            self.controller,
+        selected_version = show_macos_version_dialog(
             self.controller.macos_state.native_version,
             self.controller.macos_state.ocl_patched_version,
             suggested_version,
-            self.controller.ocpe.u
+            self.controller.window()
         )
 
-        if ok and selected_version:
+        if selected_version:
             self.controller.apply_macos_version(selected_version)
             self.controller.update_status("macOS version updated to {}".format(self.controller.macos_state.macos_version_name), 'success')
             if hasattr(self, 'macos_card'):

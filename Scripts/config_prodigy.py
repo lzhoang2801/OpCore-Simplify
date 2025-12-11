@@ -6,16 +6,18 @@ from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts.datasets import codec_layouts
 from Scripts import gathering_files
+from Scripts import settings
 from Scripts import smbios
 from Scripts import utils
-from Scripts import settings as settings_module
+from Scripts.custom_dialogs import show_options_dialog
+import random
 
 class ConfigProdigy:
     def __init__(self):
         self.g = gathering_files.gatheringFiles()
+        self.settings = settings.Settings()
         self.smbios = smbios.SMBIOS()
         self.utils = utils.Utils()
-        self.settings = settings_module.Settings()
         self.cpuids = {
             "Ivy Bridge": "A9060300",
             "Haswell": "C3060300",
@@ -24,9 +26,6 @@ class ConfigProdigy:
             "Comet Lake": "55060A00",
             "Ice Lake": "E5060700"
         }
-        # Pre-selected audio codec layout (can be changed during build)
-        self.selected_codec_layout = None
-        self.selected_audio_controller = None
 
     def mmio_whitelist(self, motherboard_chipset):
         booter_mmiowhitelist = []
@@ -270,50 +269,39 @@ class ConfigProdigy:
             return None, None
         
         available_layouts = codec_layouts.data.get(codec_id)
-        
-        # Check if there are any layouts available for this codec
-        if not available_layouts:
-            return None, None
 
         recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
         recommended_layouts = [layout for layout in available_layouts if self.utils.contains_any(recommended_authors, layout.comment)]
 
-        # Use pre-selected layout as default if available, otherwise pick the first recommended one
-        if self.selected_codec_layout:
-            # Find the layout object for the pre-selected ID
-            default_layout = next((layout for layout in available_layouts if layout.id == self.selected_codec_layout), None)
-            if not default_layout:
-                # Fallback if pre-selected layout is not in available layouts
-                # Use first recommended layout if available, otherwise first layout
-                default_layout = recommended_layouts[0] if recommended_layouts else available_layouts[0]
-        else:
-            # Use first recommended layout if available, otherwise first layout
-            default_layout = recommended_layouts[0] if recommended_layouts else available_layouts[0]
+        default_layout = random.choice(recommended_layouts or available_layouts)
 
-        selected_layout_id = None
+        options = []
+        default_index = 0
         
-        # Check if GUI mode is available
-        if self.utils.gui_callback:
-            # Use GUI dialog - this will block until user makes selection
-            result = self.utils.gui_callback(
-                'codec_layout',
-                '',
-                {
-                    'codec_id': codec_id,
-                    'available_layouts': available_layouts,
-                    'default_layout': default_layout,
-                    'recommended_layouts': recommended_layouts
-                }
-            )
+        for i, layout in enumerate(available_layouts):
+            options.append(f"ID: {layout.id} - {layout.comment}")
+            if layout == default_layout:
+                default_index = i
+                
+        content = (
+            "<b>Note:</b>"
+            "<ul>"
+            "<li>The default layout may not be optimal.</li>"
+            "<li>Test different layouts to find what works best for your system.</li>"
+            "</ul>"
+        )
+        
+        selected_index = show_options_dialog(
+            title="Choosing Codec Layout ID",
+            content=content,
+            options=options,
+            default_index=default_index,
+            parent=self.utils.gui_handler
+        )
+        
+        if selected_index is not None:
+            return available_layouts[selected_index].id, audio_controller_properties
             
-            if result and result[1]:  # (layout_id, ok)
-                # Store the selection for next time (as pre-selected value)
-                self.selected_codec_layout = result[0]
-                self.selected_audio_controller = audio_controller_properties
-                return result[0], audio_controller_properties
-            else:
-                return None, None
-        
         return None, None
   
     def deviceproperties(self, hardware_report, disabled_devices, macos_version, kexts):
@@ -514,15 +502,13 @@ class ConfigProdigy:
 
     def boot_args(self, hardware_report, macos_version, needs_oclp, kexts, config):
         boot_args = []
-        
-        # Add verbose boot arguments if setting is enabled
-        if self.settings.get_verbose_boot():
-            boot_args.extend([
-                "-v",
-                "debug=0x100",
-                "keepsyms=1"
-            ])
-            self.utils.debug_log("Verbose boot arguments enabled")
+
+        if self.settings.get("verbose_boot"):
+            boot_args.extend(("-v", "debug=0x100", "keepsyms=1"))
+
+        if self.settings.get("custom_boot_args"):
+            for arg in self.settings.get("custom_boot_args").split(" "):
+                boot_args.append(arg)
 
         if needs_oclp and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
             boot_args.append("amfi=0x80")
@@ -590,27 +576,12 @@ class ConfigProdigy:
             elif kext.name == "CpuTopologyRebuild":
                 boot_args.append("ctrsmt=full")
 
-        # Add custom boot arguments from settings
-        custom_boot_args = self.settings.get_custom_boot_args()
-        if custom_boot_args:
-            # Split custom args and add them
-            custom_args_list = custom_boot_args.strip().split()
-            for arg in custom_args_list:
-                if arg and arg not in boot_args:
-                    boot_args.append(arg)
-        
-        # Check if force load incompatible kexts is enabled
-        if self.settings.get_force_load_incompatible_kexts() and "-lilubetaall" not in boot_args:
-            boot_args.append("-lilubetaall")
-        
         return " ".join(boot_args)
     
     def csr_active_config(self, macos_version):
-        # Check if user wants to keep SIP enabled
-        if not self.settings.get_disable_sip():
-            return "00000000"  # SIP enabled
-        
-        # Disable SIP based on macOS version
+        if not self.settings.get("disable_sip"):
+            return "00000000"
+
         if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("20.0.0"):
             return "030A0000"
         elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("18.0.0"):
@@ -645,9 +616,6 @@ class ConfigProdigy:
         return uefi_drivers
 
     def genarate(self, hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp, kexts, config):
-        self.utils.debug_log("Starting config generation")
-        self.utils.debug_log(f"SMBIOS Model: {smbios_model}, macOS Version: {macos_version}")
-        
         del config["#WARNING - 1"]
         del config["#WARNING - 2"]
         del config["#WARNING - 3"]
@@ -709,40 +677,18 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[4:20]
 
         config["Misc"]["BlessOverride"] = []
-        # Apply HideAuxiliary setting from preferences
-        config["Misc"]["Boot"]["HideAuxiliary"] = self.settings.get_hide_auxiliary()
-        
-        # Apply PickerMode setting - default is firmware-based, but can be overridden
-        picker_mode_setting = self.settings.get_picker_mode()
-        if picker_mode_setting == "Auto":
-            config["Misc"]["Boot"]["PickerMode"] = "Builtin" if hardware_report.get("BIOS").get("Firmware Type") != "UEFI" else "External"
-        else:
-            config["Misc"]["Boot"]["PickerMode"] = picker_mode_setting
-        
-        # Apply Timeout setting
-        config["Misc"]["Boot"]["Timeout"] = self.settings.get_picker_timeout()
-        
-        # Show/hide picker based on setting
-        if not self.settings.get_show_picker():
-            config["Misc"]["Boot"]["Timeout"] = 0
-        
+        config["Misc"]["Boot"]["HideAuxiliary"] = self.settings.get("hide_auxiliary", False)
+        config["Misc"]["Boot"]["PickerMode"] = self.settings.get("picker_mode", "Builtin" if hardware_report.get("BIOS").get("Firmware Type") != "UEFI" else "External")
+        config["Misc"]["Boot"]["PickerVariant"] = self.settings.get("picker_variant", "Auto")
+        config["Misc"]["Boot"]["ShowPicker"] = self.settings.get("show_picker", True)
+        config["Misc"]["Boot"]["Timeout"] = self.settings.get("picker_timeout", 5)
         config["Misc"]["Debug"]["AppleDebug"] = config["Misc"]["Debug"]["ApplePanic"] = False
         config["Misc"]["Debug"]["DisableWatchDog"] = True
         config["Misc"]["Entries"] = []
         config["Misc"]["Security"]["AllowSetDefault"] = True
         config["Misc"]["Security"]["ScanPolicy"] = 0
-        
-        # Apply SecureBootModel setting from preferences
-        secure_boot_setting = self.settings.get_secure_boot_model()
-        if secure_boot_setting == "Default":
-            # Use automatic selection based on macOS version and OCLP
-            config["Misc"]["Security"]["SecureBootModel"] = "Default" if not needs_oclp and self.utils.parse_darwin_version("20.0.0") <= self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "Disabled"
-        else:
-            config["Misc"]["Security"]["SecureBootModel"] = secure_boot_setting
-        
-        # Apply Vault setting from preferences
-        config["Misc"]["Security"]["Vault"] = self.settings.get_vault()
-        
+        config["Misc"]["Security"]["SecureBootModel"] = self.settings.get("secure_boot_model", "Default" if not needs_oclp and self.utils.parse_darwin_version("20.0.0") <= self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "Disabled")
+        config["Misc"]["Security"]["Vault"] = "Optional"
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
