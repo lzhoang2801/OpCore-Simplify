@@ -22,7 +22,7 @@ class CustomMessageDialog(MessageBoxBase):
         self.viewLayout.addWidget(self.titleLabel)
         self.viewLayout.addWidget(self.contentLabel)
         
-        self.widget.setMinimumWidth(450)
+        self.widget.setMinimumWidth(600)
         
         self.custom_widget = None
         self.input_field = None
