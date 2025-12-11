@@ -14,7 +14,7 @@ from qfluentwidgets import (
 
 from ..styles import COLORS, SPACING, RADIUS
 from ..ui_utils import build_icon_label, create_step_indicator
-from ..custom_dialogs import show_question_dialog
+from Scripts.custom_dialogs import show_confirmation
 
 # Constants for build log formatting
 LOG_SEPARATOR = "═" * 60
@@ -336,7 +336,7 @@ class BuildPage(ScrollArea):
                 "my repository: <a href='https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0'>lzhoang2801/OpenCore-Legacy-Patcher</a> on GitHub.<br>"
                 "Official Dortania releases or older patches will NOT work with macOS Tahoe 26.</p>"
             ).format(error_color=COLORS['error'], info_color='#00BCD4')
-            if not show_question_dialog(self.window(), "OpenCore Legacy Patcher Warning", content):
+            if not show_confirmation("OpenCore Legacy Patcher Warning", content, parent=self.window()):
                 return
 
         # Update UI state for build in progress

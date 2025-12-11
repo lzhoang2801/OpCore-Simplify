@@ -12,7 +12,7 @@ from qfluentwidgets import (
     setTheme, Theme
 )
 
-from ..custom_dialogs import show_question_dialog
+from Scripts.custom_dialogs import show_confirmation
 from ..styles import COLORS, SPACING
 from ...settings import Settings
 
@@ -288,11 +288,7 @@ class SettingsPage(ScrollArea):
             self.controller.update_status("Output directory updated successfully", "success")
 
     def reset_to_defaults(self):
-        result = show_question_dialog(
-            self.controller,
-            "Reset Settings",
-            "Are you sure you want to reset all settings to their default values?"
-        )
+        result = show_confirmation("Reset Settings", "Are you sure you want to reset all settings to their default values?", parent=self.controller.window())
 
         if result:
             self.settings.settings = self.settings.defaults.copy()

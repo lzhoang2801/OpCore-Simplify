@@ -465,69 +465,12 @@ class ConfigurationPage(ScrollArea):
             self.controller.update_status("Please select target macOS version first", 'warning')
             return
 
-        from ...datasets.mac_model_data import mac_devices
-        from ...custom_dialogs import show_smbios_selection_dialog
-
         current_model = self.controller.smbios_state.model_name
-        default_model = self.controller.ocpe.s.select_smbios_model(
-            self.controller.hardware_state.customized_hardware,
-            self.controller.macos_state.darwin_version
-        )
-        is_laptop = "Laptop" == self.controller.hardware_state.customized_hardware.get("Motherboard").get("Platform")
-
-        items = []
-        macos_version = self.controller.macos_state.darwin_version
-        utils = self.controller.ocpe.u
-        
-        for device in mac_devices:
-            is_supported = utils.parse_darwin_version(device.initial_support) <= utils.parse_darwin_version(macos_version) <= utils.parse_darwin_version(device.last_supported_version)
-            
-            platform_match = True
-            if is_laptop and not device.name.startswith("MacBook"):
-                platform_match = False
-            elif not is_laptop and device.name.startswith("MacBook"):
-                platform_match = False
-                
-            is_compatible = is_supported and platform_match
-            
-            category = ""
-            for char in device.name:
-                if char.isdigit():
-                    break
-                category += char
-            
-            gpu_str = "" if not device.discrete_gpu else " - {}".format(device.discrete_gpu)
-            label = f"{device.name} - {device.cpu} ({device.cpu_generation}){gpu_str}"
-
-            items.append({
-                'name': device.name,
-                'label': label,
-                'category': category,
-                'is_supported': is_supported,
-                'is_compatible': is_compatible
-            })
-            
-        content = "Lines in gray indicate mac models that are not officially supported by {}.".format(self.controller.macos_state.macos_version_name)
-
-        selected_model = show_smbios_selection_dialog(
-            "Customize SMBIOS Model",
-            content,
-            items,
-            current_model,
-            default_model,
-            self.controller
-        )
+        selected_model = self.controller.ocpe.s.customize_smbios_model(self.controller.hardware_state.customized_hardware, current_model, self.controller.macos_state.darwin_version, self.controller.window())
 
         if selected_model and selected_model != current_model:
             self.controller.smbios_state.model_name = selected_model
-
-            self.controller.ocpe.s.smbios_specific_options(
-                self.controller.hardware_state.customized_hardware,
-                selected_model,
-                self.controller.macos_state.darwin_version,
-                self.controller.ocpe.ac.patches,
-                self.controller.ocpe.k
-            )
+            self.controller.ocpe.s.smbios_specific_options(self.controller.hardware_state.customized_hardware, selected_model, self.controller.macos_state.darwin_version, self.controller.ocpe.ac.patches, self.controller.ocpe.k)
 
             self.smbios_card.update_model()
             self.controller.update_status("SMBIOS model updated to {}".format(selected_model), 'success')

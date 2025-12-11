@@ -14,8 +14,6 @@ from .pages import (
     HomePage, SelectHardwareReportPage, CompatibilityPage, ConfigurationPage, 
     BuildPage, SettingsPage, ConfigEditorPage
 )
-from .custom_dialogs import (
-    show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog)
 from .styles import COLORS
 from .ui_utils import ConsoleRedirector
 from Scripts.settings import Settings

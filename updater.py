@@ -131,6 +131,7 @@ class Updater:
             return False
 
     def run_update(self):
+        return False
         self.utils.head("Check for Updates")
         print("")
         

@@ -176,7 +176,7 @@ class SMBIOS:
         self.utils.log_gui("[SMBIOS] Suggested SMBIOS model: {}".format(smbios_model), level="Info")
         return smbios_model
 
-    def customize_smbios_model(self, hardware_report, selected_smbios_model, macos_version):
+    def customize_smbios_model(self, hardware_report, selected_smbios_model, macos_version, parent=None):
         default_smbios_model = self.select_smbios_model(hardware_report, macos_version)
         is_laptop = "Laptop" == hardware_report.get("Motherboard").get("Platform")
         macos_name = os_data.get_macos_name_by_darwin(macos_version)
@@ -217,7 +217,8 @@ class SMBIOS:
             content,
             items,
             selected_smbios_model,
-            default_smbios_model
+            default_smbios_model,
+            parent
         )
         
         return result if result else selected_smbios_model
