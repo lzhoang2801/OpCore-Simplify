@@ -16,7 +16,7 @@ from .pages import (
 )
 from .custom_dialogs import (
     show_input_dialog, show_choice_dialog, show_question_dialog, show_info_dialog,
-    show_wifi_network_count_dialog, show_codec_layout_dialog
+    show_codec_layout_dialog
 )
 from .styles import COLORS
 from .ui_utils import ConsoleRedirector
@@ -68,7 +68,7 @@ class OpCoreGUI(FluentWindow):
                 timestamp = datetime.now()
                 self.log_file_path = os.path.join(log_dir, "ocs-{}.txt".format(timestamp.strftime("%Y-%m-%d-%H%M%S")))
                 with open(self.log_file_path, 'w', encoding='utf-8') as f:
-                    f.write("[{}] Application started\n".format(timestamp.strftime("%Y-%m-%d %H:%M:%S")))
+                    f.write("[{}] OpCore Simplify started\n".format(timestamp.strftime("%Y-%m-%d %H:%M:%S")))
             except Exception as e:
                 print("Failed to setup logging: {}".format(e))
 
@@ -333,14 +333,6 @@ class OpCoreGUI(FluentWindow):
                 message = prompt_text
 
             return show_info_dialog(self, title, message)
-
-        elif prompt_type == 'wifi_network_count':
-            if options:
-                total_networks = options.get('total_networks', 5)
-                count, ok = show_wifi_network_count_dialog(
-                    self, total_networks)
-                return (count, ok)
-            return (None, False)
 
         elif prompt_type == 'codec_layout':
             if options:

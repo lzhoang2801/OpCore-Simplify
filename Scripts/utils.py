@@ -13,8 +13,18 @@ import traceback
 import contextlib
 
 class Utils:
-    def __init__(self, script_name = "OpCore Simplify"):
-        self.script_name = script_name
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Utils, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
+    def __init__(self):
+        if self._initialized:
+            return
+        self._initialized = True
         self.gui_handler = None  # GUI handler object for direct dialog access
         self.gui_log_callback = None  # Callback for logging to build log/console
         self.gui_callback = None  # Callback for GUI prompts (backward compatibility)

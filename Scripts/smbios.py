@@ -1,6 +1,7 @@
 from Scripts.datasets.mac_model_data import mac_devices
 from Scripts.datasets import kext_data
 from Scripts.datasets import os_data
+from Scripts.gui.custom_dialogs import show_smbios_selection_dialog
 from Scripts import gathering_files
 from Scripts import run
 from Scripts import utils
@@ -174,3 +175,49 @@ class SMBIOS:
 
         self.utils.log_gui("[SMBIOS] Suggested SMBIOS model: {}".format(smbios_model), level="Info")
         return smbios_model
+
+    def customize_smbios_model(self, hardware_report, selected_smbios_model, macos_version):
+        default_smbios_model = self.select_smbios_model(hardware_report, macos_version)
+        is_laptop = "Laptop" == hardware_report.get("Motherboard").get("Platform")
+        macos_name = os_data.get_macos_name_by_darwin(macos_version)
+        
+        items = []
+        for index, device in enumerate(mac_devices):
+            is_supported = self.utils.parse_darwin_version(device.initial_support) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(device.last_supported_version)
+            
+            platform_match = True
+            if is_laptop and not device.name.startswith("MacBook"):
+                platform_match = False
+            elif not is_laptop and device.name.startswith("MacBook"):
+                platform_match = False
+                
+            is_compatible = is_supported and platform_match
+            
+            category = ""
+            for char in device.name:
+                if char.isdigit():
+                    break
+                category += char
+            
+            gpu_str = "" if not device.discrete_gpu else " - {}".format(device.discrete_gpu)
+            label = f"{device.name} - {device.cpu} ({device.cpu_generation}){gpu_str}"
+
+            items.append({
+                'name': device.name,
+                'label': label,
+                'category': category,
+                'is_supported': is_supported,
+                'is_compatible': is_compatible
+            })
+            
+        content = f"Lines in gray indicate mac models that are not officially supported by {macos_name}."
+        
+        result = show_smbios_selection_dialog(
+            "Customize SMBIOS Model",
+            content,
+            items,
+            selected_smbios_model,
+            default_smbios_model
+        )
+        
+        return result if result else selected_smbios_model

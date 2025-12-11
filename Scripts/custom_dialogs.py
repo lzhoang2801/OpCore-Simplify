@@ -217,3 +217,109 @@ def ask_network_count(total_networks: int, parent=None) -> Union[int, str]:
         return result['value']
 
     return 5
+
+def show_smbios_selection_dialog(title: str, content: str, items: List[Dict[str, Any]], current_selection: str, default_selection: str, parent=None) -> Optional[str]:
+    dialog = CustomMessageDialog(title, content, parent)
+    
+    top_container = QWidget()
+    top_layout = QHBoxLayout(top_container)
+    top_layout.setContentsMargins(0, 0, 0, 0)
+    
+    show_all_cb = QCheckBox("Show all models")
+    restore_btn = PushButton(f"Restore default ({default_selection})")
+    
+    top_layout.addWidget(show_all_cb)
+    top_layout.addStretch()
+    top_layout.addWidget(restore_btn)
+    
+    dialog.viewLayout.addWidget(top_container)
+    
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setFixedHeight(400)
+    
+    container = QWidget()
+    layout = QVBoxLayout(container)
+    layout.setSpacing(5)
+    
+    button_group = QButtonGroup(dialog)
+    
+    item_widgets = []
+    current_category = None
+    
+    for i, item in enumerate(items):
+        category = item.get('category')
+        category_label = None
+        if category != current_category:
+            current_category = category
+            category_label = QLabel(f"Category: {category}")
+            category_label.setStyleSheet("font-weight: bold; color: #0078D4; margin-top: 10px; border-bottom: 1px solid #E1DFDD;")
+            layout.addWidget(category_label)
+            
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(20, 0, 0, 0) 
+        
+        radio = QRadioButton(item.get('label'))
+        if not item.get('is_supported'):
+            radio.setStyleSheet("color: #A19F9D;")
+            
+        row_layout.addWidget(radio)
+        layout.addWidget(row_widget)
+        
+        button_group.addButton(radio, i)
+        
+        if item.get('name') == current_selection:
+            radio.setChecked(True)
+            
+        widget_data = {
+            'row': row_widget,
+            'category_label': category_label,
+            'item': item,
+            'radio': radio
+        }
+        item_widgets.append(widget_data)
+
+    layout.addStretch()
+    scroll.setWidget(container)
+    dialog.viewLayout.addWidget(scroll)
+    
+    def update_visibility():
+        show_all = show_all_cb.isChecked()
+        visible_categories = set()
+        
+        for w in item_widgets:
+            item = w['item']
+            is_current_or_default = item.get('name') in (current_selection, default_selection)
+            is_compatible = item.get('is_compatible')
+            
+            should_show = is_current_or_default or show_all or is_compatible
+            
+            w['row'].setVisible(should_show)
+            if should_show:
+                visible_categories.add(item.get('category'))
+                
+        for w in item_widgets:
+            if w['category_label']:
+                 w['category_label'].setVisible(w['item'].get('category') in visible_categories)
+                 
+    show_all_cb.stateChanged.connect(update_visibility)
+    
+    def restore_default():
+        for i, item in enumerate(items):
+            if item.get('name') == default_selection:
+                button_group.button(i).setChecked(True)
+                break
+    
+    restore_btn.clicked.connect(restore_default)
+    
+    update_visibility()
+    
+    dialog.configure_buttons(yes_text="OK", show_cancel=True)
+    
+    if dialog.exec():
+        selected_id = button_group.checkedId()
+        if selected_id >= 0:
+            return items[selected_id].get('name')
+            
+    return None
