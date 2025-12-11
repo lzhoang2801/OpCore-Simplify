@@ -122,101 +122,45 @@ class KextMaestro:
                     break
 
                 if gpu_props.get("Codename") in {"Navi 21", "Navi 23"}:
-                    if self.utils.gui_handler:
-                        content = (
-                            f"Found {gpu_name} is AMD {gpu_props.get('Codename')} GPU.<br><br>"
-                            "<b>Important: Black Screen Fix</b><br>"
-                            "If you experience a black screen after verbose mode:<br>"
-                            "1. Use ProperTree to open config.plist<br>"
-                            "2. Navigate to NVRAM -> Add -> 7C436110-AB2A-4BBB-A880-FE41995C9F82 -> boot-args<br>"
-                            "3. Remove \"-v debug=0x100 keepsyms=1\" from boot-args<br><br>"
-                        )
+                    content = (
+                        "<span style='color:red font-weight:bold'>Important: Black Screen Fix</span><br>"
+                        "If you experience a black screen after verbose mode:<br>"
+                        "1. Use ProperTree to open config.plist<br>"
+                        "2. Navigate to NVRAM -> Add -> 7C436110-AB2A-4BBB-A880-FE41995C9F82 -> boot-args<br>"
+                        "3. Remove \"-v debug=0x100 keepsyms=1\" from boot-args<br><br>"
+                    ).format(gpu_name, gpu_props.get("Codename"))
 
-                        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                            content += (
-                                f"Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD {gpu_props.get('Codename')} GPUs.<br>"
-                                "To avoid this, you can use NootRX or choose not to install a GPU kext.<br><br>"
-                                "<b>1. NootRX</b> - Uses latest GPU firmware<br>"
-                                "<b>2. WhateverGreen</b> - Uses original Apple firmware<br>"
-                                "<b>3. Don't use any kext</b>"
-                            )
-                            options = ["NootRX", "WhateverGreen", "Don't use any kext"]
-                            recommended_option = 0
-                            max_option = 2
-                        else:
-                            content += (
-                                f"AMD {gpu_props.get('Codename')} GPUs have two available kext options:<br>"
-                                "You can try different kexts after installation to find the best one for your system<br><br>"
-                                "<b>1. NootRX</b> - Uses latest GPU firmware<br>"
-                                "<b>2. WhateverGreen</b> - Uses original Apple firmware"
-                            )
-                            options = ["NootRX", "WhateverGreen"]
-                            recommended_option = 1
-                            max_option = 1
+                    options = [
+                        "<b>NootRX</b> - Uses latest GPU firmware",
+                        "<b>WhateverGreen</b> - Uses original Apple firmware",
+                    ]
 
-                        if any(other_gpu_props.get("Manufacturer") == "Intel" for other_gpu_props in hardware_report.get("GPU", {}).values()):
-                            show_info("GPU Kext Selection", "NootRX kext is not compatible with Intel GPUs.<br>Automatically selecting WhateverGreen kext due to Intel GPU compatibility.", parent=self.utils.gui_handler)
-                            selected_kexts.append("WhateverGreen")
-                            continue
-
-                        result = show_options_dialog("GPU Kext Selection", content, options, default_index=recommended_option, parent=self.utils.gui_handler)
-                        
-                        if result == 0:
-                            selected_kexts.append("NootRX")
-                        elif result == 1:
-                            selected_kexts.append("WhateverGreen")
-                        
+                    if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
+                        content += (
+                            "Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD {} GPUs.<br>"
+                            "To avoid this, you can use NootRX or choose not to install a GPU kext."
+                        ).format(gpu_props.get("Codename"))
+                        options.append("<b>Don't use any kext</b>")
+                        recommended_option = 0
                     else:
-                        print("\n*** Found {} is AMD {} GPU.".format(gpu_name, gpu_props.get("Codename")))
-                        print("")
-                        print("\033[91mImportant: Black Screen Fix\033[0m")
-                        print("If you experience a black screen after verbose mode:")
-                        print("    1. Use ProperTree to open config.plist")
-                        print("    2. Navigate to NVRAM -> Add -> 7C436110-AB2A-4BBB-A880-FE41995C9F82 -> boot-args")
-                        print("    3. Remove \"-v debug=0x100 keepsyms=1\" from boot-args")
-                        print("")
-                        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                            recommended_option = 1
-                            recommended_name = "NootRX"
-                            max_option = 3
-                            print("\033[1;93mNote:\033[0m Since macOS Tahoe 26, WhateverGreen has known connector patching issues for AMD {} GPUs.".format(gpu_props.get("Codename")))
-                            print("To avoid this, you can use NootRX or choose not to install a GPU kext.")
-                            print("")
-                            print("1. \033[1mNootRX\033[0m - Uses latest GPU firmware")
-                            print("2. \033[1mWhateverGreen\033[0m - Uses original Apple firmware")
-                            print("3. \033[1mDon't use any kext\033[0m")
-                        else:
-                            recommended_option = 2
-                            recommended_name = "WhateverGreen"
-                            max_option = 2
-                            print("\033[1;93mNote:\033[0m")
-                            print("- AMD {} GPUs have two available kext options:".format(gpu_props.get("Codename")))
-                            print("- You can try different kexts after installation to find the best one for your system")
-                            print("")
-                            print("1. \033[1mNootRX\033[0m - Uses latest GPU firmware")
-                            print("2. \033[1mWhateverGreen\033[0m - Uses original Apple firmware")
-                        print("")
+                        content += (
+                            "AMD {} GPUs have two available kext options:<br>"
+                            "You can try different kexts after installation to find the best one for your system."
+                        ).format(gpu_props.get("Codename"))
+                        recommended_option = 1
 
-                        if any(other_gpu_props.get("Manufacturer") == "Intel" for other_gpu_props in hardware_report.get("GPU", {}).values()):
-                            print("\033[91mImportant:\033[0m NootRX kext is not compatible with Intel GPUs")
-                            print("Automatically selecting WhateverGreen kext due to Intel GPU compatibility")
-                            print("")
-                            self.utils.request_input("Press Enter to continue...")
-                            continue
+                    if any(other_gpu_props.get("Manufacturer") == "Intel" for other_gpu_props in hardware_report.get("GPU", {}).values()):
+                        show_info("NootRX Kext Warning", "NootRX kext is not compatible with Intel GPUs.<br>Automatically selecting WhateverGreen kext due to Intel GPU compatibility.", parent=self.utils.gui_handler)
+                        selected_kexts.append("WhateverGreen")
+                        continue
 
-                        kext_option = self.utils.request_input("Select kext for your AMD {} GPU (default: {}): ".format(gpu_props.get("Codename"), recommended_name)).strip() or str(recommended_option)
-                        
-                        if kext_option.isdigit() and 0 < int(kext_option) < max_option + 1:
-                            selected_option = int(kext_option)
-                        else:
-                            print("\033[93mInvalid selection, using recommended option: {}\033[0m".format(recommended_option))
-                            selected_option = recommended_option
-
-                        if selected_option == 1:
-                            selected_kexts.append("NootRX")
-                        elif selected_option == 2:
-                            selected_kexts.append("WhateverGreen")
+                    result = show_options_dialog("AMD GPU Kext Selection", content, options, default_index=recommended_option, parent=self.utils.gui_handler)
                     
+                    if result == 0:
+                        selected_kexts.append("NootRX")
+                    elif result == 1:
+                        selected_kexts.append("WhateverGreen")
+
                     continue
 
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
