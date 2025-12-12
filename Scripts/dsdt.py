@@ -309,10 +309,7 @@ class DSDT:
         return self.check_iasl(legacy=legacy,try_downloading=False)
 
     def _download_and_extract(self, temp, url):
-        self.u.head("Gathering Files")
-        print("")
-        print("Please wait for download iasl...")
-        print("")
+        self.u.log_gui("[DSDT] Downloading iasl...", level="Info")
         ztemp = tempfile.mkdtemp(dir=temp)
         zfile = os.path.basename(url)
         #print("Downloading {}".format(os.path.basename(url)))

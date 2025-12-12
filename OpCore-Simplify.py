@@ -134,11 +134,11 @@ class OCS(FluentWindow):
         self.backend.u.gui_handler = self
 
     def init_navigation(self):
-        self.homePage = HomePage(self)
-        self.SelectHardwareReportPage = SelectHardwareReportPage(self)
-        self.compatibilityPage = CompatibilityPage(self)
-        self.configurationPage = ConfigurationPage(self)
-        self.buildPage = BuildPage(self)
+        self.homePage = HomePage(self, ui_utils_instance=self.ui_utils)
+        self.SelectHardwareReportPage = SelectHardwareReportPage(self, ui_utils_instance=self.ui_utils)
+        self.compatibilityPage = CompatibilityPage(self, ui_utils_instance=self.ui_utils)
+        self.configurationPage = ConfigurationPage(self, ui_utils_instance=self.ui_utils)
+        self.buildPage = BuildPage(self, ui_utils_instance=self.ui_utils)
         self.settingsPage = SettingsPage(self)
 
         self.addSubInterface(

@@ -320,14 +320,14 @@ class macOSCard(SettingCard):
 
 
 class ConfigurationPage(ScrollArea):
-    def __init__(self, parent):
+    def __init__(self, parent, ui_utils_instance=None):
         super().__init__()
         self.setObjectName("configurationPage")
         self.controller = parent
         self.settings = self.controller.backend.settings
         self.scrollWidget = QWidget()
         self.main_layout = QVBoxLayout(self.scrollWidget)
-        self.ui_utils = ui_utils.UIUtils()
+        self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)

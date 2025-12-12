@@ -78,13 +78,13 @@ class CompatibilityStatusBanner(QFrame):
         self._update_style("#DFF6DD", "#107C10", "#0E5C0E", FluentIcon.ACCEPT, title, message, note)
 
 class CompatibilityPage(ScrollArea):
-    def __init__(self, parent):
+    def __init__(self, parent, ui_utils_instance=None):
         super().__init__(parent)
         self.setObjectName("compatibilityPage")
         self.controller = parent
         self.scrollWidget = QWidget()
         self.expandLayout = QVBoxLayout(self.scrollWidget)
-        self.ui_utils = ui_utils.UIUtils()
+        self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
         self.contentWidget = None
         self.contentLayout = None
         self.version_support_container = None

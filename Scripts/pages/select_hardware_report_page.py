@@ -89,12 +89,12 @@ class SelectHardwareReportPage(QWidget):
     load_hardware_report_signal = pyqtSignal(str, str)
     export_finished_signal = pyqtSignal(bool, str, str, str)
 
-    def __init__(self, parent):
+    def __init__(self, parent, ui_utils_instance=None):
         super().__init__(parent)
         self.setObjectName("SelectHardwareReport")
         self.controller = parent
         self._connect_signals()
-        self.ui_utils = ui_utils.UIUtils()
+        self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
         self.page()
 
     def _connect_signals(self):

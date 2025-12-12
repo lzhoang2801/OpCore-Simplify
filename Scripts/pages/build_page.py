@@ -16,7 +16,7 @@ DEFAULT_LOG_TEXT = "Build log will appear here..."
 
 
 class BuildPage(ScrollArea):
-    def __init__(self, parent):
+    def __init__(self, parent, ui_utils_instance=None):
         super().__init__(parent)
         self.setObjectName("buildPage")
         self.controller = parent
@@ -24,7 +24,7 @@ class BuildPage(ScrollArea):
         self.expandLayout = QVBoxLayout(self.scrollWidget)
         self.build_in_progress = False
         self.build_successful = False
-        self.ui_utils = ui_utils.UIUtils()
+        self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
         self.page()
 
     def page(self):

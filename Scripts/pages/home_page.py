@@ -7,13 +7,13 @@ from Scripts import ui_utils
 
 
 class HomePage(ScrollArea):
-    def __init__(self, parent):
+    def __init__(self, parent, ui_utils_instance=None):
         super().__init__(parent)
         self.setObjectName("homePage")
         self.controller = parent
         self.scrollWidget = QWidget()
         self.expandLayout = QVBoxLayout(self.scrollWidget)
-        self.ui_utils = ui_utils.UIUtils()
+        self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
         self.page()
 
     def page(self):

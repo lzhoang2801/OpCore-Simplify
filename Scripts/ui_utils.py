@@ -11,18 +11,8 @@ if TYPE_CHECKING:
     from qfluentwidgets import GroupHeaderCardWidget, CardGroupWidget
 
 class UIUtils:
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(UIUtils, cls).__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
-
     def __init__(self):
-        if self._initialized:
-            return
-        self._initialized = True
+        pass
 
     def build_icon_label(self, icon: FluentIcon, color: str, size: int = 32) -> QLabel:
         label = QLabel()
