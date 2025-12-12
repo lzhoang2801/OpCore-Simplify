@@ -1,3 +1,7 @@
+# User settings
+settings.json
+preserved_smbios.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -161,3 +165,9 @@ cython_debug/
 
 *.DS_Store
 OCK_Files
+*.exe
+Scripts/iasl
+sha_version.txt
+macserial*
+*Sys*
+Logs/

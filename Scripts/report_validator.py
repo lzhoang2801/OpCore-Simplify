@@ -4,10 +4,10 @@ import os
 import re
 
 class ReportValidator:
-    def __init__(self):
+    def __init__(self, utils_instance=None):
         self.errors = []
         self.warnings = []
-        self.u = utils.Utils()
+        self.u = utils_instance if utils_instance else utils.Utils()
         
         self.PATTERNS = {
             "not_empty": r".+",
