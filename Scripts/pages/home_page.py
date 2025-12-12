@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFrame
 from PyQt6.QtCore import Qt
 from qfluentwidgets import SubtitleLabel, BodyLabel, CardWidget, StrongBodyLabel, FluentIcon, ScrollArea
 
-from Scripts.styles import COLORS, SPACING, RADIUS
+from Scripts.styles import COLORS, SPACING
 from Scripts import ui_utils
 
 
@@ -14,9 +14,7 @@ class HomePage(ScrollArea):
         self.scrollWidget = QWidget()
         self.expandLayout = QVBoxLayout(self.scrollWidget)
         self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
-        self.page()
-
-    def page(self):
+        
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
@@ -24,13 +22,20 @@ class HomePage(ScrollArea):
         
         self.scrollWidget.setStyleSheet("QWidget { background: transparent; }")
         
+        self._init_ui()
+
+    def _init_ui(self):
         self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.expandLayout.setSpacing(SPACING['large'])
 
         self.expandLayout.addWidget(self._create_title_label())
+        
         self.expandLayout.addWidget(self._create_hero_section())
+        
         self.expandLayout.addWidget(self._create_note_card())
+        
         self.expandLayout.addWidget(self._create_warning_card())
+        
         self.expandLayout.addWidget(self._create_guide_card())
 
         self.expandLayout.addStretch()
@@ -70,83 +75,29 @@ class HomePage(ScrollArea):
         return hero_card
 
     def _create_note_card(self):
-        note_card = CardWidget()
-        
-        note_card.setStyleSheet(f"""
-            CardWidget {{
-                background-color: {COLORS['note_bg']};
-                border: 1px solid rgba(21, 101, 192, 0.2);
-                border-radius: {RADIUS['card']}px;
-            }}
-        """)
-        note_layout = QHBoxLayout(note_card)
-        note_layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
-        note_layout.setSpacing(SPACING['large'])
-
-        note_icon = self.ui_utils.build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=40)
-        note_layout.addWidget(note_icon, 0, Qt.AlignmentFlag.AlignVCenter)
-
-        note_text_layout = QVBoxLayout()
-        note_text_layout.setSpacing(SPACING['small'])
-
-        note_title = StrongBodyLabel("OpenCore Legacy Patcher 3.0.0 - Now Supports macOS Tahoe 26!")
-        note_title.setStyleSheet("color: {}; font-size: 16px;".format(COLORS['note_text']))
-        note_text_layout.addWidget(note_title)
-
-        note_body = BodyLabel(
-            "The long awaited version 3.0.0 of OpenCore Legacy Patcher is here, bringing <b>initial support for macOS Tahoe 26</b> to the community!<br><br>"
-            "<b>Please Note:</b><br>"
-            "- Only OpenCore-Patcher 3.0.0 from the <a href='https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0' style='color: #0078D4; text-decoration: none;'>lzhoang2801/OpenCore-Legacy-Patcher</a> repository provides support for macOS Tahoe 26 with early patches.<br>"
-            "- Official Dortania releases or older patches <b>will NOT work</b> with macOS Tahoe 26."
+        return self.ui_utils.custom_card(
+            card_type='note',
+            title="OpenCore Legacy Patcher 3.0.0 - Now Supports macOS Tahoe 26!",
+            body=(
+                "The long awaited version 3.0.0 of OpenCore Legacy Patcher is here, bringing <b>initial support for macOS Tahoe 26</b> to the community!<br><br>"
+                "<b>Please Note:</b><br>"
+                "- Only OpenCore-Patcher 3.0.0 from the <a href='https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0' style='color: #0078D4; text-decoration: none;'>lzhoang2801/OpenCore-Legacy-Patcher</a> repository provides support for macOS Tahoe 26 with early patches.<br>"
+                "- Official Dortania releases or older patches <b>will NOT work</b> with macOS Tahoe 26."
+            )
         )
-        note_body.setWordWrap(True)
-        note_body.setOpenExternalLinks(True)
-        note_body.setStyleSheet("color: #424242; line-height: 1.6;")
-        note_text_layout.addWidget(note_body)
-
-        note_layout.addLayout(note_text_layout)
-
-        return note_card
 
     def _create_warning_card(self):
-        warning_card = CardWidget()
-        
-        warning_card.setStyleSheet(f"""
-            CardWidget {{
-                background-color: {COLORS['warning_bg']};
-                border: 1px solid rgba(245, 124, 0, 0.25);
-                border-radius: {RADIUS['card']}px;
-            }}
-        """)
-        warning_layout = QHBoxLayout(warning_card)
-        warning_layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
-        warning_layout.setSpacing(SPACING['large'])
-
-        warning_icon = self.ui_utils.build_icon_label(FluentIcon.MEGAPHONE, COLORS['warning_text'], size=40)
-        warning_layout.addWidget(warning_icon, 0, Qt.AlignmentFlag.AlignVCenter)
-
-        warning_text_layout = QVBoxLayout()
-        warning_text_layout.setSpacing(SPACING['small'])
-
-        warning_title = StrongBodyLabel("WARNING")
-        warning_title.setStyleSheet("color: {}; font-size: 16px;".format(COLORS['warning_text']))
-        warning_text_layout.addWidget(warning_title)
-
-        warning_points = BodyLabel(
-            "While OpCore Simplify significantly reduces setup time, the Hackintosh journey still requires:<br><br>"
-            "- Understanding basic concepts from the <a href='https://dortania.github.io/OpenCore-Install-Guide/' style='color: #F57C00; text-decoration: none;'>Dortania Guide</a><br>"
-            "- Testing and troubleshooting during the installation process.<br>"
-            "- Patience and persistence in resolving any issues that arise.<br><br>"
-            "Our tool does not guarantee a successful installation in the first attempt, but it should help you get started."
+        return self.ui_utils.custom_card(
+            card_type='warning',
+            title="WARNING",
+            body=(
+                "While OpCore Simplify significantly reduces setup time, the Hackintosh journey still requires:<br><br>"
+                "- Understanding basic concepts from the <a href='https://dortania.github.io/OpenCore-Install-Guide/' style='color: #F57C00; text-decoration: none;'>Dortania Guide</a><br>"
+                "- Testing and troubleshooting during the installation process.<br>"
+                "- Patience and persistence in resolving any issues that arise.<br><br>"
+                "Our tool does not guarantee a successful installation in the first attempt, but it should help you get started."
+            )
         )
-        warning_points.setWordWrap(True)
-        warning_points.setOpenExternalLinks(True)
-        warning_points.setStyleSheet("color: #424242; line-height: 1.6;")
-        warning_text_layout.addWidget(warning_points)
-
-        warning_layout.addLayout(warning_text_layout)
-
-        return warning_card
 
     def _create_guide_card(self):
         guide_card = CardWidget()

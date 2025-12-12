@@ -25,76 +25,49 @@ class BuildPage(ScrollArea):
         self.build_in_progress = False
         self.build_successful = False
         self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
-        self.page()
-
-    def page(self):
+        
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         self.enableTransparentBackground()
+        
+        self._init_ui()
 
+    def _init_ui(self):
         self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.expandLayout.setSpacing(SPACING['xlarge'])
 
-        layout = self.expandLayout
-
-        layout.addWidget(self.ui_utils.create_step_indicator(4))
+        self.expandLayout.addWidget(self.ui_utils.create_step_indicator(4))
 
         title_label = TitleLabel("Build OpenCore EFI")
-        layout.addWidget(title_label)
+        self.expandLayout.addWidget(title_label)
 
         subtitle_label = BodyLabel("Build your customized OpenCore EFI ready for installation")
-        subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
-        layout.addWidget(subtitle_label)
+        subtitle_label.setStyleSheet("color: {};".format(COLORS['text_secondary']))
+        self.expandLayout.addWidget(subtitle_label)
 
-        layout.addSpacing(SPACING['medium'])
+        self.expandLayout.addSpacing(SPACING['medium'])
 
-        self.instructions_after_build_card = CardWidget(self.scrollWidget)
-        
-        self.instructions_after_build_card.setStyleSheet(f"""
-            CardWidget {{
-                background-color: {COLORS['warning_bg']};
-                border: 1px solid rgba(245, 124, 0, 0.25);
-                border-radius: {RADIUS['card']}px;
-            }}
-        """)
-        instructions_after_layout = QHBoxLayout(self.instructions_after_build_card)
-        instructions_after_layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
-        instructions_after_layout.setSpacing(SPACING['large'])
-
-        warning_icon = self.ui_utils.build_icon_label(FluentIcon.MEGAPHONE, COLORS['warning_text'], size=40)
-        instructions_after_layout.addWidget(warning_icon, 0, Qt.AlignmentFlag.AlignVCenter)
-
-        warning_text_layout = QVBoxLayout()
-        warning_text_layout.setSpacing(SPACING['small'])
-
-        warning_title = StrongBodyLabel("Before Using Your EFI")
-        warning_title.setStyleSheet("color: {}; font-size: 16px;".format(COLORS['warning_text']))
-        warning_text_layout.addWidget(warning_title)
-
-        instructions_after_intro = BodyLabel(
-            "Please complete these important steps before using the built EFI:"
-        )
-        instructions_after_intro.setWordWrap(True)
-        instructions_after_intro.setStyleSheet("color: #424242; line-height: 1.6;")
-        warning_text_layout.addWidget(instructions_after_intro)
-        
         self.instructions_after_content = QWidget()
         self.instructions_after_content_layout = QVBoxLayout(self.instructions_after_content)
         self.instructions_after_content_layout.setContentsMargins(0, 0, 0, 0)
         self.instructions_after_content_layout.setSpacing(SPACING['medium'])
-        warning_text_layout.addWidget(self.instructions_after_content)
-
-        instructions_after_layout.addLayout(warning_text_layout)
+        
+        self.instructions_after_build_card = self.ui_utils.custom_card(
+            card_type='warning',
+            title="Before Using Your EFI",
+            body="Please complete these important steps before using the built EFI:",
+            custom_widget=self.instructions_after_content,
+            parent=self.scrollWidget
+        )
         
         self.instructions_after_build_card.setVisible(False)
-        layout.addWidget(self.instructions_after_build_card)
+        self.expandLayout.addWidget(self.instructions_after_build_card)
 
         build_control_card = CardWidget(self.scrollWidget)
         build_control_card.setBorderRadius(RADIUS['card'])
         build_control_layout = QVBoxLayout(build_control_card)
-        build_control_layout.setContentsMargins(SPACING['large'], SPACING['large'],
-                                               SPACING['large'], SPACING['large'])
+        build_control_layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
         build_control_layout.setSpacing(SPACING['xlarge'])
         
         control_header_layout = QHBoxLayout()
@@ -103,7 +76,7 @@ class BuildPage(ScrollArea):
         control_header_layout.addWidget(control_icon)
         
         control_title = SubtitleLabel("Build Control")
-        control_title.setStyleSheet(f"color: {COLORS['text_primary']}; font-weight: 600;")
+        control_title.setStyleSheet("color: {}; font-weight: 600;".format(COLORS['text_primary']))
         control_header_layout.addWidget(control_title)
         control_header_layout.addStretch()
         build_control_layout.addLayout(control_header_layout)
@@ -141,7 +114,7 @@ class BuildPage(ScrollArea):
         status_row.addWidget(self.status_icon_label)
         
         self.progress_label = StrongBodyLabel("Ready to build")
-        self.progress_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 15px; font-weight: 600;")
+        self.progress_label.setStyleSheet("color: {}; font-size: 15px; font-weight: 600;".format(COLORS['text_secondary']))
         status_row.addWidget(self.progress_label)
         status_row.addStretch()
         
@@ -158,13 +131,12 @@ class BuildPage(ScrollArea):
         self.progress_container.setVisible(False)
         
         build_control_layout.addWidget(self.progress_container)
-        layout.addWidget(build_control_card)
+        self.expandLayout.addWidget(build_control_card)
 
         log_card = CardWidget(self.scrollWidget)
         log_card.setBorderRadius(RADIUS['card'])
         log_card_layout = QVBoxLayout(log_card)
-        log_card_layout.setContentsMargins(SPACING['large'], SPACING['large'],
-                                          SPACING['large'], SPACING['large'])
+        log_card_layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
         log_card_layout.setSpacing(SPACING['medium'])
         
         log_header_layout = QHBoxLayout()
@@ -200,9 +172,9 @@ class BuildPage(ScrollArea):
         self.controller.build_log = self.build_log
         log_card_layout.addWidget(self.build_log)
         
-        layout.addWidget(log_card)
+        self.expandLayout.addWidget(log_card)
 
-        layout.addStretch()
+        self.expandLayout.addStretch()
 
     def start_build(self):
         if not self.controller.hardware_state.hardware_report:

@@ -274,7 +274,7 @@ class CompatibilityChecker:
                 function()
 
         if self.error_codes:
-            self.utils.log_gui("[COMPATIBILITY CHECKER] Compatibility check failed with errors: {}".format(", ".join(self.error_codes)), level="Error")
+            self.utils.log_gui("[COMPATIBILITY CHECKER] Compatibility check that found errors: {}".format(", ".join(self.error_codes)), level="Info")
             return hardware_report, (None, None), None, self.error_codes
 
         self.utils.log_gui("[COMPATIBILITY CHECKER] Compatibility check completed successfully", level="Info")

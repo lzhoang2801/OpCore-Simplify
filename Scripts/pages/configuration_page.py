@@ -321,13 +321,14 @@ class macOSCard(SettingCard):
 
 class ConfigurationPage(ScrollArea):
     def __init__(self, parent, ui_utils_instance=None):
-        super().__init__()
+        super().__init__(parent)
         self.setObjectName("configurationPage")
         self.controller = parent
         self.settings = self.controller.backend.settings
         self.scrollWidget = QWidget()
-        self.main_layout = QVBoxLayout(self.scrollWidget)
+        self.expandLayout = QVBoxLayout(self.scrollWidget)
         self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
+        
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -335,13 +336,13 @@ class ConfigurationPage(ScrollArea):
         
         self.status_card = None
         
-        self.page()
+        self._init_ui()
 
-    def page(self):
-        self.main_layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
-        self.main_layout.setSpacing(SPACING['large'])
+    def _init_ui(self):
+        self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
+        self.expandLayout.setSpacing(SPACING['large'])
 
-        self.main_layout.addWidget(self.ui_utils.create_step_indicator(3))
+        self.expandLayout.addWidget(self.ui_utils.create_step_indicator(3))
 
         header_container = QWidget()
         header_layout = QVBoxLayout(header_container)
@@ -352,17 +353,17 @@ class ConfigurationPage(ScrollArea):
         header_layout.addWidget(title_label)
 
         subtitle_label = BodyLabel("Configure your OpenCore EFI settings")
-        subtitle_label.setStyleSheet("color: #605E5C;")
+        subtitle_label.setStyleSheet("color: {};".format(COLORS['text_secondary']))
         header_layout.addWidget(subtitle_label)
 
-        self.main_layout.addWidget(header_container)
-        self.main_layout.addSpacing(SPACING['large'])
+        self.expandLayout.addWidget(header_container)
+        self.expandLayout.addSpacing(SPACING['large'])
 
-        self.status_start_index = self.main_layout.count()
+        self.status_start_index = self.expandLayout.count()
         self._update_status_card()
 
         self.macos_card = macOSCard(self.controller, self.select_macos_version, self.scrollWidget)
-        self.main_layout.addWidget(self.macos_card)
+        self.expandLayout.addWidget(self.macos_card)
 
         self.acpi_card = PushSettingCard(
             "Configure Patches",
@@ -372,7 +373,7 @@ class ConfigurationPage(ScrollArea):
             self.scrollWidget
         )
         self.acpi_card.clicked.connect(self.customize_acpi)
-        self.main_layout.addWidget(self.acpi_card)
+        self.expandLayout.addWidget(self.acpi_card)
 
         self.kexts_card = PushSettingCard(
             "Manage Kexts",
@@ -382,20 +383,21 @@ class ConfigurationPage(ScrollArea):
             self.scrollWidget
         )
         self.kexts_card.clicked.connect(self.customize_kexts)
-        self.main_layout.addWidget(self.kexts_card)
+        self.expandLayout.addWidget(self.kexts_card)
 
         self.boot_picker_card = PickerGroup(self.settings, self.scrollWidget)
-        self.main_layout.addWidget(self.boot_picker_card)
+        self.expandLayout.addWidget(self.boot_picker_card)
 
         self.security_config_card = SecurityConfigGroup(self.settings, self.scrollWidget)
-        self.main_layout.addWidget(self.security_config_card)
+        self.expandLayout.addWidget(self.security_config_card)
 
         self.boot_args_card = BootArgsGroup(self.settings, self.scrollWidget)
-        self.main_layout.addWidget(self.boot_args_card)
+        self.expandLayout.addWidget(self.boot_args_card)
 
         self.smbios_card = SMBIOSGroup(self.settings, self.controller, self.customize_smbios, self.scrollWidget)
-        self.main_layout.addWidget(self.smbios_card)
-        self.main_layout.addStretch()
+        self.expandLayout.addWidget(self.smbios_card)
+        
+        self.expandLayout.addStretch()
 
     def _update_status_card(self):
         if self.status_card is not None:
@@ -434,7 +436,7 @@ class ConfigurationPage(ScrollArea):
         self.status_card.setStyleSheet("background-color: {};".format(bg_color))
         
         if hasattr(self.status_card, 'contentLabel'):
-            self.status_card.contentLabel.setStyleSheet(f"color: {status_color};")
+            self.status_card.contentLabel.setStyleSheet("color: {};".format(status_color))
             
         if disabled_devices:
             for device_name, device_info in disabled_devices.items():
@@ -447,7 +449,7 @@ class ConfigurationPage(ScrollArea):
         else:
              pass
 
-        self.main_layout.insertWidget(self.status_start_index, self.status_card)
+        self.expandLayout.insertWidget(self.status_start_index, self.status_card)
 
     def select_macos_version(self):
         if not self.controller.hardware_state.hardware_report:

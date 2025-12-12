@@ -1,4 +1,4 @@
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
 from qfluentwidgets import (
     PushButton, SubtitleLabel, BodyLabel, CardWidget, FluentIcon, 
@@ -6,7 +6,7 @@ from qfluentwidgets import (
     IconWidget, ExpandGroupSettingCard
 )
 
-from Scripts.styles import SPACING, COLORS, RADIUS
+from Scripts.styles import SPACING, COLORS
 from Scripts import ui_utils
 from Scripts.custom_dialogs import show_info, show_confirmation
 from Scripts.state import HardwareReportState, MacOSVersionState, SMBIOSState
@@ -48,8 +48,8 @@ class ReportDetailsGroup(ExpandGroupSettingCard):
             self.acpiIcon
         )
         
-        self.reportCard.contentLabel.setStyleSheet(f"color: {COLORS['text_secondary']};")
-        self.acpiCard.contentLabel.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        self.reportCard.contentLabel.setStyleSheet("color: {};".format(COLORS['text_secondary']))
+        self.acpiCard.contentLabel.setStyleSheet("color: {};".format(COLORS['text_secondary']))
 
     def update_status(self, section, path, status_type, message):
         card = self.reportCard if section == 'report' else self.acpiCard
@@ -76,11 +76,11 @@ class ReportDetailsGroup(ExpandGroupSettingCard):
         
         if status_type in ['error', 'warning'] and message:
              card.setContent(f"{path}\n\n{message}")
-             card.contentLabel.setStyleSheet(f"color: {color};")
+             card.contentLabel.setStyleSheet("color: {};".format(color))
         elif status_type == 'success':
-             card.contentLabel.setStyleSheet(f"color: {COLORS['text_primary']};")
+             card.contentLabel.setStyleSheet("color: {};".format(COLORS['text_primary']))
         else:
-             card.contentLabel.setStyleSheet(f"color: {COLORS['text_secondary']};")
+             card.contentLabel.setStyleSheet("color: {};".format(COLORS['text_secondary']))
 
         icon_widget.setIcon(icon)
         icon_widget.setVisible(True)
@@ -93,15 +93,15 @@ class SelectHardwareReportPage(QWidget):
         super().__init__(parent)
         self.setObjectName("SelectHardwareReport")
         self.controller = parent
-        self._connect_signals()
         self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
-        self.page()
+        self._connect_signals()
+        self._init_ui()
 
     def _connect_signals(self):
         self.load_hardware_report_signal.connect(self._handle_load_hardware_report_signal)
         self.export_finished_signal.connect(self._handle_export_finished)
 
-    def page(self):
+    def _init_ui(self):
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.main_layout.setSpacing(SPACING['large'])
@@ -112,7 +112,7 @@ class SelectHardwareReportPage(QWidget):
         header_layout.setSpacing(SPACING['small'])
         title = SubtitleLabel("Select Hardware Report")
         subtitle = BodyLabel("Select hardware report of target system you want to build EFI for")
-        subtitle.setStyleSheet("color: #605E5C;")
+        subtitle.setStyleSheet("color: {};".format(COLORS['text_secondary']))
         header_layout.addWidget(title)
         header_layout.addWidget(subtitle)
         self.main_layout.addLayout(header_layout)
@@ -128,41 +128,14 @@ class SelectHardwareReportPage(QWidget):
         self.main_layout.addStretch()
 
     def create_instructions_card(self):
-        card = CardWidget()
-        
-        card.setStyleSheet(f"""
-            CardWidget {{
-                background-color: {COLORS['note_bg']};
-                border: 1px solid rgba(21, 101, 192, 0.2);
-                border-radius: {RADIUS['card']}px;
-            }}
-        """)
-        
-        layout = QHBoxLayout(card)
-        layout.setContentsMargins(SPACING['large'], SPACING['large'], SPACING['large'], SPACING['large'])
-        layout.setSpacing(SPACING['large'])
-
-        icon = self.ui_utils.build_icon_label(FluentIcon.INFO, COLORS['note_text'], size=40)
-        layout.addWidget(icon, 0, Qt.AlignmentFlag.AlignVCenter)
-
-        text_layout = QVBoxLayout()
-        text_layout.setSpacing(SPACING['small'])
-        
-        title = StrongBodyLabel("Quick Guide")
-        title.setStyleSheet("color: {}; font-size: 16px;".format(COLORS['note_text']))
-        text_layout.addWidget(title)
-
-        text = BodyLabel()
-        text.setWordWrap(True)
-        text.setText(
-            "<b>Windows Users:</b> Click <span style='color:#0078D4; font-weight:600;'>Export Hardware Report</span> button to generate hardware report for current system. Alternatively, you can manually generate hardware report using Hardware Sniffer tool.<br>"
-            "<b>Linux/macOS Users:</b> Please transfer a report generated on Windows. Native generation is not supported."
+        card = self.ui_utils.custom_card(
+            card_type='note',
+            title="Quick Guide",
+            body=(
+                "<b>Windows Users:</b> Click <span style='color:#0078D4; font-weight:600;'>Export Hardware Report</span> button to generate hardware report for current system. Alternatively, you can manually generate hardware report using Hardware Sniffer tool.<br>"
+                "<b>Linux/macOS Users:</b> Please transfer a report generated on Windows. Native generation is not supported."
+            )
         )
-        text.setStyleSheet("color: #424242; line-height: 1.6;") 
-        text_layout.addWidget(text)
-        
-        layout.addLayout(text_layout)
-
         self.main_layout.addWidget(card)
 
     def create_action_card(self):
@@ -270,6 +243,8 @@ class SelectHardwareReportPage(QWidget):
 
         self.controller.hardware_state.hardware_report, self.controller.macos_state.native_version, self.controller.macos_state.ocl_patched_version, self.controller.hardware_state.compatibility_error = self.controller.backend.c.check_compatibility(validated_data)
         
+        self.controller.compatibilityPage.update_display()
+
         if self.controller.hardware_state.compatibility_error:
             error_msg = self.controller.hardware_state.compatibility_error
             if isinstance(error_msg, list):
@@ -295,7 +270,6 @@ class SelectHardwareReportPage(QWidget):
 
         self.controller.update_status("Hardware report loaded successfully", 'success')
         self.controller.configurationPage.update_display()
-        self.controller.compatibilityPage.update_display()
 
     def export_hardware_report(self):
         hardware_sniffer = self.controller.backend.o.gather_hardware_sniffer()
@@ -356,7 +330,7 @@ class SelectHardwareReportPage(QWidget):
     def refresh(self):
         if self.controller.hardware_state.report_path != "Not selected":
              self.report_group.reportCard.setContent(self.controller.hardware_state.report_path)
-             self.report_group.reportCard.contentLabel.setStyleSheet(f"color: {COLORS['text_primary']};")
+             self.report_group.reportCard.contentLabel.setStyleSheet("color: {};".format(COLORS['text_primary']))
         if self.controller.hardware_state.acpi_dir != "Not selected":
              self.report_group.acpiCard.setContent(self.controller.hardware_state.acpi_dir)
-             self.report_group.acpiCard.contentLabel.setStyleSheet(f"color: {COLORS['text_primary']};")
+             self.report_group.acpiCard.contentLabel.setStyleSheet("color: {};".format(COLORS['text_primary']))

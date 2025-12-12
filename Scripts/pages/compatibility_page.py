@@ -1,81 +1,55 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QColor
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel
-from qfluentwidgets import SubtitleLabel, BodyLabel, ScrollArea, FluentIcon, GroupHeaderCardWidget
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from qfluentwidgets import SubtitleLabel, BodyLabel, ScrollArea, FluentIcon, GroupHeaderCardWidget, CardWidget, StrongBodyLabel
 
 from Scripts.styles import COLORS, SPACING
 from Scripts import ui_utils
 from Scripts.datasets import os_data, pci_data
 
 
-class CompatibilityStatusBanner(QFrame):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(20, 20, 20, 20)
-        self.layout.setSpacing(10)
-        
-        self.header_layout = QHBoxLayout()
-        self.header_layout.setSpacing(12)
-        self.header_layout.setContentsMargins(0, 0, 0, 0)
-        
-        self.icon_label = QLabel()
-        self.title_label = QLabel()
-        font = QFont()
-        font.setBold(True)
-        font.setPixelSize(16)
-        self.title_label.setFont(font)
-        
-        self.header_layout.addWidget(self.icon_label)
-        self.header_layout.addWidget(self.title_label)
-        self.header_layout.addStretch()
-        
-        self.layout.addLayout(self.header_layout)
-        
-        self.message_label = QLabel()
-        self.message_label.setWordWrap(True)
-        self.message_label.setStyleSheet("font-size: 14px; color: #323130;")
-        self.layout.addWidget(self.message_label)
-        
-        self.note_label = QLabel()
-        self.note_label.setWordWrap(True)
-        note_font = QFont()
-        note_font.setItalic(True)
-        note_font.setPixelSize(12)
-        self.note_label.setFont(note_font)
-        self.layout.addWidget(self.note_label)
+class CompatibilityStatusBanner:
+    def __init__(self, parent=None, ui_utils_instance=None, layout=None):
+        self.parent = parent
+        self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
+        self.layout = layout
+        self.card = None
+        self.body_label = None
+        self.note_label = None
 
-        self.setVisible(False)
-
-    def _update_style(self, bg_color, border_color, note_color, icon, title, message, note):
-        self.setStyleSheet(f"""
-            CompatibilityStatusBanner {{
-                background-color: {bg_color};
-                border: 1px solid {border_color};
-                border-radius: 8px;
-            }}
-        """)
-        self.title_label.setStyleSheet(f"color: {border_color};")
-        self.title_label.setText(title)
-        
-        self.icon_label.setPixmap(icon.icon(color=QColor(border_color)).pixmap(20, 20))
-        
-        self.message_label.setText(message)
-        
+    def _create_card(self, card_type, icon, title, message, note=""):
+        body_text = message
         if note:
-            self.note_label.setText(note)
-            self.note_label.setStyleSheet(f"color: {note_color};")
-            self.note_label.setVisible(True)
-        else:
-            self.note_label.setVisible(False)
-            
-        self.setVisible(True)
+            body_text += f"<br><br><i style='color: {COLORS['text_secondary']}; font-size: 12px;'>{note}</i>"
+        
+        if self.card:
+            if self.layout:
+                self.layout.removeWidget(self.card)
+            self.card.setParent(None)
+            self.card.deleteLater()
+        
+        self.card = self.ui_utils.custom_card(
+            card_type=card_type,
+            icon=icon,
+            title=title,
+            body=body_text,
+            parent=self.parent
+        )
+        self.card.setVisible(True)
+        
+        if self.layout:
+            self.layout.insertWidget(2, self.card)
+        
+        return self.card
 
     def show_error(self, title, message, note=""):
-        self._update_style("#FDE7E9", "#D13438", "#A4262C", FluentIcon.CANCEL, title, message, note)
+        self._create_card('error', FluentIcon.CLOSE, title, message, note)
 
     def show_success(self, title, message, note=""):
-        self._update_style("#DFF6DD", "#107C10", "#0E5C0E", FluentIcon.ACCEPT, title, message, note)
+        self._create_card('success', FluentIcon.ACCEPT, title, message, note)
+    
+    def setVisible(self, visible):
+        if self.card:
+            self.card.setVisible(visible)
 
 class CompatibilityPage(ScrollArea):
     def __init__(self, parent, ui_utils_instance=None):
@@ -87,18 +61,17 @@ class CompatibilityPage(ScrollArea):
         self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
         self.contentWidget = None
         self.contentLayout = None
-        self.version_support_container = None
         self.native_support_label = None
         self.ocl_support_label = None
         
-        self.setup_ui()
-
-    def setup_ui(self):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         self.enableTransparentBackground()
+        
+        self._init_ui()
 
+    def _init_ui(self):
         self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
         self.expandLayout.setSpacing(SPACING['large'])
 
@@ -118,15 +91,14 @@ class CompatibilityPage(ScrollArea):
         title_layout.addWidget(title_label)
 
         subtitle_label = BodyLabel("Review hardware compatibility with macOS")
-        subtitle_label.setStyleSheet(f"color: {COLORS['text_secondary']};")
+        subtitle_label.setStyleSheet("color: {};".format(COLORS['text_secondary']))
         title_layout.addWidget(subtitle_label)
 
         header_layout.addWidget(title_block, 1)
 
         self.expandLayout.addWidget(header_container)
         
-        self.status_banner = CompatibilityStatusBanner(self.scrollWidget)
-        self.expandLayout.addWidget(self.status_banner)
+        self.status_banner = CompatibilityStatusBanner(self.scrollWidget, self.ui_utils, self.expandLayout)
         
         self.expandLayout.addSpacing(SPACING['large'])
 
@@ -197,15 +169,15 @@ class CompatibilityPage(ScrollArea):
         if self.controller.macos_state.native_version:
             min_ver_name = os_data.get_macos_name_by_darwin(self.controller.macos_state.native_version[0])
             max_ver_name = os_data.get_macos_name_by_darwin(self.controller.macos_state.native_version[-1])
-            native_range = min_ver_name if min_ver_name == max_ver_name else f"{min_ver_name} to {max_ver_name}"
+            native_range = min_ver_name if min_ver_name == max_ver_name else "{} to {}".format(min_ver_name, max_ver_name)
             
-            message = f"Native support: {native_range}"
+            message = "Native macOS support: {}".format(native_range)
             
             if self.controller.macos_state.ocl_patched_version:
                  oclp_max_name = os_data.get_macos_name_by_darwin(self.controller.macos_state.ocl_patched_version[0])
                  oclp_min_name = os_data.get_macos_name_by_darwin(self.controller.macos_state.ocl_patched_version[-1])
-                 oclp_range = oclp_min_name if oclp_min_name == oclp_max_name else f"{oclp_min_name} to {oclp_max_name}"
-                 message += f"\nOCLP support: {oclp_range}"
+                 oclp_range = oclp_min_name if oclp_min_name == oclp_max_name else "{} to {}".format(oclp_min_name, oclp_max_name)
+                 message += "\nOpenCore Legacy Patcher extended support: {}".format(oclp_range)
 
             self.status_banner.show_success("Hardware is Compatible", message)
         else:
@@ -242,8 +214,6 @@ class CompatibilityPage(ScrollArea):
                 widget.deleteLater()
 
         if not self.controller.hardware_state.hardware_report:
-            if self.version_support_container:
-                self.version_support_container.setVisible(False)
             self._show_placeholder()
             return
 
@@ -277,14 +247,14 @@ class CompatibilityPage(ScrollArea):
         self.contentLayout.addStretch()
 
     def _show_no_data_label(self):
-        no_data_label = BodyLabel(
-            "No compatible hardware information found in the report.\n"
-            "Please ensure the hardware report contains valid device data."
+        no_data_card = self.ui_utils.custom_card(
+            card_type='error',
+            icon=FluentIcon.CLOSE,
+            title="No compatible hardware information found in the report.",
+            body="Please ensure the hardware report contains valid device data.",
+            parent=self.scrollWidget
         )
-        no_data_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        no_data_label.setStyleSheet("color: #D13438; padding: 40px;")
-        no_data_label.setWordWrap(True)
-        self.contentLayout.addWidget(no_data_label)
+        self.contentLayout.addWidget(no_data_card)
 
     def _add_compatibility_group(self, card, title, compat):
         compat_text, compat_color = self.format_compatibility(compat)

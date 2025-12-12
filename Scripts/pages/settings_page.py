@@ -14,33 +14,27 @@ from qfluentwidgets import (
 
 from Scripts.custom_dialogs import show_confirmation
 from Scripts.styles import COLORS, SPACING
-from Scripts.settings import Settings
 
 
 class SettingsPage(ScrollArea):
-    def __init__(self, controller):
-        super().__init__()
-        self.controller = controller
+    def __init__(self, parent):
+        super().__init__(parent)
         self.setObjectName("settingsPage")
-        self.settings = self.controller.backend.settings
+        self.controller = parent
         self.scrollWidget = QWidget()
-        self.expandLayout = QVBoxLayout()
-        self.scrollWidget.setLayout(self.expandLayout)
-        self.init_ui()
-
-    def init_ui(self):
-        self.resize(1000, 800)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.expandLayout = QVBoxLayout(self.scrollWidget)
+        self.settings = self.controller.backend.settings
+        
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
-
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.enableTransparentBackground()
+        
+        self._init_ui()
 
-        self._init_layout()
-
-    def _init_layout(self):
-        self.expandLayout.setSpacing(SPACING['large'])
+    def _init_ui(self):
         self.expandLayout.setContentsMargins(SPACING['xxlarge'], SPACING['xlarge'], SPACING['xxlarge'], SPACING['xlarge'])
+        self.expandLayout.setSpacing(SPACING['large'])
 
         header_container = QWidget()
         header_layout = QVBoxLayout(header_container)
@@ -302,9 +296,9 @@ class SettingsPage(ScrollArea):
 
     def get_git_version(self):
         try:
-            script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+            main_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-            sha_version_file = os.path.join(script_dir, 'sha_version.txt')
+            sha_version_file = os.path.join(main_dir, 'sha_version.txt')
             if os.path.exists(sha_version_file):
                 with open(sha_version_file, 'r') as f:
                     version = f.read().strip()
