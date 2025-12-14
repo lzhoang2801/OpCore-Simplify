@@ -268,10 +268,14 @@ class DSDT:
 
     def get_latest_iasl(self):
         latest_release = self.github.get_latest_release("acpica", "acpica") or {}
-        
+
         for line in latest_release.get("body", "").splitlines():
             if "iasl" in line and ".zip" in line:
                 return line.split("\"")[1]
+
+        for asset in latest_release.get("assets", []):
+            if "/iasl" in asset.get("url") and ".zip" in asset.get("url"):
+                return asset.get("url")
             
         return None
     
