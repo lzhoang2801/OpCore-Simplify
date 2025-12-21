@@ -17,6 +17,9 @@ import re
 import shutil
 import traceback
 import time
+import platform
+
+os_name = platform.system()
 
 class OCPE:
     def __init__(self):
@@ -39,7 +42,7 @@ class OCPE:
         while True:
             self.u.head("Select hardware report")
             print("")
-            if os.name == "nt":
+            if os_name in ("Windows", "Linux"):
                 print("\033[1;93mNote:\033[0m")
                 print("- Ensure you are using the latest version of Hardware Sniffer before generating the hardware report.")
                 print("- Hardware Sniffer will not collect information related to Resizable BAR option of GPU (disabled by default) and monitor connections in Windows PE.")
@@ -49,7 +52,7 @@ class OCPE:
             print("Q. Quit")
             print("")
         
-            user_input = self.u.request_input("Drag and drop your hardware report here (.JSON){}: ".format(" or type \"E\" to export" if os.name == "nt" else ""))
+            user_input = self.u.request_input("Drag and drop your hardware report here (.JSON){}: ".format(" or type \"E\" to export" if os_name in ("Windows", "Linux") else ""))
             if user_input.lower() == "q":
                 self.u.exit_program()
             if user_input.lower() == "e":
@@ -64,9 +67,28 @@ class OCPE:
                 print("")
                 print("Exporting hardware report to {}...".format(report_dir))
                 
-                output = self.r.run({
-                    "args":[hardware_sniffer, "-e", "-o", report_dir]
-                })
+                output = None
+
+                if os_name == "Windows":
+                    output = self.r.run({
+                        "args":[hardware_sniffer, "-e", "-o", report_dir]
+                    })
+                elif os_name == "Linux":
+                    chmod_command = self.r.run({
+                        "args":["sudo", "chmod", "+x", hardware_sniffer]
+                    })
+
+                    if chmod_command[-1] != 0:
+                        print("")
+                        print("Could not set execute permission for Hardware Sniffer. Please check your sudo permissions.")
+                        print("")
+                        self.u.request_input()
+                        continue
+
+                    output = self.r.run({
+                        "args":[hardware_sniffer, "-e", "-o", report_dir]
+                    })
+                
 
                 if output[-1] != 0:
                     error_code = output[-1]
@@ -281,7 +303,7 @@ class OCPE:
         picker_variant = config_data.get("Misc", {}).get("Boot", {}).get("PickerVariant")
         if picker_variant in (None, "Auto"):
             picker_variant = "Acidanthera/GoldenGate" 
-        if os.name == "nt":
+        if os_name == "Windows":
             picker_variant = picker_variant.replace("/", "\\")
 
         resources_image_dir = os.path.join(self.result_dir, "EFI", "OC", "Resources", "Image")
@@ -353,8 +375,8 @@ class OCPE:
             
             print("* USB Mapping:")
             print("    - Use USBToolBox tool to map USB ports.")
-            print("    - Add created UTBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
-            print("    - Remove UTBDefault.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+            print("    - Add created UTBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os_name == "Windows" else "EFI/OC/Kexts"))
+            print("    - Remove UTBDefault.kext in the {} folder.".format("EFI\\OC\\Kexts" if os_name == "Windows" else "EFI/OC/Kexts"))
             print("    - Edit config.plist:")
             print("        - Use ProperTree to open your config.plist.")
             print("        - Run OC Snapshot by pressing Command/Ctrl + R.")
