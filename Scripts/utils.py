@@ -1,18 +1,38 @@
 import os
-import sys
 import json
 import plistlib
 import shutil
 import re
 import binascii
 import subprocess
-import pathlib
 import zipfile
 import tempfile
+import traceback
+import contextlib
+import logging
 
 class Utils:
-    def __init__(self, script_name = "OpCore Simplify"):
-        self.script_name = script_name
+    def __init__(self):
+        self.gui_handler = None
+        self.logger = logging.getLogger("OpCoreSimplify")
+
+    @contextlib.contextmanager
+    def safe_block(self, task_name="Operation", suppress_error=True):
+        try:
+            yield
+        except Exception as e:
+            error_details = "".join(traceback.format_exc())
+            self.log_message("Error during '{}': {}\n{}".format(task_name, str(e), error_details), level="ERROR")
+            if not suppress_error:
+                raise
+
+    def log_message(self, message, level="INFO", to_build_log=False):
+        log_level = getattr(logging, level.upper(), logging.INFO)
+        
+        extra = {'to_build_log': to_build_log}
+        
+        self.logger.log(log_level, message, extra=extra)
+        return True
 
     def clean_temporary_dir(self):
         temporary_dir = tempfile.gettempdir()
@@ -26,6 +46,7 @@ class Utils:
                 try:
                     shutil.rmtree(os.path.join(temporary_dir, file))
                 except Exception as e:
+                    self.log_message("[UTILS] Failed to remove temp directory {}: {}".format(file, e), "Error")
                     pass
     
     def get_temporary_dir(self):
@@ -127,23 +148,6 @@ class Utils:
 
     def contains_any(self, data, search_item, start=0, end=None):
         return next((item for item in data[start:end] if item.lower() in search_item.lower()), None)
-
-    def normalize_path(self, path):
-        path = re.sub(r'^[\'"]+|[\'"]+$', '', path)
-        
-        path = path.strip()
-        
-        path = os.path.expanduser(path)
-        
-        if os.name == 'nt':
-            path = path.replace('\\', '/')
-            path = re.sub(r'/+', '/', path)
-        else:
-            path = path.replace('\\', '')
-        
-        path = os.path.normpath(path)
-        
-        return str(pathlib.Path(path).resolve())
     
     def parse_darwin_version(self, darwin_version):
         major, minor, patch = map(int, darwin_version.split('.'))
@@ -157,77 +161,3 @@ class Utils:
                 subprocess.run(['xdg-open', folder_path])
         elif os.name == 'nt':
             os.startfile(folder_path)
-
-    def request_input(self, prompt="Press Enter to continue..."):
-        if sys.version_info[0] < 3:
-            user_response = raw_input(prompt)
-        else:
-            user_response = input(prompt)
-        
-        if not isinstance(user_response, str):
-            user_response = str(user_response)
-        
-        return user_response
-
-    def progress_bar(self, title, steps, current_step_index, done=False):
-        self.head(title)
-        print("")
-        if done:
-            for step in steps:
-                print("  [\033[92m✓\033[0m] {}".format(step))
-        else:
-            for i, step in enumerate(steps):
-                if i < current_step_index:
-                    print("  [\033[92m✓\033[0m] {}".format(step))
-                elif i == current_step_index:
-                    print("  [\033[1;93m>\033[0m] {}...".format(step))
-                else:
-                    print("  [ ] {}".format(step))
-        print("")
-
-    def head(self, text = None, width = 68, resize=True):
-        if resize:
-            self.adjust_window_size()
-        os.system('cls' if os.name=='nt' else 'clear')
-        if text == None:
-            text = self.script_name
-        separator = "═" * (width - 2)
-        title = " {} ".format(text)
-        if len(title) > width - 2:
-            title = title[:width-4] + "..."
-        title = title.center(width - 2)
-        
-        print("╔{}╗\n║{}║\n╚{}╝".format(separator, title, separator))
-    
-    def adjust_window_size(self, content=""):
-        lines = content.splitlines()
-        rows = len(lines)
-        cols = max(len(line) for line in lines) if lines else 0
-        print('\033[8;{};{}t'.format(max(rows+6, 30), max(cols+2, 100)))
-
-    def exit_program(self):
-        self.head()
-        width = 68
-        print("")
-        print("For more information, to report errors, or to contribute to the product:".center(width))
-        print("")
-
-        separator = "─" * (width - 4)
-        print(f" ┌{separator}┐ ")
-        
-        contacts = {
-            "Facebook": "https://www.facebook.com/macforce2601",
-            "Telegram": "https://t.me/lzhoang2601",
-            "GitHub": "https://github.com/lzhoang2801/OpCore-Simplify"
-        }
-        
-        for platform, link in contacts.items():
-            line = f" * {platform}: {link}"
-            print(f" │{line.ljust(width - 4)}│ ")
-
-        print(f" └{separator}┘ ")
-        print("")
-        print("Thank you for using our program!".center(width))
-        print("")
-        self.request_input("Press Enter to exit.".center(width))
-        sys.exit(0)

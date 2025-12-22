@@ -1,0 +1,500 @@
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QWheelEvent
+from qfluentwidgets import (
+    ScrollArea, SubtitleLabel, BodyLabel, FluentIcon, 
+    PushSettingCard, ExpandGroupSettingCard, SpinBox, 
+    LineEdit, PushButton, SwitchButton, ComboBox, 
+    IndicatorPosition, SettingCard
+)
+
+from Scripts.custom_dialogs import show_macos_version_dialog
+from Scripts.styles import SPACING, COLORS
+from Scripts import ui_utils
+
+
+class PickerGroup(ExpandGroupSettingCard):
+    def __init__(self, settings, parent=None):
+        super().__init__(
+            FluentIcon.MENU,
+            "Boot Picker",
+            "Configure OpenCore picker settings",
+            parent
+        )
+        self.settings = settings
+        
+        self.showPickerSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
+        self.showPickerSwitch.setOnText("On")
+        self.showPickerSwitch.setChecked(self.settings.get_show_picker())
+        self.showPickerSwitch.checkedChanged.connect(lambda c: self.settings.set("show_picker", c))
+        
+        self.pickerModeCombo = ComboBox()
+        picker_mode_values = ["Builtin", "External"]
+        self.pickerModeCombo.addItems(picker_mode_values)
+        self.pickerModeCombo.setCurrentText(self.settings.get_picker_mode())
+        self.pickerModeCombo.currentTextChanged.connect(lambda t: self.settings.set("picker_mode", t))
+        self.pickerModeCombo.setFixedWidth(150)
+        
+        self.hideAuxSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
+        self.hideAuxSwitch.setOnText("On")
+        self.hideAuxSwitch.setChecked(self.settings.get_hide_auxiliary())
+        self.hideAuxSwitch.checkedChanged.connect(lambda c: self.settings.set("hide_auxiliary", c))
+        
+        self.pickerVariantCombo = ComboBox()
+        picker_variant_values = [
+            "Auto",
+            "Acidanthera/GoldenGate",
+            "Acidanthera/Syrah",
+            "Acidanthera/Chardonnay"
+        ]
+        self.pickerVariantCombo.addItems(picker_variant_values)
+        self.pickerVariantCombo.setCurrentText(self.settings.get_picker_variant())
+        self.pickerVariantCombo.currentTextChanged.connect(lambda t: self.settings.set("picker_variant", t))
+        self.pickerVariantCombo.setFixedWidth(220)
+        
+        self.timeoutSpin = SpinBox()
+        self.timeoutSpin.setRange(0, 60*10)
+        self.timeoutSpin.setValue(self.settings.get_picker_timeout())
+        self.timeoutSpin.valueChanged.connect(lambda v: self.settings.set("picker_timeout", v))
+        
+        self.viewLayout.setContentsMargins(0, 0, 0, 0)
+        self.viewLayout.setSpacing(0)
+        
+        self.addGroup(
+            FluentIcon.MENU, 
+            "Show Picker", 
+            "Show the OpenCore Picker at startup, allowing you to choose between different boot entries.", 
+            self.showPickerSwitch
+        )
+        self.addGroup(
+            FluentIcon.APPLICATION, 
+            "Picker Mode", 
+            "Picker used for boot management: Builtin (text mode) or External (OpenCanopy GUI).", 
+            self.pickerModeCombo
+        )
+        self.addGroup(
+            FluentIcon.HIDE, 
+            "Hide auxiliary entries", 
+            "Hides auxiliary boot entries (Recovery, Reset NVRAM, Tools) from the boot picker for a cleaner interface.", 
+            self.hideAuxSwitch
+        )
+        self.addGroup(
+            FluentIcon.PALETTE, 
+            "Picker Variant", 
+            "Choose specific icon set to be used for boot management. Requires External Picker mode.", 
+            self.pickerVariantCombo
+        )
+        self.addGroup(
+            FluentIcon.HISTORY, 
+            "Timeout", 
+            "Timeout in seconds in the OpenCore picker before automatic booting of the default boot entry. Set to 0 to disable.", 
+            self.timeoutSpin
+        )
+
+    def wheelEvent(self, event: QWheelEvent):
+        parent = self.parent()
+
+        while parent:
+            if isinstance(parent, ScrollArea):
+                parent.wheelEvent(event)
+                return
+            parent = parent.parent()
+
+        super().wheelEvent(event)
+
+class SecurityConfigGroup(ExpandGroupSettingCard):
+    def __init__(self, settings, parent=None):
+        super().__init__(
+            FluentIcon.DEVELOPER_TOOLS,
+            "Security Configuration",
+            "System Integrity Protection and Secure Boot Model",
+            parent
+        )
+        self.settings = settings
+        
+        self.disableSipSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
+        self.disableSipSwitch.setOnText("On")
+        self.disableSipSwitch.setChecked(self.settings.get_disable_sip())
+        self.disableSipSwitch.checkedChanged.connect(lambda c: self.settings.set("disable_sip", c))
+        
+        self.secureBootCombo = ComboBox()
+        secure_boot_values = [
+            "Default",
+            "Disabled",
+            "j137",
+            "j680",
+            "j132",
+            "j174",
+            "j140k",
+            "j780",
+            "j213",
+            "j140a",
+            "j152f",
+            "j160",
+            "j230k",
+            "j214k",
+            "j223",
+            "j215",
+            "j185",
+            "j185f",
+            "x86legacy"
+        ]
+        self.secureBootCombo.addItems(secure_boot_values)
+        current_sb = self.settings.get_secure_boot_model()
+        if current_sb not in secure_boot_values:
+            current_sb = "Disabled"
+        self.secureBootCombo.setCurrentText(current_sb)
+        self.secureBootCombo.currentTextChanged.connect(lambda t: self.settings.set("secure_boot_model", t))
+        self.secureBootCombo.setFixedWidth(150)
+        
+        self.viewLayout.setContentsMargins(0, 0, 0, 0)
+        self.viewLayout.setSpacing(0)
+        
+        self.addGroup(
+            FluentIcon.SETTING, 
+            "Disable SIP", 
+            "Allowing unrestricted modifications and installation of software, kexts, and kernel patches. Required for OpenCore Legacy Patcher and other tools.", 
+            self.disableSipSwitch
+        )
+        self.addGroup(
+            FluentIcon.CERTIFICATE, 
+            "Secure Boot Model", 
+            "Sets Apple Secure Boot hardware model for security level.", 
+            self.secureBootCombo
+        )
+
+    def wheelEvent(self, event: QWheelEvent):
+        parent = self.parent()
+
+        while parent:
+            if isinstance(parent, ScrollArea):
+                parent.wheelEvent(event)
+                return
+            parent = parent.parent()
+
+        super().wheelEvent(event)
+
+class BootArgsGroup(ExpandGroupSettingCard):
+    def __init__(self, settings, parent=None):
+        super().__init__(
+            FluentIcon.COMMAND_PROMPT,
+            "Boot Arguments",
+            "Configure verbose mode and custom boot arguments",
+            parent
+        )
+        self.settings = settings
+        
+        self.verboseSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
+        self.verboseSwitch.setOnText("On")
+        self.verboseSwitch.setChecked(self.settings.get_verbose_boot())
+        self.verboseSwitch.checkedChanged.connect(lambda c: self.settings.set("verbose_boot", c))
+        
+        self.customArgsInput = LineEdit()
+        self.customArgsInput.setPlaceholderText("e.g., -radcodec -raddvi")
+        self.customArgsInput.setText(self.settings.get_custom_boot_args())
+        self.customArgsInput.textChanged.connect(lambda t: self.settings.set("custom_boot_args", t))
+        self.customArgsInput.setClearButtonEnabled(True)
+        self.customArgsInput.setFixedWidth(400)
+        
+        self.viewLayout.setContentsMargins(0, 0, 0, 0)
+        self.viewLayout.setSpacing(0)
+        
+        self.addGroup(
+            FluentIcon.CODE, 
+            "Verbose boot", 
+            "Enables verbose boot with \"-v debug=0x100 keepsyms=1\" arguments for detailed boot logging and troubleshooting.", 
+            self.verboseSwitch
+        )
+        self.addGroup(
+            FluentIcon.COMMAND_PROMPT, 
+            "Additional Arguments", 
+            "Add custom boot arguments (space-separated)", 
+            self.customArgsInput
+        )
+
+    def wheelEvent(self, event: QWheelEvent):
+        parent = self.parent()
+
+        while parent:
+            if isinstance(parent, ScrollArea):
+                parent.wheelEvent(event)
+                return
+            parent = parent.parent()
+
+        super().wheelEvent(event)
+
+class SMBIOSGroup(ExpandGroupSettingCard):
+    def __init__(self, settings, controller, on_select_model, parent=None):
+        super().__init__(
+            FluentIcon.PEOPLE,
+            "SMBIOS Configuration",
+            "SMBIOS generation and preservation options",
+            parent
+        )
+        self.settings = settings
+        self.controller = controller
+        
+        self.modelLabel = BodyLabel(self.controller.smbios_state.model_name)
+        self.modelLabel.setStyleSheet("color: {}; margin-right: 10px;".format(COLORS["text_secondary"]))
+
+        self.selectModelBtn = PushButton("Select Model")
+        self.selectModelBtn.clicked.connect(on_select_model)
+        self.selectModelBtn.setFixedWidth(150)
+        
+        model_widget = QWidget()
+        model_layout = QHBoxLayout(model_widget)
+        model_layout.setContentsMargins(0, 0, 0, 0)
+        model_layout.addWidget(self.modelLabel)
+        model_layout.addWidget(self.selectModelBtn)
+        
+        self.randomSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
+        self.randomSwitch.setOnText("On")
+        self.randomSwitch.setChecked(self.settings.get_random_smbios())
+        self.randomSwitch.checkedChanged.connect(lambda c: self.settings.set("random_smbios", c))
+        
+        self.preserveSwitch = SwitchButton("Off", self, IndicatorPosition.RIGHT)
+        self.preserveSwitch.setOnText("On")
+        self.preserveSwitch.setChecked(self.settings.get_preserve_smbios())
+        self.preserveSwitch.checkedChanged.connect(lambda c: self.settings.set("preserve_smbios", c))
+        
+        self.viewLayout.setContentsMargins(0, 0, 0, 0)
+        self.viewLayout.setSpacing(0)
+        
+        self.addGroup(
+            FluentIcon.TAG, 
+            "SMBIOS Model", 
+            "Choose the Mac model your system will identify as", 
+            model_widget
+        )
+        self.addGroup(
+            FluentIcon.SYNC, 
+            "Generate random SMBIOS", 
+            "Automatically generates new random serial numbers for each build to ensure unique system identifiers", 
+            self.randomSwitch
+        )
+        self.addGroup(
+            FluentIcon.SAVE, 
+            "Preserve SMBIOS", 
+            "Maintains the same SMBIOS values across multiple builds for consistency with iCloud and other services", 
+            self.preserveSwitch
+        )
+
+    def wheelEvent(self, event: QWheelEvent):
+        parent = self.parent()
+
+        while parent:
+            if isinstance(parent, ScrollArea):
+                parent.wheelEvent(event)
+                return
+            parent = parent.parent()
+
+        super().wheelEvent(event)
+
+    def update_model(self):
+        self.modelLabel.setText(self.controller.smbios_state.model_name)
+
+class macOSCard(SettingCard):
+    def __init__(self, controller, on_select_version, parent=None):
+        super().__init__(
+            FluentIcon.GLOBE,
+            "macOS Version",
+            "Target operating system version",
+            parent
+        )
+        self.controller = controller
+        
+        self.versionLabel = BodyLabel(self.controller.macos_state.selected_version_name)
+        self.versionLabel.setStyleSheet("color: {}; margin-right: 10px;".format(COLORS["text_secondary"]))
+        
+        self.selectVersionBtn = PushButton("Select Version")
+        self.selectVersionBtn.clicked.connect(on_select_version)
+        self.selectVersionBtn.setFixedWidth(150)
+        
+        self.hBoxLayout.addWidget(self.versionLabel)
+        self.hBoxLayout.addWidget(self.selectVersionBtn)
+        self.hBoxLayout.addSpacing(16)
+
+    def update_version(self):
+        self.versionLabel.setText(self.controller.macos_state.selected_version_name)
+
+class ConfigurationPage(ScrollArea):
+    def __init__(self, parent, ui_utils_instance=None):
+        super().__init__(parent)
+        self.setObjectName("configurationPage")
+        self.controller = parent
+        self.settings = self.controller.backend.settings
+        self.scrollWidget = QWidget()
+        self.expandLayout = QVBoxLayout(self.scrollWidget)
+        self.ui_utils = ui_utils_instance if ui_utils_instance else ui_utils.UIUtils()
+        
+        self.setWidget(self.scrollWidget)
+        self.setWidgetResizable(True)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.enableTransparentBackground()
+        
+        self.status_card = None
+        
+        self._init_ui()
+
+    def _init_ui(self):
+        self.expandLayout.setContentsMargins(SPACING["xxlarge"], SPACING["xlarge"], SPACING["xxlarge"], SPACING["xlarge"])
+        self.expandLayout.setSpacing(SPACING["large"])
+
+        self.expandLayout.addWidget(self.ui_utils.create_step_indicator(3))
+
+        header_container = QWidget()
+        header_layout = QVBoxLayout(header_container)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(SPACING["tiny"])
+
+        title_label = SubtitleLabel("Configuration")
+        header_layout.addWidget(title_label)
+
+        subtitle_label = BodyLabel("Configure your OpenCore EFI settings")
+        subtitle_label.setStyleSheet("color: {};".format(COLORS["text_secondary"]))
+        header_layout.addWidget(subtitle_label)
+
+        self.expandLayout.addWidget(header_container)
+        self.expandLayout.addSpacing(SPACING["large"])
+
+        self.status_start_index = self.expandLayout.count()
+        self._update_status_card()
+
+        self.macos_card = macOSCard(self.controller, self.select_macos_version, self.scrollWidget)
+        self.expandLayout.addWidget(self.macos_card)
+
+        self.acpi_card = PushSettingCard(
+            "Configure Patches",
+            FluentIcon.DEVELOPER_TOOLS,
+            "ACPI Patches",
+            "Customize system ACPI table modifications for hardware compatibility",
+            self.scrollWidget
+        )
+        self.acpi_card.clicked.connect(self.customize_acpi_patches)
+        self.expandLayout.addWidget(self.acpi_card)
+
+        self.kexts_card = PushSettingCard(
+            "Manage Kexts",
+            FluentIcon.CODE,
+            "Kernel Extensions",
+            "Configure kexts required for your hardware",
+            self.scrollWidget
+        )
+        self.kexts_card.clicked.connect(self.customize_kexts)
+        self.expandLayout.addWidget(self.kexts_card)
+
+        self.boot_picker_card = PickerGroup(self.settings, self.scrollWidget)
+        self.expandLayout.addWidget(self.boot_picker_card)
+
+        self.security_config_card = SecurityConfigGroup(self.settings, self.scrollWidget)
+        self.expandLayout.addWidget(self.security_config_card)
+
+        self.boot_args_card = BootArgsGroup(self.settings, self.scrollWidget)
+        self.expandLayout.addWidget(self.boot_args_card)
+
+        self.smbios_card = SMBIOSGroup(self.settings, self.controller, self.customize_smbios_model, self.scrollWidget)
+        self.expandLayout.addWidget(self.smbios_card)
+        
+        self.expandLayout.addStretch()
+
+    def _update_status_card(self):
+        if self.status_card is not None:
+            self.expandLayout.removeWidget(self.status_card)
+            self.status_card.deleteLater()
+            self.status_card = None
+
+        disabled_devices = self.controller.hardware_state.disabled_devices or {}
+        
+        status_text = ""
+        status_color = COLORS["text_secondary"]
+        bg_color = COLORS["bg_card"]
+        icon = FluentIcon.INFO
+        
+        if disabled_devices:
+            status_text = "Hardware components excluded from configuration"
+            status_color = COLORS["text_secondary"]
+            bg_color = COLORS["warning_bg"]
+        elif not self.controller.hardware_state.hardware_report:
+            status_text = "Please select hardware report first"
+        elif not self.controller.macos_state.darwin_version:
+            status_text = "Please select target macOS version first"
+        else:
+            status_text = "All hardware components are compatible and enabled"
+            status_color = COLORS["success"]
+            bg_color = COLORS["success_bg"]
+            icon = FluentIcon.ACCEPT
+
+        self.status_card = ExpandGroupSettingCard(
+            icon,
+            "Compatibility Status",
+            status_text,
+            self.scrollWidget
+        )
+        
+        if disabled_devices:
+            for device_name, device_info in disabled_devices.items():
+                self.ui_utils.add_group_with_indent(
+                    self.status_card,
+                    FluentIcon.CLOSE,
+                    device_name,
+                    "Incompatible" if device_info.get("Compatibility") == (None, None) else "Disabled",
+                )
+        else:
+             pass
+
+        self.expandLayout.insertWidget(self.status_start_index, self.status_card)
+
+    def select_macos_version(self):
+        if not self.controller.validate_prerequisites(require_darwin_version=False, require_customized_hardware=False):
+            return
+
+        selected_version = show_macos_version_dialog(
+            self.controller.macos_state.native_version,
+            self.controller.macos_state.ocl_patched_version,
+            self.controller.macos_state.suggested_version,
+            self.controller.window()
+        )
+
+        if selected_version:
+            self.controller.apply_macos_version(selected_version)
+            self.controller.update_status("macOS version updated to {}".format(self.controller.macos_state.selected_version_name), "success")
+            if hasattr(self, "macos_card"):
+                self.macos_card.update_version()
+
+    def customize_acpi_patches(self):
+        if not self.controller.validate_prerequisites():
+            return
+
+        self.controller.backend.ac.customize_patch_selection()
+        self.controller.update_status("ACPI patches configuration updated successfully", "success")
+
+    def customize_kexts(self):
+        if not self.controller.validate_prerequisites():
+            return
+
+        self.controller.backend.k.kext_configuration_menu(self.controller.macos_state.darwin_version)
+        self.controller.update_status("Kext configuration updated successfully", "success")
+
+    def customize_smbios_model(self):
+        if not self.controller.validate_prerequisites():
+            return
+
+        current_model = self.controller.smbios_state.model_name
+        selected_model = self.controller.backend.s.customize_smbios_model(self.controller.hardware_state.customized_hardware, current_model, self.controller.macos_state.darwin_version, self.controller.window())
+
+        if selected_model and selected_model != current_model:
+            self.controller.smbios_state.model_name = selected_model
+            self.controller.backend.s.smbios_specific_options(self.controller.hardware_state.customized_hardware, selected_model, self.controller.macos_state.darwin_version, self.controller.backend.ac.patches, self.controller.backend.k)
+
+            self.smbios_card.update_model()
+            self.controller.update_status("SMBIOS model updated to {}".format(selected_model), "success")
+
+    def update_display(self):
+        self._update_status_card()
+        if hasattr(self, "macos_card"):
+            self.macos_card.update_version()
+        if hasattr(self, "smbios_card"):
+            self.smbios_card.update_model()
+
+    def refresh(self):
+        self.update_display()

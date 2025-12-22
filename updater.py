@@ -7,11 +7,11 @@ import tempfile
 import shutil
 
 class Updater:
-    def __init__(self):
-        self.github = github.Github()
-        self.fetcher = resource_fetcher.ResourceFetcher()
-        self.run = run.Run().run
-        self.utils = utils.Utils()
+    def __init__(self, utils_instance=None, github_instance=None, resource_fetcher_instance=None, run_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
+        self.github = github_instance if github_instance else github.Github(utils_instance=self.utils)
+        self.fetcher = resource_fetcher_instance if resource_fetcher_instance else resource_fetcher.ResourceFetcher(utils_instance=self.utils)
+        self.run = run_instance.run if run_instance else run.Run().run
         self.sha_version = os.path.join(os.path.dirname(os.path.realpath(__file__)), "sha_version.txt")
         self.download_repo_url = "https://github.com/lzhoang2801/OpCore-Simplify/archive/refs/heads/main.zip"
         self.temporary_dir = tempfile.mkdtemp()
@@ -131,6 +131,7 @@ class Updater:
             return False
 
     def run_update(self):
+        return False
         self.utils.head("Check for Updates")
         print("")
         

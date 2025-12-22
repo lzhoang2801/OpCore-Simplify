@@ -3,39 +3,14 @@ from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts.datasets import codec_layouts
 from Scripts import utils
-import time
+from Scripts import settings
 
 class CompatibilityChecker:
-    def __init__(self):
-        self.utils = utils.Utils()
+    def __init__(self, utils_instance=None, settings_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
+        self.settings = settings_instance if settings_instance else settings.Settings()
+        self.error_codes = []
 
-    def show_macos_compatibility(self, device_compatibility):
-        if not device_compatibility:
-            return "\033[90mUnchecked\033[0m"
-        
-        if not device_compatibility[0]:
-            return "\033[0;31mUnsupported\033[0m"
-        
-        max_compatibility = self.utils.parse_darwin_version(device_compatibility[0])[0]
-        min_compatibility = self.utils.parse_darwin_version(device_compatibility[-1])[0]
-        max_version = self.utils.parse_darwin_version(os_data.get_latest_darwin_version())[0]
-        min_version = self.utils.parse_darwin_version(os_data.get_lowest_darwin_version())[0]
-
-        if max_compatibility == min_version:
-            return "\033[1;36mMaximum support up to {}\033[0m".format(
-                os_data.get_macos_name_by_darwin(device_compatibility[-1])
-            )
-
-        if min_version < min_compatibility or max_compatibility < max_version:
-            return "\033[1;32m{} to {}\033[0m".format(
-                os_data.get_macos_name_by_darwin(device_compatibility[-1]), 
-                os_data.get_macos_name_by_darwin(device_compatibility[0])
-            )
-        
-        return "\033[1;36mUp to {}\033[0m".format(
-            os_data.get_macos_name_by_darwin(device_compatibility[0])
-        )
-        
     def is_low_end_intel_cpu(self, processor_name):
         return any(cpu_branding in processor_name for cpu_branding in ("Celeron", "Pentium"))
 
@@ -53,29 +28,14 @@ class CompatibilityChecker:
 
         self.hardware_report["CPU"]["Compatibility"] = (max_version, min_version)
         
-        print("{}- {}: {}".format(" "*3, self.hardware_report.get("CPU").get("Processor Name"), self.show_macos_compatibility(self.hardware_report["CPU"].get("Compatibility"))))
-
         if max_version == min_version and max_version == None:
-            print("")
-            print("Missing required SSE4.x instruction set.")
-            print("Your CPU is not supported by macOS versions newer than Sierra (10.12).")
-            print("")
-            self.utils.request_input()
-            self.utils.exit_program()
+            self.error_codes.append("ERROR_MISSING_SSE4")
+            return
 
         self.max_native_macos_version = max_version
         self.min_native_macos_version = min_version
 
     def check_gpu_compatibility(self):
-        if not self.hardware_report.get("GPU"):
-            print("")
-            print("No GPU found!")
-            print("Please make sure to export the hardware report with the GPU information")
-            print("and try again.")
-            print("")
-            self.utils.request_input()
-            self.utils.exit_program()
-
         for gpu_name, gpu_props in self.hardware_report["GPU"].items():
             gpu_manufacturer = gpu_props.get("Manufacturer")
             gpu_codename = gpu_props.get("Codename")
@@ -155,21 +115,6 @@ class CompatibilityChecker:
                 if self.utils.parse_darwin_version(max_version) < self.utils.parse_darwin_version(ocl_patched_max_version):
                     gpu_props["OCLP Compatibility"] = (ocl_patched_max_version, ocl_patched_min_version if self.utils.parse_darwin_version(ocl_patched_min_version) > self.utils.parse_darwin_version("{}.{}.{}".format(int(max_version[:2]) + 1, 0, 0)) else "{}.{}.{}".format(int(max_version[:2]) + 1, 0, 0))
 
-            print("{}- {}: {}".format(" "*3, gpu_name, self.show_macos_compatibility(gpu_props.get("Compatibility"))))
-
-            if "OCLP Compatibility" in gpu_props:
-                print("{}- OCLP Compatibility: {}".format(" "*6, self.show_macos_compatibility(gpu_props.get("OCLP Compatibility"))))
-
-            connected_monitors = []
-            for monitor_name, monitor_info in self.hardware_report.get("Monitor", {}).items(): 
-                if monitor_info.get("Connected GPU") == gpu_name:
-                    connected_monitors.append("{} ({})".format(monitor_name, monitor_info.get("Connector Type")))
-                    if "Intel" in gpu_manufacturer and device_id.startswith(("01", "04", "0A", "0C", "0D")):
-                        if monitor_info.get("Connector Type") == "VGA":
-                            connected_monitors[-1] = "\033[0;31m{}{}\033[0m".format(connected_monitors[-1][:-1], ", unsupported)")
-            if connected_monitors:
-                print("{}- Connected Monitor{}: {}".format(" "*6, "s" if len(connected_monitors) > 1 else "", ", ".join(connected_monitors)))
-
         max_supported_gpu_version = min_supported_gpu_version = None
 
         for gpu_name, gpu_props in self.hardware_report.get("GPU").items():
@@ -189,18 +134,14 @@ class CompatibilityChecker:
                 self.ocl_patched_macos_version = (gpu_props.get("OCLP Compatibility")[0], self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) < self.utils.parse_darwin_version(gpu_props.get("OCLP Compatibility")[-1]) else gpu_props.get("OCLP Compatibility")[-1])
         
         if max_supported_gpu_version == min_supported_gpu_version and max_supported_gpu_version == None:
-            print("")
-            print("You cannot install macOS without a supported GPU.")
-            print("Please do NOT spam my inbox or issue tracker about this issue anymore!")
-            print("")
-            self.utils.request_input()
-            self.utils.exit_program()
+            self.error_codes.append("ERROR_NO_COMPATIBLE_GPU")
+            return
 
         self.max_native_macos_version = max_supported_gpu_version if self.utils.parse_darwin_version(max_supported_gpu_version) < self.utils.parse_darwin_version(self.max_native_macos_version) else self.max_native_macos_version
         self.min_native_macos_version = min_supported_gpu_version if self.utils.parse_darwin_version(min_supported_gpu_version) > self.utils.parse_darwin_version(self.min_native_macos_version) else self.min_native_macos_version
 
     def check_sound_compatibility(self):
-        for audio_device, audio_props in self.hardware_report.get("Sound", {}).items():
+        for _, audio_props in self.hardware_report.get("Sound", {}).items():
             codec_id = audio_props.get("Device ID")
 
             max_version = min_version = None
@@ -213,19 +154,9 @@ class CompatibilityChecker:
 
             audio_props["Compatibility"] = (max_version, min_version)
 
-            print("{}- {}: {}".format(" "*3, audio_device, self.show_macos_compatibility(audio_props.get("Compatibility"))))
-
-            audio_endpoints = audio_props.get("Audio Endpoints")
-            if audio_endpoints:
-                print("{}- Audio Endpoint{}: {}".format(" "*6, "s" if len(audio_endpoints) > 1 else "", ", ".join(audio_endpoints)))
-        
     def check_biometric_compatibility(self):
-        print("   \033[1;93mNote:\033[0m Biometric authentication in macOS requires Apple T2 Chip,")
-        print("     which is not available for Hackintosh systems.")
-        print("")
-        for biometric_device, biometric_props in self.hardware_report.get("Biometric", {}).items():
+        for _, biometric_props in self.hardware_report.get("Biometric", {}).items():
             biometric_props["Compatibility"] = (None, None)
-            print("{}- {}: {}".format(" "*3, biometric_device, self.show_macos_compatibility(biometric_props.get("Compatibility"))))
 
     def check_network_compatibility(self):
         for device_name, device_props in self.hardware_report.get("Network", {}).items():
@@ -265,31 +196,7 @@ class CompatibilityChecker:
             if bus_type.startswith("PCI") and not device_props.get("Compatibility"):
                 device_props["Compatibility"] = (None, None)
 
-            print("{}- {}: {}".format(" "*3, device_name, self.show_macos_compatibility(device_props.get("Compatibility"))))
-
-            if device_id in pci_data.WirelessCardIDs:
-                if device_id in pci_data.BroadcomWiFiIDs:
-                    print("{}- Continuity Support: \033[1;32mFull\033[0m (AirDrop, Handoff, Universal Clipboard, Instant Hotspot,...)".format(" "*6))
-                elif device_id in pci_data.IntelWiFiIDs:
-                    print("{}- Continuity Support: \033[1;33mPartial\033[0m (Handoff and Universal Clipboard with AirportItlwm)".format(" "*6))
-                    print("{}\033[1;93mNote:\033[0m AirDrop, Universal Clipboard, Instant Hotspot,... not available".format(" "*6))
-                elif device_id in pci_data.AtherosWiFiIDs:
-                    print("{}- Continuity Support: \033[1;31mLimited\033[0m (No Continuity features available)".format(" "*6))
-                    print("{}\033[1;93mNote:\033[0m Atheros cards are not recommended for macOS".format(" "*6))
-
-            if "OCLP Compatibility" in device_props:
-                print("{}- OCLP Compatibility: {}".format(" "*6, self.show_macos_compatibility(device_props.get("OCLP Compatibility"))))
-
     def check_storage_compatibility(self):
-        if not self.hardware_report.get("Storage Controllers"):
-            print("")
-            print("No storage controller found!")
-            print("Please make sure to export the hardware report with the storage controller information")
-            print("and try again.")
-            print("")
-            self.utils.request_input()
-            self.utils.exit_program()
-
         for controller_name, controller_props in self.hardware_report["Storage Controllers"].items():
             if controller_props.get("Bus Type") != "PCI":
                 continue
@@ -301,28 +208,17 @@ class CompatibilityChecker:
             min_version = os_data.get_lowest_darwin_version()
 
             if device_id in pci_data.IntelVMDIDs:
-                print("")
-                print("Intel VMD controllers are not supported in macOS.")
-                print("Please disable Intel VMD in the BIOS settings and try again with new hardware report.")
-                print("")
-                self.utils.request_input()
-                self.utils.exit_program()
+                self.error_codes.append("ERROR_INTEL_VMD")
+                return
 
             if next((device for device in pci_data.UnsupportedNVMeSSDIDs if device_id == device[0] and subsystem_id in device[1]), None):
                 max_version = min_version = None
 
             controller_props["Compatibility"] = (max_version, min_version)
-                
-            print("{}- {}: {}".format(" "*3, controller_name, self.show_macos_compatibility(controller_props.get("Compatibility"))))
 
         if all(controller_props.get("Compatibility") == (None, None) for controller_name, controller_props in self.hardware_report["Storage Controllers"].items()):
-            print("")
-            print("No compatible storage controller for macOS was found!")
-            print("Consider purchasing a compatible SSD NVMe for your system.")
-            print("Western Digital NVMe SSDs are generally recommended for good macOS compatibility.")
-            print("")
-            self.utils.request_input()
-            self.utils.exit_program()
+            self.error_codes.append("ERROR_NO_COMPATIBLE_STORAGE")
+            return
 
     def check_bluetooth_compatibility(self):
         for bluetooth_name, bluetooth_props in self.hardware_report.get("Bluetooth", {}).items():
@@ -339,8 +235,6 @@ class CompatibilityChecker:
                 max_version = min_version = None
 
             bluetooth_props["Compatibility"] = (max_version, min_version)
-
-            print("{}- {}: {}".format(" "*3, bluetooth_name, self.show_macos_compatibility(bluetooth_props.get("Compatibility"))))
         
     def check_sd_controller_compatibility(self):
         for controller_name, controller_props in self.hardware_report.get("SD Controller", {}).items():
@@ -357,16 +251,12 @@ class CompatibilityChecker:
 
             controller_props["Compatibility"] = (max_version, min_version)
 
-            print("{}- {}: {}".format(" "*3, controller_name, self.show_macos_compatibility(controller_props.get("Compatibility"))))
-
     def check_compatibility(self, hardware_report):
         self.hardware_report = hardware_report
         self.ocl_patched_macos_version = None
+        self.error_codes = []
 
-        self.utils.head("Compatibility Checker")
-        print("")
-        print("Checking compatibility with macOS for the following devices:")
-        print("")
+        self.utils.log_message("[COMPATIBILITY CHECKER] Starting compatibility check...", level="INFO")
 
         steps = [
             ('CPU', self.check_cpu_compatibility),
@@ -379,15 +269,13 @@ class CompatibilityChecker:
             ('SD Controller', self.check_sd_controller_compatibility)
         ]
 
-        index = 0
         for device_type, function in steps:
             if self.hardware_report.get(device_type):
-                index += 1
-                print("{}. {}:".format(index, device_type))
-                time.sleep(0.25)
                 function()
 
-        print("")
-        self.utils.request_input()
+        if self.error_codes:
+            self.utils.log_message("[COMPATIBILITY CHECKER] Compatibility check that found errors: {}".format(", ".join(self.error_codes)), level="INFO")
+            return hardware_report, (None, None), None, self.error_codes
 
-        return hardware_report, (self.min_native_macos_version, self.max_native_macos_version), self.ocl_patched_macos_version
+        self.utils.log_message("[COMPATIBILITY CHECKER] Compatibility check completed successfully", level="INFO")
+        return hardware_report, (self.min_native_macos_version, self.max_native_macos_version), self.ocl_patched_macos_version, self.error_codes
