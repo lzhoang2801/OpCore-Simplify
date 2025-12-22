@@ -4,10 +4,10 @@ import os
 import re
 
 class ReportValidator:
-    def __init__(self):
+    def __init__(self, utils_instance=None):
         self.errors = []
         self.warnings = []
-        self.u = utils.Utils()
+        self.u = utils_instance if utils_instance else utils.Utils()
         
         self.PATTERNS = {
             "not_empty": r".+",
@@ -244,17 +244,17 @@ class ReportValidator:
         if expected_type:
             if not isinstance(data, expected_type):
                 type_name = expected_type.__name__ if hasattr(expected_type, "__name__") else str(expected_type)
-                self.errors.append(f"{path}: Expected type {type_name}, got {type(data).__name__}")
+                self.errors.append("{}: Expected type {}, got {}".format(path, type_name, type(data).__name__))
                 return None
 
         if isinstance(data, str):
             pattern = rule.get("pattern")
             if pattern is not None:
                 if not re.match(pattern, data):
-                    self.errors.append(f"{path}: Value '{data}' does not match pattern '{pattern}'")
+                    self.errors.append("{}: Value '{}' does not match pattern '{}'".format(path, data, pattern))
                     return None
             elif not re.match(self.PATTERNS["not_empty"], data):
-                 self.errors.append(f"{path}: Value '{data}' does not match pattern '{self.PATTERNS['not_empty']}'")
+                 self.errors.append("{}: Value '{}' does not match pattern '{}'".format(path, data, self.PATTERNS["not_empty"]))
                  return None
 
         cleaned_data = data
@@ -265,53 +265,30 @@ class ReportValidator:
             
             for key, value in data.items():
                 if key in schema_keys:
-                    cleaned_val = self._validate_node(value, schema_keys[key], f"{path}.{key}")
+                    cleaned_val = self._validate_node(value, schema_keys[key], "{}.".format(path, key))
                     if cleaned_val is not None:
                         cleaned_data[key] = cleaned_val
                 elif "values_rule" in rule:
-                    cleaned_val = self._validate_node(value, rule["values_rule"], f"{path}.{key}")
+                    cleaned_val = self._validate_node(value, rule["values_rule"], "{}.".format(path, key))
                     if cleaned_val is not None:
                         cleaned_data[key] = cleaned_val
                 else:
                     if schema_keys:
-                        self.warnings.append(f"{path}: Unknown key '{key}'")
+                        self.warnings.append("{}: Unknown key '{}'".format(path, key))
             
             for key, key_rule in schema_keys.items():
                 if key_rule.get("required", True) and key not in cleaned_data:
-                    self.errors.append(f"{path}: Missing required key '{key}'")
+                    self.errors.append("{}: Missing required key '{}'".format(path, key))
 
         elif isinstance(data, list):
             item_rule = rule.get("item_rule")
             if item_rule:
                 cleaned_data = []
                 for i, item in enumerate(data):
-                    cleaned_val = self._validate_node(item, item_rule, f"{path}[{i}]")
+                    cleaned_val = self._validate_node(item, item_rule, "{}[{}]".format(path, i))
                     if cleaned_val is not None:
                         cleaned_data.append(cleaned_val)
             else:
                 cleaned_data = list(data)
 
         return cleaned_data
-
-    def show_validation_report(self, report_path, is_valid, errors, warnings):
-        self.u.head("Validation Report")
-        print("")
-        print("Validation report for: {}".format(report_path))
-        print("")
-
-        if is_valid:
-            print("Hardware report is valid!")
-        else:
-            print("Hardware report is not valid! Please check the errors and warnings below.")
-        
-        if errors:
-            print("")
-            print("\033[31mErrors ({}):\033[0m".format(len(errors)))
-            for i, error in enumerate(errors, 1):
-                print("    {}. {}".format(i, error))
-        
-        if warnings:
-            print("")
-            print("\033[33mWarnings ({}):\033[0m".format(len(warnings)))
-            for i, warning in enumerate(warnings, 1):
-                print("    {}. {}".format(i, warning))

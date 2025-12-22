@@ -20,14 +20,14 @@ else:
 MAX_ATTEMPTS = 3
 
 class ResourceFetcher:
-    def __init__(self, headers=None):
+    def __init__(self, utils_instance=None, integrity_checker_instance=None, headers=None):
         self.request_headers = headers or {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         }
+        self.utils = utils_instance if utils_instance else utils.Utils()
         self.buffer_size = 16 * 1024
         self.ssl_context = self.create_ssl_context()
-        self.integrity_checker = integrity_checker.IntegrityChecker()
-        self.utils = utils.Utils()
+        self.integrity_checker = integrity_checker_instance if integrity_checker_instance else integrity_checker.IntegrityChecker()
 
     def create_ssl_context(self):
         try:
@@ -36,9 +36,10 @@ class ResourceFetcher:
                 import certifi
                 cafile = certifi.where()
             ssl_context = ssl.create_default_context(cafile=cafile)
+            self.utils.log_message("[RESOURCE FETCHER] Created SSL context", level="INFO")
         except Exception as e:
-            print("Failed to create SSL context: {}".format(e))
             ssl_context = ssl._create_unverified_context()
+            self.utils.log_message("[RESOURCE FETCHER] Created unverified SSL context", level="INFO")
         return ssl_context
 
     def _make_request(self, resource_url, timeout=10):
@@ -48,13 +49,13 @@ class ResourceFetcher:
             
             return urlopen(Request(resource_url, headers=headers), timeout=timeout, context=self.ssl_context)
         except socket.timeout as e:
-            print("Timeout error: {}".format(e))
+            self.utils.log_message("[RESOURCE FETCHER] Timeout error: {}".format(e), level="ERROR", to_build_log=True)
         except ssl.SSLError as e:
-            print("SSL error: {}".format(e))
+            self.utils.log_message("[RESOURCE FETCHER] SSL error: {}".format(e), level="ERROR", to_build_log=True)
         except (URLError, socket.gaierror) as e:
-            print("Connection error: {}".format(e))
+            self.utils.log_message("[RESOURCE FETCHER] Connection error: {}".format(e), level="ERROR", to_build_log=True)
         except Exception as e:
-            print("Request failed: {}".format(e))
+            self.utils.log_message("[RESOURCE FETCHER] Request failed: {}".format(e), level="ERROR", to_build_log=True)
 
         return None
 
@@ -62,12 +63,14 @@ class ResourceFetcher:
         attempt = 0
         response = None
 
-        while attempt < 3:
+        self.utils.log_message("[RESOURCE FETCHER] Fetching and parsing content from {}".format(resource_url), level="INFO")
+
+        while attempt < MAX_ATTEMPTS:
             response = self._make_request(resource_url)
 
             if not response:
                 attempt += 1
-                print("Failed to fetch content from {}. Retrying...".format(resource_url))
+                self.utils.log_message("[RESOURCE FETCHER] Failed to fetch content from {}. Retrying...".format(resource_url), level="WARNING", to_build_log=True)
                 continue
 
             if response.getcode() == 200:
@@ -76,7 +79,7 @@ class ResourceFetcher:
             attempt += 1
 
         if not response:
-            print("Failed to fetch content from {}".format(resource_url))
+            self.utils.log_message("[RESOURCE FETCHER] Failed to fetch content from {}".format(resource_url), level="ERROR", to_build_log=True)
             return None
         
         content = response.read()
@@ -85,12 +88,12 @@ class ResourceFetcher:
             try:
                 content = gzip.decompress(content)
             except Exception as e:
-                print("Failed to decompress gzip content: {}".format(e))
+                self.utils.log_message("[RESOURCE FETCHER] Failed to decompress gzip content: {}".format(e), level="ERROR", to_build_log=True)
         elif response.info().get("Content-Encoding") == "deflate":
             try:
                 content = zlib.decompress(content)
             except Exception as e:
-                print("Failed to decompress deflate content: {}".format(e))
+                self.utils.log_message("[RESOURCE FETCHER] Failed to decompress deflate content: {}".format(e), level="ERROR", to_build_log=True)
         
         try:
             if content_type == "json":
@@ -100,7 +103,7 @@ class ResourceFetcher:
             else:
                 return content.decode("utf-8")
         except Exception as e:
-            print("Error parsing content as {}: {}".format(content_type, e))
+            self.utils.log_message("[RESOURCE FETCHER] Error parsing content as {}: {}".format(content_type, e), level="ERROR", to_build_log=True)
             
         return None
 
@@ -150,20 +153,19 @@ class ResourceFetcher:
             else:
                 progress = "{} {:.1f}MB downloaded".format(speed_str, bytes_downloaded/(1024*1024))
             
-            print(" " * 80, end="\r")
-            print(progress, end="\r")
-            
-        print()
+            self.utils.log_message("[RESOURCE FETCHER] Download progress: {}".format(progress), level="INFO", to_build_log=True)
 
     def download_and_save_file(self, resource_url, destination_path, sha256_hash=None):
         attempt = 0
+
+        self.utils.log_message("[RESOURCE FETCHER] Downloading and saving file from {} to {}".format(resource_url, destination_path), level="INFO")
 
         while attempt < MAX_ATTEMPTS:
             attempt += 1
             response = self._make_request(resource_url)
 
             if not response:
-                print("Failed to fetch content from {}. Retrying...".format(resource_url))
+                self.utils.log_message("[RESOURCE FETCHER] Failed to fetch content from {}. Retrying...".format(resource_url), level="WARNING", to_build_log=True)
                 continue
 
             with open(destination_path, "wb") as local_file:
@@ -171,24 +173,24 @@ class ResourceFetcher:
 
             if os.path.exists(destination_path) and os.path.getsize(destination_path) > 0:
                 if sha256_hash:
-                    print("Verifying SHA256 checksum...")
+                    self.utils.log_message("[RESOURCE FETCHER] Verifying SHA256 checksum...", level="INFO", to_build_log=True)
                     downloaded_hash = self.integrity_checker.get_sha256(destination_path)
                     if downloaded_hash.lower() == sha256_hash.lower():
-                        print("Checksum verified successfully.")
+                        self.utils.log_message("[RESOURCE FETCHER] Checksum verified successfully.", level="INFO", to_build_log=True)
                         return True
                     else:
-                        print("Checksum mismatch! Removing file and retrying download...")
+                        self.utils.log_message("[RESOURCE FETCHER] Checksum mismatch! Removing file and retrying download...", level="WARNING", to_build_log=True)
                         os.remove(destination_path)
                         continue
                 else:
-                    print("No SHA256 hash provided. Downloading file without verification.")
+                    self.utils.log_message("[RESOURCE FETCHER] No SHA256 hash provided. Downloading file without verification.", level="INFO", to_build_log=True)
                     return True
             
             if os.path.exists(destination_path):
                 os.remove(destination_path)
 
             if attempt < MAX_ATTEMPTS:
-                print("Download failed for {}. Retrying...".format(resource_url))
+                self.utils.log_message("[RESOURCE FETCHER] Download failed for {}. Retrying...".format(resource_url), level="WARNING", to_build_log=True)
 
-        print("Failed to download {} after {} attempts.".format(resource_url, MAX_ATTEMPTS))
+        self.utils.log_message("[RESOURCE FETCHER] Failed to download {} after {} attempts.".format(resource_url, MAX_ATTEMPTS), level="ERROR", to_build_log=True)
         return False

@@ -1,9 +1,11 @@
 from Scripts.datasets.mac_model_data import mac_devices
 from Scripts.datasets import kext_data
 from Scripts.datasets import os_data
+from Scripts.custom_dialogs import show_smbios_selection_dialog
 from Scripts import gathering_files
 from Scripts import run
 from Scripts import utils
+from Scripts import settings
 import os
 import uuid
 import random
@@ -12,10 +14,11 @@ import platform
 os_name = platform.system()
 
 class SMBIOS:
-    def __init__(self):
-        self.g = gathering_files.gatheringFiles()
-        self.run = run.Run().run
-        self.utils = utils.Utils()
+    def __init__(self, gathering_files_instance=None, run_instance=None, utils_instance=None, settings_instance=None):
+        self.g = gathering_files_instance if gathering_files_instance else gathering_files.gatheringFiles()
+        self.run = run_instance.run if run_instance else run.Run().run
+        self.utils = utils_instance if utils_instance else utils.Utils()
+        self.settings = settings_instance if settings_instance else settings.Settings()
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
 
     def check_macserial(self, retry_count=0):
@@ -28,6 +31,7 @@ class SMBIOS:
         elif os_name == "Darwin":
             macserial_binary = ["macserial"]
         else:
+            self.utils.log_message("[SMBIOS] Unknown OS for macserial", level="ERROR")
             raise Exception("Unknown OS for macserial")
 
         for binary in macserial_binary:
@@ -36,6 +40,7 @@ class SMBIOS:
                 return macserial_path
 
         if retry_count >= max_retries:
+            self.utils.log_message("[SMBIOS] Failed to find macserial after {} attempts".format(max_retries), level="ERROR")
             raise Exception("Failed to find macserial after {} attempts".format(max_retries))
         
         download_history = self.utils.read_file(self.g.download_history_file)
@@ -68,13 +73,21 @@ class SMBIOS:
         else:
             serial = output[0].splitlines()[0].split(" | ")
 
-        return {
+        smbios_info = {
             "MLB": "A" + "0"*15 + "Z" if not serial else serial[-1],
             "ROM": random_mac_address,
             "SystemProductName": smbios_model,
             "SystemSerialNumber": "A" + "0"*10 + "9" if not serial else serial[0],
             "SystemUUID": str(uuid.uuid4()).upper(),
         }
+
+        self.utils.log_message("[SMBIOS] Generated SMBIOS info: MLB: {}..., ROM: {}..., SystemProductName: {}, SystemSerialNumber: {}..., SystemUUID: {}...".format(
+            smbios_info["MLB"][:5],
+            smbios_info["ROM"][:5],
+            smbios_info["SystemProductName"],
+            smbios_info["SystemSerialNumber"][:5],
+            smbios_info["SystemUUID"].split("-")[0]), level="INFO")
+        return smbios_info
     
     def smbios_specific_options(self, hardware_report, smbios_model, macos_version, acpi_patches, kext_maestro):
         for patch in acpi_patches:
@@ -160,79 +173,45 @@ class SMBIOS:
         elif "Ice Lake" in codename:
             smbios_model = "MacBookAir9,1"
 
+        self.utils.log_message("[SMBIOS] Suggested SMBIOS model: {}".format(smbios_model), level="INFO")
         return smbios_model
-    
-    def customize_smbios_model(self, hardware_report, selected_smbios_model, macos_version):
-        current_category = None
+
+    def customize_smbios_model(self, hardware_report, selected_smbios_model, macos_version, parent=None):
         default_smbios_model = self.select_smbios_model(hardware_report, macos_version)
-        show_all_models = False
         is_laptop = "Laptop" == hardware_report.get("Motherboard").get("Platform")
-
-        while True:
-            incompatible_models_by_index = []
-            contents = []
-            contents.append("")
-            if show_all_models:
-                contents.append("List of available SMBIOS:")
-            else:
-                contents.append("List of compatible SMBIOS:")
-            for index, device in enumerate(mac_devices, start=1):
-                isSupported = self.utils.parse_darwin_version(device.initial_support) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(device.last_supported_version)
-                if device.name not in (default_smbios_model, selected_smbios_model) and not show_all_models and (not isSupported or (is_laptop and not device.name.startswith("MacBook")) or (not is_laptop and device.name.startswith("MacBook"))):
-                    incompatible_models_by_index.append(index - 1)
-                    continue
-
-                category = ""
-                for char in device.name:
-                    if char.isdigit():
-                        break
-                    category += char
-                if category != current_category:
-                    current_category = category
-                    category_header = "Category: {}".format(current_category if current_category else "Uncategorized")
-                    contents.append(f"\n{category_header}\n" + "=" * len(category_header))
-                checkbox = "[*]" if device.name == selected_smbios_model else "[ ]"
+        macos_name = os_data.get_macos_name_by_darwin(macos_version)
+        
+        items = []
+        for index, device in enumerate(mac_devices):
+            is_supported = self.utils.parse_darwin_version(device.initial_support) <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version(device.last_supported_version)
+            
+            platform_match = True
+            if is_laptop and not device.name.startswith("MacBook"):
+                platform_match = False
+            elif not is_laptop and device.name.startswith("MacBook"):
+                platform_match = False
                 
-                line = "{} {:2}. {:15} - {:10} {:20}{}".format(checkbox, index, device.name, device.cpu, "({})".format(device.cpu_generation), "" if not device.discrete_gpu else " - {}".format(device.discrete_gpu))
-                if device.name == selected_smbios_model:
-                    line = "\033[1;32m{}\033[0m".format(line)
-                elif not isSupported:
-                    line = "\033[90m{}\033[0m".format(line)
-                contents.append(line)
-            contents.append("")
-            contents.append("\033[1;93mNote:\033[0m")
-            contents.append("- Lines in gray indicate mac models that are not officially supported by {}.".format(os_data.get_macos_name_by_darwin(macos_version)))
-            contents.append("")
-            if not show_all_models:
-                contents.append("A. Show all models")
-            else:
-                contents.append("C. Show compatible models only")
-            if selected_smbios_model != default_smbios_model:
-                contents.append("R. Restore default SMBIOS model ({})".format(default_smbios_model))
-            contents.append("")
-            contents.append("B. Back")
-            contents.append("Q. Quit")
-            contents.append("")
-            content = "\n".join(contents)
+            is_compatible = is_supported and platform_match
+            
+            category = ""
+            for char in device.name:
+                if char.isdigit():
+                    break
+                category += char
+            
+            gpu_str = "" if not device.discrete_gpu else " - {}".format(device.discrete_gpu)
+            label = "{} - {} ({}){}".format(device.name, device.cpu, device.cpu_generation, gpu_str)
 
-            self.utils.adjust_window_size(content)
-            self.utils.head("Customize SMBIOS Model", resize=False)
-            print(content)
-            option = self.utils.request_input("Select your option: ")
-            if option.lower() == "q":
-                self.utils.exit_program()
-            if option.lower() == "b":
-                return selected_smbios_model
-            if option.lower() == "r" and selected_smbios_model != default_smbios_model:
-                return default_smbios_model
-            if option.lower() in ("a", "c"):
-                show_all_models = not show_all_models
-                continue
-
-            if option.strip().isdigit():
-                index = int(option) - 1
-                if index >= 0 and index < len(mac_devices):
-                    if not show_all_models and index in incompatible_models_by_index:
-                        continue
-
-                    selected_smbios_model = mac_devices[index].name
+            items.append({
+                'name': device.name,
+                'label': label,
+                'category': category,
+                'is_supported': is_supported,
+                'is_compatible': is_compatible
+            })
+            
+        content = "Lines in gray indicate mac models that are not officially supported by {}.".format(macos_name)
+        
+        result = show_smbios_selection_dialog("Customize SMBIOS Model", content, items, selected_smbios_model, default_smbios_model, parent)
+        
+        return result if result else selected_smbios_model

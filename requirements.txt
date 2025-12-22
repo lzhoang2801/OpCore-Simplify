@@ -1,0 +1,4 @@
+certifi
+PyQt6
+pyqt6-sip
+PyQt6-Fluent-Widgets

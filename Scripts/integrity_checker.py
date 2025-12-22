@@ -4,8 +4,8 @@ import json
 from Scripts import utils
 
 class IntegrityChecker:
-    def __init__(self):
-        self.utils = utils.Utils()
+    def __init__(self, utils_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
 
     def get_sha256(self, file_path, block_size=65536):
         if not os.path.exists(file_path) or os.path.isdir(file_path):

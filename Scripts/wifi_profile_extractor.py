@@ -1,14 +1,15 @@
 from Scripts import run
 from Scripts import utils
+from Scripts.custom_dialogs import ask_network_count, show_info, show_confirmation
 import platform
 import json
 
 os_name = platform.system()
 
 class WifiProfileExtractor:
-    def __init__(self):
-        self.run = run.Run().run
-        self.utils = utils.Utils()
+    def __init__(self, run_instance=None, utils_instance=None):
+        self.run = run_instance.run if run_instance else run.Run().run
+        self.utils = utils_instance if utils_instance else utils.Utils()
 
     def get_authentication_type(self, authentication_type):
         authentication_type = authentication_type.lower()
@@ -27,13 +28,15 @@ class WifiProfileExtractor:
         return None
 
     def validate_wifi_password(self, authentication_type=None, password=None):
-        print("Validating password with authentication type: {}".format(authentication_type))
-
         if password is None:
+            self.utils.log_message("[WIFI PROFILE EXTRACTOR] Password is not found", level="INFO")
             return None
 
         if authentication_type is None:
+            self.utils.log_message("[WIFI PROFILE EXTRACTOR] Authentication type is not found", level="INFO")
             return password
+
+        self.utils.log_message("[WIFI PROFILE EXTRACTOR] Validating password for \"{}\" with {} authentication type".format(password, authentication_type), level="INFO")
 
         if authentication_type == "open":
             return ""
@@ -103,30 +106,14 @@ class WifiProfileExtractor:
         return self.validate_wifi_password(authentication_type, password)
 
     def ask_network_count(self, total_networks):
-        self.utils.head("WiFi Network Retrieval")
-        print("")
-        print("Found {} WiFi networks on this device.".format(total_networks))
-        print("")
-        print("How many networks would you like to process?")
-        print("  1-{} - Specific number (default: 5)".format(total_networks))
-        print("  A   - All available networks")
-        print("")
+        if self.utils.gui_handler:
+            result = ask_network_count(total_networks, parent=self.utils.gui_handler)
+            if result == 'a':
+                return total_networks
+            return int(result)
         
-        num_choice = self.utils.request_input("Enter your choice: ").strip().lower() or "5"
-        
-        if num_choice == "a":
-            print("Will process all available networks.")
-            return total_networks
-
-        try:
-            max_networks = min(int(num_choice), total_networks)
-            print("Will process up to {} networks.".format(max_networks))
-            return max_networks
-        except:
-            max_networks = min(5, total_networks)
-            print("Invalid choice. Will process up to {} networks.".format(max_networks))
-            return max_networks
-            
+        return 5
+    
     def process_networks(self, ssid_list, max_networks, get_password_func):
         networks = []
         processed_count = 0
@@ -137,39 +124,35 @@ class WifiProfileExtractor:
             ssid = ssid_list[processed_count]
             
             try:
-                print("")
-                print("Processing {}/{}: {}".format(processed_count + 1, len(ssid_list), ssid))
-                if os_name == "Darwin":
-                    print("Please enter your administrator name and password or click 'Deny' to skip this network.")
-                
+                self.utils.log_message("[WIFI PROFILE EXTRACTOR] Retrieving password for \"{}\" ({} of {})".format(ssid, processed_count + 1, len(ssid_list)), level="INFO", to_build_log=True)
                 password = get_password_func(ssid)
                 if password is not None:
                     if (ssid, password) not in networks:
                         consecutive_failures = 0
                         networks.append((ssid, password))
-                        print("Successfully retrieved password.")
+                        self.utils.log_message("[WIFI PROFILE EXTRACTOR] Successfully retrieved password for \"{}\"".format(ssid), level="INFO", to_build_log=True)
                         
                         if len(networks) == max_networks:
                             break
                 else:
+                    self.utils.log_message("[WIFI PROFILE EXTRACTOR] Could not retrieve password for \"{}\"".format(ssid), level="INFO", to_build_log=True)
                     consecutive_failures += 1 if os_name == "Darwin" else 0
-                    print("Could not retrieve password for this network.")
 
                     if consecutive_failures >= max_consecutive_failures:
-                        continue_input = self.utils.request_input("\nUnable to retrieve passwords. Continue trying? (Yes/no): ").strip().lower() or "yes"
+                        result = show_confirmation("WiFi Profile Extractor", "Unable to retrieve passwords. Continue trying?", parent=self.utils.gui_handler)
                         
-                        if continue_input != "yes":
+                        if not result:
                             break
 
                         consecutive_failures = 0
             except Exception as e:
                 consecutive_failures += 1 if os_name == "Darwin" else 0
-                print("Error processing network '{}': {}".format(ssid, str(e)))
+                self.utils.log_message("[WIFI PROFILE EXTRACTOR] Error processing network \"{}\": {}".format(ssid, str(e)), level="ERROR", to_build_log=True)
 
                 if consecutive_failures >= max_consecutive_failures:
-                    continue_input = self.utils.request_input("\nUnable to retrieve passwords. Continue trying? (Yes/no): ").strip().lower() or "yes"
-
-                    if continue_input != "yes":
+                    result = show_confirmation("WiFi Profile Extractor", "Unable to retrieve passwords. Continue trying?", parent=self.utils.gui_handler)
+                        
+                    if not result:
                         break
 
                     consecutive_failures = 0
@@ -177,12 +160,11 @@ class WifiProfileExtractor:
                 processed_count += 1
             
             if processed_count >= max_networks and len(networks) < max_networks and processed_count < len(ssid_list):
-                continue_input = self.utils.request_input("\nOnly retrieved {}/{} networks. Try more to reach your target? (Yes/no): ".format(len(networks), max_networks)).strip().lower() or "yes"
-                
-                if continue_input != "yes":
-                    break
 
-                consecutive_failures = 0
+                result = show_confirmation("WiFi Profile Extractor", "Only retrieved {}/{} networks. Try more to reach your target?".format(len(networks), max_networks), parent=self.utils.gui_handler)
+                        
+                if not result:
+                    break
         
         return networks
 
@@ -201,10 +183,12 @@ class WifiProfileExtractor:
             
         max_networks = self.ask_network_count(len(ssid_list))
         
-        self.utils.head("Administrator Authentication Required")
-        print("")
-        print("To retrieve WiFi passwords from the Keychain, macOS will prompt")
-        print("you for administrator credentials for each WiFi network.")
+        if self.utils.gui_handler:
+            content = (
+                "To retrieve WiFi passwords from the Keychain, macOS will prompt<br>"
+                "you for administrator credentials for each WiFi network."
+            )
+            show_info("Administrator Authentication Required", content, parent=self.utils.gui_handler)
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_macos)
 
@@ -232,9 +216,7 @@ class WifiProfileExtractor:
 
         max_networks = len(ssid_list)
     
-        self.utils.head("WiFi Profile Extractor")
-        print("")
-        print("Retrieving passwords for {} network(s)...".format(len(ssid_list)))
+        self.utils.log_message("[WIFI PROFILE EXTRACTOR] Retrieving passwords for {} network(s)".format(len(ssid_list)), level="INFO", to_build_log=True)
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_windows)
 
@@ -253,9 +235,7 @@ class WifiProfileExtractor:
             
         max_networks = len(ssid_list)
     
-        self.utils.head("WiFi Profile Extractor")
-        print("")
-        print("Retrieving passwords for {} network(s)...".format(len(ssid_list)))
+        self.utils.log_message("[WIFI PROFILE EXTRACTOR] Retrieving passwords for {} network(s)".format(len(ssid_list)), level="INFO", to_build_log=True)
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_linux)
 
@@ -286,31 +266,21 @@ class WifiProfileExtractor:
         return interfaces
     
     def get_profiles(self):
-        os_name = platform.system()
-
-        self.utils.head("WiFi Profile Extractor")
-        print("")
-        print("\033[1;93mNote:\033[0m")
-        print("- When using itlwm kext, WiFi appears as Ethernet in macOS")
-        print("- You'll need Heliport app to manage WiFi connections in macOS")
-        print("- This step will enable auto WiFi connections at boot time")
-        print("  and is useful for users installing macOS via Recovery OS")
-        print("")
+        content = (
+            "<b>Note:</b><br>"
+            "<ul>"
+            "<li>When using itlwm kext, WiFi appears as Ethernet in macOS</li>"
+            "<li>You'll need Heliport app to manage WiFi connections in macOS</li>"
+            "<li>This step will enable auto WiFi connections at boot time<br>"
+            "and is useful for users installing macOS via Recovery OS</li>"
+            "</ul><br>"
+            "Would you like to scan for WiFi profiles?"
+        )
+        if not show_confirmation("WiFi Profile Extractor", content, parent=self.utils.gui_handler):
+            return []
         
-        while True:
-            user_input = self.utils.request_input("Would you like to scan for WiFi profiles? (Yes/no): ").strip().lower()
-            
-            if user_input == "yes":
-                break
-            elif user_input == "no":
-                return []
-            else:
-                print("\033[91mInvalid selection, please try again.\033[0m\n\n")
-
         profiles = []
-        self.utils.head("Detecting WiFi Profiles")
-        print("")
-        print("Scanning for WiFi profiles...")
+        self.utils.log_message("[WIFI PROFILE EXTRACTOR] Detecting WiFi Profiles", level="INFO", to_build_log=True)
         
         if os_name == "Windows":
             profiles = self.get_preferred_networks_windows()
@@ -321,31 +291,17 @@ class WifiProfileExtractor:
 
             if wifi_interfaces:
                 for interface in wifi_interfaces:
-                    print("Checking interface: {}".format(interface))
+                    self.utils.log_message("[WIFI PROFILE EXTRACTOR] Checking interface: {}".format(interface), level="INFO", to_build_log=True)
                     interface_profiles = self.get_preferred_networks_macos(interface)
                     if interface_profiles:
                         profiles = interface_profiles
                         break
             else:
-                print("No WiFi interfaces detected.")
+                self.utils.log_message("[WIFI PROFILE EXTRACTOR] No WiFi interfaces detected.", level="INFO", to_build_log=True)
 
         if not profiles:
-            self.utils.head("WiFi Profile Extractor")
-            print("")
-            print("No WiFi profiles with saved passwords were found.")
-            self.utils.request_input()
+            self.utils.log_message("[WIFI PROFILE EXTRACTOR] No WiFi profiles with saved passwords were found.", level="INFO", to_build_log=True)
         
-        self.utils.head("WiFi Profile Extractor")
-        print("")
-        print("Found the following WiFi profiles with saved passwords:")
-        print("")
-        print("Index  SSID                             Password")
-        print("-------------------------------------------------------")
-        for index, (ssid, password) in enumerate(profiles, start=1):
-            print("{:<6} {:<32} {:<8}".format(index, ssid[:31] + "..." if len(ssid) > 31 else ssid, password[:12] + "..." if len(password) > 12 else password))
-        print("")
-        print("Successfully applied {} WiFi profiles.".format(len(profiles)))
-        print("")
-            
-        self.utils.request_input()
+        self.utils.log_message("[WIFI PROFILE EXTRACTOR] Successfully applied {} WiFi profiles".format(len(profiles)), level="INFO", to_build_log=True)
+
         return profiles

@@ -1,3 +1,4 @@
+from Scripts.custom_dialogs import show_info
 from Scripts import github
 from Scripts import kext_maestro
 from Scripts import integrity_checker
@@ -11,12 +12,12 @@ import platform
 os_name = platform.system()
 
 class gatheringFiles:
-    def __init__(self):
-        self.utils = utils.Utils()
-        self.github = github.Github()
-        self.kext = kext_maestro.KextMaestro()
-        self.fetcher = resource_fetcher.ResourceFetcher()
-        self.integrity_checker = integrity_checker.IntegrityChecker()
+    def __init__(self, utils_instance=None, github_instance=None, kext_maestro_instance=None, integrity_checker_instance=None, resource_fetcher_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
+        self.github = github_instance if github_instance else github.Github()
+        self.kext = kext_maestro_instance if kext_maestro_instance else kext_maestro.KextMaestro()
+        self.fetcher = resource_fetcher_instance if resource_fetcher_instance else resource_fetcher.ResourceFetcher()
+        self.integrity_checker = integrity_checker_instance if integrity_checker_instance else integrity_checker.IntegrityChecker()
         self.dortania_builds_url = "https://raw.githubusercontent.com/dortania/build-repo/builds/latest.json"
         self.ocbinarydata_url = "https://github.com/acidanthera/OcBinaryData/archive/refs/heads/master.zip"
         self.amd_vanilla_patches_url = "https://raw.githubusercontent.com/AMD-OSX/AMD_Vanilla/beta/patches.plist"
@@ -85,6 +86,7 @@ class gatheringFiles:
     
     def move_bootloader_kexts_to_product_directory(self, product_name):
         if not os.path.exists(self.temporary_dir):
+            self.utils.log_message("[GATHERING FILES] The directory {} does not exist.".format(self.temporary_dir), level="ERROR", to_build_log=True)
             raise FileNotFoundError("The directory {} does not exist.".format(self.temporary_dir))
         
         temp_product_dir = os.path.join(self.temporary_dir, product_name)
@@ -139,9 +141,7 @@ class gatheringFiles:
         return True
     
     def gather_bootloader_kexts(self, kexts, macos_version):
-        self.utils.head("Gathering Files")
-        print("")
-        print("Please wait for download OpenCorePkg, kexts and macserial...")
+        self.utils.log_message("[GATHERING FILES] Please wait for download OpenCorePkg, kexts and macserial...", level="INFO", to_build_log=True)
 
         download_history = self.utils.read_file(self.download_history_file)
         if not isinstance(download_history, list):
@@ -187,8 +187,7 @@ class gatheringFiles:
                     product_download_index = self.get_product_index(download_database, product.github_repo.get("repo"))
             
             if product_download_index is None:
-                print("\n")
-                print("Could not find download URL for {}.".format(product_name))
+                self.utils.log_message("[GATHERING FILES] Could not find download URL for {}.".format(product_name), level="WARNING", to_build_log=True)
                 continue
 
             product_info = download_database[product_download_index]
@@ -210,20 +209,14 @@ class gatheringFiles:
                 folder_is_valid, _ = self.integrity_checker.verify_folder_integrity(asset_dir, manifest_path)
                 
                 if is_latest_id and folder_is_valid:
-                    print(f"\nLatest version of {product_name} already downloaded.")
+                    self.utils.log_message("[GATHERING FILES] Latest version of {} already downloaded.".format(product_name), level="INFO", to_build_log=True)
                     continue
 
-            print("")
-            print("Updating" if product_history_index is not None else "Please wait for download", end=" ")
-            print("{}...".format(product_name))
+            self.utils.log_message("[GATHERING FILES] Updating {}...".format(product_name), level="INFO", to_build_log=True)
             if product_download_url:
-                print("from {}".format(product_download_url))
-                print("")
+                self.utils.log_message("[GATHERING FILES] Downloading from {}".format(product_download_url), level="INFO", to_build_log=True)
             else:
-                print("")
-                print("Could not find download URL for {}.".format(product_name))
-                print("")
-                self.utils.request_input()
+                self.utils.log_message("[GATHERING FILES] Could not find download URL for {}.".format(product_name), level="ERROR", to_build_log=True)
                 shutil.rmtree(self.temporary_dir, ignore_errors=True)
                 return False
 
@@ -231,9 +224,10 @@ class gatheringFiles:
             if not self.fetcher.download_and_save_file(product_download_url, zip_path, sha256_hash):
                 folder_is_valid, _ = self.integrity_checker.verify_folder_integrity(asset_dir, manifest_path)
                 if product_history_index is not None and folder_is_valid:
-                    print("Using previously downloaded version of {}.".format(product_name))
+                    self.utils.log_message("[GATHERING FILES] Using previously downloaded version of {}.".format(product_name), level="INFO", to_build_log=True)
                     continue
                 else:
+                    self.utils.log_message("[GATHERING FILES] Could not download {} at this time. Please try again later.".format(product_name), level="ERROR", to_build_log=True)
                     raise Exception("Could not download {} at this time. Please try again later.".format(product_name))
             
             self.utils.extract_zip_file(zip_path)
@@ -250,17 +244,12 @@ class gatheringFiles:
 
             if "OpenCore" in product_name:
                 oc_binary_data_zip_path = os.path.join(self.temporary_dir, "OcBinaryData.zip")
-                print("")
-                print("Please wait for download OcBinaryData...")
-                print("from {}".format(self.ocbinarydata_url))
-                print("")
+                self.utils.log_message("[GATHERING FILES] Please wait for download OcBinaryData...", level="INFO", to_build_log=True)
+                self.utils.log_message("[GATHERING FILES] Downloading from {}".format(self.ocbinarydata_url), level="INFO", to_build_log=True)
                 self.fetcher.download_and_save_file(self.ocbinarydata_url, oc_binary_data_zip_path)
 
                 if not os.path.exists(oc_binary_data_zip_path):
-                    print("")
-                    print("Could not download OcBinaryData at this time.")
-                    print("Please try again later.\n")
-                    self.utils.request_input()
+                    self.utils.log_message("[GATHERING FILES] Could not download OcBinaryData at this time. Please try again later.", level="ERROR", to_build_log=True)
                     shutil.rmtree(self.temporary_dir, ignore_errors=True)
                     return False
                 
@@ -278,14 +267,9 @@ class gatheringFiles:
             response = self.fetcher.fetch_and_parse_content(patches_url, "plist")
 
             return response["Kernel"]["Patch"]
-        except: 
-            print("")
-            print("Unable to download {} at this time".format(patches_name))
-            print("from " + patches_url)
-            print("")
-            print("Please try again later or apply them manually.")
-            print("")
-            self.utils.request_input()
+        except:
+            self.utils.log_message("[GATHERING FILES] Unable to download {} at this time".format(patches_name), level="WARNING", to_build_log=True)
+            show_info("Download Failed", "Unable to download {} at this time. Please try again later or apply them manually.".format(patches_name), parent=self.utils.gui_handler)
             return []
         
     def _update_download_history(self, download_history, product_name, product_id, product_url, sha256_hash):
@@ -310,7 +294,7 @@ class gatheringFiles:
         if os_name != "Windows":
             return
 
-        self.utils.head("Gathering Hardware Sniffer")
+        self.utils.log_message("[GATHERING FILES] Gathering Hardware Sniffer...", level="INFO")
 
         PRODUCT_NAME = "Hardware-Sniffer-CLI.exe"
         REPO_OWNER = "lzhoang2801"
@@ -333,11 +317,7 @@ class gatheringFiles:
                 break
 
         if not all([product_id, product_download_url, sha256_hash]):
-            print("")
-            print("Could not find release information for {}.".format(PRODUCT_NAME))
-            print("Please try again later.")
-            print("")
-            self.utils.request_input()
+            show_info("Release Information Not Found", "Could not find release information for {}. Please try again later.".format(PRODUCT_NAME), parent=self.utils.gui_handler)
             raise Exception("Could not find release information for {}.".format(PRODUCT_NAME))
 
         download_history = self.utils.read_file(self.download_history_file)
@@ -356,22 +336,14 @@ class gatheringFiles:
                 file_is_valid = (sha256_hash == local_hash)
 
             if is_latest_id and file_is_valid:
-                print("")
-                print("Latest version of {} already downloaded.".format(PRODUCT_NAME))
+                self.utils.log_message("[GATHERING FILES] Latest version of {} already downloaded.".format(PRODUCT_NAME), level="INFO")
                 return destination_path
 
-        print("")
-        print("Updating" if product_history_index is not None else "Please wait for download", end=" ")
-        print("{}...".format(PRODUCT_NAME))
-        print("")
-        print("from {}".format(product_download_url))
-        print("")
+        self.utils.log_message("[GATHERING FILES] {} {}...".format("Updating" if product_history_index is not None else "Please wait for download", PRODUCT_NAME), level="INFO")
         
         if not self.fetcher.download_and_save_file(product_download_url, destination_path, sha256_hash):
-            manual_download_url = f"https://github.com/{REPO_OWNER}/{REPO_NAME}/releases/latest"
-            print("Go to {} to download {} manually.".format(manual_download_url, PRODUCT_NAME))
-            print("")
-            self.utils.request_input()
+            manual_download_url = "https://github.com/{}/{}/releases/latest".format(REPO_OWNER, REPO_NAME)
+            show_info("Download Failed", "Go to {} to download {} manually.".format(manual_download_url, PRODUCT_NAME), parent=self.utils.gui_handler)
             raise Exception("Failed to download {}.".format(PRODUCT_NAME))
 
         self._update_download_history(download_history, PRODUCT_NAME, product_id, product_download_url, sha256_hash)
