@@ -1,4 +1,3 @@
-from typing import Union, List, Optional, Dict, Any
 import re
 import functools
 from PyQt6.QtCore import Qt, QObject, QThread, QMetaObject, QCoreApplication, pyqtSlot
@@ -6,6 +5,12 @@ from PyQt6.QtWidgets import QWidget, QHBoxLayout, QRadioButton, QButtonGroup, QV
 from qfluentwidgets import MessageBoxBase, SubtitleLabel, BodyLabel, LineEdit, PushButton
 
 from Scripts.datasets import os_data
+
+_default_gui_handler = None
+
+def set_default_gui_handler(handler):
+    global _default_gui_handler
+    _default_gui_handler = handler
 
 class ThreadRunner(QObject):
     def __init__(self, func, *args, **kwargs):
@@ -39,8 +44,8 @@ def ensure_main_thread(func):
     return wrapper
 
 class CustomMessageDialog(MessageBoxBase):
-    def __init__(self, title: str, content: str, parent=None):
-        super().__init__(parent)
+    def __init__(self, title, content):
+        super().__init__(_default_gui_handler)
         
         self.titleLabel = SubtitleLabel(title, self.widget)
         self.contentLabel = BodyLabel(content, self.widget)
@@ -77,7 +82,7 @@ class CustomMessageDialog(MessageBoxBase):
         self.custom_widget = widget
         self.viewLayout.addWidget(widget)
 
-    def add_radio_options(self, options: List[str], default_index: int = 0) -> QButtonGroup:
+    def add_radio_options(self, options, default_index=0):
         self.button_group = QButtonGroup(self)
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -115,7 +120,7 @@ class CustomMessageDialog(MessageBoxBase):
         self.viewLayout.addWidget(container)
         return self.button_group
     
-    def add_checklist(self, items: List[Union[str, Dict[str, Any]]], checked_indices: List[int] = None) -> List[QCheckBox]:
+    def add_checklist(self, items, checked_indices=None):
         if checked_indices is None:
             checked_indices = []
             
@@ -170,20 +175,20 @@ class CustomMessageDialog(MessageBoxBase):
         self.cancelButton.setVisible(show_cancel)
 
 @ensure_main_thread
-def show_info(title: str, content: str, parent=None) -> None:
-    dialog = CustomMessageDialog(title, content, parent)
+def show_info(title: str, content: str) -> None:
+    dialog = CustomMessageDialog(title, content)
     dialog.configure_buttons(yes_text="OK", show_cancel=False)
     dialog.exec()
 
 @ensure_main_thread
-def show_confirmation(title: str, content: str, parent=None, yes_text="Yes", no_text="No") -> bool:
-    dialog = CustomMessageDialog(title, content, parent)
+def show_confirmation(title: str, content: str, yes_text="Yes", no_text="No") -> bool:
+    dialog = CustomMessageDialog(title, content)
     dialog.configure_buttons(yes_text=yes_text, no_text=no_text, show_cancel=True)
     return dialog.exec()
 
 @ensure_main_thread
-def show_options_dialog(title: str, content: str, options: List[str], default_index: int = 0, parent=None) -> Optional[int]:
-    dialog = CustomMessageDialog(title, content, parent)
+def show_options_dialog(title, content, options, default_index=0):
+    dialog = CustomMessageDialog(title, content)
     dialog.add_radio_options(options, default_index)
     dialog.configure_buttons(yes_text="OK", show_cancel=True)
     
@@ -192,8 +197,8 @@ def show_options_dialog(title: str, content: str, options: List[str], default_in
     return None
 
 @ensure_main_thread
-def show_checklist_dialog(title: str, content: str, items: List[Union[str, Dict[str, Any]]], checked_indices: List[int] = None, parent=None) -> Optional[List[int]]:
-    dialog = CustomMessageDialog(title, content, parent)
+def show_checklist_dialog(title, content, items, checked_indices=None):
+    dialog = CustomMessageDialog(title, content)
     checkboxes = dialog.add_checklist(items, checked_indices)
     dialog.configure_buttons(yes_text="OK", show_cancel=True)
     
@@ -202,7 +207,7 @@ def show_checklist_dialog(title: str, content: str, items: List[Union[str, Dict[
     return None
 
 @ensure_main_thread
-def ask_network_count(total_networks: int, parent=None) -> Union[int, str]:
+def ask_network_count(total_networks):
     content = (
         "Found {} WiFi networks on this device.<br><br>"
         "How many networks would you like to process?<br>"
@@ -212,7 +217,7 @@ def ask_network_count(total_networks: int, parent=None) -> Union[int, str]:
         "</ul>"
     ).format(total_networks, total_networks)
     
-    dialog = CustomMessageDialog("WiFi Network Retrieval", content, parent)
+    dialog = CustomMessageDialog("WiFi Network Retrieval", content)
     dialog.input_field = dialog.add_input(placeholder="1-{} (Default: 5)".format(total_networks), default_value="5")
     
     button_layout = QHBoxLayout()
@@ -257,8 +262,8 @@ def ask_network_count(total_networks: int, parent=None) -> Union[int, str]:
 
     return 5
 
-def show_smbios_selection_dialog(title: str, content: str, items: List[Dict[str, Any]], current_selection: str, default_selection: str, parent=None) -> Optional[str]:
-    dialog = CustomMessageDialog(title, content, parent)
+def show_smbios_selection_dialog(title, content, items, current_selection, default_selection):
+    dialog = CustomMessageDialog(title, content)
     
     top_container = QWidget()
     top_layout = QHBoxLayout(top_container)
@@ -362,7 +367,7 @@ def show_smbios_selection_dialog(title: str, content: str, items: List[Dict[str,
             
     return None
 
-def show_macos_version_dialog(native_macos_version, ocl_patched_macos_version, suggested_macos_version, parent=None) -> Optional[str]:
+def show_macos_version_dialog(native_macos_version, ocl_patched_macos_version, suggested_macos_version):
     content = ""
     
     if native_macos_version[1][:2] != suggested_macos_version[:2]:
@@ -398,7 +403,7 @@ def show_macos_version_dialog(native_macos_version, ocl_patched_macos_version, s
         if darwin_version == int(suggested_macos_version[:2]):
             default_index = len(options) - 1
     
-    result = show_options_dialog("Select macOS Version", content, options, default_index, parent)
+    result = show_options_dialog("Select macOS Version", content, options, default_index)
     
     if result is not None:
         return "{}.99.99".format(version_values[result])

@@ -269,7 +269,7 @@ class gatheringFiles:
             return response["Kernel"]["Patch"]
         except:
             self.utils.log_message("[GATHERING FILES] Unable to download {} at this time".format(patches_name), level="WARNING", to_build_log=True)
-            show_info("Download Failed", "Unable to download {} at this time. Please try again later or apply them manually.".format(patches_name), parent=self.utils.gui_handler)
+            show_info("Download Failed", "Unable to download {} at this time. Please try again later or apply them manually.".format(patches_name))
             return []
         
     def _update_download_history(self, download_history, product_name, product_id, product_url, sha256_hash):
@@ -317,7 +317,7 @@ class gatheringFiles:
                 break
 
         if not all([product_id, product_download_url, sha256_hash]):
-            show_info("Release Information Not Found", "Could not find release information for {}. Please try again later.".format(PRODUCT_NAME), parent=self.utils.gui_handler)
+            show_info("Release Information Not Found", "Could not find release information for {}. Please try again later.".format(PRODUCT_NAME))
             raise Exception("Could not find release information for {}.".format(PRODUCT_NAME))
 
         download_history = self.utils.read_file(self.download_history_file)
@@ -343,7 +343,7 @@ class gatheringFiles:
         
         if not self.fetcher.download_and_save_file(product_download_url, destination_path, sha256_hash):
             manual_download_url = "https://github.com/{}/{}/releases/latest".format(REPO_OWNER, REPO_NAME)
-            show_info("Download Failed", "Go to {} to download {} manually.".format(manual_download_url, PRODUCT_NAME), parent=self.utils.gui_handler)
+            show_info("Download Failed", "Go to {} to download {} manually.".format(manual_download_url, PRODUCT_NAME))
             raise Exception("Failed to download {}.".format(PRODUCT_NAME))
 
         self._update_download_history(download_history, PRODUCT_NAME, product_id, product_download_url, sha256_hash)

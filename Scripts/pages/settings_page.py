@@ -58,8 +58,8 @@ class SettingsPage(ScrollArea):
         self.macos_group = self.create_macos_version_group()
         self.expandLayout.addWidget(self.macos_group)
 
-        self.appearance_group = self.create_appearance_group()
-        self.expandLayout.addWidget(self.appearance_group)
+        #self.appearance_group = self.create_appearance_group()
+        #self.expandLayout.addWidget(self.appearance_group)
 
         self.update_group = self.create_update_settings_group()
         self.expandLayout.addWidget(self.update_group)
@@ -127,18 +127,6 @@ class SettingsPage(ScrollArea):
         self.output_dir_card.setObjectName("build_output_directory")
         self.output_dir_card.clicked.connect(self.browse_output_directory)
         group.addSettingCard(self.output_dir_card)
-
-        self.open_folder_card = SwitchSettingCard(
-            FluentIcon.FOLDER_ADD,
-            "Open folder after build",
-            "Automatically open the EFI build result folder when the build process completes successfully.",
-            configItem=None,
-            parent=group
-        )
-        self.open_folder_card.setObjectName("open_folder_after_build")
-        self.open_folder_card.switchButton.setChecked(self.settings.get_open_folder_after_build())
-        self.open_folder_card.switchButton.checkedChanged.connect(lambda checked: self.settings.set("open_folder_after_build", checked))
-        group.addSettingCard(self.open_folder_card)
 
         return group
 
@@ -281,7 +269,7 @@ class SettingsPage(ScrollArea):
             self.controller.update_status("Output directory updated successfully", "success")
 
     def reset_to_defaults(self):
-        result = show_confirmation("Reset Settings", "Are you sure you want to reset all settings to their default values?", parent=self.controller.window())
+        result = show_confirmation("Reset Settings", "Are you sure you want to reset all settings to their default values?")
 
         if result:
             self.settings.settings = self.settings.defaults.copy()

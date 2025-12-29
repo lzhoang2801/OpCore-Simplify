@@ -100,7 +100,6 @@ class Backend(QObject):
         
         self.co = config_prodigy.ConfigProdigy(
             gathering_files_instance=self.o,
-            settings_instance=self.settings,
             smbios_instance=self.s,
             utils_instance=self.u
         )

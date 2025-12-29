@@ -13,6 +13,7 @@ from Scripts.state import HardwareReportState, macOSVersionState, SMBIOSState, B
 from Scripts.pages import HomePage, SelectHardwareReportPage, CompatibilityPage, ConfigurationPage, BuildPage, SettingsPage
 from Scripts.backend import Backend
 from Scripts import ui_utils
+from Scripts.custom_dialogs import set_default_gui_handler
 import updater
 
 WINDOW_MIN_SIZE = (1000, 700)
@@ -129,6 +130,7 @@ class OCS(FluentWindow):
 
     def _setup_backend_handlers(self):
         self.backend.u.gui_handler = self
+        set_default_gui_handler(self)
 
     def init_navigation(self):
         self.homePage = HomePage(self, ui_utils_instance=self.ui_utils)
@@ -159,13 +161,13 @@ class OCS(FluentWindow):
         self.addSubInterface(
             self.configurationPage,
             FluentIcon.EDIT,
-            "3. Configure Settings",
+            "3. Configure OpenCore EFI",
             NavigationItemPosition.TOP
         )
         self.addSubInterface(
             self.buildPage,
             FluentIcon.DEVELOPER_TOOLS,
-            "4. Build EFI",
+            "4. Build & Review",
             NavigationItemPosition.TOP
         )
 
@@ -222,30 +224,35 @@ class OCS(FluentWindow):
                 parent=self
             )
 
-    def validate_prerequisites(self, require_hardware_report=True, require_dsdt=True, require_darwin_version=True, check_compatibility_error=True, require_customized_hardware=True):
+    def validate_prerequisites(self, require_hardware_report=True, require_dsdt=True, require_darwin_version=True, check_compatibility_error=True, require_customized_hardware=True, show_status=True):
         if require_hardware_report:
             if not self.hardware_state.hardware_report:
-                self.update_status("Please select hardware report first", "WARNING")
+                if show_status:
+                    self.update_status("Please select hardware report first", "WARNING")
                 return False
             
         if require_dsdt:
             if not self.backend.ac._ensure_dsdt():
-                self.update_status("Please load ACPI tables first", "WARNING")
+                if show_status:
+                    self.update_status("Please load ACPI tables first", "WARNING")
                 return False
         
         if check_compatibility_error:
             if self.hardware_state.compatibility_error:
-                self.update_status("Incompatible hardware detected, please select different hardware report and try again", "WARNING")
+                if show_status:
+                    self.update_status("Incompatible hardware detected, please select different hardware report and try again", "WARNING")
                 return False
         
         if require_darwin_version:
             if not self.macos_state.darwin_version:
-                self.update_status("Please select target macOS version first", "WARNING")
+                if show_status:
+                    self.update_status("Please select target macOS version first", "WARNING")
                 return False
 
         if require_customized_hardware:
             if not self.hardware_state.customized_hardware:
-                self.update_status("Please reload hardware report and select target macOS version to continue", "WARNING")
+                if show_status:
+                    self.update_status("Please reload hardware report and select target macOS version to continue", "WARNING")
                 return False
         
         return True
@@ -260,7 +267,11 @@ class OCS(FluentWindow):
         
         self.backend.ac.select_acpi_patches(self.hardware_state.customized_hardware, self.hardware_state.disabled_devices)
         
-        self.macos_state.needs_oclp = self.backend.k.select_required_kexts(self.hardware_state.customized_hardware, version, self.macos_state.needs_oclp, self.backend.ac.patches)
+        self.macos_state.needs_oclp, audio_layout_id, audio_controller_properties = self.backend.k.select_required_kexts(self.hardware_state.customized_hardware, version, self.macos_state.needs_oclp, self.backend.ac.patches)
+        
+        if audio_layout_id is not None:
+            self.hardware_state.audio_layout_id = audio_layout_id
+            self.hardware_state.audio_controller_properties = audio_controller_properties
 
         self.backend.s.smbios_specific_options(self.hardware_state.customized_hardware, self.smbios_state.model_name, version, self.backend.ac.patches, self.backend.k)
 

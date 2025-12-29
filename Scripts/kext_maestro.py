@@ -6,6 +6,7 @@ from Scripts.datasets import codec_layouts
 from Scripts import utils
 import os
 import shutil
+import random
 
 try:
     long
@@ -79,6 +80,52 @@ class KextMaestro:
         
         return False
 
+    def _select_audio_codec_layout(self, hardware_report, default_layout_id=None):
+        codec_id = None
+        audio_controller_properties = None
+
+        for codec_properties in hardware_report.get("Sound", {}).values():
+            if codec_properties.get("Device ID") in codec_layouts.data:
+                codec_id = codec_properties.get("Device ID")
+
+                if codec_properties.get("Controller Device ID"):
+                    for device_name, device_properties in hardware_report.get("System Devices", {}).items():
+                        if device_properties.get("Device ID") == codec_properties.get("Controller Device ID"):
+                            audio_controller_properties = device_properties
+                            break
+                break
+
+        available_layouts = codec_layouts.data.get(codec_id)
+        
+        if not available_layouts:
+            return None, None
+
+        options = []
+        default_index = 0
+        
+        if default_layout_id is None:
+            recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
+            recommended_layouts = [layout for layout in available_layouts if self.utils.contains_any(recommended_authors, layout.comment)]
+            default_layout_id = random.choice(recommended_layouts or available_layouts).id
+            
+        for i, layout in enumerate(available_layouts):
+            options.append("{} - {}".format(layout.id, layout.comment))
+            if layout.id == default_layout_id:
+                default_index = i
+
+        while True:
+            content = "For best audio quality, please try multiple layouts to determine which works best with your hardware in post-install."
+
+            selected_index = show_options_dialog(
+                title="Choosing Codec Layout ID",
+                content=content,
+                options=options,
+                default_index=default_index
+            )
+
+            if selected_index is not None:
+                return available_layouts[selected_index].id, audio_controller_properties
+
     def check_kext(self, index, target_darwin_version, allow_unsupported_kexts=False):
         kext = self.kexts[index]
 
@@ -130,12 +177,18 @@ class KextMaestro:
                         "<b>AppleALC</b> - Requires rollback AppleHDA with <b>OpenCore Legacy Patcher</b>",
                         "<b>VoodooHDA</b> - Lower audio quality than use AppleHDA, injection kext into <b>/Library/Extensions</b>"
                     ]
-                    result = show_options_dialog("Audio Kext Selection", content, options, default_index=0, parent=self.utils.gui_handler)
+                    result = show_options_dialog("Audio Kext Selection", content, options, default_index=0)
                     if result == 0:
                         needs_oclp = True
                         selected_kexts.append("AppleALC")
                 else:
                     selected_kexts.append("AppleALC")
+
+        if "AppleALC" in selected_kexts:
+            audio_layout_id, audio_controller_properties = self._select_audio_codec_layout(hardware_report)
+        else:
+            audio_layout_id = None
+            audio_controller_properties = None
         
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.4.0") or \
             int(hardware_report.get("CPU").get("CPU Count")) > 1 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0"):
@@ -190,11 +243,11 @@ class KextMaestro:
                         recommended_option = 1
 
                     if any(other_gpu_props.get("Manufacturer") == "Intel" for other_gpu_props in hardware_report.get("GPU", {}).values()):
-                        show_info("NootRX Kext Warning", "NootRX kext is not compatible with Intel GPUs.<br>Automatically selecting WhateverGreen kext due to Intel GPU compatibility.", parent=self.utils.gui_handler)
+                        show_info("NootRX Kext Warning", "NootRX kext is not compatible with Intel GPUs.<br>Automatically selecting WhateverGreen kext due to Intel GPU compatibility.")
                         selected_kexts.append("WhateverGreen")
                         continue
 
-                    result = show_options_dialog("AMD GPU Kext Selection", content, options, default_index=recommended_option, parent=self.utils.gui_handler)
+                    result = show_options_dialog("AMD GPU Kext Selection", content, options, default_index=recommended_option)
                     
                     if result == 0:
                         selected_kexts.append("NootRX")
@@ -209,7 +262,7 @@ class KextMaestro:
                         "The current recommendation is to not use WhateverGreen.<br>"
                         "However, you can still try adding it to see if it works on your system."
                     )
-                    show_info("AMD GPU Kext Warning", content, parent=self.utils.gui_handler)
+                    show_info("AMD GPU Kext Warning", content)
                     break
 
                 selected_kexts.append("WhateverGreen")
@@ -258,10 +311,10 @@ class KextMaestro:
                 options = [airport_itlwm_content, itlwm_content]
 
                 if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
-                    show_info("Intel WiFi Kext Selection", "For macOS Beta versions, only itlwm kext is supported.", parent=self.utils.gui_handler)
+                    show_info("Intel WiFi Kext Selection", "For macOS Beta versions, only itlwm kext is supported.")
                     selected_option = 1
                 else:
-                    result = show_options_dialog("Intel WiFi Kext Selection", "Intel WiFi devices have two available kext options:", options, default_index=recommended_option, parent=self.utils.gui_handler)
+                    result = show_options_dialog("Intel WiFi Kext Selection", "Intel WiFi devices have two available kext options:", options, default_index=recommended_option)
                     selected_option = result if result is not None else recommended_option
 
                 if selected_option == 1:
@@ -276,7 +329,7 @@ class KextMaestro:
                             "Since macOS Sonoma 14, iServices won't work with AirportItlwm without patches.<br><br>"
                             "Apply OCLP root patch to fix iServices?"
                         )
-                        if show_confirmation("OpenCore Legacy Patcher Required", content, parent=self.utils.gui_handler):
+                        if show_confirmation("OpenCore Legacy Patcher Required", content):
                             selected_kexts.append("IOSkywalkFamily")
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 selected_kexts.append("corecaptureElCap")
@@ -393,7 +446,7 @@ class KextMaestro:
         for name in selected_kexts:
             self.check_kext(kext_data.kext_index_by_name.get(name), macos_version, allow_unsupported_kexts)
 
-        return needs_oclp
+        return needs_oclp, audio_layout_id, audio_controller_properties
 
     def install_kexts_to_efi(self, macos_version, kexts_directory):
         for kext in self.kexts:
@@ -627,7 +680,7 @@ class KextMaestro:
             "Do you want to force load {} on the unsupported macOS version?"
         ).format("these kexts" if len(incompatible_kexts) > 1 else "this kext")
         
-        return show_confirmation("Incompatible Kexts", content, parent=self.utils.gui_handler, yes_text="Yes", no_text="No")
+        return show_confirmation("Incompatible Kexts", content, yes_text="Yes", no_text="No")
 
     def kext_configuration_menu(self, macos_version):
         content = (
@@ -654,7 +707,7 @@ class KextMaestro:
         
         checked_indices = [i for i, kext in enumerate(self.kexts) if kext.checked]
         
-        selected_indices = show_checklist_dialog("Configure Kernel Extensions", content, checklist_items, checked_indices, parent=self.utils.gui_handler)
+        selected_indices = show_checklist_dialog("Configure Kernel Extensions", content, checklist_items, checked_indices)
         
         self.utils.log_message("[KEXT MAESTRO] Selected kexts: {}".format(selected_indices), level="INFO")
         if selected_indices is None:

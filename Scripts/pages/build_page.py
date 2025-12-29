@@ -8,16 +8,15 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from qfluentwidgets import (
     SubtitleLabel, BodyLabel, CardWidget, TextEdit,
     StrongBodyLabel, ProgressBar, PrimaryPushButton, FluentIcon,
-    ScrollArea, TitleLabel
+    ScrollArea
 )
 
 from Scripts.datasets import chipset_data
 from Scripts.datasets import kext_data
 from Scripts.custom_dialogs import show_confirmation
-from Scripts.styles import COLORS, SPACING, RADIUS
+from Scripts.styles import SPACING, COLORS, RADIUS
 from Scripts import ui_utils
-
-DEFAULT_LOG_TEXT = "Build log will appear here..."
+from Scripts.widgets.config_editor import ConfigEditor
 
 
 class BuildPage(ScrollArea):
@@ -44,16 +43,18 @@ class BuildPage(ScrollArea):
 
     def _init_ui(self):
         self.expandLayout.setContentsMargins(SPACING["xxlarge"], SPACING["xlarge"], SPACING["xxlarge"], SPACING["xlarge"])
-        self.expandLayout.setSpacing(SPACING["xlarge"])
+        self.expandLayout.setSpacing(SPACING["large"])
 
         self.expandLayout.addWidget(self.ui_utils.create_step_indicator(4))
-
-        title_label = TitleLabel("Build OpenCore EFI")
-        self.expandLayout.addWidget(title_label)
-
-        subtitle_label = BodyLabel("Build your customized OpenCore EFI ready for installation")
-        subtitle_label.setStyleSheet("color: {};".format(COLORS["text_secondary"]))
-        self.expandLayout.addWidget(subtitle_label)
+        
+        header_layout = QVBoxLayout()
+        header_layout.setSpacing(SPACING["small"])
+        title = SubtitleLabel("Build OpenCore EFI")
+        subtitle = BodyLabel("Build your customized OpenCore EFI ready for installation")
+        subtitle.setStyleSheet("color: {};".format(COLORS["text_secondary"]))
+        header_layout.addWidget(title)
+        header_layout.addWidget(subtitle)
+        self.expandLayout.addLayout(header_layout)
 
         self.expandLayout.addSpacing(SPACING["medium"])
 
@@ -77,42 +78,30 @@ class BuildPage(ScrollArea):
         build_control_card.setBorderRadius(RADIUS["card"])
         build_control_layout = QVBoxLayout(build_control_card)
         build_control_layout.setContentsMargins(SPACING["large"], SPACING["large"], SPACING["large"], SPACING["large"])
-        build_control_layout.setSpacing(SPACING["xlarge"])
-        
-        control_header_layout = QHBoxLayout()
-        control_header_layout.setSpacing(SPACING["medium"])
-        control_icon = self.ui_utils.build_icon_label(FluentIcon.DEVELOPER_TOOLS, COLORS["primary"], size=28)
-        control_header_layout.addWidget(control_icon)
-        
-        control_title = SubtitleLabel("Build Control")
-        control_title.setStyleSheet("color: {}; font-weight: 600;".format(COLORS["text_primary"]))
-        control_header_layout.addWidget(control_title)
-        control_header_layout.addStretch()
-        build_control_layout.addLayout(control_header_layout)
+        build_control_layout.setSpacing(SPACING["medium"])
 
-        action_section = QWidget()
-        action_layout = QVBoxLayout(action_section)
-        action_layout.setContentsMargins(0, 0, 0, 0)
-        action_layout.setSpacing(SPACING["medium"])
+        title = StrongBodyLabel("Build Control")
+        build_control_layout.addWidget(title)
+
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(SPACING["medium"])
 
         self.build_btn = PrimaryPushButton(FluentIcon.DEVELOPER_TOOLS, "Build OpenCore EFI")
         self.build_btn.clicked.connect(self.start_build)
-        self.build_btn.setFixedHeight(48)
+        btn_layout.addWidget(self.build_btn)
         self.controller.build_btn = self.build_btn
-        action_layout.addWidget(self.build_btn)
 
         self.open_result_btn = PrimaryPushButton(FluentIcon.FOLDER, "Open Result Folder")
         self.open_result_btn.clicked.connect(self.open_result)
-        self.open_result_btn.setFixedHeight(48)
         self.open_result_btn.setEnabled(False)
+        btn_layout.addWidget(self.open_result_btn)
         self.controller.open_result_btn = self.open_result_btn
-        action_layout.addWidget(self.open_result_btn)
-        
-        build_control_layout.addWidget(action_section)
+
+        build_control_layout.addLayout(btn_layout)
 
         self.progress_container = QWidget()
         progress_layout = QVBoxLayout(self.progress_container)
-        progress_layout.setContentsMargins(0, 0, 0, 0)
+        progress_layout.setContentsMargins(0, SPACING["small"], 0, 0)
         progress_layout.setSpacing(SPACING["medium"])
 
         status_row = QHBoxLayout()
@@ -154,17 +143,9 @@ class BuildPage(ScrollArea):
         log_card_layout = QVBoxLayout(log_card)
         log_card_layout.setContentsMargins(SPACING["large"], SPACING["large"], SPACING["large"], SPACING["large"])
         log_card_layout.setSpacing(SPACING["medium"])
-        
-        log_header_layout = QHBoxLayout()
-        log_header_layout.setSpacing(SPACING["medium"])
-        log_icon = self.ui_utils.build_icon_label(FluentIcon.DOCUMENT, COLORS["primary"], size=28)
-        log_header_layout.addWidget(log_icon)
-        
-        log_title = SubtitleLabel("Build Log")
-        log_title.setStyleSheet("color: {}; font-weight: 600;".format(COLORS["text_primary"]))
-        log_header_layout.addWidget(log_title)
-        log_header_layout.addStretch()
-        log_card_layout.addLayout(log_header_layout)
+
+        log_title = StrongBodyLabel("Build Log")
+        log_card_layout.addWidget(log_title)
         
         log_description = BodyLabel("Detailed build process information and status updates")
         log_description.setStyleSheet("color: {}; font-size: 13px;".format(COLORS["text_secondary"]))
@@ -172,7 +153,6 @@ class BuildPage(ScrollArea):
 
         self.build_log = TextEdit()
         self.build_log.setReadOnly(True)
-        self.build_log.setPlainText(DEFAULT_LOG_TEXT)
         self.build_log.setMinimumHeight(400)
         self.build_log.setStyleSheet(f"""
             TextEdit {{
@@ -188,7 +168,13 @@ class BuildPage(ScrollArea):
         self.controller.build_log = self.build_log
         log_card_layout.addWidget(self.build_log)
         
+        self.log_card = log_card
+        self.log_card.setVisible(False)
         self.expandLayout.addWidget(log_card)
+
+        self.config_editor = ConfigEditor(self.scrollWidget)
+        self.config_editor.setVisible(False)
+        self.expandLayout.addWidget(self.config_editor)
 
         self.expandLayout.addStretch()
 
@@ -236,7 +222,7 @@ class BuildPage(ScrollArea):
                 "To patch macOS Tahoe 26, you must download OpenCore-Patcher 3.0.0 or newer from my repository: <a href=\"https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0\">lzhoang2801/OpenCore-Legacy-Patcher</a>.<br>"
                 "Official Dortania releases or older patches will NOT work with macOS Tahoe 26."
             ).format(error_color=COLORS["error"], info_color="#00BCD4")
-            if not show_confirmation("OpenCore Legacy Patcher Warning", content, parent=self.window()):
+            if not show_confirmation("OpenCore Legacy Patcher Warning", content):
                 return
 
         self.build_in_progress = True
@@ -249,6 +235,7 @@ class BuildPage(ScrollArea):
         
         self.instructions_after_build_card.setVisible(False)
         self.build_log.clear()
+        self.log_card.setVisible(True)
         
         thread = threading.Thread(target=self._start_build_thread, daemon=True)
         thread.start()
@@ -329,28 +316,31 @@ class BuildPage(ScrollArea):
         progress = int((current_step / len(steps)) * 100)
         self.build_progress_signal.emit(title, steps, current_step, progress, False)
         current_step += 1
+        
         config_data["ACPI"]["Add"] = []
         config_data["ACPI"]["Delete"] = []
         config_data["ACPI"]["Patch"] = []
+        
+        acpi_directory = os.path.join(backend.result_dir, "EFI", "OC", "ACPI")
+        
         if backend.ac.ensure_dsdt():
             backend.ac.hardware_report = hardware_report
             backend.ac.disabled_devices = disabled_devices
-            backend.ac.acpi_directory = os.path.join(backend.result_dir, "EFI", "OC", "ACPI")
+            backend.ac.acpi_directory = acpi_directory
             backend.ac.smbios_model = smbios_model
             backend.ac.lpc_bus_device = backend.ac.get_lpc_name()
-
+            
             for patch in backend.ac.patches:
                 if patch.checked:
                     if patch.name == "BATP":
                         patch.checked = getattr(backend.ac, patch.function_name)()
                         backend.k.kexts[kext_data.kext_index_by_name.get("ECEnabler")].checked = patch.checked
                         continue
-
+                    
                     acpi_load = getattr(backend.ac, patch.function_name)()
-
                     if not isinstance(acpi_load, dict):
                         continue
-
+                    
                     config_data["ACPI"]["Add"].extend(acpi_load.get("Add", []))
                     config_data["ACPI"]["Delete"].extend(acpi_load.get("Delete", []))
                     config_data["ACPI"]["Patch"].extend(acpi_load.get("Patch", []))
@@ -361,6 +351,7 @@ class BuildPage(ScrollArea):
         progress = int((current_step / len(steps)) * 100)
         self.build_progress_signal.emit(title, steps, current_step, progress, False)
         current_step += 1
+        
         kexts_directory = os.path.join(backend.result_dir, "EFI", "OC", "Kexts")
         backend.k.install_kexts_to_efi(macos_version, kexts_directory)
         config_data["Kernel"]["Add"] = backend.k.load_kexts(hardware_report, macos_version, kexts_directory)
@@ -368,12 +359,26 @@ class BuildPage(ScrollArea):
         progress = int((current_step / len(steps)) * 100)
         self.build_progress_signal.emit(title, steps, current_step, progress, False)
         current_step += 1
-        backend.co.genarate(hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp, backend.k.kexts, config_data)
+        
+        audio_layout_id = self.controller.hardware_state.audio_layout_id
+        audio_controller_properties = self.controller.hardware_state.audio_controller_properties
+        
+        backend.co.genarate(
+            hardware_report,
+            disabled_devices,
+            smbios_model,
+            macos_version,
+            needs_oclp,
+            backend.k.kexts,
+            config_data,
+            audio_layout_id,
+            audio_controller_properties
+        )
+        
         backend.u.write_file(config_file, config_data)
 
         progress = int((current_step / len(steps)) * 100)
         self.build_progress_signal.emit(title, steps, current_step, progress, False)
-        current_step += 1
         files_to_remove = []
 
         drivers_directory = os.path.join(backend.result_dir, "EFI", "OC", "Drivers")
@@ -421,7 +426,7 @@ class BuildPage(ScrollArea):
             except Exception as e:
                 backend.u.log_message("[BUILD] Failed to remove file {}: {}".format(os.path.basename(file_path), e), level="WARNING", to_build_log=True)
         
-        self.build_progress_signal.emit(title, steps, len(steps), 100, True)
+        self.build_progress_signal.emit(title, steps, len(steps) - 1, 100, True)
 
     def show_post_build_instructions(self, bios_requirements):
         while self.instructions_after_content_layout.count():
@@ -470,9 +475,11 @@ class BuildPage(ScrollArea):
         self.build_successful = success
         
         if success:
+            self.log_card.setVisible(False)
             self.progress_helper.update("success", "Build completed successfully!", 100)
             
             self.show_post_build_instructions(bios_requirements)
+            self._load_configs_after_build()
             
             self.build_btn.setText("Build OpenCore EFI")
             self.build_btn.setEnabled(True)
@@ -483,12 +490,10 @@ class BuildPage(ScrollArea):
                 success_message += " Review the important instructions below."
             
             self.controller.update_status(success_message, "success")
-
-            if hasattr(self.controller, "settings") and self.controller.settings.get_open_folder_after_build():
-                if hasattr(self.controller, "open_result_folder_signal"):
-                    self.controller.open_result_folder_signal.emit(self.controller.backend.result_dir)
         else:
             self.progress_helper.update("error", "Build OpenCore EFI failed", None)
+            
+            self.config_editor.setVisible(False)
             
             self.build_btn.setText("Retry Build OpenCore EFI")
             self.build_btn.setEnabled(True)
@@ -503,6 +508,37 @@ class BuildPage(ScrollArea):
         except Exception as e:
             self.controller.update_status("Failed to open result folder: {}".format(e), "warning")
 
+    def _load_configs_after_build(self):
+        backend = self.controller.backend
+        
+        source_efi_dir = os.path.join(backend.k.ock_files_dir, "OpenCorePkg")
+        original_config_file = os.path.join(source_efi_dir, "EFI", "OC", "config.plist")
+        
+        if not os.path.exists(original_config_file):
+            return
+        
+        original_config = backend.u.read_file(original_config_file)
+        if not original_config:
+            return
+        
+        modified_config_file = os.path.join(backend.result_dir, "EFI", "OC", "config.plist")
+        
+        if not os.path.exists(modified_config_file):
+            return
+        
+        modified_config = backend.u.read_file(modified_config_file)
+        if not modified_config:
+            return
+        
+        context = {
+            "hardware_report": self.controller.hardware_state.hardware_report,
+            "macos_version": self.controller.macos_state.darwin_version,
+            "smbios_model": self.controller.smbios_state.model_name,
+        }
+        
+        self.config_editor.load_configs(original_config, modified_config, context)
+        self.config_editor.setVisible(True)
+
     def refresh(self):
         if not self.build_in_progress:
             if self.build_successful:
@@ -512,4 +548,5 @@ class BuildPage(ScrollArea):
                 log_text = self.build_log.toPlainText()
                 if not log_text or log_text == DEFAULT_LOG_TEXT:
                     self.progress_container.setVisible(False)
+                    self.log_card.setVisible(False)
                 self.open_result_btn.setEnabled(False)

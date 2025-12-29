@@ -10,6 +10,8 @@ class HardwareReportState:
     compatibility_error: Optional[str] = None
     customized_hardware: Optional[Dict[str, Any]] = None
     disabled_devices: Optional[Dict[str, str]] = None
+    audio_layout_id: Optional[int] = None
+    audio_controller_properties: Optional[Dict[str, Any]] = None
     
     
 @dataclass

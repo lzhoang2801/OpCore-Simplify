@@ -222,7 +222,7 @@ class SelectHardwareReportPage(QWidget):
         
         acpi_dir = None
         if os.path.isdir(potential_acpi):
-            if show_confirmation("ACPI Folder Detected", "Found an ACPI folder at: {}\n\nDo you want to use this ACPI folder?".format(potential_acpi), self):
+            if show_confirmation("ACPI Folder Detected", "Found an ACPI folder at: {}\n\nDo you want to use this ACPI folder?".format(potential_acpi)):
                 acpi_dir = potential_acpi
 
         if not acpi_dir:
@@ -373,18 +373,18 @@ class SelectHardwareReportPage(QWidget):
                 msg = "Report Errors:\n" + "\n".join(errors)
                 self.set_detail_status("report", report_path, "error", msg)
                 self.progress_helper.update("error", "Report validation failed", None)
-                show_info("Report Validation Failed", "The hardware report has errors:\n{}\n\nPlease select a valid report file.".format("\n".join(errors)), self)
+                show_info("Report Validation Failed", "The hardware report has errors:\n{}\n\nPlease select a valid report file.".format("\n".join(errors)))
             elif error_type == "compatibility_error":
                 error_msg = self.controller.hardware_state.compatibility_error
                 if isinstance(error_msg, list):
                     error_msg = "\n".join(error_msg)
                 compat_text = "\nCompatibility Error:\n{}".format(error_msg)
                 self.set_detail_status("report", report_path, "error", compat_text)
-                show_info("Incompatible Hardware", "Your hardware is not compatible with macOS:\n\n" + error_msg, self)
+                show_info("Incompatible Hardware", "Your hardware is not compatible with macOS:\n\n" + error_msg)
             elif error_type == "acpi_error":
                 self.set_detail_status("acpi", acpi_dir, "error", "No ACPI tables found in selected folder.")
                 self.progress_helper.update("error", "No ACPI tables found", None)
-                show_info("No ACPI tables", "No ACPI tables found in ACPI folder.", self)
+                show_info("No ACPI tables", "No ACPI tables found in ACPI folder.")
             else:
                 self.progress_helper.update("error", "Error: {}".format(error_type), None)
                 self.controller.update_status("Failed to load hardware report: {}".format(error_type), "error")

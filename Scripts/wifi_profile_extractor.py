@@ -107,7 +107,7 @@ class WifiProfileExtractor:
 
     def ask_network_count(self, total_networks):
         if self.utils.gui_handler:
-            result = ask_network_count(total_networks, parent=self.utils.gui_handler)
+            result = ask_network_count(total_networks)
             if result == 'a':
                 return total_networks
             return int(result)
@@ -139,7 +139,7 @@ class WifiProfileExtractor:
                     consecutive_failures += 1 if os_name == "Darwin" else 0
 
                     if consecutive_failures >= max_consecutive_failures:
-                        result = show_confirmation("WiFi Profile Extractor", "Unable to retrieve passwords. Continue trying?", parent=self.utils.gui_handler)
+                        result = show_confirmation("WiFi Profile Extractor", "Unable to retrieve passwords. Continue trying?")
                         
                         if not result:
                             break
@@ -150,7 +150,7 @@ class WifiProfileExtractor:
                 self.utils.log_message("[WIFI PROFILE EXTRACTOR] Error processing network \"{}\": {}".format(ssid, str(e)), level="ERROR", to_build_log=True)
 
                 if consecutive_failures >= max_consecutive_failures:
-                    result = show_confirmation("WiFi Profile Extractor", "Unable to retrieve passwords. Continue trying?", parent=self.utils.gui_handler)
+                    result = show_confirmation("WiFi Profile Extractor", "Unable to retrieve passwords. Continue trying?")
                         
                     if not result:
                         break
@@ -161,7 +161,7 @@ class WifiProfileExtractor:
             
             if processed_count >= max_networks and len(networks) < max_networks and processed_count < len(ssid_list):
 
-                result = show_confirmation("WiFi Profile Extractor", "Only retrieved {}/{} networks. Try more to reach your target?".format(len(networks), max_networks), parent=self.utils.gui_handler)
+                result = show_confirmation("WiFi Profile Extractor", "Only retrieved {}/{} networks. Try more to reach your target?".format(len(networks), max_networks))
                         
                 if not result:
                     break
@@ -188,7 +188,7 @@ class WifiProfileExtractor:
                 "To retrieve WiFi passwords from the Keychain, macOS will prompt<br>"
                 "you for administrator credentials for each WiFi network."
             )
-            show_info("Administrator Authentication Required", content, parent=self.utils.gui_handler)
+            show_info("Administrator Authentication Required", content)
         
         return self.process_networks(ssid_list, max_networks, self.get_wifi_password_macos)
 
@@ -276,7 +276,7 @@ class WifiProfileExtractor:
             "</ul><br>"
             "Would you like to scan for WiFi profiles?"
         )
-        if not show_confirmation("WiFi Profile Extractor", content, parent=self.utils.gui_handler):
+        if not show_confirmation("WiFi Profile Extractor", content):
             return []
         
         profiles = []

@@ -3305,7 +3305,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
             if patch.checked:
                 checked_indices.append(i)
                 
-        result = show_checklist_dialog("Configure ACPI Patches", "Select ACPI patches you want to apply:", items, checked_indices, parent=self.utils.gui_handler)
+        result = show_checklist_dialog("Configure ACPI Patches", "Select ACPI patches you want to apply:", items, checked_indices)
         
         if result is not None:
             for i, patch in enumerate(self.patches):

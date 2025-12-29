@@ -60,7 +60,7 @@ class HardwareCustomizer:
                         "If yes, please make sure to update your BIOS and enable UEFI Boot Mode in your BIOS settings.<br>"
                         "You can still proceed with Legacy if you prefer."
                     )
-                    if show_confirmation("BIOS Firmware Type is not UEFI", content, parent=self.utils.gui_handler):
+                    if show_confirmation("BIOS Firmware Type is not UEFI", content):
                         self.utils.log_message("[HARDWARE CUSTOMIZATION] BIOS Firmware Type is not UEFI, building EFI for UEFI", level="INFO")
                         self.customized_hardware[device_type]["Firmware Type"] = "UEFI"
                     else:
@@ -113,7 +113,7 @@ class HardwareCustomizer:
             
             content += "</table>"
             content += "<p><i>Note: Unselected devices in these categories have been disabled.</i></p>"
-            show_info("Hardware Configuration Summary", content, parent=self.utils.gui_handler)
+            show_info("Hardware Configuration Summary", content)
 
         return self.customized_hardware, self.disabled_devices, needs_oclp
 
@@ -287,7 +287,7 @@ class HardwareCustomizer:
         self.utils.log_message("[HARDWARE CUSTOMIZATION] Options: {}".format(", ".join(option.split("<br>")[0].replace("<b>", "").replace("</b>", "").strip() for option in options)), level="INFO")
             
         while True:
-            choice_num = show_options_dialog(title, "<br>".join(content), options, default_index=len(options) - 1, parent=self.utils.gui_handler)
+            choice_num = show_options_dialog(title, "<br>".join(content), options, default_index=len(options) - 1)
 
             if choice_num is None:
                 continue
