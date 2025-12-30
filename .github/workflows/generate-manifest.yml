@@ -53,3 +53,5 @@ jobs:
         with:
           name: manifest.json
           path: ./manifest.json
+          if-no-files-found: error
+          compression-level: 0
