@@ -48,8 +48,8 @@ class Updater:
         self.fetcher = resource_fetcher_instance if resource_fetcher_instance else resource_fetcher.ResourceFetcher(utils_instance=self.utils)
         self.run = run_instance.run if run_instance else run.Run().run
         self.integrity_checker = integrity_checker_instance if integrity_checker_instance else integrity_checker.IntegrityChecker(utils_instance=self.utils)
-        self.remote_manifest_url = "https://nightly.link/lzhoang2801/OpCore-Simplify/workflows/generate-manifest/add-gui-support/manifest.json.zip"
-        self.download_repo_url = "https://github.com/lzhoang2801/OpCore-Simplify/archive/refs/heads/add-gui-support.zip"
+        self.remote_manifest_url = "https://nightly.link/lzhoang2801/OpCore-Simplify/workflows/generate-manifest/main/manifest.json.zip"
+        self.download_repo_url = "https://github.com/lzhoang2801/OpCore-Simplify/archive/refs/heads/main.zip"
         self.temporary_dir = tempfile.mkdtemp()
         self.root_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -151,7 +151,7 @@ class Updater:
             return True
         
         try:
-            target_dir = os.path.join(self.temporary_dir, "OpCore-Simplify-add-gui-support")
+            target_dir = os.path.join(self.temporary_dir, "OpCore-Simplify-main")
 
             if not os.path.exists(target_dir):
                 self.utils.log_message("[UPDATER] Target directory not found: {}".format(target_dir), level="ERROR")
