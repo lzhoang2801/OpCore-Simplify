@@ -26,8 +26,15 @@ class IntegrityChecker:
 
         manifest_data = {}
         for root, _, files in os.walk(folder_path):
+            if '.git' in root or "__pycache__" in root:
+                continue
+                
             for name in files:
+                if '.git' in name or ".pyc" in name:
+                    continue
+                    
                 file_path = os.path.join(root, name)
+                
                 relative_path = os.path.relpath(file_path, folder_path).replace('\\', '/')
                 
                 if relative_path == os.path.basename(manifest_path):
