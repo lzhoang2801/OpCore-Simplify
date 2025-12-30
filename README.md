@@ -19,23 +19,6 @@
   </p>
 </div>
 
-> [!NOTE]
-> **OpenCore Legacy Patcher 3.0.0 – Now Supports macOS Tahoe 26!**
-> 
-> The long awaited version 3.0.0 of OpenCore Legacy Patcher is here, bringing **initial support for macOS Tahoe 26** to the community!
-> 
-> 🚨 **Please Note:**  
-> - Only OpenCore-Patcher 3.0.0 **from the [lzhoang2801/OpenCore-Legacy-Patcher](https://github.com/lzhoang2801/OpenCore-Legacy-Patcher/releases/tag/3.0.0)** repository provides support for macOS Tahoe 26 with early patches.
-> - Official Dortania releases or older patches **will NOT work** with macOS Tahoe 26.  
-
-> [!WARNING]
-> While OpCore Simplify significantly reduces setup time, the Hackintosh journey still requires:
-> - Understanding basic concepts from the [Dortania Guide](https://dortania.github.io/OpenCore-Install-Guide/)
-> - Testing and troubleshooting during the installation process
-> - Patience and persistence in resolving any issues that arise
->
-> Our tool does not guarantee a successful installation in the first attempt, but it should help you get started.
-
 ## ✨ **Features**
 
 1. **Comprehensive Hardware and macOS Support**  
@@ -101,39 +84,30 @@
    - On **macOS**, run `OpCore-Simplify.command`.
    - On **Linux**, run `OpCore-Simplify.py` with existing Python interpreter.
 
-   ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
+   ![OpCore Simplify Main](https://private-user-images.githubusercontent.com/169338399/529304376-037b1b04-8f76-4a31-87f2-b2b779ff4cdb.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjcwMzkxNjUsIm5iZiI6MTc2NzAzODg2NSwicGF0aCI6Ii8xNjkzMzgzOTkvNTI5MzA0Mzc2LTAzN2IxYjA0LThmNzYtNGEzMS04N2YyLWIyYjc3OWZmNGNkYi5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUxMjI5JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MTIyOVQyMDA3NDVaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT05M2JiZTA0YzE2OWFlNDljZjlmYjI2NDBjZGQ0NGU5Njg1ODMwMDgwN2EyYjcxMmQ5ZDcyODBlN2JjMDFlZDdkJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.yaVVUwu0hf8Q0pZp-cn_8KixBEr0g62lXYGslkYLITc)
 
 3. **Selecting hardware report**:
-   - On Windows, there will be an option for `E. Export hardware report`. It's recommended to use this for the best results with your hardware configuration and BIOS at the time of building.
-   - Alternatively, use [**Hardware Sniffer**](https://github.com/lzhoang2801/Hardware-Sniffer) to create a `Report.json` and ACPI dump for configuration manully.
 
-   ![Selecting hardware report](https://i.imgur.com/MbRmIGJ.png)
+   ![Selecting hardware report](https://private-user-images.githubusercontent.com/169338399/529304594-b1e608a7-6428-4f49-8426-f4ad289a7484.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjcwMzkxNjUsIm5iZiI6MTc2NzAzODg2NSwicGF0aCI6Ii8xNjkzMzgzOTkvNTI5MzA0NTk0LWIxZTYwOGE3LTY0MjgtNGY0OS04NDI2LWY0YWQyODlhNzQ4NC5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUxMjI5JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MTIyOVQyMDA3NDVaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT04ZDA0ZjljMGY4MTc5YmUzNmFmZDNhNDRjYTU5ZDJiZDQ3NzI0ZjkwMDI4ODNjMDhhMTNhZGY1M2Y3MmY5MjZlJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.-9K5kz6tXqrNHK-E4jWyAio481ave9ypIt6-Em_yBJM)
 
-   ![Loading ACPI Tables](https://i.imgur.com/SbL6N6v.png)
+4. **Verifying hardware compatibility**:
 
-   ![Compatibility Checker](https://i.imgur.com/kuDGMmp.png)
+   ![Compatibility Checker](https://private-user-images.githubusercontent.com/169338399/529304672-72d4ba8c-1d8e-4a59-80e2-23212b3213da.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjcwMzkxNjUsIm5iZiI6MTc2NzAzODg2NSwicGF0aCI6Ii8xNjkzMzgzOTkvNTI5MzA0NjcyLTcyZDRiYThjLTFkOGUtNGE1OS04MGUyLTIzMjEyYjMyMTNkYS5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUxMjI5JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MTIyOVQyMDA3NDVaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0yMTA4OWFjYWM4Zjk0NWRiNDVlZWY5YzYzYTUzNmQwMDk3MzZhMTQ0MGVhN2NkODAxMjcwOTBmY2I2MGZlMzg2JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.dgaX8DZcsK3CbuKOdu62JNOypngycO98ezN5qUxvGNI)
 
-4. **Selecting macOS Version and Customizing OpenCore EFI**:
+5. **Selecting macOS Version and Customizing OpenCore EFI**:
    - By default, the latest compatible macOS version will be selected for your hardware.
    - OpCore Simplify will automatically apply essential ACPI patches and kexts. 
    - You can manually review and customize these settings as needed.
 
-   ![OpCore Simplify Menu](https://i.imgur.com/TSk9ejy.png)
+   ![Configuration Page](https://private-user-images.githubusercontent.com/169338399/530910046-81462033-696d-46e2-91f2-358ceff37199.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjcwNzg5NjQsIm5iZiI6MTc2NzA3ODY2NCwicGF0aCI6Ii8xNjkzMzgzOTkvNTMwOTEwMDQ2LTgxNDYyMDMzLTY5NmQtNDZlMi05MWYyLTM1OGNlZmYzNzE5OS5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUxMjMwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MTIzMFQwNzExMDRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT1lOGNlNzQ4MmE3ZTkzMGI0MDU0MzliZTAyMzI0YzhkZTJjNDkwYjc5NmZmZTA4YjE2NjUwYmUyMWUyMThlYzc1JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.XuqqC-VOk4SS9zSCgyGaGfrmNbjDm-MCGiK4l597ink)
 
-5. **Building OpenCore EFI**:
+6. **Building OpenCore EFI**:
    - Once you've customized all options, select **Build OpenCore EFI** to generate your EFI.
    - The tool will automatically download the necessary bootloader and kexts, which may take a few minutes.
 
-   ![WiFi Profile Extractor](https://i.imgur.com/71TkJkD.png)
+   ![OCLP Warning](https://private-user-images.githubusercontent.com/169338399/530910077-88987465-2aab-47b9-adf8-e56f6248c88f.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjcwNzg5NjQsIm5iZiI6MTc2NzA3ODY2NCwicGF0aCI6Ii8xNjkzMzgzOTkvNTMwOTEwMDc3LTg4OTg3NDY1LTJhYWItNDdiOS1hZGY4LWU1NmY2MjQ4Yzg4Zi5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUxMjMwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MTIzMFQwNzExMDRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT01OWUzNGM2MzZmMmMwYjA5OWU0YzYxMTQ0Yjg5M2RkM2QzNDcyZGVlMTVkZWQ1ZTE5OTU5MjYwZGQ0ODVlZGVmJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.twu-QrH30NkDnqSVsvsmySf15ePAWhCStGjZDO3ia40)
 
-   ![Choosing Codec Layout ID](https://i.imgur.com/Mcm20EQ.png)
-
-   ![Building OpenCore EFI](https://i.imgur.com/deyj5de.png)
-
-6. **USB Mapping**:
-   - After building your EFI, follow the steps for mapping USB ports.
-
-   ![Results](https://i.imgur.com/MIPigPF.png)
+   ![Build Result](https://private-user-images.githubusercontent.com/169338399/530910249-f91813db-b201-4d6a-b604-691014d29074.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjcwNzg5NjQsIm5iZiI6MTc2NzA3ODY2NCwicGF0aCI6Ii8xNjkzMzgzOTkvNTMwOTEwMjQ5LWY5MTgxM2RiLWIyMDEtNGQ2YS1iNjA0LTY5MTAxNGQyOTA3NC5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUxMjMwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MTIzMFQwNzExMDRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT1mZDVjYjM2MzY2ZGJhMDcxODRlZGUzY2RhNGFjMjYzNGMyYWFiYWVmZGM4YzRmMDlkZTgzNzEwZjRjYWY2MDM1JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.uq7WzyDJKImuoUFjgfQG41s4VfgMq7h64BaSjRpU6cg)
 
 7. **Create USB and Install macOS**: 
    - Use [**UnPlugged**](https://github.com/corpnewt/UnPlugged) on Windows to create a USB macOS installer, or follow [this guide](https://dortania.github.io/OpenCore-Install-Guide/installer-guide/mac-install.html) for macOS.
@@ -158,6 +132,7 @@ Distributed under the BSD 3-Clause License. See `LICENSE` for more information.
 
 - [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg) and [kexts](https://github.com/lzhoang2801/OpCore-Simplify/blob/main/Scripts/datasets/kext_data.py) – The backbone of this project.
 - [SSDTTime](https://github.com/corpnewt/SSDTTime) – SSDT patching utilities.
+- [@rubentalstra](https://github.com/rubentalstra): Idea and code prototype [Implement GUI #471](https://github.com/lzhoang2801/OpCore-Simplify/pull/471)
 
 ## 📞 **Contact**
 
