@@ -65,6 +65,32 @@ class AudioLayoutCard(SettingCard):
         layout_text = str(self.controller.hardware_state.audio_layout_id) if self.controller.hardware_state.audio_layout_id is not None else "Not configured"
         self.layoutLabel.setText(layout_text)
 
+class SMBIOSModelCard(SettingCard):
+    def __init__(self, controller, on_select_model, parent=None):
+        super().__init__(
+            FluentIcon.TAG,
+            "SMBIOS Model",
+            "Select Mac model identifier for your system",
+            parent
+        )
+        self.controller = controller
+        
+        model_text = self.controller.smbios_state.model_name if self.controller.smbios_state.model_name != "Not selected" else "Not configured"
+        self.modelLabel = BodyLabel(model_text)
+        self.modelLabel.setStyleSheet("color: {}; margin-right: 10px;".format(COLORS["text_secondary"]))
+        
+        self.selectModelBtn = PushButton("Configure Model")
+        self.selectModelBtn.clicked.connect(on_select_model)
+        self.selectModelBtn.setFixedWidth(150)
+        
+        self.hBoxLayout.addWidget(self.modelLabel)
+        self.hBoxLayout.addWidget(self.selectModelBtn)
+        self.hBoxLayout.addSpacing(16)
+
+    def update_model(self):
+        model_text = self.controller.smbios_state.model_name if self.controller.smbios_state.model_name != "Not selected" else "Not configured"
+        self.modelLabel.setText(model_text)
+
 class ConfigurationPage(ScrollArea):
     def __init__(self, parent, ui_utils_instance=None):
         super().__init__(parent)
@@ -135,6 +161,9 @@ class ConfigurationPage(ScrollArea):
         self.audio_layout_card_index = None
         self.audio_layout_card = AudioLayoutCard(self.controller, self.customize_audio_layout, self.scrollWidget)
         self.expandLayout.addWidget(self.audio_layout_card)
+
+        self.smbios_card = SMBIOSModelCard(self.controller, self.customize_smbios_model, self.scrollWidget)
+        self.expandLayout.addWidget(self.smbios_card)
 
         self.expandLayout.addStretch()
 
@@ -257,6 +286,8 @@ class ConfigurationPage(ScrollArea):
         if hasattr(self, "macos_card"):
             self.macos_card.update_version()
         self._update_audio_layout_card_visibility()
+        if hasattr(self, "smbios_card"):
+            self.smbios_card.update_model()
 
     def refresh(self):
         self.update_display()
