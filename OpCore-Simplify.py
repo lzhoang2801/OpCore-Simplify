@@ -298,21 +298,21 @@ class OCS(FluentWindow):
 
 if __name__ == "__main__":
     backend = Backend()
-
-    if backend.settings.get_auto_update_check():
-        update_flag = updater.Updater(
-            utils_instance=backend.u,
-            github_instance=backend.github,
-            resource_fetcher_instance=backend.resource_fetcher,
-            run_instance=backend.r
-        ).run_update()
-        if update_flag:
-            os.execv(sys.executable, ["python3"] + sys.argv)
-            
+    
     app = QApplication(sys.argv)
+    set_default_gui_handler(app)
     
     window = OCS(backend)
     window.setup_exception_hook()
     window.show()
+    
+    if backend.settings.get_auto_update_check():
+        updater.Updater(
+            utils_instance=backend.u,
+            github_instance=backend.github,
+            resource_fetcher_instance=backend.resource_fetcher,
+            run_instance=backend.r,
+            integrity_checker_instance=backend.integrity_checker
+        ).run_update()
     
     sys.exit(app.exec())

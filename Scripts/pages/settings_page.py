@@ -74,19 +74,6 @@ class SettingsPage(ScrollArea):
         bottom_layout = QHBoxLayout(self.bottom_widget)
         bottom_layout.setContentsMargins(0, SPACING["large"], 0, SPACING["large"])
         bottom_layout.setSpacing(SPACING["medium"])
-
-        version_container = QHBoxLayout()
-        version_container.setSpacing(SPACING["small"])
-
-        version_label = StrongBodyLabel("Version:")
-        version_container.addWidget(version_label)
-
-        git_sha = self.get_git_version()
-        version_value = CaptionLabel(git_sha)
-        version_value.setStyleSheet("color: {}; font-family: \"Courier New\", monospace;".format(COLORS["text_secondary"]))
-        version_container.addWidget(version_value)
-
-        bottom_layout.addLayout(version_container)
         bottom_layout.addStretch()
 
         reset_btn = PushButton("Reset All to Defaults", self.bottom_widget)
@@ -282,18 +269,3 @@ class SettingsPage(ScrollArea):
                     self._update_widget_value(widget, default_value)
 
             self.controller.update_status("All settings reset to defaults", "success")
-
-    def get_git_version(self):
-        try:
-            main_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-            sha_version_file = os.path.join(main_dir, "sha_version.txt")
-            if os.path.exists(sha_version_file):
-                with open(sha_version_file, "r") as f:
-                    version = f.read().strip()
-                    if version:
-                        return version
-        except Exception:
-            pass
-
-        return "unknown"

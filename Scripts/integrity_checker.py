@@ -17,7 +17,7 @@ class IntegrityChecker:
                 sha256.update(block)
         return sha256.hexdigest()
 
-    def generate_folder_manifest(self, folder_path, manifest_path=None):
+    def generate_folder_manifest(self, folder_path, manifest_path=None, save_manifest=True):
         if not os.path.isdir(folder_path):
             return None
 
@@ -42,7 +42,8 @@ class IntegrityChecker:
 
                 manifest_data[relative_path] = self.get_sha256(file_path)
         
-        self.utils.write_file(manifest_path, manifest_data)
+        if save_manifest:
+            self.utils.write_file(manifest_path, manifest_data)
         return manifest_data
 
     def verify_folder_integrity(self, folder_path, manifest_path=None):

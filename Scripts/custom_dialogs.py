@@ -1,8 +1,8 @@
 import re
 import functools
-from PyQt6.QtCore import Qt, QObject, QThread, QMetaObject, QCoreApplication, pyqtSlot
+from PyQt6.QtCore import Qt, QObject, QThread, QMetaObject, QCoreApplication, pyqtSlot, pyqtSignal
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QRadioButton, QButtonGroup, QVBoxLayout, QCheckBox, QScrollArea, QLabel
-from qfluentwidgets import MessageBoxBase, SubtitleLabel, BodyLabel, LineEdit, PushButton
+from qfluentwidgets import MessageBoxBase, SubtitleLabel, BodyLabel, LineEdit, PushButton, ProgressBar
 
 from Scripts.datasets import os_data
 
@@ -409,3 +409,53 @@ def show_macos_version_dialog(native_macos_version, ocl_patched_macos_version, s
         return "{}.99.99".format(version_values[result])
 
     return None
+
+class UpdateDialog(MessageBoxBase):
+    progress_updated = pyqtSignal(int, str)
+    
+    def __init__(self, title="Update", initial_status="Checking for updates..."):
+        super().__init__(_default_gui_handler)
+        
+        self.titleLabel = SubtitleLabel(title, self.widget)
+        self.statusLabel = BodyLabel(initial_status, self.widget)
+        self.statusLabel.setWordWrap(True)
+        
+        self.progressBar = ProgressBar(self.widget)
+        self.progressBar.setRange(0, 100)
+        self.progressBar.setValue(0)
+        
+        self.viewLayout.addWidget(self.titleLabel)
+        self.viewLayout.addWidget(self.statusLabel)
+        self.viewLayout.addWidget(self.progressBar)
+        
+        self.widget.setMinimumWidth(600)
+        
+        self.cancelButton.setVisible(False)
+        self.yesButton.setVisible(False)
+        
+        self.progress_updated.connect(self._update_progress_safe)
+    
+    @pyqtSlot(int, str)
+    def _update_progress_safe(self, value, status_text):
+        self.progressBar.setValue(value)
+        if status_text:
+            self.statusLabel.setText(status_text)
+        QCoreApplication.processEvents()
+    
+    def update_progress(self, value, status_text=""):
+        self.progress_updated.emit(value, status_text)
+    
+    def set_status(self, status_text):
+        self.update_progress(self.progressBar.value(), status_text)
+    
+    def show_buttons(self, show_ok=False, show_cancel=False):
+        self.yesButton.setVisible(show_ok)
+        self.cancelButton.setVisible(show_cancel)
+    
+    def configure_buttons(self, ok_text="OK", cancel_text="Cancel"):
+        self.yesButton.setText(ok_text)
+        self.cancelButton.setText(cancel_text)
+
+def show_update_dialog(title="Update", initial_status="Checking for updates..."):
+    dialog = UpdateDialog(title, initial_status)
+    return dialog
