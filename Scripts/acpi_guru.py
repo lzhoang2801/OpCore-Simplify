@@ -8,6 +8,7 @@ from Scripts import smbios
 from Scripts import dsdt
 from Scripts import run
 from Scripts import utils
+from Scripts.custom_dialogs import show_checklist_dialog
 import os
 import binascii
 import re
@@ -17,11 +18,11 @@ import sys
 import plistlib
 
 class ACPIGuru:
-    def __init__(self):
-        self.acpi = dsdt.DSDT()
-        self.smbios = smbios.SMBIOS()
-        self.run = run.Run().run
-        self.utils = utils.Utils()
+    def __init__(self, dsdt_instance=None, smbios_instance=None, run_instance=None, utils_instance=None):
+        self.acpi = dsdt_instance if dsdt_instance else dsdt.DSDT()
+        self.smbios = smbios_instance if smbios_instance else smbios.SMBIOS()
+        self.run = run_instance.run if run_instance else run.Run().run
+        self.utils = utils_instance if utils_instance else utils.Utils()
         self.patches = acpi_patch_data.patches
         self.hardware_report = None
         self.disabled_devices = None
@@ -118,9 +119,7 @@ class ACPIGuru:
     def read_acpi_tables(self, path):
         if not path:
             return
-        self.utils.head("Loading ACPI Table(s)")
-        print("by CorpNewt")
-        print("")
+        self.utils.log_message("[ACPI GURU] Loading ACPI Table(s) from {}".format(path), level="INFO")
         tables = []
         trouble_dsdt = None
         fixed = False
@@ -129,10 +128,10 @@ class ACPIGuru:
         # Clear any existing tables so we load anew
         self.acpi.acpi_tables = {}
         if os.path.isdir(path):
-            print("Gathering valid tables from {}...\n".format(os.path.basename(path)))
+            self.utils.log_message("[ACPI GURU] Gathering valid tables from {}".format(os.path.basename(path)), level="INFO")
             for t in self.sorted_nicely(os.listdir(path)):
                 if not "Patched" in t and self.acpi.table_is_valid(path,t):
-                    print(" - {}".format(t))
+                    self.utils.log_message("[ACPI GURU] Found valid table: {}".format(t), level="INFO")
                     tables.append(t)
             if not tables:
                 # Check if there's an ACPI directory within the passed
@@ -140,50 +139,44 @@ class ACPIGuru:
                 if os.path.isdir(os.path.join(path,"ACPI")):
                     # Rerun this function with that updated path
                     return self.read_acpi_tables(os.path.join(path,"ACPI"))
-                print(" - No valid .aml files were found!")
-                print("")
+                self.utils.log_message("[ACPI GURU] No valid .aml files were found!", level="ERROR")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
-            print("")
+            self.utils.log_message("[ACPI GURU] Found at least one valid table", level="INFO")
             # We got at least one file - let's look for the DSDT specifically
             # and try to load that as-is.  If it doesn't load, we'll have to
             # manage everything with temp folders
             dsdt_list = [x for x in tables if self.acpi._table_signature(path,x) == "DSDT"]
             if len(dsdt_list) > 1:
-                print("Multiple files with DSDT signature passed:")
+                self.utils.log_message("[ACPI GURU] Multiple files with DSDT signature passed:", level="ERROR")
                 for d in self.sorted_nicely(dsdt_list):
-                    print(" - {}".format(d))
-                print("\nOnly one is allowed at a time.  Please remove one of the above and try again.")
-                print("")
+                    self.utils.log_message("[ACPI GURU] Found DSDT file: {}".format(d), level="INFO")
+                self.utils.log_message("[ACPI GURU] Only one is allowed at a time. Please remove one of the above and try again.", level="ERROR")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
             # Get the DSDT, if any
             dsdt = dsdt_list[0] if len(dsdt_list) else None
             if dsdt: # Try to load it and see if it causes problems
-                print("Disassembling {} to verify if pre-patches are needed...".format(dsdt))
+                self.utils.log_message("[ACPI GURU] Disassembling {} to verify if pre-patches are needed...".format(dsdt), level="INFO")
                 if not self.acpi.load(os.path.join(path,dsdt))[0]:
                     trouble_dsdt = dsdt
                 else:
-                    print("\nDisassembled successfully!\n")
+                    self.utils.log_message("[ACPI GURU] Disassembled successfully!", level="INFO")
         elif not "Patched" in path and os.path.isfile(path):
-            print("Loading {}...".format(os.path.basename(path)))
+            self.utils.log_message("[ACPI GURU] Loading {}...".format(os.path.basename(path)), level="INFO")
             if self.acpi.load(path)[0]:
-                print("\nDone.")
+                self.utils.log_message("[ACPI GURU] Done.", level="INFO")
                 # If it loads fine - just return the path
                 # to the parent directory
                 return os.path.dirname(path)
             if not self.acpi._table_signature(path) == "DSDT":
                 # Not a DSDT, we aren't applying pre-patches
-                print("\n{} could not be disassembled!".format(os.path.basename(path)))
-                print("")
+                self.utils.log_message("[ACPI GURU] {} could not be disassembled!".format(os.path.basename(path)), level="ERROR")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
                 # Restore any prior tables
                 self.acpi.acpi_tables = prior_tables
                 return
@@ -194,10 +187,8 @@ class ACPIGuru:
             tables.append(os.path.basename(path))
             path = os.path.dirname(path)
         else:
-            print("Passed file/folder does not exist!")
-            print("")
+            self.utils.log_message("[ACPI GURU] Passed file/folder does not exist!", level="ERROR")
             #self.u.grab("Press [enter] to return...")
-            self.utils.request_input()
             # Restore any prior tables
             self.acpi.acpi_tables = prior_tables
             return
@@ -214,22 +205,22 @@ class ACPIGuru:
             # Get a reference to the new trouble file
             trouble_path = os.path.join(temp,trouble_dsdt)
             # Now we try patching it
-            print("Checking available pre-patches...")
-            print("Loading {} into memory...".format(trouble_dsdt))
+            self.utils.log_message("[ACPI GURU] Checking available pre-patches...", level="INFO")
+            self.utils.log_message("[ACPI GURU] Loading {} into memory...".format(trouble_dsdt), level="INFO")
             with open(trouble_path,"rb") as f:
                 d = f.read()
             res = self.acpi.check_output(path)
             target_name = self.get_unique_name(trouble_dsdt,res,name_append="-Patched")
             self.dsdt_patches = []
-            print("Iterating patches...\n")
+            self.utils.log_message("[ACPI GURU] Iterating patches...", level="INFO")
             for p in self.pre_patches:
                 if not all(x in p for x in ("PrePatch","Comment","Find","Replace")): continue
-                print(" - {}".format(p["PrePatch"]))
+                self.utils.log_message("[ACPI GURU] Found pre-patch: {}".format(p["PrePatch"]), level="INFO")
                 find = binascii.unhexlify(p["Find"])
                 if d.count(find) == 1:
                     self.dsdt_patches.append(p) # Retain the patch
                     repl = binascii.unhexlify(p["Replace"])
-                    print(" --> Located - applying...")
+                    self.utils.log_message("[ACPI GURU] Located pre-patch - applying...", level="INFO")
                     d = d.replace(find,repl) # Replace it in memory
                     with open(trouble_path,"wb") as f:
                         f.write(d) # Write the updated file
@@ -237,7 +228,7 @@ class ACPIGuru:
                     if self.acpi.load(trouble_path)[0]:
                         fixed = True
                         # We got it to load - let's write the patches
-                        print("\nDisassembled successfully!\n")
+                        self.utils.log_message("[ACPI GURU] Disassembled successfully!", level="INFO")
                         #self.make_plist(None, None, patches)
                         # Save to the local file
                         #with open(os.path.join(res,target_name),"wb") as f:
@@ -246,10 +237,8 @@ class ACPIGuru:
                         #self.patch_warn()
                         break
             if not fixed:
-                print("\n{} could not be disassembled!".format(trouble_dsdt))
-                print("")
+                self.utils.log_message("[ACPI GURU] {} could not be disassembled!".format(trouble_dsdt), level="ERROR")
                 #self.u.grab("Press [enter] to return...")
-                self.utils.request_input()
                 if temp:
                     shutil.rmtree(temp,ignore_errors=True)
                 # Restore any prior tables
@@ -257,26 +246,26 @@ class ACPIGuru:
                 return
         # Let's load the rest of the tables
         if len(tables) > 1:
-            print("Loading valid tables in {}...".format(path))
+            self.utils.log_message("[ACPI GURU] Loading valid tables in {}...".format(path), level="INFO")
         loaded_tables,failed = self.acpi.load(temp or path)
         if not loaded_tables or failed:
-            print("\nFailed to load tables in {}{}\n".format(
+            self.utils.log_message("[ACPI GURU] Failed to load tables in {}{}\n".format(
                 os.path.dirname(path) if os.path.isfile(path) else path,
                 ":" if failed else ""
             ))
             for t in self.sorted_nicely(failed):
-                print(" - {}".format(t))
+                self.utils.log_message("[ACPI GURU] Failed to load table: {}".format(t), level="ERROR")
             # Restore any prior tables
             if not loaded_tables:
                 self.acpi.acpi_tables = prior_tables
         else:
-            if len(tables) > 1:
-                print("") # Newline for readability
-            print("Done.")
+            #if len(tables) > 1:
+            #    print("") # Newline for readability
+            self.utils.log_message("[ACPI GURU] Done.", level="INFO")
         # If we had to patch the DSDT, or if not all tables loaded,
         # make sure we get interaction from the user to continue
         if trouble_dsdt or not loaded_tables or failed:
-            print("")
+            pass
             #self.u.grab("Press [enter] to return...")
             #self.utils.request_input()
         if temp:
@@ -293,7 +282,7 @@ class ACPIGuru:
             # Got it already
             return True
         # Need to prompt
-        self.select_acpi_tables()
+        #self.select_acpi_tables()
         self.dsdt = self.acpi.get_dsdt_or_only()
         if self._ensure_dsdt(allow_any=allow_any):
             return True
@@ -3214,20 +3203,6 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
             "Delete": deletes
         }
 
-    def select_acpi_tables(self):
-        while True:
-            self.utils.head("Select ACPI Tables")
-            print("")
-            print("Q. Quit")
-            print(" ")
-            menu = self.utils.request_input("Please drag and drop ACPI Tables folder here: ")
-            if menu.lower() == "q":
-                self.utils.exit_program()
-            path = self.utils.normalize_path(menu)
-            if not path: 
-                continue
-            return self.read_acpi_tables(path)
-
     def get_patch_index(self, name):
         for index, patch in enumerate(self.patches):
             if patch.name == name:
@@ -3235,6 +3210,7 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
         return None
 
     def select_acpi_patches(self, hardware_report, disabled_devices):
+        self.utils.log_message("[ACPI GURU] Selecting ACPI patches...", level="INFO")
         selected_patches = []
 
         if  "Laptop" in hardware_report.get("Motherboard").get("Platform") and \
@@ -3315,42 +3291,22 @@ DefinitionBlock ("", "SSDT", 2, "ZPSS", "WMIS", 0x00000000)
             if device_info.get("Bus Type") == "ACPI" and device_info.get("Device") in pci_data.YogaHIDs:
                 selected_patches.append("WMIS")
 
+        self.utils.log_message("[ACPI GURU] Selected patches: {}".format(", ".join(selected_patches)), level="INFO")
         for patch in self.patches:
             patch.checked = patch.name in selected_patches
     
     def customize_patch_selection(self):
-        while True:
-            contents = []
-            contents.append("")
-            contents.append("List of available patches:")
-            contents.append("")
-            for index, kext in enumerate(self.patches, start=1):
-                checkbox = "[*]" if kext.checked else "[ ]"
+        items = []
+        checked_indices = []
+        
+        for i, patch in enumerate(self.patches):
+            label = f"{patch.name} - {patch.description}"
+            items.append(label)
+            if patch.checked:
+                checked_indices.append(i)
                 
-                line = "{} {:2}. {:15} - {:60}".format(checkbox, index, kext.name, kext.description)
-                if kext.checked:
-                    line = "\033[1;32m{}\033[0m".format(line)
-                contents.append(line)
-            contents.append("")
-            contents.append("\033[1;93mNote:\033[0m You can select multiple kexts by entering their indices separated by commas (e.g., '1, 2, 3').")
-            contents.append("")
-            contents.append("B. Back")
-            contents.append("Q. Quit")
-            contents.append("")
-            content = "\n".join(contents)
-
-            self.utils.adjust_window_size(content)
-            self.utils.head("Customize ACPI Patch Selections", resize=False)
-            print(content)
-            option = self.utils.request_input("Select your option: ")
-            if option.lower() == "q":
-                self.utils.exit_program()
-            if option.lower() == "b":
-                return
-
-            indices = [int(i.strip()) -1 for i in option.split(",") if i.strip().isdigit()]
-    
-            for index in indices:
-                if index >= 0 and index < len(self.patches):
-                    patch = self.patches[index]
-                    patch.checked = not patch.checked
+        result = show_checklist_dialog("Configure ACPI Patches", "Select ACPI patches you want to apply:", items, checked_indices)
+        
+        if result is not None:
+            for i, patch in enumerate(self.patches):
+                patch.checked = i in result

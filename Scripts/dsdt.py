@@ -7,13 +7,11 @@ from Scripts import run
 from Scripts import utils
 
 class DSDT:
-    def __init__(self, **kwargs):
-        #self.dl = downloader.Downloader()
-        self.github = github.Github()
-        self.fetcher = resource_fetcher.ResourceFetcher()
-        self.r  = run.Run()
-        #self.u  = utils.Utils("SSDT Time")
-        self.u = utils.Utils()
+    def __init__(self, utils_instance=None, github_instance=None, resource_fetcher_instance=None, run_instance=None):
+        self.u = utils_instance if utils_instance else utils.Utils()
+        self.github = github_instance if github_instance else github.Github()
+        self.fetcher = resource_fetcher_instance if resource_fetcher_instance else resource_fetcher.ResourceFetcher()
+        self.r = run_instance if run_instance else run.Run()
         self.iasl_url_macOS = "https://raw.githubusercontent.com/acidanthera/MaciASL/master/Dist/iasl-stable"
         self.iasl_url_macOS_legacy = "https://raw.githubusercontent.com/acidanthera/MaciASL/master/Dist/iasl-legacy"
         self.iasl_url_linux = "https://raw.githubusercontent.com/corpnewt/linux_iasl/main/iasl.zip"
@@ -315,10 +313,7 @@ class DSDT:
         return self.check_iasl(legacy=legacy,try_downloading=False)
 
     def _download_and_extract(self, temp, url):
-        self.u.head("Gathering Files")
-        print("")
-        print("Please wait for download iasl...")
-        print("")
+        self.u.log_message("[DSDT] Downloading iasl...", level="INFO")
         ztemp = tempfile.mkdtemp(dir=temp)
         zfile = os.path.basename(url)
         #print("Downloading {}".format(os.path.basename(url)))

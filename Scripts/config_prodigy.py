@@ -1,3 +1,5 @@
+import copy
+import os
 from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
 from Scripts.datasets import mac_model_data
@@ -8,13 +10,14 @@ from Scripts.datasets import codec_layouts
 from Scripts import gathering_files
 from Scripts import smbios
 from Scripts import utils
+from Scripts.custom_dialogs import show_options_dialog
 import random
 
 class ConfigProdigy:
-    def __init__(self):
-        self.g = gathering_files.gatheringFiles()
-        self.smbios = smbios.SMBIOS()
-        self.utils = utils.Utils()
+    def __init__(self, gathering_files_instance=None, smbios_instance=None, utils_instance=None):
+        self.g = gathering_files_instance if gathering_files_instance else gathering_files.gatheringFiles()
+        self.smbios = smbios_instance if smbios_instance else smbios.SMBIOS()
+        self.utils = utils_instance if utils_instance else utils.Utils()
         self.cpuids = {
             "Ivy Bridge": "A9060300",
             "Haswell": "C3060300",
@@ -237,76 +240,7 @@ class ConfigProdigy:
 
         return dict(sorted(igpu_properties.items(), key=lambda item: item[0]))
     
-    def select_audio_codec_layout(self, hardware_report, config=None, controller_required=False):
-        try:
-            for device_properties in config["DeviceProperties"]["Add"].values():
-                if device_properties.get("layout-id"):
-                    return None, None
-        except:
-            pass
-
-        codec_id = None
-        audio_controller_properties = None
-
-        for codec_properties in hardware_report.get("Sound", {}).values():
-            if codec_properties.get("Device ID") in codec_layouts.data:
-                codec_id = codec_properties.get("Device ID")
-
-                if codec_properties.get("Controller Device ID"):
-                    for device_name, device_properties in hardware_report.get("System Devices").items():
-                        if device_properties.get("Device ID") == codec_properties.get("Controller Device ID"):
-                            audio_controller_properties = device_properties
-                            break
-                break
-
-        if not codec_id:
-            return None, None
-        
-        if controller_required and not audio_controller_properties:
-            return None, None
-        
-        available_layouts = codec_layouts.data.get(codec_id)
-
-        recommended_authors = ("Mirone", "InsanelyDeepak", "Toleda", "DalianSky")
-        recommended_layouts = [layout for layout in available_layouts if self.utils.contains_any(recommended_authors, layout.comment)]
-
-        default_layout = random.choice(recommended_layouts or available_layouts)
-
-        while True:
-            contents = []
-            contents.append("")
-            contents.append("List of Codec Layouts:")
-            contents.append("")
-            contents.append("ID   Comment")
-            contents.append("------------------------------------------------------------------")
-            for layout in available_layouts:
-                line = "{:<4} {}".format(layout.id, layout.comment[:60])
-                if layout == default_layout:
-                    contents.append("\033[1;32m{}\033[0m".format(line))
-                else:
-                    contents.append(line)
-            contents.append("")
-            contents.append("\033[1;93mNote:\033[0m")
-            contents.append("- The default layout may not be optimal.")
-            contents.append("- Test different layouts to find what works best for your system.")
-            contents.append("")
-            content = "\n".join(contents)
-
-            self.utils.adjust_window_size(content)
-            self.utils.head("Choosing Codec Layout ID", resize=False)
-            print(content)
-            selected_layout_id = self.utils.request_input(f"Enter the ID of the codec layout you want to use (default: {default_layout.id}): ") or default_layout.id
-
-            try:
-                selected_layout_id = int(selected_layout_id)
-
-                for layout in available_layouts:
-                    if layout.id == selected_layout_id:
-                        return selected_layout_id, audio_controller_properties
-            except:
-                continue
-  
-    def deviceproperties(self, hardware_report, disabled_devices, macos_version, kexts):
+    def deviceproperties(self, hardware_report, disabled_devices, macos_version, kexts, audio_layout_id=None, audio_controller_properties=None):
         deviceproperties_add = {}
 
         def add_device_property(pci_path, properties):
@@ -349,11 +283,8 @@ class ConfigProdigy:
                         "model": gpu_name
                     })
         
-        if kexts[kext_data.kext_index_by_name.get("AppleALC")].checked:
-            selected_layout_id, audio_controller_properties = self.select_audio_codec_layout(hardware_report, controller_required=True)
-
-            if selected_layout_id and audio_controller_properties:
-                add_device_property(audio_controller_properties.get("PCI Path"), {"layout-id": selected_layout_id})
+        if audio_layout_id is not None and audio_controller_properties is not None:
+            add_device_property(audio_controller_properties.get("PCI Path"), {"layout-id": audio_layout_id})
 
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
@@ -502,7 +433,7 @@ class ConfigProdigy:
         
         return kernel_patch
 
-    def boot_args(self, hardware_report, macos_version, needs_oclp, kexts, config):
+    def boot_args(self, hardware_report, macos_version, needs_oclp, kexts, config, audio_layout_id=None, audio_controller_properties=None):
         boot_args = [
             "-v",
             "debug=0x100",
@@ -566,10 +497,8 @@ class ConfigProdigy:
                         elif discrete_gpu.get("Manufacturer") == "NVIDIA" and not "Kepler" in discrete_gpu.get("Codename"):
                             boot_args.extend(("nvda_drv_vrl=1", "ngfxcompat=1", "ngfxgl=1"))
             elif kext.name == "AppleALC":
-                selected_layout_id, _ = self.select_audio_codec_layout(hardware_report, config)
-
-                if selected_layout_id:
-                    boot_args.append("alcid={}".format(selected_layout_id))
+                if audio_layout_id is not None and audio_controller_properties is None:
+                    boot_args.append("alcid={}".format(audio_layout_id))
             elif kext.name == "VoodooI2C":
                 boot_args.append("-vi2c-force-polling")
             elif kext.name == "CpuTopologyRebuild":
@@ -611,7 +540,7 @@ class ConfigProdigy:
         
         return uefi_drivers
 
-    def genarate(self, hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp, kexts, config):
+    def genarate(self, hardware_report, disabled_devices, smbios_model, macos_version, needs_oclp, kexts, config, audio_layout_id=None, audio_controller_properties=None):
         del config["#WARNING - 1"]
         del config["#WARNING - 2"]
         del config["#WARNING - 3"]
@@ -636,7 +565,7 @@ class ConfigProdigy:
         config["Booter"]["Quirks"]["SetupVirtualMap"] = hardware_report.get("BIOS").get("Firmware Type") == "UEFI" and not hardware_report.get("Motherboard").get("Chipset") in chipset_data.AMDChipsets[11:17] + chipset_data.IntelChipsets[90:100]
         config["Booter"]["Quirks"]["SyncRuntimePermissions"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[90:100] + chipset_data.IntelChipsets[104:]
 
-        config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, disabled_devices, macos_version, kexts)
+        config["DeviceProperties"]["Add"] = self.deviceproperties(hardware_report, disabled_devices, macos_version, kexts, audio_layout_id, audio_controller_properties)
 
         config["Kernel"]["Block"] = self.block_kext_bundle(kexts)
         spoof_cpuid = self.spoof_cpuid(
@@ -685,7 +614,7 @@ class ConfigProdigy:
         config["Misc"]["Tools"] = []
 
         del config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["#INFO (prev-lang:kbd)"]
-        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, needs_oclp, kexts, config)
+        config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] = self.boot_args(hardware_report, macos_version, needs_oclp, kexts, config, audio_layout_id, audio_controller_properties)
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = self.utils.hex_to_bytes(self.csr_active_config(macos_version))
         config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["prev-lang:kbd"] = self.utils.hex_to_bytes("")
 

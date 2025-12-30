@@ -4,8 +4,8 @@ import json
 from Scripts import utils
 
 class IntegrityChecker:
-    def __init__(self):
-        self.utils = utils.Utils()
+    def __init__(self, utils_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
 
     def get_sha256(self, file_path, block_size=65536):
         if not os.path.exists(file_path) or os.path.isdir(file_path):
@@ -17,7 +17,7 @@ class IntegrityChecker:
                 sha256.update(block)
         return sha256.hexdigest()
 
-    def generate_folder_manifest(self, folder_path, manifest_path=None):
+    def generate_folder_manifest(self, folder_path, manifest_path=None, save_manifest=True):
         if not os.path.isdir(folder_path):
             return None
 
@@ -26,8 +26,15 @@ class IntegrityChecker:
 
         manifest_data = {}
         for root, _, files in os.walk(folder_path):
+            if '.git' in root or "__pycache__" in root:
+                continue
+                
             for name in files:
+                if '.git' in name or ".pyc" in name:
+                    continue
+                    
                 file_path = os.path.join(root, name)
+                
                 relative_path = os.path.relpath(file_path, folder_path).replace('\\', '/')
                 
                 if relative_path == os.path.basename(manifest_path):
@@ -35,7 +42,8 @@ class IntegrityChecker:
 
                 manifest_data[relative_path] = self.get_sha256(file_path)
         
-        self.utils.write_file(manifest_path, manifest_data)
+        if save_manifest:
+            self.utils.write_file(manifest_path, manifest_data)
         return manifest_data
 
     def verify_folder_integrity(self, folder_path, manifest_path=None):

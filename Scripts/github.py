@@ -4,9 +4,9 @@ import random
 import json
 
 class Github:
-    def __init__(self):
-        self.utils = utils.Utils()
-        self.fetcher = resource_fetcher.ResourceFetcher()
+    def __init__(self, utils_instance=None, resource_fetcher_instance=None):
+        self.utils = utils_instance if utils_instance else utils.Utils()
+        self.fetcher = resource_fetcher_instance if resource_fetcher_instance else resource_fetcher.ResourceFetcher()
 
     def extract_payload(self, response):
         for line in response.splitlines():
