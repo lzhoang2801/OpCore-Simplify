@@ -1,0 +1,55 @@
+name: Generate Manifest
+
+on:
+    push:
+      paths-ignore:
+        - '.gitattributes'
+        - '.gitignore'
+        - 'LICENSE'
+        - 'README.md'
+    workflow_dispatch:
+    release:
+      types: [published]
+
+jobs:
+  generate-manifest:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: Generate manifest.json
+        run: |
+          python3 << 'EOF'
+          import os
+          import sys
+          
+          from Scripts import integrity_checker
+          from Scripts import utils
+          
+          checker = integrity_checker.IntegrityChecker()
+          
+          root_folder = os.getcwd()
+          manifest_path = os.path.join(root_folder, "manifest.json")
+          
+          print(f"Generating manifest from: {root_folder}")
+          manifest_data = checker.generate_folder_manifest(root_folder, manifest_path)
+          
+          if manifest_data:
+              print(f"Manifest generated successfully with {len(manifest_data)} files")
+          else:
+              print("Failed to generate manifest")
+              sys.exit(1)
+          EOF
+
+      - name: Upload manifest.json to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: manifest.json
+          path: ./manifest.json
