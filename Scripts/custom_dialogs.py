@@ -1,7 +1,7 @@
 import re
 import functools
 from PyQt6.QtCore import Qt, QObject, QThread, QMetaObject, QCoreApplication, pyqtSlot, pyqtSignal
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QRadioButton, QButtonGroup, QVBoxLayout, QCheckBox, QScrollArea, QLabel
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QRadioButton, QButtonGroup, QVBoxLayout, QCheckBox, QScrollArea, QLabel, QSizePolicy, QLayout
 from qfluentwidgets import MessageBoxBase, SubtitleLabel, BodyLabel, LineEdit, PushButton, ProgressBar
 
 from Scripts.datasets import os_data
@@ -84,42 +84,59 @@ class CustomMessageDialog(MessageBoxBase):
 
     def add_radio_options(self, options, default_index=0):
         self.button_group = QButtonGroup(self)
+
+        scroll = QScrollArea(self.widget)
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        scroll.viewport().setStyleSheet("background: transparent;")
+
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(10, 5, 10, 5)
-        
+        layout.setSpacing(12)
+
         for i, option_text in enumerate(options):
-            is_html = bool(re.search(r"<[^>]+>", option_text))
-            
-            if is_html:
-                row_widget = QWidget()
-                row_layout = QHBoxLayout(row_widget)
-                row_layout.setContentsMargins(0, 0, 0, 0)
-                row_layout.setSpacing(8)
-                
-                radio = QRadioButton()
-                label = BodyLabel(option_text)
-                label.setTextFormat(Qt.TextFormat.RichText)
-                label.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
-                label.setOpenExternalLinks(True)
-                label.setWordWrap(True)
-                
-                row_layout.addWidget(radio)
-                row_layout.addWidget(label, 1)
-                
-                layout.addWidget(row_widget)
-            else:
-                radio = QRadioButton(option_text)
-                layout.addWidget(radio)
-            
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setSpacing(8)
+
+            radio = QRadioButton(row_widget)
+            radio.setStyleSheet("""
+                QRadioButton::indicator {
+                    width: 16px; height: 16px;
+                    border-radius: 8px;
+                }
+                QRadioButton::indicator:unchecked {
+                    border: 1px solid #000000;
+                    background-color: #ffffff;
+                }
+                QRadioButton::indicator:checked {
+                    border: 1px solid #000000;
+                    background-color: #0078D4;
+                }
+            """)
+
+            label = BodyLabel(option_text, row_widget)
+            label.setTextFormat(Qt.TextFormat.RichText)
+            label.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+            label.setOpenExternalLinks(True)
+            label.setWordWrap(True)
+            label.setStyleSheet("color: #000000; background-color: transparent;")
+
+            row_layout.addWidget(radio, 0, Qt.AlignmentFlag.AlignTop)
+            row_layout.addWidget(label, 1)
+            layout.addWidget(row_widget)
+
             self.button_group.addButton(radio, i)
-            
             if i == default_index:
                 radio.setChecked(True)
-                
-        self.viewLayout.addWidget(container)
+
+        scroll.setWidget(container)
+        self.viewLayout.addWidget(scroll)
+
         return self.button_group
-    
+
     def add_checklist(self, items, checked_indices=None):
         if checked_indices is None:
             checked_indices = []
@@ -265,19 +282,30 @@ def ask_network_count(total_networks):
 def show_smbios_selection_dialog(title, content, items, current_selection, default_selection):
     dialog = CustomMessageDialog(title, content)
     
+    # Top controls (Show all models + Restore default)
     top_container = QWidget()
     top_layout = QHBoxLayout(top_container)
     top_layout.setContentsMargins(0, 0, 0, 0)
     
-    show_all_cb = QCheckBox("Show all models")
+    # Checkbox indicator only
+    show_all_cb = QCheckBox(top_container)
+    show_all_cb.setText("")  # indicator only
+    
+    # Separate label for the text
+    show_all_label = BodyLabel("Show all models", top_container)
+    show_all_label.setWordWrap(True)
+    show_all_label.setStyleSheet("color: #000000; background: transparent;")
+    
     restore_btn = PushButton("Restore default ({})".format(default_selection))
     
-    top_layout.addWidget(show_all_cb)
+    top_layout.addWidget(show_all_cb, 0, Qt.AlignmentFlag.AlignTop)
+    top_layout.addWidget(show_all_label, 1)
     top_layout.addStretch()
     top_layout.addWidget(restore_btn)
     
     dialog.viewLayout.addWidget(top_container)
     
+    # Scroll area for the list
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
     scroll.setFixedHeight(400)
@@ -287,7 +315,6 @@ def show_smbios_selection_dialog(title, content, items, current_selection, defau
     layout.setSpacing(5)
     
     button_group = QButtonGroup(dialog)
-    
     item_widgets = []
     current_category = None
     
@@ -297,9 +324,11 @@ def show_smbios_selection_dialog(title, content, items, current_selection, defau
         if category != current_category:
             current_category = category
             category_label = QLabel("Category: {}".format(category))
-            category_label.setStyleSheet("font-weight: bold; color: #0078D4; margin-top: 10px; border-bottom: 1px solid #E1DFDD;")
+            category_label.setStyleSheet(
+                "font-weight: bold; color: #0078D4; margin-top: 10px; border-bottom: 1px solid #E1DFDD;"
+            )
             layout.addWidget(category_label)
-            
+        
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         row_layout.setContentsMargins(20, 0, 0, 0) 
@@ -323,6 +352,7 @@ def show_smbios_selection_dialog(title, content, items, current_selection, defau
             "radio": radio
         }
         item_widgets.append(widget_data)
+    
     layout.addStretch()
     scroll.setWidget(container)
     dialog.viewLayout.addWidget(scroll)
@@ -337,7 +367,6 @@ def show_smbios_selection_dialog(title, content, items, current_selection, defau
             is_compatible = item.get("is_compatible")
             
             should_show = is_current_or_default or show_all or is_compatible
-            
             w["row"].setVisible(should_show)
             if should_show:
                 visible_categories.add(item.get("category"))
