@@ -283,6 +283,42 @@ prompt_and_download() {
     done
 }
 
+check_and_install_requirements() {
+    local python="$1"
+    local requirements_file="$dir/requirements.txt"
+    
+    # Check if requirements.txt exists
+    if [ ! -f "$requirements_file" ]; then
+        echo "Warning: requirements.txt not found. Skipping dependency check."
+        return 0
+    fi
+    
+    # Check if pip is available
+    if ! "$python" -m pip --version > /dev/null 2>&1; then
+        echo "Warning: pip is not available. Attempting to install pip..."
+        if ! "$python" -m ensurepip --upgrade > /dev/null 2>&1; then
+            echo "Error: Could not install pip. Please install pip manually."
+            return 1
+        fi
+    fi
+    
+    # Check if requirements are installed by trying to import key packages
+    echo "Checking Python dependencies..."
+    if ! "$python" -c "import PyQt6; import qfluentwidgets" > /dev/null 2>&1; then
+        echo "Installing required packages from requirements.txt..."
+        if ! "$python" -m pip install --upgrade -r "$requirements_file"; then
+            echo "Error: Failed to install requirements. Please install them manually:"
+            echo "  $python -m pip install -r $requirements_file"
+            return 1
+        fi
+        echo "Requirements installed successfully."
+    else
+        echo "All requirements are already installed."
+    fi
+    
+    return 0
+}
+
 main() {
     local python= version=
     # Verify our target exists
@@ -309,6 +345,11 @@ main() {
         # Didn't ever find it - prompt
         prompt_and_download
         return 1
+    fi
+    # Check and install requirements before running the script
+    if ! check_and_install_requirements "$python"; then
+        echo "Failed to install requirements. Exiting."
+        exit 1
     fi
     # Found it - start our script and pass all args
     "$python" "$dir/$target" "${args[@]}"

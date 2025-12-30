@@ -299,9 +299,56 @@ if /i "!just_installing!" == "TRUE" (
 )
 exit /b
 
+:checkrequirements
+REM Check and install Python requirements
+set "requirements_file=!thisDir!requirements.txt"
+if not exist "!requirements_file!" (
+    echo Warning: requirements.txt not found. Skipping dependency check.
+    exit /b 0
+)
+echo Checking Python dependencies...
+"!pypath!" -m pip --version > nul 2>&1
+set "pip_check_error=!ERRORLEVEL!"
+if not "!pip_check_error!" == "0" (
+    echo Warning: pip is not available. Attempting to install pip...
+    "!pypath!" -m ensurepip --upgrade > nul 2>&1
+    set "ensurepip_error=!ERRORLEVEL!"
+    if not "!ensurepip_error!" == "0" (
+        echo Error: Could not install pip. Please install pip manually.
+        exit /b 1
+    )
+)
+REM Try to import key packages to check if they're installed
+"!pypath!" -c "import PyQt6; import qfluentwidgets" > nul 2>&1
+set "import_check_error=!ERRORLEVEL!"
+if not "!import_check_error!" == "0" (
+    echo Installing required packages from requirements.txt...
+    "!pypath!" -m pip install --upgrade -r "!requirements_file!"
+    set "pip_install_error=!ERRORLEVEL!"
+    if not "!pip_install_error!" == "0" (
+        echo.
+        echo Error: Failed to install requirements. Please install them manually:
+        echo   !pypath! -m pip install -r !requirements_file!
+        echo.
+        echo Press [enter] to exit...
+        pause > nul
+        exit /b 1
+    )
+    echo Requirements installed successfully.
+) else (
+    echo All requirements are already installed.
+)
+exit /b 0
+
 :runscript
 REM Python found
 cls
+REM Check and install requirements before running the script
+call :checkrequirements
+set "req_check_error=!ERRORLEVEL!"
+if not "!req_check_error!" == "0" (
+    exit /b 1
+)
 set "args=%*"
 set "args=!args:"=!"
 if "!args!"=="" (
