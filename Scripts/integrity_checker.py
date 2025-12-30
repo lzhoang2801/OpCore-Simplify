@@ -30,7 +30,7 @@ class IntegrityChecker:
                 continue
                 
             for name in files:
-                if '.git' in name or ".pyc" in name:
+                if '.git' in name or ".pyc" in name or ".md" in name or "LICENSE" in name:
                     continue
                     
                 file_path = os.path.join(root, name)
