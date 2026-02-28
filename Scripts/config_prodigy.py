@@ -444,7 +444,7 @@ class ConfigProdigy:
             
         return None
     
-    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_codename, cpu_cores, gpu_manufacturer, networks, macos_version, kexts):
+    def load_kernel_patch(self, motherboard_chipset, cpu_manufacturer, cpu_codename, cpu_cores, gpu_manufacturer, networks, macos_version, kexts, provide_current_cpu_info):
         kernel_patch = []
 
         if "AMD" in cpu_manufacturer:
@@ -453,7 +453,7 @@ class ConfigProdigy:
         if any(network_props.get("Device ID") in pci_data.AquantiaAqtionIDs for network_props in networks.values()):
             kernel_patch.extend(self.g.get_kernel_patches("Aquantia macOS Patches", self.g.aquantia_macos_patches_url))
 
-        if kexts[kext_data.kext_index_by_name.get("CpuTopologyRebuild")].checked:
+        if provide_current_cpu_info and kexts[kext_data.kext_index_by_name.get("CpuTopologyRebuild")].checked:
             kernel_patch.extend(self.g.get_kernel_patches("Hyper Threading Patches", self.g.hyper_threading_patches_url))
         elif kexts[kext_data.kext_index_by_name.get("ForgedInvariant")].checked:
             if not "AMD" in cpu_manufacturer:
@@ -650,16 +650,6 @@ class ConfigProdigy:
         config["Kernel"]["Emulate"]["DummyPowerManagement"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or \
             self.is_low_end_intel_cpu(hardware_report.get("CPU").get("Processor Name"))
         config["Kernel"]["Force"] = []
-        config["Kernel"]["Patch"] = self.load_kernel_patch(
-            hardware_report.get("Motherboard").get("Chipset"),
-            hardware_report.get("CPU").get("Manufacturer"),
-            hardware_report.get("CPU").get("Codename"), 
-            hardware_report.get("CPU").get("Core Count"), 
-            list(hardware_report.get("GPU").items())[0][-1].get("Manufacturer"),
-            hardware_report.get("Network", {}),
-            macos_version,
-            kexts
-        )
         config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"] = hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[62:]
         config["Kernel"]["Quirks"]["AppleXcpmCfgLock"] = False if "AMD" in hardware_report.get("CPU").get("Manufacturer") else not config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"]
         config["Kernel"]["Quirks"]["AppleXcpmExtraMsrs"] = self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")) and hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[50:]
@@ -671,6 +661,17 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["LapicKernelPanic"] = "HP " in hardware_report.get("Motherboard").get("Name")
         config["Kernel"]["Quirks"]["PanicNoKextDump"] = config["Kernel"]["Quirks"]["PowerTimeoutKernelPanic"] = True
         config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = "AMD" in hardware_report.get("CPU").get("Manufacturer") or hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[4:20]
+        config["Kernel"]["Patch"] = self.load_kernel_patch(
+            hardware_report.get("Motherboard").get("Chipset"),
+            hardware_report.get("CPU").get("Manufacturer"),
+            hardware_report.get("CPU").get("Codename"), 
+            hardware_report.get("CPU").get("Core Count"), 
+            list(hardware_report.get("GPU").items())[0][-1].get("Manufacturer"),
+            hardware_report.get("Network", {}),
+            macos_version,
+            kexts,
+            config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"]
+        )
 
         config["Misc"]["BlessOverride"] = []
         config["Misc"]["Boot"]["HideAuxiliary"] = False
