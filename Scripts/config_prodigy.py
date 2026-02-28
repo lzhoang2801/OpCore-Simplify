@@ -510,7 +510,7 @@ class ConfigProdigy:
         ]
 
         if needs_oclp and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-            boot_args.append("amfi=0x80")
+            boot_args.append("-amfipassbeta")
 
         if config["Booter"]["Quirks"]["ResizeAppleGpuBars"] != 0 and self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")):
             boot_args.append("npci=0x2000")
