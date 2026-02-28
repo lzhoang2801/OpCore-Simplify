@@ -307,12 +307,12 @@ class gatheringFiles:
         self.utils.write_file(self.download_history_file, download_history)
         
     def gather_hardware_sniffer(self):
-        if os_name != "Windows":
+        if os_name not in ("Windows", "Linux"):
             return
 
         self.utils.head("Gathering Hardware Sniffer")
 
-        PRODUCT_NAME = "Hardware-Sniffer-CLI.exe"
+        PRODUCT_NAME = "Hardware-Sniffer-CLI.exe" if os_name == "Windows" else "Hardware-Sniffer-CLI-Linux"
         REPO_OWNER = "lzhoang2801"
         REPO_NAME = "Hardware-Sniffer"
 
