@@ -31,7 +31,7 @@ class OCPE:
         self.s = smbios.SMBIOS()
         self.v = report_validator.ReportValidator()
         self.r = run.Run()
-        self.result_dir = self.u.get_temporary_dir()
+        self.result_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Results")
 
     def select_hardware_report(self):
         self.ac.dsdt = self.ac.acpi.acpi_tables = None
@@ -361,13 +361,8 @@ class OCPE:
             print("        - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.")
             print("        - Save the file when finished.")
             print("")
-            print("Type \"AGREE\" to open the built EFI for you\n")
-            response = self.u.request_input("")
-            if response.lower() == "agree":
-                self.u.open_folder(self.result_dir)
-                break
-            else:
-                print("\033[91mInvalid input. Please try again.\033[0m")
+            self.u.open_folder(self.result_dir)
+            self.u.request_input()
 
     def main(self):
         hardware_report_path = None
