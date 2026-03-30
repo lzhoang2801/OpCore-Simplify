@@ -462,7 +462,9 @@ class OCPE:
                 self.u.request_input("Press Enter to main menu...")
 
 if __name__ == '__main__':
-    update_flag = updater.Updater().run_update()
+    CHECK_FOR_UPDATES = os.environ.get("OCS_CHECK_UPDATES", "0") == "1"
+
+    update_flag = updater.Updater().run_update() if CHECK_FOR_UPDATES else False
     if update_flag:
         os.execv(sys.executable, ['python3'] + sys.argv)
 
