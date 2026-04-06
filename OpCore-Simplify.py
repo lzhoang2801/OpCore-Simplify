@@ -353,8 +353,8 @@ class OCPE:
             
             print("* USB Mapping:")
             print("    - USBInjectAll.kext is included and will inject all USB ports automatically.")
-			print("    - If you experience issues, use USBToolBox to create a custom USB map.")
-			print("    - Replace USBInjectAll.kext with your custom UTBMap.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
+            print("    - If you experience issues, use USBToolBox to create a custom USB map.")
+            print("    - Replace USBInjectAll.kext with your custom UTBMap.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
             print("")
             self.u.open_folder(self.result_dir)
             self.u.request_input()
