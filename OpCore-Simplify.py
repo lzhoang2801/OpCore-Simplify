@@ -352,14 +352,9 @@ class OCPE:
                 print("")
             
             print("* USB Mapping:")
-            print("    - Use USBToolBox tool to map USB ports.")
-            print("    - Add created UTBMap.kext into the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
-            print("    - Remove UTBDefault.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
-            print("    - Edit config.plist:")
-            print("        - Use ProperTree to open your config.plist.")
-            print("        - Run OC Snapshot by pressing Command/Ctrl + R.")
-            print("        - If you have more than 15 ports on a single controller, enable the XhciPortLimit patch.")
-            print("        - Save the file when finished.")
+            print("    - USBInjectAll.kext is included and will inject all USB ports automatically.")
+            print("    - If you experience issues, use USBToolBox to create a custom USB map.")
+            print("    - Replace USBInjectAll.kext with your custom UTBMap.kext in the {} folder.".format("EFI\\OC\\Kexts" if os.name == "nt" else "EFI/OC/Kexts"))
             print("")
             self.u.open_folder(self.result_dir)
             self.u.request_input()
@@ -462,7 +457,9 @@ class OCPE:
                 self.u.request_input("Press Enter to main menu...")
 
 if __name__ == '__main__':
-    update_flag = updater.Updater().run_update()
+    CHECK_FOR_UPDATES = os.environ.get("OCS_CHECK_UPDATES", "0") == "1"
+
+    update_flag = updater.Updater().run_update() if CHECK_FOR_UPDATES else False
     if update_flag:
         os.execv(sys.executable, ['python3'] + sys.argv)
 
