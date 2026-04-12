@@ -745,4 +745,40 @@ class ConfigProdigy:
         if "run-efi-updater" in config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]:
             config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].remove("run-efi-updater")
 
+        # ── VM / Hypervisor overrides ─────────────────────────────────────────────
+        # Détection : Motherboard name ou BIOS vendor contenant Xen/QEMU/VMware/KVM
+        _mb_name   = hardware_report.get("Motherboard", {}).get("Name", "").upper()
+        _bios_ver  = hardware_report.get("BIOS", {}).get("Version", "").upper()
+        _sys_type  = hardware_report.get("BIOS", {}).get("System Type", "").upper()
+        _is_vm = any(kw in _mb_name + _bios_ver + _sys_type
+                     for kw in ("XEN", "QEMU", "VMWARE", "VIRTUAL", "KVM", "HYPERV", "VBOX"))
+
+        if _is_vm:
+            # Picker : Builtin obligatoire (OpenCanopy nécessite Resources/ absent en VM)
+            config["Misc"]["Boot"]["PickerMode"] = "Builtin"
+            # SecureBoot : Disabled (pas de puce T2 en VM)
+            config["Misc"]["Security"]["SecureBootModel"] = "Disabled"
+            # DmgLoading : Any (Recovery non signé Apple possible)
+            config["Misc"]["Security"]["DmgLoading"] = "Any"
+            # LapicKernelPanic : True (interruptions LAPIC non masquées sous Xen/QEMU)
+            config["Kernel"]["Quirks"]["LapicKernelPanic"] = True
+            # ProvideCurrentCpuInfo : True (TSC = 0 Hz dans Xen, OC corrige)
+            config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = True
+            # RebuildAppleMemoryMap : True (GetMemoryMap corrompu dans certains hyperviseurs)
+            config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = True
+            # Désactiver OpenCanopy (Resources/ absent → picker invisible)
+            for drv in config["UEFI"]["Drivers"]:
+                if isinstance(drv, dict) and drv.get("Path") == "OpenCanopy.efi":
+                    drv["Enabled"] = False
+            # Affichage VGA Xen : résolution fixe + rendu compatible
+            config["UEFI"]["Output"]["TextRenderer"]      = "SystemGeneric"
+            config["UEFI"]["Output"]["Resolution"]        = "1024x768"
+            config["UEFI"]["Output"]["DirectGopRendering"] = True
+            # TSC sync entre vCPUs Xen (évite les freezes au boot)
+            config["UEFI"]["Quirks"]["TscSyncTimeout"]    = 1000
+            # Debug : activer pour faciliter le diagnostic en VM
+            config["Misc"]["Debug"]["AppleDebug"]  = True
+            config["Misc"]["Debug"]["ApplePanic"]  = True
+            config["Misc"]["Debug"]["DisableWatchDog"] = True
+
         return config
