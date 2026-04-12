@@ -758,12 +758,16 @@ class ConfigProdigy:
             config["Misc"]["Boot"]["PickerMode"] = "Builtin"
             # SecureBoot : Disabled (pas de puce T2 en VM)
             config["Misc"]["Security"]["SecureBootModel"] = "Disabled"
+            # ApECID = 0 : désactiver la personnalisation SB par identifiant
+            config["Misc"]["Security"]["ApECID"] = 0
             # DmgLoading : Any (Recovery non signé Apple possible)
             config["Misc"]["Security"]["DmgLoading"] = "Any"
             # LapicKernelPanic : True (interruptions LAPIC non masquées sous Xen/QEMU)
             config["Kernel"]["Quirks"]["LapicKernelPanic"] = True
             # ProvideCurrentCpuInfo : True (TSC = 0 Hz dans Xen, OC corrige)
             config["Kernel"]["Quirks"]["ProvideCurrentCpuInfo"] = True
+            # ForceSecureBootScheme : False (évite que OC force x86legacy sur hyperviseur)
+            config["Kernel"]["Quirks"]["ForceSecureBootScheme"] = False
             # RebuildAppleMemoryMap : True (GetMemoryMap corrompu dans certains hyperviseurs)
             config["Booter"]["Quirks"]["RebuildAppleMemoryMap"] = True
             # Désactiver OpenCanopy (Resources/ absent → picker invisible)
@@ -771,14 +775,17 @@ class ConfigProdigy:
                 if isinstance(drv, dict) and drv.get("Path") == "OpenCanopy.efi":
                     drv["Enabled"] = False
             # Affichage VGA Xen : résolution fixe + rendu compatible
-            config["UEFI"]["Output"]["TextRenderer"]      = "SystemGeneric"
-            config["UEFI"]["Output"]["Resolution"]        = "1024x768"
+            config["UEFI"]["Output"]["TextRenderer"]       = "SystemGeneric"
+            config["UEFI"]["Output"]["Resolution"]         = "1024x768"
             config["UEFI"]["Output"]["DirectGopRendering"] = True
             # TSC sync entre vCPUs Xen (évite les freezes au boot)
-            config["UEFI"]["Quirks"]["TscSyncTimeout"]    = 1000
+            config["UEFI"]["Quirks"]["TscSyncTimeout"]     = 1000
+            # DisableSecurityPolicy : OC 0.9.7+ force x86legacy sur hyperviseur même
+            # si SecureBootModel=Disabled → bloquer toute politique SB
+            config["UEFI"]["Quirks"]["DisableSecurityPolicy"] = True
             # Debug : activer pour faciliter le diagnostic en VM
-            config["Misc"]["Debug"]["AppleDebug"]  = True
-            config["Misc"]["Debug"]["ApplePanic"]  = True
+            config["Misc"]["Debug"]["AppleDebug"]      = True
+            config["Misc"]["Debug"]["ApplePanic"]      = True
             config["Misc"]["Debug"]["DisableWatchDog"] = True
 
         return config
