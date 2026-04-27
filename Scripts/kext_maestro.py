@@ -262,8 +262,6 @@ class KextMaestro:
 
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
                     print("   • \033[91mSince macOS Sequoia 15\033[0m: Can work with OCLP root patch but may cause issues")
-                elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                    print("   • \033[91mOn macOS Sonoma 14\033[0m: iServices won't work unless using OCLP root patch")
                 
                 print("")
                 print("2. \033[1mitlwm\033[0m - More stable overall")
@@ -296,19 +294,6 @@ class KextMaestro:
                     
                     if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
                         selected_kexts.append("IOSkywalkFamily")
-                    elif self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                        print("")
-                        print("\033[1;93mNote:\033[0m Since macOS Sonoma 14, iServices won't work with AirportItlwm without patches")
-                        print("")
-                        while True:
-                            option = self.utils.request_input("Apply OCLP root patch to fix iServices? (yes/No): ").strip().lower()
-                            if option == "yes":
-                                selected_kexts.append("IOSkywalkFamily")
-                                break
-                            elif option == "no":
-                                break
-                            else:
-                                print("\033[91mInvalid selection, please try again.\033[0m\n\n")
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 selected_kexts.append("corecaptureElCap")
                 if self.utils.parse_darwin_version(macos_version) > self.utils.parse_darwin_version("20.99.99"):

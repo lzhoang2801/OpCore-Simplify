@@ -377,7 +377,7 @@ class ConfigProdigy:
                     "IOName": "1D6A-91B1"
                 })
             elif device_id in pci_data.IntelWiFiIDs:
-                if all((kexts[kext_data.kext_index_by_name.get("AirportItlwm")].checked, self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"))):
+                if all((kexts[kext_data.kext_index_by_name.get("AirportItlwm")].checked, self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"))):
                     if all((kexts[kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked, kexts[kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked)):
                         add_device_property(network_props.get("PCI Path"), {"IOName": "pci14e4,43a0"})
 

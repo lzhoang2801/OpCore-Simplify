@@ -63,7 +63,7 @@ class gatheringFiles:
             elif kext.github_repo and kext.github_repo.get("repo") not in seen_repos:
                 name = kext.github_repo.get("repo")
                 seen_repos.add(name)
-                if name != "IntelBluetoothFirmware" and name in dortania_builds_data:
+                if name in dortania_builds_data:
                     add_product_to_download_database({
                         "product_name": name,
                         "id": dortania_builds_data[name]["versions"][0]["release"]["id"], 
@@ -161,7 +161,7 @@ class gatheringFiles:
             
             if product_name == "AirportItlwm":
                 version = macos_version[:2]
-                if all((kexts[kext_maestro.kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked, kexts[kext_maestro.kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked)) or self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
+                if all((self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version), kexts[kext_maestro.kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked, kexts[kext_maestro.kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked)):
                     version = "22"
                 elif self.utils.parse_darwin_version("23.4.0") <= self.utils.parse_darwin_version(macos_version):
                     version = "23.4"
