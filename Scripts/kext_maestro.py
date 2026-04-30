@@ -589,7 +589,7 @@ class KextMaestro:
 
         for bundle in sorted_bundles:
             kernel_add.append({
-                "Arch": "x86_64",
+                "Arch": "Any",
                 "BundlePath": bundle.get("BundlePath"),
                 "Comment": "",
                 "Enabled": bundle.get("Enabled"),
