@@ -144,6 +144,37 @@
 > 
 > 2. For AMD GPUs, after applying root patches from OpenCore Legacy Patcher, you need to remove the boot argument `-radvesa`/`-amd_no_dgpu_accel` for graphics acceleration to work.
 
+## ⚙️ **Configuration**
+
+OpCore Simplify supports the following environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OCS_CHECK_UPDATES` | `0` | Set to `1` to enable automatic updates from GitHub |
+
+### Examples
+
+**Linux / macOS:**
+```bash
+# Run with auto-update enabled
+OCS_CHECK_UPDATES=1 python3 OpCore-Simplify.py
+
+# Run without auto-update (default)
+python3 OpCore-Simplify.py
+```
+
+**Windows (Command Prompt):**
+```cmd
+set OCS_CHECK_UPDATES=1
+OpCore-Simplify.bat
+```
+
+**Windows (PowerShell):**
+```powershell
+$env:OCS_CHECK_UPDATES="1"
+.\OpCore-Simplify.bat
+```Sonnet 4.6
+
 ## 🤝 **Contributing**
 
 Contributions are **highly appreciated**! If you have ideas to improve this project, feel free to fork the repo and create a pull request, or open an issue with the "enhancement" tag.

@@ -487,6 +487,16 @@ kexts = [
         }
     ),
     KextInfo(
+		name = "USBInjectAll",
+		description = "Injects all USB ports for macOS",
+		category = "USB",
+		max_darwin_version = "20.99.99",
+		github_repo = {
+			"owner": "Sniki",
+			"repo": "OS-X-USB-Inject-All"
+		}
+    ),
+    KextInfo(
         name = "XHCI-unsupported", 
         description = "Enables USB 3.0 support for unsupported xHCI controllers",
         category = "USB",
