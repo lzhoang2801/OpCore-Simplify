@@ -605,6 +605,7 @@ class ConfigProdigy:
                 "Arguments": "",
                 "Comment": "",
                 "Enabled": True,
+                "HideVerbose": "apfs_aligned.efi" in required_drivers,
                 "LoadEarly": False,
                 "Path": driver
             })
