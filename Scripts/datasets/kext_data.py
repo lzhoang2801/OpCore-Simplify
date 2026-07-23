@@ -115,7 +115,7 @@ kexts = [
         },
         download_info = {
             "id": int("".join(random.choices('0123456789', k=9))), 
-            "url": "https://nightly.link/ChefKissInc/NootRX/workflows/main/master/Artifacts.zip"
+            "url": "https://web.archive.org/web/20260611143849if_/https://productionresultssa18.blob.core.windows.net/actions-results/d57fdad5-672d-4d66-bd78-4ba0e2df7cbf/workflow-job-run-01a23b1e-8e15-59ec-873c-60a960823f68/artifacts/314ae71b8c8dc9c952f0ffc58e35e6d9a41b5cf4756471c7cab0c9476cd5d20b.zip?rscd=attachment%3B+filename%3D%22Artifacts.zip%22&rsct=application%2Fzip&se=2026-06-11T14%3A48%3A49Z&sig=Fo0kFfHL%2FdI4RkXgB9a0q9TzEElkp1rw%2Bt9OXUfvnPs%3D&ske=2026-06-11T17%3A53%3A12Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-06-11T13%3A53%3A12Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=r&spr=https&sr=b&st=2026-06-11T14%3A38%3A44Z&sv=2025-11-05"
         }
     ),
     KextInfo(
