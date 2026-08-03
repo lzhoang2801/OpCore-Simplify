@@ -21,7 +21,7 @@ class ReportValidator:
             "device_id": r"^[0-9A-F]{4}(?:-[0-9A-F]{4})?$",
             "resolution": r"^\d+x\d+$",
             "pci_path": r"^PciRoot\(0x[0-9a-fA-F]+\)(?:/Pci\(0x[0-9a-fA-F]+,0x[0-9a-fA-F]+\))+$",
-            "acpi_path": r"^[\\]?_SB(\.[A-Z0-9_]+)+$",
+            "acpi_path": r"^[\\]?(_SB|_TZ_|[A-Z0-9_]+)(\.[A-Z0-9_]+)*$",
             "core_count": r"^\d+$",
             "connector_type": r"^(VGA|DVI|HDMI|LVDS|DP|eDP|Internal|Uninitialized)$",
             "enabled_disabled": r"^(Enabled|Disabled)$"
