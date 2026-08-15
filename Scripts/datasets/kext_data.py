@@ -2,7 +2,7 @@ from Scripts.datasets import os_data
 import random
 
 class KextInfo:
-    def __init__(self, name, description, category, required = False, min_darwin_version = (), max_darwin_version = (), requires_kexts = [], conflict_group_id = None, github_repo = {}, download_info = {}):
+    def __init__(self, name, description, category, required = False, min_darwin_version = (), max_darwin_version = (), requires_kexts = [], conflict_group_id = None, allow_force_load = True, github_repo = {}, download_info = {}):
         self.name = name
         self.description = description
         self.category = category
@@ -11,6 +11,7 @@ class KextInfo:
         self.max_darwin_version = max_darwin_version or os_data.get_latest_darwin_version()
         self.requires_kexts = requires_kexts
         self.conflict_group_id = conflict_group_id
+        self.allow_force_load = allow_force_load
         self.github_repo = github_repo
         self.download_info = download_info
         self.checked = required
@@ -275,7 +276,7 @@ kexts = [
         description = "Enables the Broadcom Bluetooth on/off switch on older versions",
         category = "Bluetooth",
         max_darwin_version = "20.99.99",
-        requires_kexts = ["BrcmBluetoothInjector", "BrcmFirmwareData", "BrcmPatchRAM2", "BrcmPatchRAM3"],
+        allow_force_load = False,
         github_repo = {
             "owner": "acidanthera",
             "repo": "BrcmPatchRAM"
@@ -285,7 +286,6 @@ kexts = [
         name = "BrcmFirmwareData", 
         description = "Applies PatchRAM updates for Broadcom RAMUSB based devices",
         category = "Bluetooth",
-        requires_kexts = ["BlueToolFixup", "BrcmBluetoothInjector", "BrcmPatchRAM2", "BrcmPatchRAM3"],
         github_repo = {
             "owner": "acidanthera",
             "repo": "BrcmPatchRAM"
@@ -296,7 +296,8 @@ kexts = [
         description = "Applies PatchRAM updates for Broadcom RAMUSB based devices",
         category = "Bluetooth",
         max_darwin_version = "18.99.99",
-        requires_kexts = ["BlueToolFixup", "BrcmBluetoothInjector", "BrcmFirmwareData", "BrcmPatchRAM3"],
+        requires_kexts = ["BrcmFirmwareData"],
+        allow_force_load = False,
         github_repo = {
             "owner": "acidanthera",
             "repo": "BrcmPatchRAM"
@@ -307,7 +308,8 @@ kexts = [
         description = "Applies PatchRAM updates for Broadcom RAMUSB based devices",
         category = "Bluetooth",
         min_darwin_version = "19.0.0",
-        requires_kexts = ["BlueToolFixup", "BrcmBluetoothInjector", "BrcmFirmwareData", "BrcmPatchRAM2"],
+        requires_kexts = ["BrcmFirmwareData"],
+        allow_force_load = False,
         github_repo = {
             "owner": "acidanthera",
             "repo": "BrcmPatchRAM"
@@ -317,7 +319,6 @@ kexts = [
         name = "IntelBluetoothFirmware", 
         description = "Uploads firmware to enable Intel Bluetooth support",
         category = "Bluetooth",
-        requires_kexts = ["BlueToolFixup", "IntelBTPatcher", "IntelBluetoothInjector"],
         github_repo = {
             "owner": "lshbluesky",
             "repo": "IntelBluetoothFirmware"
@@ -327,7 +328,7 @@ kexts = [
         name = "IntelBTPatcher", 
         description = "Fixes Intel Bluetooth bugs for better connectivity",
         category = "Bluetooth",
-        requires_kexts = ["Lilu", "BlueToolFixup", "IntelBluetoothFirmware", "IntelBluetoothInjector"],
+        requires_kexts = ["Lilu", "IntelBluetoothFirmware"],
         github_repo = {
             "owner": "lshbluesky",
             "repo": "IntelBluetoothFirmware"
@@ -338,7 +339,8 @@ kexts = [
         description = "Enables the Intel Bluetooth on/off switch on older versions",
         category = "Bluetooth",
         max_darwin_version = "20.99.99",
-        requires_kexts = ["BlueToolFixup", "IntelBluetoothFirmware", "IntelBTPatcher"],
+        requires_kexts = ["IntelBluetoothFirmware"],
+        allow_force_load = False,
         github_repo = {
             "owner": "lshbluesky",
             "repo": "IntelBluetoothFirmware"
@@ -348,7 +350,6 @@ kexts = [
         name = "RealtekBluetoothFirmware", 
         description = "Uploads firmware to enable Realtek Bluetooth support",
         category = "Bluetooth",
-        requires_kexts = ["BlueToolFixup"],
         github_repo = {
             "owner": "thegwchr",
             "repo": "RealtekBluetoothFirmware"
@@ -695,6 +696,7 @@ kexts = [
         max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         conflict_group_id = "PC711",
+        allow_force_load = False,
         github_repo = {
             "owner": "hrx114514x",
             "repo": "PC711Probe"
@@ -708,6 +710,7 @@ kexts = [
         max_darwin_version = "24.99.99",
         requires_kexts = ["Lilu"],
         conflict_group_id = "PC711",
+        allow_force_load = False,
         github_repo = {
             "owner": "hrx114514x",
             "repo": "PC711Probe"
@@ -719,7 +722,6 @@ kexts = [
         category = "Card Reader",
         min_darwin_version = "18.0.0",
         max_darwin_version = "23.99.99",
-        requires_kexts = ["RealtekCardReaderFriend"],
         conflict_group_id = "RealtekCardReader",
         github_repo = {
             "owner": "0xFireWolf",
