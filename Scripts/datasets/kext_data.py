@@ -688,6 +688,32 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "PC711Probe",
+        description = "A probe kext for SK Hynix PC711 NVMe SSDs",
+        category = "Storage",
+        min_darwin_version = "20.0.0",
+        max_darwin_version = "24.99.99",
+        requires_kexts = ["Lilu"],
+        conflict_group_id = "PC711",
+        github_repo = {
+            "owner": "hrx114514x",
+            "repo": "PC711Probe"
+        }
+    ),
+    KextInfo(
+        name = "PC711ProbeForce",
+        description = "Applies the MSI-X compatibility path to all NVMe controllers",
+        category = "Storage",
+        min_darwin_version = "20.0.0",
+        max_darwin_version = "24.99.99",
+        requires_kexts = ["Lilu"],
+        conflict_group_id = "PC711",
+        github_repo = {
+            "owner": "hrx114514x",
+            "repo": "PC711Probe"
+        }
+    ),
+    KextInfo(
         name = "RealtekCardReader", 
         description = "Realtek PCIe/USB-based SD card reader driver", 
         category = "Card Reader",

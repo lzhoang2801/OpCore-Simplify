@@ -57,9 +57,13 @@ class HardwareCustomizer:
                 device_compatibility = device_props.get("Compatibility", (os_data.get_latest_darwin_version(), os_data.get_lowest_darwin_version()))
 
                 try:
-                    if self.utils.parse_darwin_version(device_compatibility[0]) >= self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version(device_compatibility[-1]):
-                        self.customized_hardware[device_type][device_name] = device_props
+                    is_compatible = self.utils.parse_darwin_version(device_compatibility[0]) >= self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version(device_compatibility[-1])
                 except:
+                    is_compatible = False
+
+                if is_compatible:
+                    self.customized_hardware[device_type][device_name] = device_props
+                else:
                     self.disabled_devices["{}: {}{}".format(device_props["Device Type"] if not "Unknown" in device_props.get("Device Type", "Unknown") else device_type, device_name, "" if not device_props.get("Audio Endpoints") else " ({})".format(", ".join(device_props.get("Audio Endpoints"))))] = device_props
 
                 if self.customized_hardware[device_type].get(device_name) and self.customized_hardware[device_type][device_name].get("OCLP Compatibility"):

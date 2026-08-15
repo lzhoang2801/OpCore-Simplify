@@ -359,6 +359,10 @@ class KextMaestro:
                     selected_kexts.append("RealtekCardReader")
         
         for controller_name, controller_props in hardware_report.get("Storage Controllers", {}).items():
+            if controller_props.get("Device ID") == "1C5C-174A" and 19 < self.utils.parse_darwin_version(macos_version)[0] < 25:
+                selected_kexts.extend(("NVMeFix", "PC711Probe"))
+                continue
+
             if "NVMe" in controller_name or "NVM Express" in controller_name:
                 selected_kexts.append("NVMeFix")
             elif not "AHCI" in controller_name or "AMD" in hardware_report.get("CPU").get("Manufacturer"):

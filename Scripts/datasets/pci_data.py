@@ -1408,18 +1408,17 @@ IntelVMDIDs = [
 ]
 
 # Resource: https://pci-ids.ucw.cz/
-UnsupportedNVMeSSDIDs = [
-    ("144D-A808", ("A811144D")), # Samsung SM981/PM981/PM983"
-    ("1344-5410", ("01001344")), # Micron 2200S
-    ("1C5C-174A", ("174A1C5C")), # SK hynix BC711/PC711
-    ("1C5C-1639", ("16391C5C")), # SK hynix PC611
-    ("1C5C-1627", ("16271C5C")), # SK hynix PC601
-    ("8086-2522", ("00008086", "38028086", "38068086", "38108086", "38118086")), # Intel Optane Memory M10 16GB
-    ("8086-2525", ("380A8086")), # Intel Optane SSD P1600X
-    ("8086-2700", ("39008086", "39018086", "39028086")), # Intel Optane SSD 900P
-    ("8086-0975", ("85108086", "84108086")), # Intel Optane NVME SSD H10
-    ("8086-09AD", ("85108086", "84108086")) # Intel Optane NVME SSD H20
-]
+UnsupportedNVMeSSDIDs = {
+    "144D-A808": ("A811144D",), # Samsung SM981/PM981/PM983
+    "1344-5410": ("01001344",), # Micron 2200S
+    "1C5C-1639": ("16391C5C",), # SK hynix PC611
+    "1C5C-1627": ("16271C5C",), # SK hynix PC601
+    "8086-2522": ("00008086", "38028086", "38068086", "38108086", "38118086"), # Intel Optane Memory M10 16GB
+    "8086-2525": ("380A8086",), # Intel Optane SSD P1600X
+    "8086-2700": ("39008086", "39018086", "39028086"), # Intel Optane SSD 900P
+    "8086-0975": ("85108086", "84108086"), # Intel Optane NVMe SSD H10
+    "8086-09AD": ("85108086", "84108086") # Intel Optane NVMe SSD H20
+}
 
 # Resource: https://pci-ids.ucw.cz/
 SpoofGPUIDs = {
