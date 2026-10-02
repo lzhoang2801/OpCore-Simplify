@@ -1,4 +1,16 @@
 <br/>
+
+> [!NOTE]
+> **Usable fork** (`usable-windows`) — synced mirror of [`lzhoang2801/OpCore-Simplify`](https://github.com/lzhoang2801/OpCore-Simplify) with a documented daily-use Windows path. `main` stays a clean mirror; daily fixes land here first as small PRs upstream.
+
+| Field | Value |
+|---|---|
+| Upstream baseline | `e5d8a9f551b1e2a96e2f968696b460b65a7dad2e` (2026-08-27, `Arrow Lake and macOS Tahoe 26`) |
+| Last checked | 2026-10-02 (in sync) |
+| Fork snapshot | `usable-2026-10-02` |
+| Windows run | See [Fork Windows notes](#-fork-windows-notes-usable-windows) below |
+| Sync routine | [SYNC_CHECKLIST.md](SYNC_CHECKLIST.md) · back-contribution rule: [FORK_CONTRIBUTING.md](FORK_CONTRIBUTING.md) |
+
 <div align="center">
   <h3 align="center">OpCore Simplify</h3>
 
@@ -91,6 +103,8 @@
    - On **Windows**, run `OpCore-Simplify.bat`.
    - On **macOS**, run `OpCore-Simplify.command`.
    - On **Linux**, run `OpCore-Simplify.py` with existing Python interpreter.
+   - If you see `Failed to create SSL context: No module named 'certifi'`, install dependencies first: `python -m pip install -r requirements.txt` (stock Windows Python has no CA bundle at `C:\Program Files\Common Files\SSL\cert.pem`, so `Scripts/resource_fetcher.py` needs `certifi` to verify GitHub downloads).
+   - On consoles without Unicode support (e.g. stock `cmd.exe` with codepage `cp1252`), section titles automatically degrade from box-drawing to ASCII borders instead of crashing.
 
    ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
 
@@ -134,6 +148,27 @@
 > 1. After a successful installation, if OpenCore Legacy Patcher is required, simply apply root patches to activate the missing features (such as modern Broadcom Wi-Fi card and graphics acceleration).
 > 
 > 2. For AMD GPUs, after applying root patches from OpenCore Legacy Patcher, you need to remove the boot argument `-radvesa`/`-amd_no_dgpu_accel` for graphics acceleration to work.
+
+## 🛠️ **Fork Windows notes** (`usable-windows`)
+
+Tested interpreter: `Python 3.14.7` (`%LOCALAPPDATA%\Programs\Python\Python314\python.exe`).
+
+1. **Prerequisites (verified commands):**
+   ```bat
+   python --version
+   python -m pip install certifi
+   ```
+   Background: stock Windows Python ships with `openssl_cafile` pointing at `C:\Program Files\Common Files\SSL\cert.pem` (absent) and no `certifi`, so `Scripts/resource_fetcher.py` falls back to an unverified context with `Failed to create SSL context: No module named 'certifi'`.
+
+2. **Skip the broken auto-update:** when prompted `Do you want to skip the update process? (yes/No):`, answer `yes`. The updater scrapes `github.com/.../commits/main` HTML and currently fails even with good network (`Cannot find commit information for repository OpCore-Simplify on branch main`, `sha_version.txt` becomes `update_forced_by_user`).
+
+3. **Manual `iasl.exe` (required on Windows):** `Scripts/` ships only a Linux `iasl` ELF; `win32` needs `iasl.exe` next to `dsdt.py`. Download release `20260930` from `https://github.com/open-acpica/acpica/releases` (note: `acpica/acpica` redirects to `open-acpica/acpica`; the old `iasl-win-YYYYMMDD.zip` name no longer exists — current asset is a bare `iasl` binary) and place the Windows `iasl.exe` at `Scripts\iasl.exe`. Then re-run `OpCore-Simplify.bat` and choose `E. Export hardware report`.
+
+4. **Console encoding (interim workaround):** stock `cmd.exe` (`cp1252`) crashes the old code at the first title with `UnicodeEncodeError`. Until the ASCII-fallback fix ships, run with:
+   ```bat
+   set PYTHONIOENCODING=utf-8&& python OpCore-Simplify.py
+   ```
+   No space before `&&` — `set VAR=1 && ...` bakes a trailing space into the value and Python rejects it.
 
 ## 🤝 **Contributing**
 

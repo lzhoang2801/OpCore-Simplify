@@ -267,16 +267,41 @@ class DSDT:
         return (target_files, failed,)
 
     def get_latest_iasl(self):
-        latest_release = self.github.get_latest_release("acpica", "acpica") or {}
+        # Newest releases may ship no Windows binaries at all (e.g. 20260930
+        # only carries Unix artifacts plus a bare Linux "iasl"), so walk
+        # releases newest-first and take the first usable Windows asset.
+        try:
+            tags = self.github.get_release_tags("acpica", "acpica")
+        except Exception:
+            tags = []
 
-        for line in latest_release.get("body", "").splitlines():
-            if "iasl" in line and ".zip" in line:
-                return line.split("\"")[1]
+        if not tags:
+            # Fall back to the historical single-release lookup.
+            releases = [self.github.get_latest_release("acpica", "acpica") or {}]
+        else:
+            releases = []
+            for tag in tags:
+                try:
+                    releases.append(self.github.get_release_by_tag("acpica", "acpica", tag))
+                except Exception:
+                    continue
 
-        for asset in latest_release.get("assets", []):
-            if "/iasl" in asset.get("url") and ".zip" in asset.get("url"):
-                return asset.get("url")
-            
+        for release in releases:
+            for line in release.get("body", "").splitlines():
+                if "iasl" in line and ".zip" in line:
+                    return line.split("\"")[1]
+
+            fallback_exe = None
+            for asset in release.get("assets", []):
+                url = asset.get("url") or ""
+                basename = url.rsplit("/", 1)[-1].lower()
+                if basename.startswith("iasl-win-") and basename.endswith(".zip"):
+                    return url
+                if basename == "iasl.exe" and fallback_exe is None:
+                    fallback_exe = url
+            if fallback_exe:
+                return fallback_exe
+
         return None
     
     def check_iasl(self, legacy=False, try_downloading=True):

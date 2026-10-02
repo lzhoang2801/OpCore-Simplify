@@ -197,7 +197,13 @@ class Utils:
             title = title[:width-4] + "..."
         title = title.center(width - 2)
         
-        print("╔{}╗\n║{}║\n╚{}╝".format(separator, title, separator))
+        try:
+            print("╔{}╗\n║{}║\n╚{}╝".format(separator, title, separator))
+        except UnicodeEncodeError:
+            # Stock Windows consoles (e.g. cp1252) cannot encode
+            # box-drawing glyphs; degrade to ASCII, same layout.
+            ascii_separator = "-" * (width - 2)
+            print("+{}+\n|{}|\n+{}+".format(ascii_separator, title, ascii_separator))
     
     def adjust_window_size(self, content=""):
         lines = content.splitlines()
