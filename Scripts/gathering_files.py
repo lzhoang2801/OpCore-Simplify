@@ -2,6 +2,7 @@ from Scripts import github
 from Scripts import kext_maestro
 from Scripts import integrity_checker
 from Scripts import resource_fetcher
+from Scripts import compat
 from Scripts import utils
 import os
 import shutil
@@ -128,7 +129,7 @@ class gatheringFiles:
                         source_dir = os.path.join(ocbinarydata_dir, dir_name)
                         destination_dir = os.path.join(destination_efi_path, "OC", dir_name)
                         if os.path.isdir(destination_dir):
-                            shutil.copytree(source_dir, destination_dir, dirs_exist_ok=True)
+                            compat.copytree_merge(source_dir, destination_dir)
 
                     resources_image_dir = os.path.join(product_dir, efi_dir, "OC", "Resources", "Image")
                     picker_variants = self.utils.find_matching_paths(resources_image_dir, type_filter="dir")

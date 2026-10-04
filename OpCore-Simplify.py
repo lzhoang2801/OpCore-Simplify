@@ -1,6 +1,7 @@
 from Scripts.datasets import os_data
 from Scripts.datasets import chipset_data
 from Scripts import acpi_guru
+from Scripts import compat
 from Scripts import compatibility_checker
 from Scripts import config_prodigy
 from Scripts import gathering_files
@@ -214,7 +215,7 @@ class OCPE:
             raise Exception("Directory '{}' does not exist.".format(self.k.ock_files_dir))
         
         source_efi_dir = os.path.join(self.k.ock_files_dir, "OpenCorePkg")
-        shutil.copytree(source_efi_dir, self.result_dir, dirs_exist_ok=True)
+        compat.copytree_merge(source_efi_dir, self.result_dir)
 
         config_file = os.path.join(self.result_dir, "EFI", "OC", "config.plist")
         config_data = self.u.read_file(config_file)

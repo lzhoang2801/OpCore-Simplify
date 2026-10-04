@@ -4,6 +4,7 @@ from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
 from Scripts.datasets import codec_layouts
 from Scripts import utils
+from Scripts import compat
 import os
 import shutil
 
@@ -474,7 +475,7 @@ class KextMaestro:
                                     destination_kext_path = os.path.join(kexts_directory, os.path.basename(kext_path))
                     
                     if os.path.exists(source_kext_path):
-                        shutil.copytree(source_kext_path, destination_kext_path, dirs_exist_ok=True)
+                        compat.copytree_merge(source_kext_path, destination_kext_path)
                 except:
                     continue
 
