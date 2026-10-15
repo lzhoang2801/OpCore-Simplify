@@ -38,10 +38,22 @@ class Github:
 
         payload = self.extract_payload(response)
 
-        if not "commitGroups" in payload:
+        if not isinstance(payload, dict):
             raise ValueError("Cannot find commit information for repository {} on branch {}.".format(repo, branch))
-        
-        return payload
+
+        # GitHub now nests commit groups under "commitsRefRoute" in the
+        # embedded JSON; older pages exposed "commitGroups" at top level.
+        holder = payload.get("commitsRefRoute", payload)
+
+        if not isinstance(holder, dict) or "commitGroups" not in holder:
+            raise ValueError("Cannot find commit information for repository {} on branch {}.".format(repo, branch))
+
+        # Preserve the historical return shape so callers can keep using
+        # ["commitGroups"] and ["currentCommit"].
+        if "currentCommit" not in holder and "currentCommit" in payload:
+            holder["currentCommit"] = payload["currentCommit"]
+
+        return holder
 
     def get_latest_release(self, owner, repo):
         url = "https://github.com/{}/{}/releases".format(owner, repo)
