@@ -275,6 +275,9 @@ class CompatibilityChecker:
                 max_version = "17.99.99"
             elif device_id in pci_data.AtherosWiFiIDs[8:]:
                 max_version = "20.99.99"
+            elif device_id in pci_data.RealtekAirPortIDs:
+                min_version, max_version = "18.0.0", "25.99.99"
+                device_props["Unsupported Darwin Majors"] = [21]
             elif device_id in pci_data.IntelI22XIDs:
                 min_version = "19.0.0"
             elif device_id in pci_data.AquantiaAqtionIDs:
@@ -283,7 +286,7 @@ class CompatibilityChecker:
             if device_id in set(pci_data.EthernetIDs) | set(pci_data.WirelessUSBIDs):
                 device_props["Compatibility"] = (max_version, min_version)
             elif device_id in pci_data.WirelessCardIDs:
-                if not device_id in pci_data.IntelWiFiIDs and not device_id in pci_data.AtherosWiFiIDs[8:] and not device_id in pci_data.rtw88WiFiIDs:
+                if not device_id in pci_data.IntelWiFiIDs and not device_id in pci_data.AtherosWiFiIDs[8:] and not device_id in pci_data.rtw88WiFiIDs and not device_id in pci_data.RealtekAirPortIDs:
                     device_props["OCLP Compatibility"] = (ocl_patched_max_version, ocl_patched_min_version)
                     self.ocl_patched_macos_version = (ocl_patched_max_version, self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(self.ocl_patched_macos_version[-1]) < self.utils.parse_darwin_version(device_props.get("OCLP Compatibility")[-1]) else device_props.get("OCLP Compatibility")[-1])
                 device_props["Compatibility"] = (max_version, min_version)
@@ -302,6 +305,9 @@ class CompatibilityChecker:
                 elif device_id in pci_data.AtherosWiFiIDs:
                     print("{}- Continuity Support: \033[1;31mLimited\033[0m (No Continuity features available)".format(" "*6))
                     print("{}\033[1;93mNote:\033[0m Atheros cards are not recommended for macOS".format(" "*6))
+
+            if device_id in pci_data.RealtekAirPortIDs:
+                print("      Realtek AirPort: Monterey unsupported; Sonoma–Tahoe needs legacy stack; no AirDrop")
 
             if "OCLP Compatibility" in device_props:
                 print("{}- OCLP Compatibility: {}".format(" "*6, self.show_macos_compatibility(device_props.get("OCLP Compatibility"))))

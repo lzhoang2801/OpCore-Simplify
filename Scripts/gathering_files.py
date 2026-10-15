@@ -106,6 +106,14 @@ class gatheringFiles:
         if not "OpenCore" in product_name:
             kext_paths = self.utils.find_matching_paths(temp_product_dir, extension_filter=".kext")
             for kext_path, type in kext_paths:
+                # The combined release repeats AirPort_RTW88 in the Sonoma folder.
+                # Keep one driver copy; stack dependencies use their own catalog sources.
+                if product_name == "RealtekAirPortFamily" and kext_path.replace("\\", "/") not in (
+                    "Airport_RTW88/AirPort_RTW88.kext",
+                    "LegacyAirport/Realtek88LegacyAirport.kext",
+                    "LegacyAirport/HS80211Family.kext",
+                ):
+                    continue
                 source_kext_path = os.path.join(self.temporary_dir, product_name, kext_path)
                 destination_kext_path = os.path.join(self.ock_files_dir, product_name, os.path.basename(kext_path))
                 
@@ -170,7 +178,9 @@ class gatheringFiles:
 
             product_name = product.name if not isinstance(product, dict) else product.get("Name")
             
-            if product_name == "AirportItlwm":
+            if product_name in ("AirPort_RTW88", "Realtek88LegacyAirport", "HS80211Family"):
+                product_name = "RealtekAirPortFamily"
+            elif product_name == "AirportItlwm":
                 version = macos_version[:2]
                 if all((self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version), kexts[kext_maestro.kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked, kexts[kext_maestro.kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked)):
                     version = "22"

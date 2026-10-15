@@ -61,6 +61,9 @@ class HardwareCustomizer:
                 except:
                     is_compatible = False
 
+                if int(macos_version.split(".")[0]) in device_props.get("Unsupported Darwin Majors", []):
+                    is_compatible = False
+
                 if is_compatible:
                     self.customized_hardware[device_type][device_name] = device_props
                 else:

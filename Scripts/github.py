@@ -123,6 +123,8 @@ class Github:
             return "".join(random.choices('0123456789', k=9))
 
     def extract_asset_name(self, file_name):
+        if file_name.startswith("Realtek-AirPort-Family-"):
+            return "RealtekAirPortFamily"
         end_idx = len(file_name)
         if "-" in file_name:
             end_idx = min(file_name.index("-"), end_idx)

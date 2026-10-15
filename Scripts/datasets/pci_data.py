@@ -558,6 +558,10 @@ IntelWiFiIDs = [
     "8086-A370"
 ]
 
+RealtekAirPortIDs = [
+    "10EC-B822", "10EC-C822", "10EC-C82F", "10EC-C821", "10EC-B821"
+]
+
 rtw88WiFiIDs = [
     "10EC-B822",
     "10EC-C822",
@@ -570,7 +574,7 @@ rtw88WiFiIDs = [
     "0BDA-8812"
 ]
 
-WirelessCardIDs = AtherosWiFiIDs + BroadcomWiFiIDs + IntelWiFiIDs + rtw88WiFiIDs
+WirelessCardIDs = AtherosWiFiIDs + BroadcomWiFiIDs + IntelWiFiIDs + rtw88WiFiIDs + RealtekAirPortIDs
 
 AppleIGBIDs = [
     # AppleIGB.kext
