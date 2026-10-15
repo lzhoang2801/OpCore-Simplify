@@ -143,7 +143,11 @@ class Github:
         elif "rtsx" in file_name:
             asset_name += "-rtsx"
         elif "itlwm" in file_name.lower():
-            if "Sonoma14.4" in file_name:
+            if "Sequoia" in file_name:
+                asset_name += "24"
+            elif "Tahoe" in file_name:
+                asset_name += "25"
+            elif "Sonoma14.4" in file_name:
                 asset_name += "23.4"
             elif "Sonoma14.0" in file_name:
                 asset_name += "23.0"

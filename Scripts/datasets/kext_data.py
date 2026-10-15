@@ -153,6 +153,16 @@ kexts = [
         }
     ),
     KextInfo(
+        name = "SimpleHDA",
+        description = "Restore AppleHDA on Tahoe through OpenCore without root patches",
+        category = "Audio",
+        min_darwin_version = "25.0.0",
+        max_darwin_version = "25.99.99",
+        allow_force_load = False,
+        requires_kexts = ["Lilu", "AppleALC"],
+        github_repo = {"owner": "laobamac", "repo": "SimpleHDA"}
+    ),
+    KextInfo(
         name = "AirPortAtheros40-Tahoe",
         description = "Enable Atheros Wi-Fi adapters on macOS Tahoe",
         category = "Wi-Fi",
@@ -193,6 +203,19 @@ kexts = [
         conflict_group_id = "IntelWiFi",
         github_repo = {
             "owner": "DexterSLamb",
+            "repo": "itlwm"
+        }
+    ),
+    KextInfo(
+        name = "AirportItlwm-laobamac",
+        description = "Intel Wi-Fi drivers support the native macOS Wi-Fi interface (Sequoia 15.2+ and Tahoe without root patches)",
+        category = "Wi-Fi",
+        min_darwin_version = "24.2.0",
+        max_darwin_version = "25.99.99",
+        allow_force_load = False,
+        conflict_group_id = "IntelWiFi",
+        github_repo = {
+            "owner": "laobamac",
             "repo": "itlwm"
         }
     ),

@@ -157,11 +157,10 @@ class KextMaestro:
 
         if any(codec_properties.get("Device ID") in codec_layouts.data for codec_properties in hardware_report.get("Sound", {}).values()):
             if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                print("\n\033[1;93mNote:\033[0m Since macOS Tahoe 26 DP2, Apple has removed AppleHDA kext and uses the Apple T2 chip for audio management.")
-                print("To use AppleALC, you must rollback AppleHDA. Alternatively, you can use VoodooHDA.")
+                print("\n\033[1;93mNote:\033[0m macOS Tahoe no longer includes AppleHDA. AppleALC needs one of these restoration methods.")
                 print("")
-                print("1. \033[1mAppleALC\033[0m - Requires AppleHDA rollback with \033[1;93mOpenCore Legacy Patcher\033[0m")
-                print("2. \033[1mVoodooHDA\033[0m - Lower audio quality, manual injection to /Library/Extensions")
+                print("1. \033[1mAppleALC + OCLP\033[0m - Restores AppleHDA with a system root patch")
+                print("2. \033[1mAppleALC + SimpleHDA\033[0m - OpenCore injection without audio root patches")
                 print("")
                 while True:
                     kext_option = self.utils.request_input("Select audio kext for your system: ").strip()
@@ -170,6 +169,7 @@ class KextMaestro:
                         selected_kexts.append("AppleALC")
                         break
                     elif kext_option == "2":
+                        selected_kexts.extend(("AppleALC", "SimpleHDA"))
                         break
                     else:
                         print("\033[91mInvalid selection, please try again.\033[0m\n\n")
@@ -250,9 +250,6 @@ class KextMaestro:
         if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")):
             selected_kexts.append("CpuTscSync")
 
-        if needs_oclp:
-            selected_kexts.extend(("AMFIPass", "RestrictEvents"))
-
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
@@ -270,48 +267,43 @@ class KextMaestro:
             elif device_id in pci_data.IntelWiFiIDs:
                 print("\n*** Found {} is Intel WiFi device.".format(network_name))
                 print("")
-                print("\033[1;93mNote:\033[0m Intel WiFi devices have two available kext options:")
+                darwin_major = self.utils.parse_darwin_version(macos_version)[0]
+                native_fork_available = self.is_kext_compatible(self.kexts[kext_data.kext_index_by_name["AirportItlwm-laobamac"]], macos_version)
+                wifi_options = ["AirportItlwm", "itlwm"]
+                if native_fork_available:
+                    wifi_options.insert(0, "AirportItlwm-laobamac")
+                print("\033[1;93mNote:\033[0m Intel WiFi devices have {} available kext options:".format(len(wifi_options)))
                 print("")
-                print("1. \033[1mAirportItlwm\033[0m - Uses native WiFi settings menu")
+                if native_fork_available:
+                    print("1. \033[1mlaobamac AirportItlwm\033[0m - Native WiFi on Sequoia 15.2+ and Tahoe without OCLP root patches")
+                    print("")
+                print("{}. \033[1mAirportItlwm\033[0m - Uses native WiFi settings menu".format(2 if native_fork_available else 1))
                 print("   • Provides Handoff, Universal Clipboard, Location Services, Instant Hotspot support")
                 print("   • Supports enterprise-level security")
-
-                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
-                    print("   • \033[91mSince macOS Sequoia 15\033[0m: Can work with OCLP root patch but may cause issues")
-                
+                if darwin_major >= 24:
+                    print("   • Requires OCLP root patches on Sequoia and Tahoe but may cause issues")
                 print("")
-                print("2. \033[1mitlwm\033[0m - More stable overall")
+                print("{}. \033[1mitlwm\033[0m - More stable overall".format(len(wifi_options)))
                 print("   • Works with HeliPort app instead of native WiFi settings menu")
                 print("   • No Apple Continuity features and enterprise-level security")
                 print("   • Can connect to Hidden Networks")
                 print("")
-
-                recommended_option = 2 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0") else 1
-                recommended_name = "itlwm" if recommended_option == 2 else "AirportItlwm"
-
-                if "Beta" in os_data.get_macos_name_by_darwin(macos_version):
-                    print("\033[91mImportant:\033[0m For macOS Beta versions, only itlwm kext is supported")
-                    print("")
-                    self.utils.request_input("Press Enter to continue...")
-                    selected_option = recommended_option
+                recommended_option = 1 if native_fork_available or darwin_major < 23 else 2
+                if "Beta" in os_data.get_macos_name_by_darwin(macos_version) and not native_fork_available:
+                    print("For unsupported macOS Beta versions, only itlwm is supported.")
+                    selected_name = "itlwm"
                 else:
-                    kext_option = self.utils.request_input("Select kext for your Intel WiFi device (default: {}): ".format(recommended_name)).strip() or str(recommended_option)
-                    
-                    if kext_option.isdigit() and 0 < int(kext_option) < 3:
-                        selected_option = int(kext_option)
-                    else:
-                        print("\033[91mInvalid selection, using recommended option: {}\033[0m".format(recommended_option))
-                        selected_option = recommended_option
-                
-                if selected_option == 2:
-                    selected_kexts.append("itlwm")
-                else:
-                    selected_kexts.append("AirportItlwm")
-                    
-                    if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("24.0.0"):
-                        selected_kexts.append("IOSkywalkFamily")
-                        if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                            selected_kexts.append("AirPortBrcmNIC-Tahoe")
+                    choice = self.utils.request_input("Select Intel Wi-Fi kext (default: {}): ".format(wifi_options[recommended_option - 1])).strip() or str(recommended_option)
+                    if not choice.isdigit() or not 1 <= int(choice) <= len(wifi_options):
+                        print("Invalid selection, using recommended option: {}".format(recommended_option))
+                        choice = str(recommended_option)
+                    selected_name = wifi_options[int(choice) - 1]
+                selected_kexts.append(selected_name)
+                if selected_name == "AirportItlwm" and darwin_major >= 24:
+                    needs_oclp = True
+                    selected_kexts.append("IOSkywalkFamily")
+                    if darwin_major >= 25:
+                        selected_kexts.append("AirPortBrcmNIC-Tahoe")
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 selected_kexts.append("corecaptureElCap")
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
@@ -438,6 +430,9 @@ class KextMaestro:
         if "Sandy Bridge" in hardware_report.get("CPU").get("Codename") or "Ivy Bridge" in hardware_report.get("CPU").get("Codename"):
             selected_kexts.extend(("AppleIntelCPUPowerManagement", "AppleIntelCPUPowerManagementClient"))
 
+        if needs_oclp:
+            selected_kexts.extend(("AMFIPass", "RestrictEvents"))
+
         selected_kexts = list(dict.fromkeys(selected_kexts))
         force_load_kexts = self.verify_kext_compatibility(selected_kexts, macos_version)
 
@@ -456,9 +451,13 @@ class KextMaestro:
                     if kext_name == "Feixiao":
                         kext_name = "rtw88"
 
-                    kext_paths = self.utils.find_matching_paths(self.ock_files_dir, extension_filter=".kext", name_filter=kext_name)
+                    search_directory = self.ock_files_dir
+                    if kext_name == "AirportItlwm-laobamac":
+                        search_directory = os.path.join(self.ock_files_dir, kext_name + macos_version[:2])
+                        kext_name = "AirportItlwm"
+                    kext_paths = self.utils.find_matching_paths(search_directory, extension_filter=".kext", name_filter=kext_name)
                     for kext_path, type in kext_paths:
-                        if "AirportItlwm" == kext_name:
+                        if kext.name == "AirportItlwm":
                             version = macos_version[:2]
                             if all((self.kexts[kext_data.kext_index_by_name.get("IOSkywalkFamily")].checked, self.kexts[kext_data.kext_index_by_name.get("IO80211FamilyLegacy")].checked)) or self.utils.parse_darwin_version("24.0.0") <= self.utils.parse_darwin_version(macos_version):
                                 version = "22"
@@ -467,7 +466,7 @@ class KextMaestro:
                             elif self.utils.parse_darwin_version("23.0.0") <= self.utils.parse_darwin_version(macos_version):
                                 version = "23.0"
                             
-                            if version in kext_path:
+                            if kext_path.replace("\\", "/").split("/")[0] == "AirportItlwm" + version and os.path.basename(kext_path) == "AirportItlwm.kext":
                                 source_kext_path = os.path.join(self.ock_files_dir, kext_path)
                                 destination_kext_path = os.path.join(kexts_directory, os.path.basename(kext_path))
                                 break
@@ -476,12 +475,16 @@ class KextMaestro:
                             main_kext_index = kext_data.kext_index_by_name.get(main_kext)
                             if not main_kext_index or self.kexts[main_kext_index].checked:
                                 if os.path.splitext(os.path.basename(kext_path))[0] == kext_name:
-                                    source_kext_path = os.path.join(self.ock_files_dir, kext_path)
+                                    source_kext_path = os.path.join(search_directory, kext_path)
                                     destination_kext_path = os.path.join(kexts_directory, os.path.basename(kext_path))
                     
+                    if kext.name in ("AirportItlwm-laobamac", "SimpleHDA") and not source_kext_path:
+                        raise FileNotFoundError("Downloaded bundle not found for {}.".format(kext.name))
                     if os.path.exists(source_kext_path):
                         shutil.copytree(source_kext_path, destination_kext_path, dirs_exist_ok=True)
-                except:
+                except Exception:
+                    if kext.name in ("AirportItlwm-laobamac", "SimpleHDA"):
+                        raise
                     continue
 
     def process_kext(self, kexts_directory, kext_path):
@@ -505,6 +508,8 @@ class KextMaestro:
 
         if bundle_info.get("CFBundleExecutable", "None") == "AppleALC":
             bundle_libraries["org.ChefKiss.NootedRed"] = "0.8.10"
+        elif bundle_info.get("CFBundleExecutable", "None") == "SimpleHDA":
+            bundle_libraries["as.vit9696.AppleALC"] = "1.9.9"
         
         return {
             "BundlePath": kext_path.replace("\\", "/").lstrip("/"),
@@ -587,6 +592,8 @@ class KextMaestro:
             kext_name = os.path.splitext(os.path.basename(bundle.get("BundlePath")))[0]
             if kext_name == "rtw88":
                 kext_name = "Feixiao"
+            elif kext_name == "AirportItlwm" and self.kexts[kext_data.kext_index_by_name["AirportItlwm-laobamac"]].checked:
+                kext_name = "AirportItlwm-laobamac"
 
             if kext_name in unload_kext or (bundle.get("BundlePath"), bundle.get("BundleIdentifier")) in visited:
                 return
@@ -617,9 +624,10 @@ class KextMaestro:
 
             if kext_name == "AirPortBrcm4360_Injector":
                 bundle["MaxKernel"] = "19.99.99"
-            elif kext_name == "AirportItlwm":
+            elif kext_name in ("AirportItlwm", "AirportItlwm-laobamac"):
                 bundle["MaxKernel"] = macos_version[:2] + bundle["MaxKernel"][2:]
-                bundle["MinKernel"] = macos_version[:2] + bundle["MinKernel"][2:]
+                if kext_name == "AirportItlwm" or macos_version.startswith("25."):
+                    bundle["MinKernel"] = macos_version[:2] + ".0.0"
 
             visited.add((bundle.get("BundlePath"), bundle.get("BundleIdentifier")))
 

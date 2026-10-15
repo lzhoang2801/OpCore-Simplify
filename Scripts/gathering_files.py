@@ -69,6 +69,11 @@ class gatheringFiles:
                 if not kext.download_info.get("sha256"):
                     kext.download_info["sha256"] = None
                 add_product_info({"product_name": kext.name, **kext.download_info})
+            elif kext.name == "AirportItlwm-laobamac":
+                release = self.github.get_latest_release("laobamac", "itlwm") or {}
+                for asset in release.get("assets", []):
+                    if "-RELEASE" in asset["url"] and asset["product_name"] in ("AirportItlwm24", "AirportItlwm25"):
+                        add_product_info({**asset, "product_name": kext.name + asset["product_name"][-2:]})
             elif kext.github_repo and kext.github_repo.get("repo") not in seen_repos:
                 name = kext.github_repo.get("repo")
                 seen_repos.add(name)
@@ -174,6 +179,8 @@ class gatheringFiles:
                 elif self.utils.parse_darwin_version("23.0.0") <= self.utils.parse_darwin_version(macos_version):
                     version = "23.0"
                 product_name += version
+            elif product_name == "AirportItlwm-laobamac":
+                product_name += macos_version[:2]
             elif "VoodooPS2" in product_name:
                 product_name = "VoodooPS2"
             elif product_name == "BlueToolFixup" or product_name.startswith("Brcm"):
