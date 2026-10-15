@@ -114,6 +114,14 @@ class ResourceFetcher:
         last_bytes = 0
         speeds = []
 
+        try:
+            "█░".encode(getattr(sys.stdout, "encoding", None) or "utf-8")
+            full_block, empty_block = "█", "░"
+        except (UnicodeEncodeError, LookupError, TypeError):
+            # Stock Windows consoles (e.g. cp1252) cannot encode
+            # block-drawing glyphs; degrade to ASCII.
+            full_block, empty_block = "#", "-"
+
         speed_str = "-- KB/s"
         
         while True:
@@ -145,7 +153,7 @@ class ResourceFetcher:
                 percent = int(bytes_downloaded / total_size * 100)
                 bar_length = 40
                 filled = int(bar_length * bytes_downloaded / total_size)
-                bar = "█" * filled + "░" * (bar_length - filled)
+                bar = full_block * filled + empty_block * (bar_length - filled)
                 progress = "{} [{}] {:3d}% {:.1f}/{:.1f}MB".format(speed_str, bar, percent, bytes_downloaded/(1024*1024), total_size/(1024*1024))
             else:
                 progress = "{} {:.1f}MB downloaded".format(speed_str, bytes_downloaded/(1024*1024))
