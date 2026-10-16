@@ -91,6 +91,7 @@
    - On **Windows**, run `OpCore-Simplify.bat`.
    - On **macOS**, run `OpCore-Simplify.command`.
    - On **Linux**, run `OpCore-Simplify.py` with existing Python interpreter.
+   - If you see `Failed to create SSL context: No module named 'certifi'`, install dependencies first: `python -m pip install -r requirements.txt` (stock Windows Python has no CA bundle at `C:\Program Files\Common Files\SSL\cert.pem`, so `Scripts/resource_fetcher.py` needs `certifi` to verify GitHub downloads).
 
    ![OpCore Simplify Menu](https://i.imgur.com/vTr1V9D.png)
 
