@@ -624,7 +624,7 @@ kexts = [
         description = "Intel I2C controller and slave device drivers",
         category = "Input",
         github_repo = {
-            "owner": "VoodooI2C",
+            "owner": "lzhoang2801",
             "repo": "VoodooI2C"
         }
     ),
@@ -634,7 +634,7 @@ kexts = [
         category = "Input",
         requires_kexts = ["VoodooI2C"],
         github_repo = {
-            "owner": "VoodooI2C",
+            "owner": "lzhoang2801",
             "repo": "VoodooI2C"
         }
     ),
@@ -644,7 +644,7 @@ kexts = [
         category = "Input",
         requires_kexts = ["VoodooI2C"],
         github_repo = {
-            "owner": "VoodooI2C",
+            "owner": "lzhoang2801",
             "repo": "VoodooI2C"
         }
     ),
@@ -654,7 +654,7 @@ kexts = [
         category = "Input",
         requires_kexts = ["VoodooI2C"],
         github_repo = {
-            "owner": "VoodooI2C",
+            "owner": "lzhoang2801",
             "repo": "VoodooI2C"
         }
     ),
@@ -664,7 +664,7 @@ kexts = [
         category = "Input",
         requires_kexts = ["VoodooI2C"],
         github_repo = {
-            "owner": "VoodooI2C",
+            "owner": "lzhoang2801",
             "repo": "VoodooI2C"
         }
     ),
@@ -674,7 +674,7 @@ kexts = [
         category = "Input",
         requires_kexts = ["VoodooI2C"],
         github_repo = {
-            "owner": "VoodooI2C",
+            "owner": "lzhoang2801",
             "repo": "VoodooI2C"
         }
     ),
