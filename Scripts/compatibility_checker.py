@@ -400,6 +400,31 @@ class CompatibilityChecker:
 
             print("{}- {}: {}".format(" "*3, controller_name, self.show_macos_compatibility(controller_props.get("Compatibility"))))
 
+    def get_suggested_macos_version(self):
+        suggested_macos_version = self.max_native_macos_version
+
+        for device_type in ("GPU", "Network", "Bluetooth", "SD Controller"):
+            for device_props in self.hardware_report.get(device_type, {}).values():
+                compatibility = device_props.get("Compatibility", (None, None))
+                if compatibility == (None, None):
+                    continue
+
+                if device_type == "GPU" and device_props.get("Device Type") == "Integrated GPU":
+                    device_id = device_props.get("Device ID", "" * 8)[5:]
+
+                    if device_props.get("Manufacturer") == "AMD" or device_id.startswith(("59", "87C0")):
+                        suggested_macos_version = "22.99.99"
+                    elif device_id.startswith(("09", "19")):
+                        suggested_macos_version = "21.99.99"
+
+                if self.utils.parse_darwin_version(suggested_macos_version) > self.utils.parse_darwin_version(compatibility[0]):
+                    suggested_macos_version = compatibility[0]
+
+        while "Beta" in os_data.get_macos_name_by_darwin(suggested_macos_version):
+            suggested_macos_version = "{}{}".format(int(suggested_macos_version[:2]) - 1, suggested_macos_version[2:])
+
+        return suggested_macos_version
+
     def check_compatibility(self, hardware_report):
         self.hardware_report = hardware_report
         self.ocl_patched_macos_version = None
@@ -431,4 +456,9 @@ class CompatibilityChecker:
         print("")
         self.utils.request_input()
 
-        return hardware_report, (self.min_native_macos_version, self.max_native_macos_version), self.ocl_patched_macos_version
+        return (
+            hardware_report,
+            (self.min_native_macos_version, self.max_native_macos_version),
+            self.ocl_patched_macos_version,
+            self.get_suggested_macos_version()
+        )
