@@ -1,5 +1,4 @@
-from Scripts import integrity_checker
-from Scripts import utils
+import hashlib
 import ssl
 import os
 import json
@@ -26,8 +25,6 @@ class ResourceFetcher:
         }
         self.buffer_size = 16 * 1024
         self.ssl_context = self.create_ssl_context()
-        self.integrity_checker = integrity_checker.IntegrityChecker()
-        self.utils = utils.Utils()
 
     def create_ssl_context(self):
         try:
@@ -105,12 +102,14 @@ class ResourceFetcher:
         return None
 
     def _download_with_progress(self, response, local_file):
+        sha256 = hashlib.sha256()
+        show_progress = sys.stdout.isatty()
         total_size = response.getheader("Content-Length")
         if total_size:
             total_size = int(total_size)
         bytes_downloaded = 0
-        start_time = time.time()
-        last_time = start_time
+        last_time = time.monotonic()
+        last_progress = last_time
         last_bytes = 0
         speeds = []
 
@@ -121,9 +120,15 @@ class ResourceFetcher:
             if not chunk:
                 break
             local_file.write(chunk)
+            sha256.update(chunk)
             bytes_downloaded += len(chunk)
             
-            current_time = time.time()
+            if not show_progress:
+                continue
+            current_time = time.monotonic()
+            if current_time - last_progress < 0.1 and bytes_downloaded != total_size:
+                continue
+            last_progress = current_time
             time_diff = current_time - last_time
             
             if time_diff > 0.5:
@@ -145,15 +150,16 @@ class ResourceFetcher:
                 percent = int(bytes_downloaded / total_size * 100)
                 bar_length = 40
                 filled = int(bar_length * bytes_downloaded / total_size)
-                bar = "█" * filled + "░" * (bar_length - filled)
+                bar = "#" * filled + "-" * (bar_length - filled)
                 progress = "{} [{}] {:3d}% {:.1f}/{:.1f}MB".format(speed_str, bar, percent, bytes_downloaded/(1024*1024), total_size/(1024*1024))
             else:
                 progress = "{} {:.1f}MB downloaded".format(speed_str, bytes_downloaded/(1024*1024))
             
-            print(" " * 80, end="\r")
-            print(progress, end="\r")
+            print(progress.ljust(80), end="\r", flush=True)
             
-        print()
+        if show_progress:
+            print()
+        return sha256.hexdigest()
 
     def download_and_save_file(self, resource_url, destination_path, sha256_hash=None):
         attempt = 0
@@ -167,12 +173,11 @@ class ResourceFetcher:
                 continue
 
             with open(destination_path, "wb") as local_file:
-                self._download_with_progress(response, local_file)
+                downloaded_hash = self._download_with_progress(response, local_file)
 
             if os.path.exists(destination_path) and os.path.getsize(destination_path) > 0:
                 if sha256_hash:
                     print("Verifying SHA256 checksum...")
-                    downloaded_hash = self.integrity_checker.get_sha256(destination_path)
                     if downloaded_hash.lower() == sha256_hash.lower():
                         print("Checksum verified successfully.")
                         return True
