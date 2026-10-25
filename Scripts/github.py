@@ -2,6 +2,8 @@ from Scripts import resource_fetcher
 from Scripts import utils
 import random
 import json
+import re
+from urllib.parse import quote
 
 class Github:
     def __init__(self):
@@ -9,39 +11,32 @@ class Github:
         self.fetcher = resource_fetcher.ResourceFetcher()
 
     def extract_payload(self, response):
-        for line in response.splitlines():
-            if "type=\"application/json\"" in line:
-                payload = line.split(">", 1)[1].split("<", 1)[0]
-
-                try:
-                    payload = json.loads(payload)
-                    payload = payload["payload"]
-                except:
-                    continue
-
+        for script in re.findall(r"<script\b[^>]*>(.*?)</script\s*>", response, re.I | re.S):
+            try:
+                document = json.loads(script)
+            except json.JSONDecodeError:
+                continue
+            payload = document.get("payload") if isinstance(document, dict) else None
+            if isinstance(payload, dict):
+                payload = payload.get("commitsRefRoute", payload)
+            if isinstance(payload, dict) and "currentCommit" in payload:
                 return payload
         return None
         
-    def get_commits(self, owner, repo, branch="main", start_commit=None, after=-1):
-        if after > -1 and not start_commit:
-            start_commit = self.get_commits(owner, repo, branch)["currentCommit"]["oid"]
-
-        if after < 0:
-            url = "https://github.com/{}/{}/commits/{}".format(owner, repo, branch)
-        else:
-            url = "https://github.com/{}/{}/commits/{}?after={}+{}".format(owner, repo, branch, start_commit, after)
-
+    def get_commits(self, owner, repo, branch="main"):
+        """Read branch-head metadata without requiring API credentials or quota."""
+        url = "https://github.com/{}/{}/commits/{}".format(
+            quote(owner, safe=""), quote(repo, safe=""), quote(branch, safe="")
+        )
         response = self.fetcher.fetch_and_parse_content(url)
-
         if not response:
             raise ValueError("Failed to fetch commit information from GitHub.")
-
         payload = self.extract_payload(response)
-
-        if not "commitGroups" in payload:
+        current = payload.get("currentCommit") if payload else None
+        sha = current.get("oid") if isinstance(current, dict) else None
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", sha):
             raise ValueError("Cannot find commit information for repository {} on branch {}.".format(repo, branch))
-        
-        return payload
+        return {"sha": sha.lower(), "url": url}
 
     def get_latest_release(self, owner, repo):
         url = "https://github.com/{}/{}/releases".format(owner, repo)

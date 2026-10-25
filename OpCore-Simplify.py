@@ -113,6 +113,9 @@ class OCPE:
         while True:
             self.u.head("OpenCore Legacy Patcher Warning")
             print("")
+            if self.k.kexts[kext_maestro.kext_data.kext_index_by_name["WhateverXe"]].checked:
+                print(" * WhateverXe uses AMFIPass Mod. Use https://github.com/b00t0x/OpenCore-Legacy-Patcher for ALL OCLP patches, including graphics, Wi-Fi and audio.")
+            print("")
             print("\033[1;96mWhy it is required:\033[0m")
             print("- Restores compatibility for GPUs and Broadcom WiFi.")
             if is_tahoe:
@@ -436,9 +439,11 @@ class OCPE:
                 self.u.request_input("Press Enter to main menu...")
 
 if __name__ == '__main__':
-    update_flag = updater.Updater().run_update()
-    if update_flag:
-        os.execv(sys.executable, ['python3'] + sys.argv)
+    update_status = updater.Updater().run_update()
+    if update_status == "updated":
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+    if update_status == "recovery_required":
+        raise SystemExit("Update recovery is required before continuing.")
 
     o = OCPE()
     while True:
