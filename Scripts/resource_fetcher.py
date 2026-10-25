@@ -8,6 +8,7 @@ import sys
 import gzip
 import zlib
 import time
+from functools import lru_cache
 
 if sys.version_info >= (3, 0):
     from urllib.request import urlopen, Request
@@ -18,32 +19,33 @@ else:
 
 MAX_ATTEMPTS = 3
 
+
+@lru_cache(maxsize=1)
+def get_ssl_context():
+    context = ssl.create_default_context()
+    try:
+        import certifi
+    except ModuleNotFoundError as error:
+        if error.name != "certifi":
+            raise
+        return context
+    context.load_verify_locations(cafile=certifi.where())
+    return context
+
+
 class ResourceFetcher:
     def __init__(self, headers=None):
         self.request_headers = headers or {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         }
         self.buffer_size = 16 * 1024
-        self.ssl_context = self.create_ssl_context()
-
-    def create_ssl_context(self):
-        try:
-            cafile = ssl.get_default_verify_paths().openssl_cafile
-            if not os.path.exists(cafile):
-                import certifi
-                cafile = certifi.where()
-            ssl_context = ssl.create_default_context(cafile=cafile)
-        except Exception as e:
-            print("Failed to create SSL context: {}".format(e))
-            ssl_context = ssl._create_unverified_context()
-        return ssl_context
 
     def _make_request(self, resource_url, timeout=10):
         try:
             headers = dict(self.request_headers)
             headers["Accept-Encoding"] = "gzip, deflate"
             
-            return urlopen(Request(resource_url, headers=headers), timeout=timeout, context=self.ssl_context)
+            return urlopen(Request(resource_url, headers=headers), timeout=timeout, context=get_ssl_context())
         except socket.timeout as e:
             print("Timeout error: {}".format(e))
         except ssl.SSLError as e:

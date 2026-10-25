@@ -7,7 +7,6 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
-import ssl
 import zipfile
 
 
@@ -203,9 +202,6 @@ class Updater:
             self.utils.request_input("Press Enter to exit...")
             return "recovery_required"
         try:
-            context = ssl.create_default_context()
-            self.github.fetcher.ssl_context = context
-            self.fetcher.ssl_context = context
             current = self.get_current_sha_version()
             print("Checking for updates...")
             latest = self.github.get_commits("lzhoang2801", "OpCore-Simplify")
