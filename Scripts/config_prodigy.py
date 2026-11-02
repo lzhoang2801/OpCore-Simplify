@@ -1,6 +1,7 @@
 from Scripts.datasets import chipset_data
 from Scripts.datasets import cpu_data
 from Scripts.datasets import mac_model_data
+from Scripts.datasets import gpu_data
 from Scripts.datasets import kext_data
 from Scripts.datasets import os_data
 from Scripts.datasets import pci_data
@@ -318,7 +319,7 @@ class ConfigProdigy:
 
             deviceproperties_add[pci_path].update(properties)
 
-        if kexts[kext_data.kext_index_by_name.get("WhateverGreen")].checked:
+        if kexts[kext_data.kext_index_by_name["WhateverGreen"]].checked:
             for gpu_name, gpu_info in hardware_report.get("GPU", {}).items():
                 if gpu_info.get("Device Type") == "Integrated GPU":
                     if "Intel" in gpu_info.get("Manufacturer"):
@@ -328,7 +329,7 @@ class ConfigProdigy:
                             hardware_report.get("Monitor", {}),
                             macos_version
                         ))
-                        if deviceproperties_add[gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")]:
+                        if deviceproperties_add.get(gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)")):
                             if gpu_info.get("Codename") in ("Sandy Bridge", "Ivy Bridge"):
                                 for device_name, device_info in hardware_report.get("System Devices", {}).items():
                                     device_id = device_info.get("Device ID")
@@ -347,6 +348,13 @@ class ConfigProdigy:
                     add_device_property(gpu_info.get("PCI Path"), {
                         "device-id": self.utils.to_little_endian_hex(pci_data.SpoofGPUIDs.get(gpu_info.get("Device ID")).split("-")[-1]),
                         "model": gpu_name
+                    })
+        elif kexts[kext_data.kext_index_by_name["WhateverXe"]].checked:
+            for gpu_info in hardware_report.get("GPU", {}).values():
+                if "Intel" in gpu_info.get("Manufacturer", "") and gpu_info.get("Device ID", "")[5:] in gpu_data.WhateverXeDeviceIDs:
+                    add_device_property(gpu_info.get("PCI Path", "PciRoot(0x0)/Pci(0x2,0x0)"), {
+                        "framebuffer-stolenmem": "0000C003",
+                        "framebuffer-patch-enable": "01000000"
                     })
         
         if kexts[kext_data.kext_index_by_name.get("AppleALC")].checked:
@@ -565,6 +573,8 @@ class ConfigProdigy:
                             boot_args.append("-radvesa" if self.utils.parse_darwin_version(macos_version) < self.utils.parse_darwin_version("23.0.0") else "-amd_no_dgpu_accel")
                         elif discrete_gpu.get("Manufacturer") == "NVIDIA" and not "Kepler" in discrete_gpu.get("Codename"):
                             boot_args.extend(("nvda_drv_vrl=1", "ngfxcompat=1", "ngfxgl=1"))
+            elif kext.name == "WhateverXe":
+                boot_args.extend(("-allow3d", "-disablegfxfirmware", "-igfxdvmt"))
             elif kext.name == "AppleALC":
                 selected_layout_id, _ = self.select_audio_codec_layout(hardware_report, config)
 

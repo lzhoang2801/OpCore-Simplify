@@ -79,6 +79,8 @@ class gatheringFiles:
 
             if kext.download_info:
                 add_product_info({"product_name": kext.name, **kext.download_info})
+                if kext.name == "AMFIPass":
+                    latest_products["AMFIPass-b00t0x"] = kext_maestro.kext_data.AMFIPassModDownloadInfo.copy()
             elif kext.name == "AirportItlwm-laobamac":
                 release = self.github.get_latest_release(kext.github_repo["owner"], kext.github_repo["repo"]) or {}
                 for asset in release.get("assets", []):
@@ -194,6 +196,7 @@ class gatheringFiles:
                 continue
 
             product_name = product.name if not isinstance(product, dict) else product.get("Name")
+            bundle_name = product_name
             
             if product_name == "AirportItlwm":
                 version = macos_version[:2]
@@ -206,26 +209,26 @@ class gatheringFiles:
                 product_name += version
             elif product_name == "AirportItlwm-laobamac":
                 product_name += macos_version[:2]
-            elif "VoodooPS2" in product_name:
-                product_name = "VoodooPS2"
-            elif product_name == "BlueToolFixup" or product_name.startswith("Brcm"):
-                product_name = "BrcmPatchRAM"
+                bundle_name = "AirportItlwm"
+            elif product_name == "AMFIPass" and any(kext.checked and kext.name == "WhateverXe" for kext in kexts):
+                product_name = "AMFIPass-b00t0x"
             elif product_name.startswith("Ath3kBT"):
                 product_name = "Ath3kBT"
-            elif product_name.startswith("IntelB"):
-                product_name = "IntelBluetoothFirmware"
-            elif product_name.startswith("VoodooI2C"):
-                product_name = "VoodooI2C"
             elif product_name == "UTBDefault":
                 product_name = "USBToolBox"
+            elif not isinstance(product, dict) and not product.download_info and product.github_repo and product_name not in latest_products:
+                product_name = product.github_repo["repo"]
+
+            if bundle_name == "Feixiao":
+                bundle_name = "rtw88"
 
             product_info = latest_products.get(product_name)
-            if product_info is None:
-                if hasattr(product, 'github_repo') and product.github_repo and product.name not in ("AirportItlwm", "AirportItlwm-laobamac"):
-                    product_info = latest_products.get(product.github_repo.get("repo"))
             
             if product_info is None:
                 raise ValueError("Could not find download information for {}.".format(product_name))
+
+            if not isinstance(product, dict):
+                product.source_path = os.path.join(self.ock_files_dir, product_name, bundle_name + ".kext")
 
             product_id = product_info.get("id")
             product_download_url = product_info.get("url")

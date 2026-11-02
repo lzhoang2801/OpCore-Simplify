@@ -114,17 +114,19 @@ class CompatibilityChecker:
             navi_requires_developer_mode = False
 
             if "Intel" in gpu_manufacturer:
-                if device_id.startswith(("0042", "0046")) and self.hardware_report.get("Motherboard").get("Platform") != "Desktop":
+                if device_id in gpu_data.WhateverXeDeviceIDs:
+                    min_version = "20.0.0"
+                elif device_id in gpu_data.IntelGPUDeviceIDs["Iron Lake"] and self.hardware_report.get("Motherboard").get("Platform") != "Desktop":
                     max_version = "17.99.99"
-                elif device_id.startswith("01") and not device_id[-2] in ("5", "6") and not device_id in ("0102", "0106", "010A"):
+                elif device_id in gpu_data.IntelGPUDeviceIDs["Sandy Bridge"] and device_id not in ("0102", "0106", "010A"):
                     max_version = "17.99.99"
-                elif device_id.startswith("01") and not device_id in ("0152", "0156"):
+                elif device_id in gpu_data.IntelGPUDeviceIDs["Ivy Bridge"] and device_id not in ("0152", "0156"):
                     max_version = "20.99.99"
-                elif device_id.startswith(("04", "0A", "0C", "0D", "0B", "16")):
+                elif device_id in gpu_data.IntelGPUDeviceIDs["Haswell"] | gpu_data.IntelGPUDeviceIDs["Broadwell"]:
                     max_version = "21.99.99"
-                elif device_id.startswith(("09", "19", "59", "3E", "87", "9B")) and not device_id in ("3E90", "3E93", "3E99", "3E9C", "3EA1", "3EA4", "9B21", "9BA0", "9BA2", "9BA4", "9BA5", "9BA8", "9BAA", "9BAB", "9BAC"):
+                elif device_id in gpu_data.IntelGPUDeviceIDs["Skylake"] | gpu_data.IntelGPUDeviceIDs["Kaby Lake"] | gpu_data.IntelGPUDeviceIDs["Coffee Lake"] and device_id not in ("3E90", "3E93", "3E99", "3E9C", "3EA1", "3EA4", "9B21", "9BA0", "9BA2", "9BA4", "9BA5", "9BA8", "9BAA", "9BAB", "9BAC"):
                     pass
-                elif device_id.startswith("8A"):
+                elif device_id in gpu_data.IntelGPUDeviceIDs["Ice Lake"]:
                     min_version = "19.4.0"
                 else:
                     max_version = min_version = None
