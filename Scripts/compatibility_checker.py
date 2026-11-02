@@ -392,10 +392,7 @@ class CompatibilityChecker:
             max_version = os_data.get_latest_darwin_version()
             min_version = os_data.get_lowest_darwin_version()
 
-            if device_id in pci_data.RealtekCardReaderIDs:
-                if device_id in pci_data.RealtekCardReaderIDs[:5]:
-                    max_version = "23.99.99"                
-            else:
+            if not device_id in pci_data.RealtekCardReaderIDs:
                 max_version = min_version = None
 
             controller_props["Compatibility"] = (max_version, min_version)

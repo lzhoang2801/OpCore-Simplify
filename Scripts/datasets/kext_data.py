@@ -805,11 +805,9 @@ kexts = [
         name="RealtekCardReader",
         description="Realtek PCIe/USB-based SD card reader driver",
         category="Card Reader",
-        min_darwin_version="18.0.0",
-        max_darwin_version="23.99.99",
         conflict_group_id="RealtekCardReader",
         github_repo={
-            "owner": "0xFireWolf",
+            "owner": "Baio1977",
             "repo": "RealtekCardReader"
         }
     ),
@@ -817,11 +815,9 @@ kexts = [
         name="RealtekCardReaderFriend",
         description="Makes System Information recognize your Realtek card reader",
         category="Card Reader",
-        min_darwin_version="18.0.0",
-        max_darwin_version="22.99.99",
         requires_kexts=["Lilu", "RealtekCardReader"],
         github_repo={
-            "owner": "0xFireWolf",
+            "owner": "Baio1977",
             "repo": "RealtekCardReaderFriend"
         }
     ),
