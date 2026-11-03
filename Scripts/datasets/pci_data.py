@@ -584,8 +584,15 @@ rtw89WiFiIDs = [
     "10EC-C852",
 ]
 
+MediaTekWiFiIDs = [
+    "14C3-7961",
+    "14C3-0608",
+    "14C3-0616",
+    "14C3-7922"
+]
+
 WirelessCardIDs = AtherosWiFiIDs + BroadcomWiFiIDs + \
-    IntelWiFiIDs + rtw88WiFiIDs + rtw89WiFiIDs
+    IntelWiFiIDs + rtw88WiFiIDs + rtw89WiFiIDs + MediaTekWiFiIDs
 
 AppleIGBIDs = [
     # AppleIGB.kext
