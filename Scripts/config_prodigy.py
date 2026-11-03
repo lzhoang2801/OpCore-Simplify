@@ -446,6 +446,17 @@ class ConfigProdigy:
                 "Strategy": "Exclude"
             })
 
+            if (kexts[kext_data.kext_index_by_name["LucyRTL8125Ethernet"]].checked or kexts[kext_data.kext_index_by_name["RTL812xLucy"]].checked) and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
+                kernel_block.append({
+                    "Arch": "x86_64",
+                    "Comment": "Prevent AppleEthernetRL boot panic with downgraded IOSkywalkFamily",
+                    "Enabled": True,
+                    "Identifier": "com.apple.driver.AppleEthernetRL",
+                    "MaxKernel": "",
+                    "MinKernel": "25.0.0",
+                    "Strategy": "Exclude"
+                })
+
         if modern_nvidia_gpus:
             kernel_block.append({
                 "Arch": "x86_64",
