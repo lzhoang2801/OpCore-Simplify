@@ -273,8 +273,6 @@ class KextMaestro:
                 if selected_name == "AirportItlwm" and darwin_major >= 24:
                     needs_oclp = True
                     selected_kexts.append("IOSkywalkFamily")
-                    if darwin_major >= 25:
-                        selected_kexts.append("AirPortBrcmNIC-Tahoe")
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 selected_kexts.append("corecaptureElCap")
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
@@ -283,6 +281,11 @@ class KextMaestro:
                     selected_kexts.append("AMFIPass")
             elif device_id in pci_data.rtw88WiFiIDs:
                 selected_kexts.append("Feixiao")
+            elif device_id in pci_data.rtw89WiFiIDs:
+                selected_kexts.append("AirportRTW89")
+                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
+                    needs_oclp = True
+                    selected_kexts.append("IOSkywalkFamily")
             elif device_id in pci_data.IntelI22XIDs:
                 selected_kexts.append("AppleIGC")
             elif device_id in pci_data.AtherosE2200IDs:
@@ -631,7 +634,8 @@ class KextMaestro:
 
                 bundle_list.append(bundle_info)
 
-        bundle_dict = {bundle["BundleIdentifier"]: bundle for bundle in bundle_list}
+        bundle_dict = {bundle["BundleIdentifier"]
+            : bundle for bundle in bundle_list}
 
         sorted_bundles = []
 
@@ -648,7 +652,8 @@ class KextMaestro:
             bundle["MaxKernel"] = os_data.get_latest_darwin_version()
             bundle["MinKernel"] = os_data.get_lowest_darwin_version()
 
-            registry_name = "Feixiao" if kext_name == "rtw88" else kext_name
+            registry_name = {"rtw88": "Feixiao", "AirportRTW": "AirportRTW89"}.get(
+                kext_name, kext_name)
             selected_kext = next((kext for kext in self.kexts if kext.checked and
                                   (kext.name == registry_name or kext.name.startswith(registry_name + "-"))), None)
             if selected_kext is not None:

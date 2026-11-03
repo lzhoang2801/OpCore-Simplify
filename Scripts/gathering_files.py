@@ -207,6 +207,8 @@ class gatheringFiles:
                 elif self.utils.parse_darwin_version("23.0.0") <= self.utils.parse_darwin_version(macos_version):
                     version = "23.0"
                 product_name += version
+            elif product_name == "AirportRTW89":
+                product_name = bundle_name = "AirportRTW"
             elif product_name == "AirportItlwm-laobamac":
                 product_name += macos_version[:2]
                 bundle_name = "AirportItlwm"

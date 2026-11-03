@@ -301,6 +301,9 @@ class CompatibilityChecker:
                 max_version = "17.99.99"
             elif device_id in pci_data.AtherosWiFiIDs[8:]:
                 max_version = "20.99.99"
+            elif device_id in pci_data.rtw89WiFiIDs:
+                max_version = "22.99.99"
+                ocl_patched_min_version = "23.0.0"
             elif device_id in pci_data.IntelI22XIDs:
                 min_version = "19.0.0"
             elif device_id in pci_data.AquantiaAqtionIDs:

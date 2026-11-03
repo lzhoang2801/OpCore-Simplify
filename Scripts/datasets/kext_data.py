@@ -241,7 +241,7 @@ kexts = [
     ),
     KextInfo(
         name="AirportRTW89",
-        description="",
+        description="Realtek RTW89 PCIe Wi-Fi driver",
         category="Wi-Fi",
         github_repo={
             "owner": "achcyano",
@@ -261,7 +261,7 @@ kexts = [
     ),
     KextInfo(
         name="Feixiao",
-        description="Realtek WLAN (rtw88) driver for macOS",
+        description="Realtek WLAN (rtw88) driver",
         category="Wi-Fi",
         min_darwin_version="20.0.0",
         github_repo={

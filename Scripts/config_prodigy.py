@@ -513,11 +513,13 @@ class ConfigProdigy:
         if provide_current_cpu_info and kexts[kext_data.kext_index_by_name.get("CpuTopologyRebuild")].checked:
             kernel_patch.extend(self.g.get_kernel_patches(
                 "Hyper Threading Patches", self.g.hyper_threading_patches_url))
-        elif kexts[kext_data.kext_index_by_name.get("ForgedInvariant")].checked:
+
+        if kexts[kext_data.kext_index_by_name.get("ForgedInvariant")].checked:
             if not "AMD" in cpu_manufacturer:
                 kernel_patch.extend(self.g.get_kernel_patches(
                     "AMD Vanilla Patches", self.g.amd_vanilla_patches_url)[-6:-4])
-        elif kexts[kext_data.kext_index_by_name.get("CatalinaBCM5701Ethernet")].checked:
+
+        if kexts[kext_data.kext_index_by_name.get("CatalinaBCM5701Ethernet")].checked:
             kernel_patch.append({
                 "Arch": "Any",
                 "Base": "",
@@ -534,6 +536,32 @@ class ConfigProdigy:
                 "ReplaceMask": self.utils.hex_to_bytes(""),
                 "Skip": 0
             })
+
+        if kexts[kext_data.kext_index_by_name["AirportRTW89"]].checked and self.utils.parse_darwin_version("23.0.0") <= self.utils.parse_darwin_version(macos_version) <= self.utils.parse_darwin_version("24.99.99"):
+            for comment, find, replace in (
+                ("Scan parameter override", "4C89FEE82B0100004C89F74C89FEE810090000",
+                 "BE01000000E8D31A0000909090909090909090"),
+                ("StartScan rsi override & redirect",
+                 "4889DEE8E9F2FFFF", "6A015EE8A3040000"),
+                ("Node bypass conditional jump NOP",
+                 "4180BE502A0000000F8553010000", "4180BE502A000000909090909090"),
+            ):
+                kernel_patch.append({
+                    "Arch": "x86_64",
+                    "Base": "",
+                    "Comment": "AirportRTW89: " + comment,
+                    "Count": 1,
+                    "Enabled": True,
+                    "Find": self.utils.hex_to_bytes(find),
+                    "Identifier": "com.apple.iokit.IO80211FamilyLegacy",
+                    "Limit": 0,
+                    "Mask": self.utils.hex_to_bytes(""),
+                    "MaxKernel": "24.99.99",
+                    "MinKernel": "23.0.0",
+                    "Replace": self.utils.hex_to_bytes(replace),
+                    "ReplaceMask": self.utils.hex_to_bytes(""),
+                    "Skip": 0,
+                })
 
         latest_darwin_version = (os_data.get_latest_darwin_version(
         ), os_data.get_latest_darwin_version(include_beta=False))
