@@ -313,6 +313,19 @@ kexts = [
         }
     ),
     KextInfo(
+        name="AirportMtkWlan",
+        description="Native macOS Wi-Fi driver for MediaTek MT7921/MT7922",
+        category="Wireless",
+        requires_kexts=[],
+        min_darwin_version="24.0.0",
+        max_darwin_version="25.99.99",
+        allow_force_load=True,
+        github_repo={
+            "owner": "Arxusion",
+            "repo": "AirportMtkWlan"
+        }
+    ),
+    KextInfo(
         name="Ath3kBT",
         description="Uploads firmware to enable Atheros Bluetooth support",
         category="Bluetooth",
