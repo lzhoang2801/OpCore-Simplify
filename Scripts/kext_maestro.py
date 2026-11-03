@@ -273,6 +273,20 @@ class KextMaestro:
                 if selected_name == "AirportItlwm" and darwin_major >= 24:
                     needs_oclp = True
                     selected_kexts.append("IOSkywalkFamily")
+            elif device_id in pci_data.MediaTekWiFiIDs:
+                print("\n*** Found {} is MediaTek WiFi device.".format(network_name))
+                print("")
+                darwin_major = self.utils.parse_darwin_version(macos_version)[0]
+                
+                if darwin_major >= 24:
+                    print("\033[1;93mNote:\033[0m MediaTek card supported natively via AirportMtkWlan.")
+                    selected_name = "AirportMtkWlan"
+                    needs_oclp = False
+                else:
+                    print("\033[1;93mNote:\033[0m macOS version older than Sequoia requires alternative handling.")
+                    selected_name = "SimpleMtkWlan"
+                    
+                selected_kexts.append(selected_name)
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
                 selected_kexts.append("corecaptureElCap")
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
