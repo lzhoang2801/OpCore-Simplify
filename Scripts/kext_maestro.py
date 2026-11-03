@@ -430,6 +430,19 @@ class KextMaestro:
                 else:
                     selected_kexts.append("WhateverGreen")
             else:
+                if gpu_props.get("Codename") in ("Turing", "Ampere", "Ada Lovelace", "Blackwell"):
+                    print("\n*** Found {} is NVIDIA {} GPU.".format(gpu_name,
+                          gpu_props.get("Codename")))
+                    print("")
+                    print(
+                        "\033[91mImportant:\033[0m NullMoth NVIDIA driver is experimental.")
+                    print(
+                        "Driver installation guide: https://github.com/HighDelay/nvidia-macos-driver-nvk")
+                    print("")
+                    self.utils.request_input("Press Enter to continue...")
+                    selected_kexts.append("AMFIPass")
+                    continue
+
                 if "Navi 22" in gpu_props.get("Codename"):
                     selected_kexts.append("NootRX")
                     break
