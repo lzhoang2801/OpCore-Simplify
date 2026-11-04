@@ -1428,10 +1428,24 @@ UnsupportedSATAControllerIDs = [
     "8086-A353"
 ]
 
-IntelVMDIDs = [
+# Resource: https://github.com/torvalds/linux/blob/master/drivers/pci/controller/vmd.c
+IntelVMDIDs = {
     "8086-09AB",
-    "8086-467F"
-]
+    "8086-201D",
+    "8086-28C0",
+    "8086-28C1",
+    "8086-467F",
+    "8086-4C3D",
+    "8086-7D0B",
+    "8086-9A0B",
+    "8086-A77F",
+    "8086-AD0B",
+    "8086-B06F",
+    "8086-B07F",
+    "8086-B60B",
+    "8086-D70B",
+    "8086-D73B"
+}
 
 # Resource: https://pci-ids.ucw.cz/
 UnsupportedNVMeSSDIDs = {
