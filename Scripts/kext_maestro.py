@@ -172,19 +172,19 @@ class KextMaestro:
                     "\n\033[1;93mNote:\033[0m macOS Tahoe no longer includes AppleHDA. AppleALC needs one of these restoration methods.")
                 print("")
                 print(
-                    "1. \033[1mAppleALC + OCLP\033[0m - Restores AppleHDA with a system root patch")
+                    "1. \033[1mAppleALC + SimpleHDA\033[0m - OpenCore injection without audio root patches")
                 print(
-                    "2. \033[1mAppleALC + SimpleHDA\033[0m - OpenCore injection without audio root patches")
+                    "2. \033[1mAppleALC + OCLP\033[0m - Restores AppleHDA with a system root patch")
                 print("")
                 while True:
                     kext_option = self.utils.request_input(
                         "Select audio kext for your system: ").strip()
                     if kext_option == "1":
-                        needs_oclp = True
-                        selected_kexts.append("AppleALC")
+                        selected_kexts.extend(("AppleALC", "SimpleHDA"))
                         break
                     elif kext_option == "2":
-                        selected_kexts.extend(("AppleALC", "SimpleHDA"))
+                        needs_oclp = True
+                        selected_kexts.append("AppleALC")
                         break
                     else:
                         print(
@@ -213,9 +213,27 @@ class KextMaestro:
             device_id = network_props.get("Device ID")
 
             if device_id in pci_data.BroadcomWiFiIDs and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
-                selected_kexts.append("IOSkywalkFamily")
-                if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                    selected_kexts.append("AirPortBrcmNIC-Tahoe")
+                print("\n*** Found {} is Broadcom WiFi device.".format(network_name))
+                print("")
+                print(
+                    "1. \033[1mSimpleBCM\033[0m - Uses native Skywalk without Wi-Fi root patches")
+                print(
+                    "2. \033[1mIOSkywalkFamily + OCLP\033[0m - Downgrades Skywalk and requires Wi-Fi root patches")
+                print("")
+                wifi_options = ["SimpleBCM", "IOSkywalkFamily"]
+                recommended_option = 1
+                choice = self.utils.request_input("Select Broadcom Wi-Fi kext (default: {}): ".format(
+                    wifi_options[recommended_option - 1])).strip() or str(recommended_option)
+                if not choice.isdigit() or not 1 <= int(choice) <= len(wifi_options):
+                    print("Invalid selection, using recommended option: {}".format(
+                        recommended_option))
+                    choice = str(recommended_option)
+                selected_name = wifi_options[int(choice) - 1]
+                selected_kexts.append(selected_name)
+                if selected_name == "IOSkywalkFamily":
+                    needs_oclp = True
+                    if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
+                        selected_kexts.append("AirPortBrcmNIC-Tahoe")
 
             if device_id in pci_data.BroadcomWiFiIDs[:15]:
                 selected_kexts.append("AirportBrcmFixup")

@@ -180,7 +180,10 @@ kexts = [
         max_darwin_version="25.99.99",
         allow_force_load=False,
         requires_kexts=["Lilu", "AppleALC"],
-        github_repo={"owner": "laobamac", "repo": "SimpleHDA"}
+        github_repo={
+            "owner": "laobamac",
+            "repo": "SimpleHDA"
+        }
     ),
     KextInfo(
         name="AirPortAtheros40-Tahoe",
@@ -297,6 +300,7 @@ kexts = [
         category="Wi-Fi",
         min_darwin_version="23.0.0",
         requires_kexts=["AMFIPass", "IO80211FamilyLegacy"],
+        conflict_group_id="Skywalk",
         download_info={
             "id": 926584761,
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IOSkywalkFamily-v1.2.0.zip"
@@ -310,6 +314,17 @@ kexts = [
         github_repo={
             "owner": "DexterSLamb",
             "repo": "itlwm"
+        }
+    ),
+    KextInfo(
+        name="SimpleBCM",
+        description="Restore Broadcom Wi-Fi with native Skywalk without root patches",
+        category="Wi-Fi",
+        min_darwin_version="23.0.0",
+        conflict_group_id="Skywalk",
+        github_repo={
+            "owner": "laobamac",
+            "repo": "SimpleBCM"
         }
     ),
     KextInfo(
