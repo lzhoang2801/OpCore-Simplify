@@ -5,6 +5,7 @@ import json
 import re
 from urllib.parse import quote
 
+
 class Github:
     def __init__(self):
         self.utils = utils.Utils()
@@ -16,13 +17,14 @@ class Github:
                 document = json.loads(script)
             except json.JSONDecodeError:
                 continue
-            payload = document.get("payload") if isinstance(document, dict) else None
+            payload = document.get("payload") if isinstance(
+                document, dict) else None
             if isinstance(payload, dict):
                 payload = payload.get("commitsRefRoute", payload)
             if isinstance(payload, dict) and "currentCommit" in payload:
                 return payload
         return None
-        
+
     def get_commits(self, owner, repo, branch="main"):
         """Read branch-head metadata without requiring API credentials or quota."""
         url = "https://github.com/{}/{}/commits/{}".format(
@@ -35,7 +37,8 @@ class Github:
         current = payload.get("currentCommit") if payload else None
         sha = current.get("oid") if isinstance(current, dict) else None
         if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", sha):
-            raise ValueError("Cannot find commit information for repository {} on branch {}.".format(repo, branch))
+            raise ValueError(
+                "Cannot find commit information for repository {} on branch {}.".format(repo, branch))
         return {"sha": sha.lower(), "url": url}
 
     def get_latest_release(self, owner, repo):
@@ -43,16 +46,19 @@ class Github:
         response = self.fetcher.fetch_and_parse_content(url)
 
         if not response:
-            raise ValueError("Failed to fetch release information from GitHub.")
+            raise ValueError(
+                "Failed to fetch release information from GitHub.")
 
         tag_name = self._extract_tag_name(response)
         body = self._extract_body_content(response)
 
-        release_tag_url = "https://github.com/{}/{}/releases/expanded_assets/{}".format(owner, repo, tag_name)
+        release_tag_url = "https://github.com/{}/{}/releases/expanded_assets/{}".format(
+            owner, repo, tag_name)
         response = self.fetcher.fetch_and_parse_content(release_tag_url)
 
         if not response:
-            raise ValueError("Failed to fetch expanded assets information from GitHub.")
+            raise ValueError(
+                "Failed to fetch expanded assets information from GitHub.")
 
         assets = self._extract_assets(response)
 
@@ -88,18 +94,19 @@ class Github:
             elif in_li_block and "</li" in line:
                 if download_link and asset_id:
                     assets.append({
-                        "product_name": self.extract_asset_name(download_link.split("/")[-1]), 
-                        "id": int(asset_id), 
+                        "product_name": self.extract_asset_name(download_link.split("/")[-1]),
+                        "id": int(asset_id),
                         "url": "https://github.com" + download_link,
                         "sha256": sha256
                     })
                 in_li_block = False
 
-            if in_li_block:  
+            if in_li_block:
                 if download_link is None and "<a" in line and "href=\"" in line and "/releases/download" in line:
-                    download_link = line.split("href=\"", 1)[1].split("\"", 1)[0]
+                    download_link = line.split("href=\"", 1)[
+                        1].split("\"", 1)[0]
 
-                    if not ("tlwm" in download_link or ("tlwm" not in download_link and "RESEARCH" not in download_link.upper() and "DEBUG" not in download_link.upper())):
+                    if download_link.endswith(".sha256") or not ("tlwm" in download_link or ("tlwm" not in download_link and "RESEARCH" not in download_link.upper() and "DEBUG" not in download_link.upper())):
                         in_li_block = False
                         continue
 
