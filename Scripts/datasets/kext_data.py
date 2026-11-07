@@ -194,7 +194,7 @@ kexts = [
         requires_kexts=["IO80211ElCap"],
         download_info={
             "id": 716307761,
-            "url": "https://raw.githubusercontent.com/dortania/OpenCore-Legacy-Patcher/main/payloads/Kexts/Wifi/AirPortAtheros40-Tahoe-v1.0.0.zip"
+            "url": "https://raw.githubusercontent.com/dortania/OpenCore-Legacy-Patcher/main/payloads/Kexts/Wifi/AirPortAtheros40-Tahoe-v1.0.1.zip"
         }
     ),
     KextInfo(
