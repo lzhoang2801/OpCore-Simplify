@@ -85,7 +85,7 @@ class KextMaestro:
         if cpu_codename in cpu_data.IntelCPUGenerations[66:]:
             return "Xeon" in processor_name
 
-        return False
+        return cpu_codename in {"Gulftown", "Bloomfield"}
 
     def is_kext_compatible(self, kext, target_darwin_version):
         return self.utils.parse_darwin_version(kext.min_darwin_version) <= self.utils.parse_darwin_version(target_darwin_version) <= self.utils.parse_darwin_version(kext.max_darwin_version)

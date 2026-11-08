@@ -2430,11 +2430,11 @@ DefinitionBlock("", "SSDT", 2, "ZPSS", "RMNE", 0x00001000)
     def is_intel_hedt_cpu(self, processor_name, cpu_codename):
         if cpu_codename in cpu_data.IntelCPUGenerations[45:66]:
             return cpu_codename.endswith(("-X", "-P", "-W", "-E", "-EP", "-EX"))
-        
+
         if cpu_codename in cpu_data.IntelCPUGenerations[66:]:
             return "Xeon" in processor_name
-        
-        return False
+
+        return cpu_codename in {"Gulftown", "Bloomfield"}
     
     def fix_system_clock_hedt(self):
         awac_device = self.acpi.get_device_paths_with_hid("ACPI000E", self.dsdt)

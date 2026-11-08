@@ -480,7 +480,7 @@ class ConfigProdigy:
         if cpu_codename in cpu_data.IntelCPUGenerations[66:]:
             return "Xeon" in processor_name
 
-        return False
+        return cpu_codename in {"Gulftown", "Bloomfield"}
 
     def spoof_cpuid(self, processor_name, cpu_codename, macos_version):
         if self.is_low_end_haswell_plus(processor_name, cpu_codename):
@@ -742,7 +742,7 @@ class ConfigProdigy:
         config["Booter"]["Quirks"]["EnableSafeModeSlide"] = hardware_report.get(
             "BIOS").get("Firmware Type") == "UEFI"
         config["Booter"]["Quirks"]["EnableWriteUnprotector"] = not (hardware_report.get("BIOS").get("Firmware Type") == "Legacy" or "AMD" in hardware_report.get(
-            "CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[91:100] + chipset_data.IntelChipsets[112:])
+            "CPU").get("Manufacturer") or hardware_report.get("Motherboard").get("Chipset") in chipset_data.IntelChipsets[90:100] + chipset_data.IntelChipsets[112:])
         config["Booter"]["Quirks"]["ProtectMemoryRegions"] = "GOOGLE" in hardware_report.get("Motherboard").get("Name") or any(device_props.get("Device ID") in pci_data.ChromebookIDs and device_props.get(
             "Subsystem ID") in pci_data.ChromebookIDs[device_props.get("Device ID")] for device_props in hardware_report.get("System Devices", {}).values())
         config["Booter"]["Quirks"]["FixupAppleEfiImages"] = not (hardware_report.get("BIOS").get(
@@ -785,7 +785,7 @@ class ConfigProdigy:
         config["Kernel"]["Quirks"]["AppleXcpmCfgLock"] = False if "AMD" in hardware_report.get(
             "CPU").get("Manufacturer") else not config["Kernel"]["Quirks"]["AppleCpuPmCfgLock"]
         config["Kernel"]["Quirks"]["AppleXcpmExtraMsrs"] = self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get(
-            "CPU").get("Codename")) and hardware_report.get("CPU").get("Codename") in cpu_data.IntelCPUGenerations[50:]
+            "CPU").get("Codename"))
         config["Kernel"]["Quirks"]["AppleXcpmForceBoost"] = hardware_report.get(
             "CPU").get("Codename") in cpu_data.IntelCPUGenerations[:4]
         config["Kernel"]["Quirks"]["CustomSMBIOSGuid"] = True
