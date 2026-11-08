@@ -40,9 +40,11 @@ class ResourceFetcher:
         }
         self.buffer_size = 16 * 1024
 
-    def _make_request(self, resource_url, timeout=10):
+    def _make_request(self, resource_url, timeout=10, request_headers=None):
         try:
             headers = dict(self.request_headers)
+            if request_headers:
+                headers.update(request_headers)
             headers["Accept-Encoding"] = "gzip, deflate"
             
             return urlopen(Request(resource_url, headers=headers), timeout=timeout, context=get_ssl_context())
@@ -168,7 +170,10 @@ class ResourceFetcher:
 
         while attempt < MAX_ATTEMPTS:
             attempt += 1
-            response = self._make_request(resource_url)
+            request_headers = None
+            if resource_url.startswith("https://api.github.com/repos/") and "/releases/assets/" in resource_url:
+                request_headers = {"Accept": "application/octet-stream"}
+            response = self._make_request(resource_url, request_headers=request_headers)
 
             if not response:
                 print("Failed to fetch content from {}. Retrying...".format(resource_url))
