@@ -670,7 +670,7 @@ class KextMaestro:
             bundle["MaxKernel"] = os_data.get_latest_darwin_version()
             bundle["MinKernel"] = os_data.get_lowest_darwin_version()
 
-            registry_name = {"rtw88": "Feixiao", "AirportRTW": "AirportRTW89"}.get(
+            registry_name = {"rtw88": "Feixiao", "AirPort_RTW89": "AirportRTW89"}.get(
                 kext_name, kext_name)
             selected_kext = next((kext for kext in self.kexts if kext.checked and
                                   (kext.name == registry_name or kext.name.startswith(registry_name + "-"))), None)

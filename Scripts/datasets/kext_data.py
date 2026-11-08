@@ -247,8 +247,8 @@ kexts = [
         description="Realtek RTW89 PCIe Wi-Fi driver",
         category="Wi-Fi",
         github_repo={
-            "owner": "achcyano",
-            "repo": "AirportRTW89"
+            "owner": "FranciumOS-org",
+            "repo": "Airport_RTW89"
         }
     ),
     KextInfo(
