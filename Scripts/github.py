@@ -1,7 +1,5 @@
 from Scripts import resource_fetcher
 from Scripts import utils
-import random
-import json
 import re
 from urllib.parse import quote
 
@@ -11,118 +9,83 @@ class Github:
         self.utils = utils.Utils()
         self.fetcher = resource_fetcher.ResourceFetcher()
 
-    def extract_payload(self, response):
-        for script in re.findall(r"<script\b[^>]*>(.*?)</script\s*>", response, re.I | re.S):
-            try:
-                document = json.loads(script)
-            except json.JSONDecodeError:
-                continue
-            payload = document.get("payload") if isinstance(
-                document, dict) else None
-            if isinstance(payload, dict):
-                payload = payload.get("commitsRefRoute", payload)
-            if isinstance(payload, dict) and "currentCommit" in payload:
-                return payload
-        return None
-
     def get_commits(self, owner, repo, branch="main"):
-        """Read branch-head metadata without requiring API credentials or quota."""
-        url = "https://github.com/{}/{}/commits/{}".format(
+        """Read branch-head metadata from the GitHub API."""
+        url = "https://api.github.com/repos/{}/{}/commits/{}".format(
             quote(owner, safe=""), quote(repo, safe=""), quote(branch, safe="")
         )
-        response = self.fetcher.fetch_and_parse_content(url)
-        if not response:
-            raise ValueError("Failed to fetch commit information from GitHub.")
-        payload = self.extract_payload(response)
-        current = payload.get("currentCommit") if payload else None
-        sha = current.get("oid") if isinstance(current, dict) else None
+        response = self.fetcher.fetch_and_parse_content(url, "json")
+        if not isinstance(response, dict):
+            raise ValueError(
+                "Failed to fetch commit information from GitHub API. "
+                "Check the connection errors reported above.")
+        if "message" in response and "sha" not in response:
+            raise ValueError(
+                "GitHub API error for {}/{}: {}".format(owner, repo, response["message"]))
+
+        sha = response.get("sha")
         if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", sha):
             raise ValueError(
                 "Cannot find commit information for repository {} on branch {}.".format(repo, branch))
         return {"sha": sha.lower(), "url": url}
 
     def get_latest_release(self, owner, repo):
-        url = "https://github.com/{}/{}/releases".format(owner, repo)
-        response = self.fetcher.fetch_and_parse_content(url)
+        url = "https://api.github.com/repos/{}/{}/releases/latest".format(
+            quote(owner, safe=""), quote(repo, safe="")
+        )
+        response = self.fetcher.fetch_and_parse_content(url, "json")
 
-        if not response:
+        if response is None or (
+            isinstance(response, dict) and response.get("message") == "Not Found"
+        ):
+            releases_url = "https://api.github.com/repos/{}/{}/releases?per_page=1".format(
+                quote(owner, safe=""), quote(repo, safe="")
+            )
+            response = self.fetcher.fetch_and_parse_content(releases_url, "json")
+
+        if isinstance(response, dict):
+            if "message" in response and "assets" not in response:
+                raise ValueError(
+                    "GitHub API error for {}/{}: {}".format(owner, repo, response["message"]))
+            release = response
+        elif isinstance(response, list) and response and isinstance(response[0], dict):
+            release = response[0]
+        else:
             raise ValueError(
-                "Failed to fetch release information from GitHub.")
+                "Failed to fetch release information for {}/{} from GitHub API. "
+                "Check the connection errors reported above.".format(owner, repo))
 
-        tag_name = self._extract_tag_name(response)
-        body = self._extract_body_content(response)
+        assets = []
+        for asset in release.get("assets", []):
+            if not isinstance(asset, dict):
+                continue
 
-        release_tag_url = "https://github.com/{}/{}/releases/expanded_assets/{}".format(
-            owner, repo, tag_name)
-        response = self.fetcher.fetch_and_parse_content(release_tag_url)
+            name = asset.get("name")
+            download_url = asset.get("url")
+            asset_id = asset.get("id")
+            if not isinstance(name, str) or not isinstance(download_url, str) or not asset_id:
+                continue
+            if name.lower().endswith(".sha256") or "RESEARCH" in name.upper() or "DEBUG" in name.upper():
+                continue
 
-        if not response:
-            raise ValueError(
-                "Failed to fetch expanded assets information from GitHub.")
+            digest = asset.get("digest")
+            sha256 = None
+            if isinstance(digest, str):
+                match = re.fullmatch(r"sha256:([0-9a-fA-F]{64})", digest)
+                if match:
+                    sha256 = match.group(1).lower()
 
-        assets = self._extract_assets(response)
+            assets.append({
+                "product_name": self.extract_asset_name(name),
+                "id": int(asset_id),
+                "url": download_url,
+                "sha256": sha256
+            })
 
         return {
-            "body": body,
+            "body": release.get("body") or "",
             "assets": assets
         }
-
-    def _extract_tag_name(self, response):
-        for line in response.splitlines():
-            if "<a" in line and "href=\"" in line and "/releases/tag/" in line:
-                return line.split("/releases/tag/")[1].split("\"")[0]
-        return None
-
-    def _extract_body_content(self, response):
-        for line in response.splitlines():
-            if "<div" in line and "body-content" in line:
-                return response.split(line.split(">", 1)[0], 1)[1].split("</div>", 1)[0][1:]
-        return ""
-
-    def _extract_assets(self, response):
-        assets = []
-
-        in_li_block = False
-
-        for line in response.splitlines():
-
-            if "<li" in line:
-                in_li_block = True
-                download_link = None
-                sha256 = None
-                asset_id = None
-            elif in_li_block and "</li" in line:
-                if download_link and asset_id:
-                    assets.append({
-                        "product_name": self.extract_asset_name(download_link.split("/")[-1]),
-                        "id": int(asset_id),
-                        "url": "https://github.com" + download_link,
-                        "sha256": sha256
-                    })
-                in_li_block = False
-
-            if in_li_block:
-                if download_link is None and "<a" in line and "href=\"" in line and "/releases/download" in line:
-                    download_link = line.split("href=\"", 1)[
-                        1].split("\"", 1)[0]
-
-                    if download_link.endswith(".sha256") or not ("tlwm" in download_link or ("tlwm" not in download_link and "RESEARCH" not in download_link.upper() and "DEBUG" not in download_link.upper())):
-                        in_li_block = False
-                        continue
-
-                if sha256 is None and "sha256:" in line:
-                    sha256 = line.split("sha256:", 1)[1].split("<", 1)[0]
-
-                if asset_id is None and "<relative-time" in line:
-                    asset_id = self._generate_asset_id(line)
-
-        return assets
-
-    def _generate_asset_id(self, line):
-        try:
-            return "".join(char for char in line.split("datetime=\"")[-1].split("\"")[0][::-1] if char.isdigit())[:9]
-        except:
-            return "".join(random.choices('0123456789', k=9))
 
     def extract_asset_name(self, file_name):
         end_idx = len(file_name)
