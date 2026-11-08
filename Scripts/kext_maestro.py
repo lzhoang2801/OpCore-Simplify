@@ -301,9 +301,11 @@ class KextMaestro:
                 selected_kexts.append("Feixiao")
             elif device_id in pci_data.rtw89WiFiIDs:
                 selected_kexts.append("AirportRTW89")
+                selected_kexts.append("AMFIPass")
                 if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("23.0.0"):
                     needs_oclp = True
                     selected_kexts.append("IOSkywalkFamily")
+                    selected_kexts.append("IO80211FamilyLegacy")
             elif device_id in pci_data.IntelI22XIDs:
                 selected_kexts.append("AppleIGC")
             elif device_id in pci_data.AtherosE2200IDs:
@@ -670,7 +672,7 @@ class KextMaestro:
             bundle["MaxKernel"] = os_data.get_latest_darwin_version()
             bundle["MinKernel"] = os_data.get_lowest_darwin_version()
 
-            registry_name = {"rtw88": "Feixiao", "AirportRTW": "AirportRTW89"}.get(
+            registry_name = {"rtw88": "Feixiao", "AirPort_RTW89": "AirportRTW89"}.get(
                 kext_name, kext_name)
             selected_kext = next((kext for kext in self.kexts if kext.checked and
                                   (kext.name == registry_name or kext.name.startswith(registry_name + "-"))), None)

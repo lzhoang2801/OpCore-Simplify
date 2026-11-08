@@ -86,6 +86,11 @@ class gatheringFiles:
                 for asset in release.get("assets", []):
                     if "-RELEASE" in asset["url"] and asset["product_name"] in ("AirportItlwm24", "AirportItlwm25"):
                         add_product_info({**asset, "product_name": kext.name + asset["product_name"][-2:]})
+            elif kext.name == "AirportRTW89":
+                release = self.github.get_latest_release(kext.github_repo["owner"], kext.github_repo["repo"]) or {}
+                for asset in release.get("assets", []):
+                    if asset["url"].lower().endswith(".zip") and "tools" not in asset["url"].lower():
+                        add_product_info({**asset, "product_name": kext.github_repo["repo"]})
             elif kext.github_repo:
                 repository = (kext.github_repo["owner"], kext.github_repo["repo"])
                 if repository in seen_repos:
@@ -208,7 +213,8 @@ class gatheringFiles:
                     version = "23.0"
                 product_name += version
             elif product_name == "AirportRTW89":
-                product_name = bundle_name = "AirportRTW"
+                product_name = "Airport_RTW89"
+                bundle_name = "AirPort_RTW89"
             elif product_name == "AirportItlwm-laobamac":
                 product_name += macos_version[:2]
                 bundle_name = "AirportItlwm"
