@@ -304,7 +304,7 @@ class CompatibilityChecker:
             if device_id in set(pci_data.EthernetIDs) | set(pci_data.WirelessUSBIDs):
                 device_props["Compatibility"] = (max_version, min_version)
             elif device_id in pci_data.WirelessCardIDs:
-                if device_id in pci_data.AtherosWiFiIDs[:8]:
+                if device_id in pci_data.AtherosWiFiIDs[:8] or device_id in pci_data.rtw89WiFiIDs:
                     device_props["OCLP Compatibility"] = (
                         ocl_patched_max_version, ocl_patched_min_version)
                     self.ocl_patched_macos_version = (ocl_patched_max_version, self.ocl_patched_macos_version[-1] if self.ocl_patched_macos_version and self.utils.parse_darwin_version(

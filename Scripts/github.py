@@ -106,7 +106,7 @@ class Github:
                     download_link = line.split("href=\"", 1)[
                         1].split("\"", 1)[0]
 
-                    if "sha256" in download_link.lower() or not ("tlwm" in download_link or ("tlwm" not in download_link and "RESEARCH" not in download_link.upper() and "DEBUG" not in download_link.upper())):
+                    if "sha256" in download_link.lower() or "tools" in download_link.lower() or not ("tlwm" in download_link or ("tlwm" not in download_link and "RESEARCH" not in download_link.upper() and "DEBUG" not in download_link.upper())):
                         in_li_block = False
                         continue
 
@@ -144,6 +144,8 @@ class Github:
             asset_name += "-unsupported"
         elif "rtsx" in file_name:
             asset_name += "-rtsx"
+        elif "RTW89" in file_name:
+            asset_name += "_RTW89"
         elif "itlwm" in file_name.lower() or "BTLEAdvFixup" in file_name:
             if "Sequoia" in file_name:
                 asset_name += "24"

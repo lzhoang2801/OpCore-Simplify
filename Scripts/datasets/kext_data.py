@@ -243,12 +243,12 @@ kexts = [
         }
     ),
     KextInfo(
-        name="AirportRTW89",
+        name="AirPort_RTW89",
         description="Realtek RTW89 PCIe Wi-Fi driver",
         category="Wi-Fi",
         github_repo={
-            "owner": "achcyano",
-            "repo": "AirportRTW89"
+            "owner": "FranciumOS-org",
+            "repo": "AirPort_RTW89"
         }
     ),
     KextInfo(
@@ -289,6 +289,7 @@ kexts = [
         category="Wi-Fi",
         min_darwin_version="23.0.0",
         requires_kexts=["AMFIPass", "IOSkywalkFamily"],
+        allow_force_load=False,
         download_info={
             "id": 817294638,
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IO80211FamilyLegacy-v1.0.0.zip"
@@ -301,6 +302,7 @@ kexts = [
         min_darwin_version="23.0.0",
         requires_kexts=["AMFIPass", "IO80211FamilyLegacy"],
         conflict_group_id="Skywalk",
+        allow_force_load=False,
         download_info={
             "id": 926584761,
             "url": "https://github.com/dortania/OpenCore-Legacy-Patcher/raw/main/payloads/Kexts/Wifi/IOSkywalkFamily-v1.2.0.zip"
@@ -322,6 +324,7 @@ kexts = [
         category="Wi-Fi",
         min_darwin_version="23.0.0",
         conflict_group_id="Skywalk",
+        allow_force_load=False,
         github_repo={
             "owner": "laobamac",
             "repo": "SimpleBCM"
