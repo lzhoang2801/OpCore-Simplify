@@ -167,13 +167,9 @@ class KextMaestro:
             selected_kexts.append("RestrictEvents")
 
         if any(codec_properties.get("Device ID") in codec_layouts.data for codec_properties in hardware_report.get("Sound", {}).values()):
-            if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0"):
-                if not needs_oclp:
-                    selected_kexts.extend(("AppleALC", "SimpleHDA"))
-                else:
-                    selected_kexts.append("AppleALC")
-            else:
-                selected_kexts.append("AppleALC")
+            selected_kexts.append("AppleALC")
+            if self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("25.0.0") and not needs_oclp:
+                selected_kexts.append("SimpleHDA")
 
         if "AMD" in hardware_report.get("CPU").get("Manufacturer") and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("21.4.0") or \
                 int(hardware_report.get("CPU").get("CPU Count")) > 1 and self.utils.parse_darwin_version(macos_version) >= self.utils.parse_darwin_version("19.0.0") or \
@@ -460,12 +456,6 @@ class KextMaestro:
                     print("")
 
                     if any(other_gpu_props.get("Manufacturer") == "Intel" for other_gpu_props in hardware_report.get("GPU", {}).values()):
-                        print(
-                            "\033[91mImportant:\033[0m NootRX kext is not compatible with Intel GPUs")
-                        print(
-                            "Automatically selecting WhateverGreen kext due to Intel GPU compatibility")
-                        print("")
-                        self.utils.request_input("Press Enter to continue...")
                         continue
 
                     kext_option = self.utils.request_input("Select kext for your AMD {} GPU (default: {}): ".format(
