@@ -105,9 +105,9 @@ class gatheringFiles:
 
         add_product_info({
             "product_name": "OpenCorePkg",
-            "id": dortania_builds_data["OpenCorePkg"]["versions"][0]["release"]["id"], 
-            "url": dortania_builds_data["OpenCorePkg"]["versions"][0]["links"]["release"],
-            "sha256": dortania_builds_data["OpenCorePkg"]["versions"][0]["hashes"]["release"]["sha256"]
+            "id": 941538301, 
+            "url": "https://github.com/lzhoang2801/OpenCorePkg/releases/download/1.0.9/OpenCore-1.0.9-RELEASE.zip",
+            "sha256": "941538d301d5b7d969018ed70722feb45370dc657fca0df71527e15513ec1262"
         })
 
         return latest_products
