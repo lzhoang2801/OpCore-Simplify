@@ -106,7 +106,7 @@ class Github:
                     download_link = line.split("href=\"", 1)[
                         1].split("\"", 1)[0]
 
-                    if download_link.endswith(".sha256") or not ("tlwm" in download_link or ("tlwm" not in download_link and "RESEARCH" not in download_link.upper() and "DEBUG" not in download_link.upper())):
+                    if "sha256" in download_link.lower() or not ("tlwm" in download_link or ("tlwm" not in download_link and "RESEARCH" not in download_link.upper() and "DEBUG" not in download_link.upper())):
                         in_li_block = False
                         continue
 
@@ -144,7 +144,7 @@ class Github:
             asset_name += "-unsupported"
         elif "rtsx" in file_name:
             asset_name += "-rtsx"
-        elif "itlwm" in file_name.lower():
+        elif "itlwm" in file_name.lower() or "BTLEAdvFixup" in file_name:
             if "Sequoia" in file_name:
                 asset_name += "24"
             elif "Tahoe" in file_name:
@@ -153,6 +153,8 @@ class Github:
                 asset_name += "23.4"
             elif "Sonoma14.0" in file_name:
                 asset_name += "23.0"
+            elif "Sonoma" in file_name:
+                asset_name += "23"
             elif "Ventura" in file_name:
                 asset_name += "22"
             elif "Monterey" in file_name:

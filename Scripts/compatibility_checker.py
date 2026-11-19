@@ -316,21 +316,6 @@ class CompatibilityChecker:
             print("{}- {}: {}".format(" "*3, device_name,
                   self.show_macos_compatibility(device_props.get("Compatibility"))))
 
-            if device_id in pci_data.WirelessCardIDs:
-                if device_id in pci_data.BroadcomWiFiIDs:
-                    print(
-                        "{}- Continuity Support: \033[1;32mFull\033[0m (AirDrop, Handoff, Universal Clipboard, Instant Hotspot,...)".format(" "*6))
-                elif device_id in pci_data.IntelWiFiIDs:
-                    print(
-                        "{}- Continuity Support: \033[1;33mPartial\033[0m (Handoff and Universal Clipboard with AirportItlwm)".format(" "*6))
-                    print(
-                        "{}\033[1;93mNote:\033[0m AirDrop, Universal Clipboard, Instant Hotspot,... not available".format(" "*6))
-                elif device_id in pci_data.AtherosWiFiIDs:
-                    print(
-                        "{}- Continuity Support: \033[1;31mLimited\033[0m (No Continuity features available)".format(" "*6))
-                    print(
-                        "{}\033[1;93mNote:\033[0m Atheros cards are not recommended for macOS".format(" "*6))
-
             if "OCLP Compatibility" in device_props:
                 print("{}- OCLP Compatibility: {}".format(" "*6,
                       self.show_macos_compatibility(device_props.get("OCLP Compatibility"))))

@@ -209,6 +209,23 @@ class KextMaestro:
         if self.is_intel_hedt_cpu(hardware_report.get("CPU").get("Processor Name"), hardware_report.get("CPU").get("Codename")):
             selected_kexts.append("CpuTscSync")
 
+        for bluetooth_name, bluetooth_props in hardware_report.get("Bluetooth", {}).items():
+            usb_id = bluetooth_props.get("Device ID")
+
+            if usb_id in pci_data.AtherosBluetoothIDs:
+                selected_kexts.extend(("Ath3kBT", "Ath3kBTInjector"))
+            elif usb_id in pci_data.BroadcomBluetoothIDs:
+                selected_kexts.extend(("BrcmFirmwareData", "BrcmPatchRAM2",
+                                      "BrcmPatchRAM3", "BrcmBluetoothInjector", "BlueToolFixup"))
+            elif usb_id in pci_data.IntelBluetoothIDs:
+                selected_kexts.extend(
+                    ("IntelBluetoothFirmware", "IntelBTPatcher", "IntelBluetoothInjector", "BlueToolFixup"))
+            elif usb_id in pci_data.RealtekBluetoothIDs:
+                selected_kexts.extend(
+                    ("RealtekBluetoothFirmware", "BlueToolFixup"))
+            elif usb_id in pci_data.BluetoothIDs[-1]:
+                selected_kexts.append("BlueToolFixup")
+
         for network_name, network_props in hardware_report.get("Network", {}).items():
             device_id = network_props.get("Device ID")
 
@@ -247,16 +264,16 @@ class KextMaestro:
                 darwin_major = self.utils.parse_darwin_version(macos_version)[
                     0]
                 native_fork_available = self.is_kext_compatible(
-                    self.kexts[kext_data.kext_index_by_name["AirportItlwm-laobamac"]], macos_version)
+                    self.kexts[kext_data.kext_index_by_name["ForbiddenItlwm"]], macos_version)
                 wifi_options = ["AirportItlwm", "itlwm"]
                 if native_fork_available:
-                    wifi_options.insert(0, "AirportItlwm-laobamac")
+                    wifi_options.insert(0, "ForbiddenItlwm")
                 print("\033[1;93mNote:\033[0m Intel WiFi devices have {} available kext options:".format(
                     len(wifi_options)))
                 print("")
                 if native_fork_available:
                     print(
-                        "1. \033[1mlaobamac AirportItlwm\033[0m - Native WiFi on Sequoia 15.2+ and Tahoe without OCLP root patches")
+                        "1. \033[1mForbiddenItlwm\033[0m - A fork of AirportItlwm that adds AWDL")
                     print("")
                 print("{}. \033[1mAirportItlwm\033[0m - Uses native WiFi settings menu".format(
                     2 if native_fork_available else 1))
@@ -288,7 +305,9 @@ class KextMaestro:
                         choice = str(recommended_option)
                     selected_name = wifi_options[int(choice) - 1]
                 selected_kexts.append(selected_name)
-                if selected_name == "AirportItlwm" and darwin_major >= 24:
+                if selected_name == "ForbiddenItlwm":
+                    selected_kexts.append("BTLEAdvFixup")
+                elif selected_name == "AirportItlwm" and darwin_major >= 24:
                     needs_oclp = True
                     selected_kexts.append("IOSkywalkFamily")
             elif device_id in pci_data.AtherosWiFiIDs[:8]:
@@ -325,23 +344,6 @@ class KextMaestro:
 
         if all(network_props.get("Bus Type") == "USB" for network_props in hardware_report.get("Network", {}).values()):
             selected_kexts.append("NullEthernet")
-
-        for bluetooth_name, bluetooth_props in hardware_report.get("Bluetooth", {}).items():
-            usb_id = bluetooth_props.get("Device ID")
-
-            if usb_id in pci_data.AtherosBluetoothIDs:
-                selected_kexts.extend(("Ath3kBT", "Ath3kBTInjector"))
-            elif usb_id in pci_data.BroadcomBluetoothIDs:
-                selected_kexts.extend(("BrcmFirmwareData", "BrcmPatchRAM2",
-                                      "BrcmPatchRAM3", "BrcmBluetoothInjector", "BlueToolFixup"))
-            elif usb_id in pci_data.IntelBluetoothIDs:
-                selected_kexts.extend(
-                    ("IntelBluetoothFirmware", "IntelBTPatcher", "IntelBluetoothInjector", "BlueToolFixup"))
-            elif usb_id in pci_data.RealtekBluetoothIDs:
-                selected_kexts.extend(
-                    ("RealtekBluetoothFirmware", "BlueToolFixup"))
-            elif usb_id in pci_data.BluetoothIDs[-1]:
-                selected_kexts.append("BlueToolFixup")
 
         if "Laptop" in hardware_report.get("Motherboard").get("Platform"):
             if "SURFACE" in hardware_report.get("Motherboard").get("Name"):
@@ -697,7 +699,7 @@ class KextMaestro:
 
             if kext_name == "AirPortBrcm4360_Injector":
                 bundle["MaxKernel"] = "19.99.99"
-            elif kext_name == "AirportItlwm":
+            elif kext_name in {"AirportItlwm", "ForbiddenItlwm", "BTLEAdvFixup"}:
                 bundle["MaxKernel"] = macos_version[:2] + \
                     bundle["MaxKernel"][2:]
                 if self.utils.parse_darwin_version(bundle["MinKernel"]) < self.utils.parse_darwin_version(macos_version[:2] + ".0.0"):

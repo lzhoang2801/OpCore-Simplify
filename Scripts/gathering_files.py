@@ -81,11 +81,6 @@ class gatheringFiles:
                 add_product_info({"product_name": kext.name, **kext.download_info})
                 if kext.name == "AMFIPass":
                     latest_products["AMFIPass-b00t0x"] = kext_maestro.kext_data.AMFIPassModDownloadInfo.copy()
-            elif kext.name == "AirportItlwm-laobamac":
-                release = self.github.get_latest_release(kext.github_repo["owner"], kext.github_repo["repo"]) or {}
-                for asset in release.get("assets", []):
-                    if "-RELEASE" in asset["url"] and asset["product_name"] in ("AirportItlwm24", "AirportItlwm25"):
-                        add_product_info({**asset, "product_name": kext.name + asset["product_name"][-2:]})
             elif kext.github_repo:
                 repository = (kext.github_repo["owner"], kext.github_repo["repo"])
                 if repository in seen_repos:
@@ -207,11 +202,10 @@ class gatheringFiles:
                 elif self.utils.parse_darwin_version("23.0.0") <= self.utils.parse_darwin_version(macos_version):
                     version = "23.0"
                 product_name += version
-            elif product_name == "AirportRTW89":
-                product_name = bundle_name = "AirportRTW"
-            elif product_name == "AirportItlwm-laobamac":
+            elif product_name in {"ForbiddenItlwm", "BTLEAdvFixup"}:
                 product_name += macos_version[:2]
-                bundle_name = "AirportItlwm"
+            elif product_name == "AirportRTW89":
+                bundle_name = "AirPort_RTW89"
             elif product_name == "AMFIPass" and any(kext.checked and kext.name == "WhateverXe" for kext in kexts):
                 product_name = "AMFIPass-b00t0x"
             elif product_name.startswith("Ath3kBT"):

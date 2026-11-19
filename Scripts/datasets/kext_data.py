@@ -221,7 +221,7 @@ kexts = [
     ),
     KextInfo(
         name="AirportItlwm",
-        description="Intel Wi-Fi drivers support the native macOS Wi-Fi interface",
+        description="Intel Wi-Fi driver support the native macOS Wi-Fi interface",
         category="Wi-Fi",
         conflict_group_id="IntelWiFi",
         github_repo={
@@ -230,16 +230,16 @@ kexts = [
         }
     ),
     KextInfo(
-        name="AirportItlwm-laobamac",
-        description="Intel Wi-Fi drivers support the native macOS Wi-Fi interface (Sequoia 15.2+ and Tahoe without root patches)",
+        name="ForbiddenItlwm",
+        description="Intel Wi-Fi driver with native macOS Wi-Fi interface and AWDL support",
         category="Wi-Fi",
-        min_darwin_version="24.2.0",
+        min_darwin_version="23.0.0",
         max_darwin_version="25.99.99",
-        allow_force_load=False,
         conflict_group_id="IntelWiFi",
+        allow_force_load=False,
         github_repo={
-            "owner": "laobamac",
-            "repo": "itlwm"
+            "owner": "retropineaple",
+            "repo": "ForbiddenItlwm"
         }
     ),
     KextInfo(
@@ -414,10 +414,25 @@ kexts = [
         }
     ),
     KextInfo(
+        name="BTLEAdvFixup",
+        description="Adds AWDL support on Intel Bluetooth",
+        category="Bluetooth",
+        min_darwin_version="23.0.0",
+        max_darwin_version="25.99.99",
+        requires_kexts=["Lilu", "IntelBluetoothFirmware", "ForbiddenItlwm"],
+        conflict_group_id="IntelBTPatcher",
+        allow_force_load=False,
+        github_repo={
+            "owner": "retropineaple",
+            "repo": "ForbiddenItlwm"
+        }
+    ),
+    KextInfo(
         name="IntelBTPatcher",
         description="Fixes Intel Bluetooth bugs for better connectivity",
         category="Bluetooth",
         requires_kexts=["Lilu", "IntelBluetoothFirmware"],
+        conflict_group_id="IntelBTPatcher",
         github_repo={
             "owner": "lshbluesky",
             "repo": "IntelBluetoothFirmware"
