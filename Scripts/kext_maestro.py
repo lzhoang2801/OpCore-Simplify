@@ -176,19 +176,21 @@ class KextMaestro:
                 print(
                     "2. \033[1mAppleALC + OCLP\033[0m - Restores AppleHDA with a system root patch")
                 print("")
-                while True:
-                    kext_option = self.utils.request_input(
-                        "Select audio kext for your system: ").strip()
-                    if kext_option == "1":
-                        selected_kexts.extend(("AppleALC", "SimpleHDA"))
-                        break
-                    elif kext_option == "2":
-                        needs_oclp = True
-                        selected_kexts.append("AppleALC")
-                        break
-                    else:
-                        print(
-                            "\033[91mInvalid selection, please try again.\033[0m\n\n")
+                audio_options = ["AppleALC + SimpleHDA", "AppleALC + OCLP"]
+                recommended_option = 1
+                if needs_oclp:
+                    choice = "2"
+                else:
+                    choice = self.utils.request_input("Select audio restoration method (default: {}): ".format(
+                        audio_options[recommended_option - 1])).strip() or str(recommended_option)
+                    if not choice.isdigit() or not 1 <= int(choice) <= len(audio_options):
+                        print("Invalid selection, using recommended option: {}".format(
+                            recommended_option))
+                if choice == "1":
+                    selected_kexts.extend(("AppleALC", "SimpleHDA"))
+                elif choice == "2":
+                    needs_oclp = True
+                    selected_kexts.append("AppleALC")
             else:
                 selected_kexts.append("AppleALC")
 
@@ -239,12 +241,14 @@ class KextMaestro:
                 print("")
                 wifi_options = ["SimpleBCM", "IOSkywalkFamily"]
                 recommended_option = 1
-                choice = self.utils.request_input("Select Broadcom Wi-Fi kext (default: {}): ".format(
-                    wifi_options[recommended_option - 1])).strip() or str(recommended_option)
-                if not choice.isdigit() or not 1 <= int(choice) <= len(wifi_options):
-                    print("Invalid selection, using recommended option: {}".format(
-                        recommended_option))
-                    choice = str(recommended_option)
+                if needs_oclp:
+                    choice = 2
+                else:
+                    choice = self.utils.request_input("Select Broadcom Wi-Fi kext (default: {}): ".format(
+                        wifi_options[recommended_option - 1])).strip() or str(recommended_option)
+                    if not choice.isdigit() or not 1 <= int(choice) <= len(wifi_options):
+                        print("Invalid selection, using recommended option: {}".format(
+                            recommended_option))
                 selected_name = wifi_options[int(choice) - 1]
                 selected_kexts.append(selected_name)
                 if selected_name == "IOSkywalkFamily":
