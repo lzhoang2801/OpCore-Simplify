@@ -88,6 +88,10 @@ data = {
             comment="Ping - Realtek ALC298 for Dell Precision 5520"
         ),
         Layout(
+            id=17,
+            comment="skyfever - Realtek ALC298 for SAMSUNG NT950SBE"
+        ),
+        Layout(
             id=21,
             comment="Lenovo 720S-15IKB ALC298 by Andres ZeroCross"
         ),
@@ -140,6 +144,10 @@ data = {
             comment="Custom - Realtek ALC298 for Lenovo Yoga C940 by idalin"
         ),
         Layout(
+            id=98,
+            comment="sunbo - Realtek ALC298 for Lenovo Yoga 9 15IMH5"
+        ),
+        Layout(
             id=99,
             comment="Daliansky - Realtek ALC298 XiaoMi Pro"
         )
@@ -188,6 +196,14 @@ data = {
         Layout(
             id=21,
             comment="Realtek ALC S1220A RodionS, Nacho 5.1 outputs(green, black, orange), 2 inputs (blue)+front panel (mic fr.panel), mic (pink), headphones(lime), SPDIF/Optical "
+        ),
+        Layout(
+            id=88,
+            comment="MSI MPG Z390 Gaming Pro Carbon AC - Realtek ALC1220P-VB2 - Separate Outputs - Layout 88 - by Tahsin Faiyaz"
+        ),
+        Layout(
+            id=89,
+            comment="Realtek ALC S1220A for Asus Z890 ProArt Creator WiFi (caley13)"
         ),
         Layout(
             id=99,
@@ -260,6 +276,18 @@ data = {
             comment="lshbluesky - Realtek ALC256 for Samsung Galaxy Book NT750XDA-KF59U"
         ),
         Layout(
+            id=41,
+            comment="auq3l - Realtek ALC256 for ASUS X412FAG"
+        ),
+        Layout(
+            id=48,
+            comment="nikich768 - Realtek ALC256 ASUS-X515JF-EJ012 var1"
+        ),
+        Layout(
+            id=49,
+            comment="nikich768 - Realtek ALC256 ASUS-X515JF-EJ012 var2"
+        ),
+        Layout(
             id=56,
             comment="DalianSky - Realtek ALC256 (3246) for Dell 7000 Series"
         ),
@@ -310,6 +338,10 @@ data = {
         Layout(
             id=99,
             comment="Hoping - Realtek ALC256 (3246) for XiaoMiPro 2020"
+        ),
+        Layout(
+            id=100,
+            comment="nikich768 - Realtek ALC256 Dell Latitude 5490 var1"
         )
     ],
     "10EC-0282": [
@@ -389,7 +421,7 @@ data = {
         ),
         Layout(
             id=3,
-            comment="ALC269"
+            comment="Mirone - Realtek ALC269 for Asus K53SJ, Asus G73s"
         ),
         Layout(
             id=4,
@@ -457,7 +489,7 @@ data = {
         ),
         Layout(
             id=20,
-            comment="ALC269"
+            comment="Custom ALC269 Sony Vaio VPCEB3M1R by Rodion"
         ),
         Layout(
             id=21,
@@ -465,7 +497,7 @@ data = {
         ),
         Layout(
             id=22,
-            comment="ALC269"
+            comment="Andres ZeroCross - ALC269VC for Acer Veriton Z4640G"
         ),
         Layout(
             id=23,
@@ -473,11 +505,11 @@ data = {
         ),
         Layout(
             id=24,
-            comment="ALC269"
+            comment="ALC269VC for Hasee U45S1 by zero816"
         ),
         Layout(
             id=25,
-            comment="ALC269"
+            comment="hua0512 - Realtek ALC269 for Medium Akoya P6653"
         ),
         Layout(
             id=26,
@@ -485,11 +517,11 @@ data = {
         ),
         Layout(
             id=27,
-            comment="ALC269"
+            comment="Custom ALC269 for Acer Aspire by Andrey1970"
         ),
         Layout(
             id=28,
-            comment="ALC269VC"
+            comment="ALC269VC for Lenovo Z580, John"
         ),
         Layout(
             id=29,
@@ -525,7 +557,7 @@ data = {
         ),
         Layout(
             id=37,
-            comment="ALC269"
+            comment="Ar4eR07 - ALC269VB for Tecno T1 IceLake"
         ),
         Layout(
             id=38,
@@ -541,7 +573,7 @@ data = {
         ),
         Layout(
             id=44,
-            comment="ALC269VC"
+            comment="Laptop patch ALC269VC Samsung _NP350V5C - Giesteira"
         ),
         Layout(
             id=45,
@@ -573,7 +605,7 @@ data = {
         ),
         Layout(
             id=77,
-            comment="ALC269"
+            comment="ALC269 for Thunderobot-G7000S-9300H by Phoenix-L"
         ),
         Layout(
             id=88,
@@ -581,15 +613,15 @@ data = {
         ),
         Layout(
             id=89,
-            comment="ALC269"
+            comment="Talha - ALC269VB for Acer Aspire Z3-715"
         ),
         Layout(
             id=91,
-            comment="ALC269"
+            comment="Custom ALC269 for Chuwi CoreBox by Luca91"
         ),
         Layout(
             id=93,
-            comment="ALC269"
+            comment="ALC269 Asus K53SJ, Asus G73s Mod by Andrey1970 (No input boost - no noise in Siri)"
         ),
         Layout(
             id=99,
@@ -597,19 +629,23 @@ data = {
         ),
         Layout(
             id=100,
-            comment="ALC269"
+            comment="ALC269 for GPD P2 Max by DalianSky"
         ),
         Layout(
             id=111,
-            comment="ALC269"
+            comment="ALC269 for minisforum NAG6 by DalianSky"
+        ),
+        Layout(
+            id=120,
+            comment="ALC269 for Infinix XBOOK B15 by kodeaqua"
         ),
         Layout(
             id=127,
-            comment="ALC269"
+            comment="Custom ALC269 Acer Aspire by Andrey1970 (No input boost - no noise in Siri)"
         ),
         Layout(
             id=128,
-            comment="ALC269"
+            comment="Custom ALC269 by ryahpalma for Laptop NS4SL01"
         ),
         Layout(
             id=138,
@@ -617,7 +653,7 @@ data = {
         ),
         Layout(
             id=188,
-            comment="ALC269"
+            comment="ALC269 for Lenovo Y500 by BaoStorm (No input boost - no noise in Siri)"
         )
     ],
     "111D-7695": [
@@ -706,6 +742,12 @@ data = {
             comment="Creative CA0132 5.1 channel for Alienware-M17X-R4 by DalianSky"
         )
     ],
+    "1013-4206": [
+        Layout(
+            id=32,
+            comment="Cirrus Logic CS4206 - iMac12,2 - By italomoraes"
+        )
+    ],
     "1013-4210": [
         Layout(
             id=13,
@@ -761,7 +803,7 @@ data = {
         ),
         Layout(
             id=12,
-            comment="0x11d4198b"
+            comment="Custom AD1988B by Rodion"
         )
     ],
     "11D4-989B": [
@@ -990,6 +1032,10 @@ data = {
             comment="ALC235 for Asrock_bb_310 by_vio"
         ),
         Layout(
+            id=20,
+            comment="ALC235 for Lenovo ThinkCentre M920x-N000 by Xezun"
+        ),
+        Layout(
             id=21,
             comment="ALC235 for Lenovo C530 Desktop PC by Andres ZeroCross"
         ),
@@ -1024,6 +1070,10 @@ data = {
         Layout(
             id=37,
             comment="Realtek ALC235 for Lenovo Ideacentre Mini 5"
+        ),
+        Layout(
+            id=55,
+            comment="Lenovo Yoga 500-14IBD ALC235 by gabimariz"
         ),
         Layout(
             id=72,
@@ -1072,6 +1122,10 @@ data = {
         Layout(
             id=15,
             comment="Realtek ALC255 Gigabyte Brix BRI5(H) by Najdanovic Ivan"
+        ),
+        Layout(
+            id=16,
+            comment="Custom - Realtek ALC255 for Gigabyte Aorus 15G (warm-reboot/sleep audio fix) by Andergraw"
         ),
         Layout(
             id=17,
@@ -1144,6 +1198,10 @@ data = {
         Layout(
             id=86,
             comment="Armênio - Realtek ALC255/ALC3234 - Dell 7348"
+        ),
+        Layout(
+            id=89,
+            comment="ALC3234/ALC255 Layout 89 - Dell OptiPlex 3060 MFF - Lorys89"
         ),
         Layout(
             id=96,
@@ -1257,15 +1315,15 @@ data = {
         ),
         Layout(
             id=21,
-            comment="ALC270"
+            comment="ALC270 for Asus A46CB-WX024D Laptop by Andres ZeroCross"
         ),
         Layout(
             id=27,
-            comment="ALC270"
+            comment="ALC270 for Asus Laptop with alternative microphone"
         ),
         Layout(
             id=28,
-            comment="ALC270"
+            comment="ALC270 for Asus Laptop"
         )
     ],
     "10EC-0272": [
@@ -1646,6 +1704,10 @@ data = {
             comment="cowpod - Realtek ALC294 for ASUS ROG GL504GW"
         ),
         Layout(
+            id=24,
+            comment="Theroadw - Realtek ALC294 for Asus rog strix g512li"
+        ),
+        Layout(
             id=28,
             comment="Ayat Kyo - Realtek ALC294 for Asus ROG G531GD"
         ),
@@ -1743,11 +1805,11 @@ data = {
         ),
         Layout(
             id=28,
-            comment="ALC663"
+            comment="Custom ALC663 for Asus N56/76 by m-dudarev"
         ),
         Layout(
             id=99,
-            comment="ALC663"
+            comment="Custom by alex1960 for ASUS N71J"
         )
     ],
     "10EC-0665": [
@@ -1829,11 +1891,11 @@ data = {
     "10EC-0883": [
         Layout(
             id=7,
-            comment="ALC883"
+            comment="Mirone - Realtek ALC883 by Andrey1970"
         ),
         Layout(
             id=20,
-            comment="ALC883"
+            comment="Realtek ALC883 for Atermiter X79G by SamCabral"
         )
     ],
     "10EC-0885": [
@@ -1843,11 +1905,11 @@ data = {
         ),
         Layout(
             id=12,
-            comment="ALC885"
+            comment="Custom ALC885 by alex1960"
         ),
         Layout(
             id=15,
-            comment="ALC885"
+            comment="MacPeet - ALC885 for GA-G33M-DS2R"
         )
     ],
     "10EC-0887": [
@@ -2076,6 +2138,10 @@ data = {
             comment="Custom ALC892 for G4/G5mod by ATL"
         ),
         Layout(
+            id=66,
+            comment="MSI GE60 2OC/2OE/2OD"
+        ),
+        Layout(
             id=90,
             comment="Custom ALC892 for GIGABYTE B360 M AORUS PRO"
         ),
@@ -2126,6 +2192,10 @@ data = {
             comment="ALC897 for Chuwi-CoreBookX14 by weachy"
         ),
         Layout(
+            id=31,
+            comment="Msi X670E Gaming Wifi  ALC897 by ycg31"
+        ),
+        Layout(
             id=66,
             comment="Asus_PRIME_B460M-K_ALC897"
         ),
@@ -2136,6 +2206,10 @@ data = {
         Layout(
             id=77,
             comment="ONDA H510D4 IPC ALC897"
+        ),
+        Layout(
+            id=97,
+            comment="Realtek ALC897 for ASUS B560M Tuf Gaming Plus"
         ),
         Layout(
             id=98,
@@ -2178,6 +2252,10 @@ data = {
         Layout(
             id=28,
             comment="ALC898, Toleda"
+        ),
+        Layout(
+            id=64,
+            comment="Realtek ALC898 for ASRock Z77 Fatal1ty Professional with Front Panel by AndrewK2685"
         ),
         Layout(
             id=65,
@@ -2356,6 +2434,10 @@ data = {
         Layout(
             id=23,
             comment="VictorXu -  Realtek ALCS1200A for MSI B460I GAMING EDGE WIFI"
+        ),
+        Layout(
+            id=31,
+            comment="Custom ALCS1200A Asus B550M Plus by ycg31"
         ),
         Layout(
             id=49,
@@ -2764,6 +2846,10 @@ data = {
         Layout(
             id=33,
             comment="ChalesYu - VIA VT1802"
+        ),
+        Layout(
+            id=35,
+            comment="nickleby92 - VIA VT1802 for Vit P2402"
         ),
         Layout(
             id=65,
