@@ -87,7 +87,7 @@ class gatheringFiles:
                     continue
                 name = kext.github_repo.get("repo")
                 seen_repos.add(repository)
-                if name in dortania_builds_data:
+                if name != "IntelBluetoothFirmware" and name in dortania_builds_data:
                     add_product_info({
                         "product_name": name,
                         "id": dortania_builds_data[name]["versions"][0]["release"]["id"], 
