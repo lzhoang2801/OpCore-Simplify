@@ -268,7 +268,7 @@ kexts = [
         category="Wi-Fi",
         min_darwin_version="20.0.0",
         github_repo={
-            "owner": "thegwchr",
+            "owner": "JoMei9019-real",
             "repo": "Feixiao"
         }
     ),
